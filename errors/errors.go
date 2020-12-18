@@ -1,6 +1,7 @@
 package errors
 
 import (
+	e "errors"
 	"fmt"
 	"net/http"
 )
@@ -52,3 +53,7 @@ func NewBusinessError(code int, message string, httpCodes ...int) *OPError {
 	}
 	return NewOpError(code, message, ScopeBusiness, httpCode)
 }
+
+var (
+	ErrAlreadyExists = e.New("already exists")
+)
