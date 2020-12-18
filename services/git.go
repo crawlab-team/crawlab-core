@@ -3,11 +3,14 @@ package services
 import (
 	"fmt"
 	"github.com/apex/log"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/lib/cron"
 	"github.com/crawlab-team/crawlab-core/model"
 	"github.com/crawlab-team/crawlab-core/services/spider_handler"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-vcs"
 	"github.com/globalsign/mgo/bson"
+	"github.com/spf13/viper"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -23,6 +26,75 @@ import (
 	"strings"
 	"time"
 )
+
+func NewGitService(spider model.Spider) (s *GitService, err error) {
+	// base paths
+	remoteBasePath := viper.GetString("git.basePath.remote")
+	localBasePath := viper.GetString("git.basePath.local")
+
+	// paths
+	remotePath := fmt.Sprintf("%s/%s", remoteBasePath, spider.Id.Hex())
+	localPath := fmt.Sprintf("%s/%s", localBasePath, spider.Id.Hex())
+
+	// remote git client
+	remoteClient, err := vcs.NewGitClient(remotePath, &vcs.GitOptions{
+		IsBare: true,
+	})
+	if err != nil {
+		return s, err
+	}
+
+	// local git client
+	localClient, err := vcs.NewGitClient(localPath, &vcs.GitOptions{
+		RemoteUrl: remotePath,
+		IsBare:    false,
+	})
+	if err != nil {
+		return s, err
+	}
+
+	// git service
+	s = &GitService{
+		local:  localClient,
+		remote: remoteClient,
+	}
+
+	return
+}
+
+type GitService struct {
+	local  *vcs.GitClient
+	remote *vcs.GitClient
+}
+
+func (s *GitService) LocalClient() (c *vcs.Client, err error) {
+	if s.local == nil {
+		return c, constants.ErrNotExists
+	}
+	return c, nil
+}
+
+func (s *GitService) RemoteClient() (c *vcs.Client, err error) {
+	if s.remote == nil {
+		return c, constants.ErrNotExists
+	}
+	return c, nil
+}
+
+func (s *GitService) Pull(target interface{}) (err error) {
+	return s.local.Pull()
+}
+
+func (s *GitService) Push(target interface{}) (err error) {
+	if err := s.local.CommitAll("commit"); err != nil {
+		return err
+	}
+	return s.local.Push()
+}
+
+// ====================
+// BELOW ARE OLD CODE
+// ====================
 
 var GitCron *GitCronScheduler
 

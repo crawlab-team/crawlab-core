@@ -1,7 +1,7 @@
 package services
 
 import (
-	cerr "github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
@@ -105,7 +105,7 @@ func TestFileSystemService_Rename(t *testing.T) {
 	err = s.Save("test_file.txt", []byte(content))
 	require.Nil(t, err)
 	err = s.Rename("test_file.txt", "test_file2.txt")
-	require.Equal(t, cerr.ErrAlreadyExists, err)
+	require.Equal(t, constants.ErrAlreadyExists, err)
 
 	// cleanup
 	err = cleanup()

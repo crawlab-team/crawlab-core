@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/constants"
 	cfs "github.com/crawlab-team/crawlab-fs"
 	"strings"
 )
@@ -79,7 +79,7 @@ func (f *FileSystemService) Rename(path, newPath string) (err error) {
 		return err
 	}
 	if ok {
-		return errors.ErrAlreadyExists
+		return constants.ErrAlreadyExists
 	}
 
 	// get original file data
