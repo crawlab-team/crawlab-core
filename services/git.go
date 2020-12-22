@@ -37,7 +37,8 @@ func NewGitService(spider model.Spider) (s *GitService, err error) {
 	localPath := fmt.Sprintf("%s/%s", localBasePath, spider.Id.Hex())
 
 	// remote git client
-	remoteClient, err := vcs.NewGitClient(remotePath, &vcs.GitOptions{
+	remoteClient, err := vcs.NewGitClient(&vcs.GitOptions{
+		Path:   remotePath,
 		IsBare: true,
 	})
 	if err != nil {
@@ -45,9 +46,11 @@ func NewGitService(spider model.Spider) (s *GitService, err error) {
 	}
 
 	// local git client
-	localClient, err := vcs.NewGitClient(localPath, &vcs.GitOptions{
+	localClient, err := vcs.NewGitClient(&vcs.GitOptions{
+		Path:      localPath,
 		RemoteUrl: remotePath,
 		IsBare:    false,
+		IsMem:     true,
 	})
 	if err != nil {
 		return s, err
@@ -67,17 +70,19 @@ type GitService struct {
 	remote *vcs.GitClient
 }
 
-func (s *GitService) LocalClient() (c *vcs.Client, err error) {
+func (s *GitService) LocalClient() (c *vcs.GitClient, err error) {
 	if s.local == nil {
 		return c, constants.ErrNotExists
 	}
+	c = s.local
 	return c, nil
 }
 
-func (s *GitService) RemoteClient() (c *vcs.Client, err error) {
+func (s *GitService) RemoteClient() (c *vcs.GitClient, err error) {
 	if s.remote == nil {
 		return c, constants.ErrNotExists
 	}
+	c = s.remote
 	return c, nil
 }
 
