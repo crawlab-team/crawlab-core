@@ -97,10 +97,9 @@ func (s *GitService) Push(target interface{}) (err error) {
 	return s.local.Push()
 }
 
-// ====================
-// BELOW ARE OLD CODE
-// ====================
-
+// =========================
+// TODO: BELOW ARE OLD CODE
+// =========================
 var GitCron *GitCronScheduler
 
 type GitCronScheduler struct {

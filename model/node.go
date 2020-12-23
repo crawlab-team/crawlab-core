@@ -24,12 +24,18 @@ type Node struct {
 	// 用于唯一标识节点，可能是mac地址，可能是ip地址
 	Key string `json:"key" bson:"key"`
 
+	Settings NodeSettings `json:"settings" bson:"settings"`
+
 	// 前端展示
 	IsMaster bool `json:"is_master" bson:"is_master"`
 
 	UpdateTs     time.Time `json:"update_ts" bson:"update_ts"`
 	CreateTs     time.Time `json:"create_ts" bson:"create_ts"`
 	UpdateTsUnix int64     `json:"update_ts_unix" bson:"update_ts_unix"`
+}
+
+type NodeSettings struct {
+	MaxRunners int `json:"max_runners" bson:"max_runners"`
 }
 
 const (

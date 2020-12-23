@@ -30,3 +30,11 @@ const (
 	TaskTypeSpider string = "spider"
 	TaskTypeSystem string = "system"
 )
+
+type TaskSignal int
+
+const (
+	TaskSignalFinish TaskSignal = iota
+	TaskSignalCancel
+	TaskSignalError
+)

@@ -32,6 +32,186 @@ import (
 	"time"
 )
 
+type TaskServiceInterface interface {
+	Init() (err error)
+	Assign(t model.Task) (err error)
+	Fetch() (err error)
+	Run(t model.Task) (err error)
+	Cancel(id string) (err error)
+}
+
+type TaskServiceOptions struct {
+	IsMaster bool
+}
+
+func NewTaskService(options *TaskServiceOptions) (s *TaskService, err error) {
+	s = &TaskService{
+		runnersCount: 0,
+		runners:      sync.Map{},
+		opts:         options,
+	}
+	return s, nil
+}
+
+type TaskService struct {
+	runnersCount int                 // number of task runners
+	runners      sync.Map            // pool of task runners started
+	opts         *TaskServiceOptions // options
+}
+
+func (s *TaskService) Init() (err error) {
+	for {
+		// wait for a period
+		time.Sleep(5 * time.Second)
+
+		// skip if exceeding max runners
+		node := local_node.CurrentNode()
+		if s.runnersCount >= node.Settings.MaxRunners {
+			continue
+		}
+
+		// fetch task
+		t, err := s.Fetch()
+		if err != nil {
+			if err != constants.ErrNoTasksAvailable {
+				log.Error("fetch task error: " + err.Error())
+			}
+			continue
+		}
+
+		// run task (async)
+		if err := s.Run(t); err != nil {
+			log.Error("run task error: " + err.Error())
+		}
+	}
+}
+
+func (s *TaskService) Assign(t model.Task) (err error) {
+	// validate options
+	if !s.opts.IsMaster {
+		return constants.ErrForbidden
+	}
+
+	// task message
+	msg := TaskMessage{
+		Id: t.Id,
+	}
+
+	// serialization
+	msgStr, err := msg.ToString()
+	if err != nil {
+		return err
+	}
+
+	// queue name
+	var queue string
+	if utils.IsObjectIdNull(t.NodeId) {
+		queue = "tasks:public"
+	} else {
+		queue = "tasks:node:" + t.NodeId.Hex()
+	}
+
+	// enqueue
+	if err := database.RedisClient.RPush(queue, msgStr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *TaskService) Fetch() (t model.Task, err error) {
+	// current node
+	node := local_node.CurrentNode()
+
+	// queue for current node
+	queueCur := "tasks:node:" + node.Id.Hex()
+
+	// message
+	var msg string
+
+	// fetch task from node queue
+	if msg, err = database.RedisClient.LPop(queueCur); err != nil {
+		// fetch task from public queue
+		queuePub := "tasks:public"
+		if msg, err = database.RedisClient.LPop(queuePub); err != nil {
+		}
+	}
+
+	// no task fetched
+	if msg == "" {
+		return t, constants.ErrNoTasksAvailable
+	}
+
+	// deserialization
+	tMsg := TaskMessage{}
+	if err := json.Unmarshal([]byte(msg), &tMsg); err != nil {
+		return t, err
+	}
+
+	// fetch task
+	t, err = model.GetTask(tMsg.Id)
+	if err != nil {
+		return t, err
+	}
+
+	return t, nil
+}
+
+func (s *TaskService) Run(t model.Task) (err error) {
+	_, ok := s.runners.Load(t.Id)
+	if ok {
+		return constants.ErrAlreadyExists
+	}
+
+	// create a new task runner
+	runner, err := NewTaskRunner(&TaskRunnerOptions{
+		Task:    &t,
+		Channel: make(chan constants.TaskSignal),
+	})
+
+	// save runner to pool
+	s.runners.Store(t.Id, runner)
+	s.runnersCount++
+
+	// create a goroutine to run task
+	go func() {
+		if err := runner.Run(); err != nil {
+			switch err {
+			case constants.ErrTaskError:
+				// TODO: update task status (error)
+			case constants.ErrTaskCancelled:
+				// TODO: update task status (cancelled)
+			default:
+				// TODO: update task status (terminated)
+			}
+			return
+		}
+		// TODO: update task status (finished)
+	}()
+
+	return nil
+}
+
+func (s *TaskService) Cancel(id string) (err error) {
+	v, ok := s.runners.Load(id)
+	if !ok {
+		return constants.ErrNotExists
+	}
+	var runner TaskRunner
+	switch v.(type) {
+	case TaskRunner:
+		runner = v.(TaskRunner)
+	default:
+		return constants.ErrInvalidType
+	}
+	if err := runner.Cancel(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// =========================
+// TODO: BELOW ARE OLD CODE
+// =========================
 var Exec *Executor
 
 // 任务执行锁
@@ -841,7 +1021,7 @@ func GetTaskEmailMarkdownContent(t model.Task, s model.Spider) string {
 	return fmt.Sprintf(`
 Your task has finished%s. Please find the task info below.
 
- | 
+ |
 --: | :--
 **Task ID:** | %s
 **Task Status:** | %s
@@ -891,20 +1071,20 @@ func GetTaskMarkdownContent(t model.Task, s model.Spider) string {
 	return fmt.Sprintf(`
 您的任务已完成%s，请查看任务信息如下。
 
-> **任务ID:** %s  
-> **任务状态:** %s  
-> **任务参数:** %s  
-> **爬虫ID:** %s  
-> **爬虫名称:** %s  
-> **节点:** %s  
-> **创建时间:** %s  
-> **开始时间:** %s  
-> **完成时间:** %s  
-> **等待时间:** %.0f秒   
-> **运行时间:** %.0f秒  
-> **总时间:** %.0f秒  
-> **结果数:** %d  
-> **错误:** %s  
+> **任务ID:** %s
+> **任务状态:** %s
+> **任务参数:** %s
+> **爬虫ID:** %s
+> **爬虫名称:** %s
+> **节点:** %s
+> **创建时间:** %s
+> **开始时间:** %s
+> **完成时间:** %s
+> **等待时间:** %.0f秒
+> **运行时间:** %.0f秒
+> **总时间:** %.0f秒
+> **结果数:** %d
+> **错误:** %s
 
 请登录Crawlab查看详情。
 `,
