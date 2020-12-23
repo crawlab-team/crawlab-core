@@ -54,6 +54,46 @@ func TestNewFileSystemService(t *testing.T) {
 	require.Nil(t, err)
 }
 
+func TestFileSystemService_List(t *testing.T) {
+	// setupFs
+	err := setupFs()
+	require.Nil(t, err)
+
+	s, err := NewFileSystemService(&FileSystemServiceOptions{FsPath: "/test", IsMaster: true})
+	require.Nil(t, err)
+
+	// save new files to remote
+	content := "it works"
+	err = s.Save("test_file.txt", []byte(content))
+	require.Nil(t, err)
+	err = s.Save("/nested/test_file.txt", []byte(content))
+	require.Nil(t, err)
+
+	// list files
+	files, err := s.List("/")
+	require.Nil(t, err)
+	isTestFileValid := false
+	isNestedValid := false
+	for _, file := range files {
+		if file.Name == "test_file.txt" && !file.IsDir {
+			isTestFileValid = true
+		}
+		if file.Name == "nested" &&
+			file.IsDir &&
+			len(file.Children) > 0 &&
+			file.Children[0].Name == "test_file.txt" &&
+			!file.Children[0].IsDir {
+			isNestedValid = true
+		}
+	}
+	require.True(t, isTestFileValid)
+	require.True(t, isNestedValid)
+
+	// cleanupFs
+	err = cleanupFs()
+	require.Nil(t, err)
+}
+
 func TestFileSystemService_Save(t *testing.T) {
 	// setupFs
 	err := setupFs()
@@ -292,6 +332,8 @@ func TestFileSystemService_WorkerFsService(t *testing.T) {
 	require.Nil(t, err)
 
 	// test methods
+	_, err = s2.List("/")
+	require.Equal(t, constants.ErrForbidden, err)
 	_, err = s2.GetFile("test_file.txt")
 	require.Equal(t, constants.ErrForbidden, err)
 	err = s2.Save("test_file.txt", []byte("it works"))

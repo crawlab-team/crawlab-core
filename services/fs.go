@@ -3,9 +3,11 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
 	cfs "github.com/crawlab-team/crawlab-fs"
 	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/google/uuid"
+	"github.com/linxGnu/goseaweedfs"
 	"os"
 	"path"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 type FileSystemServiceInterface interface {
 	// CRUD actions on fs
+	List(path string) (files []goseaweedfs.FileInfo, err error)
 	GetFile(path string) (data []byte, err error)
 	Save(path string, data []byte) (err error)
 	Rename(path, newPath string) (err error)
@@ -94,6 +97,45 @@ type FileSystemService struct {
 	local *vcs.GitClient
 	repo  *vcs.GitClient
 	opts  *FileSystemServiceOptions
+}
+
+func (s *FileSystemService) List(path string) (files []entity.FsFileInfo, err error) {
+	// forbidden if not master
+	if !s.opts.IsMaster {
+		return files, constants.ErrForbidden
+	}
+
+	// normalize path
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	remotePath := fmt.Sprintf("%s%s", s.opts.FsPath, path)
+
+	// list items of remote path recursively
+	items, err := s.fs.ListDir(remotePath, false)
+	if err != nil {
+		return files, err
+	}
+	for _, item := range items {
+		info := entity.FsFileInfo{
+			Name:      item.Name,
+			Path:      item.FullPath,
+			Extension: item.Extension,
+			Md5:       item.Md5,
+			IsDir:     item.IsDir,
+			FileSize:  item.FileSize,
+		}
+		if item.IsDir {
+			relativePath := strings.Replace(item.FullPath, s.opts.FsPath, "", 1)
+			info.Children, err = s.List(relativePath)
+			if err != nil {
+				return files, err
+			}
+		}
+		files = append(files, info)
+	}
+
+	return files, nil
 }
 
 func (s *FileSystemService) GetFile(path string) (data []byte, err error) {
