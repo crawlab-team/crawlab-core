@@ -19,4 +19,5 @@ var (
 	ErrTaskError                   = errors.New("task error")
 	ErrTaskCancelled               = errors.New("task cancelled")
 	ErrTaskTerminated              = errors.New("task terminated")
+	ErrUnableToCancelTask          = errors.New("unable to cancel task")
 )
