@@ -210,8 +210,13 @@ func (s *FileSystemService) Commit(msg string) (err error) {
 		return err
 	}
 
-	// commit to repo
+	// commit
 	if err := c.CommitAll(msg); err != nil {
+		return err
+	}
+
+	// push to repo
+	if err := c.Push(vcs.GitDefaultRemoteName); err != nil {
 		return err
 	}
 
@@ -252,11 +257,7 @@ func (s *FileSystemService) SyncToWorkspace() (err error) {
 
 	// create workspace directory if not exists
 	if _, err := os.Stat(s.opts.WorkspacePath); err != nil {
-		if err == os.ErrNotExist {
-			if err := os.MkdirAll(s.opts.WorkspacePath, os.ModePerm); err != nil {
-				return err
-			}
-		} else {
+		if err := os.MkdirAll(s.opts.WorkspacePath, os.ModePerm); err != nil {
 			return err
 		}
 	}

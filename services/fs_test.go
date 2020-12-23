@@ -144,7 +144,6 @@ func TestFileSystemService_Commit(t *testing.T) {
 	err := setupFs()
 	require.Nil(t, err)
 
-	// TODO: implement
 	// create a master fs service
 	s, err := NewFileSystemService(&FileSystemServiceOptions{
 		IsMaster: true,
@@ -186,25 +185,6 @@ func TestFileSystemService_SyncToFs(t *testing.T) {
 	err := setupFs()
 	require.Nil(t, err)
 
-	// TODO: implement
-	// create a master fs service
-	//s, err := NewFileSystemService(&FileSystemServiceOptions{
-	//   IsMaster: true,
-	//   FsPath:   "/test",
-	//   RepoPath: "./tmp/test_repo",
-	//})
-
-	// cleanupFs
-	err = cleanupFs()
-	require.Nil(t, err)
-}
-
-func TestFileSystemService_SyncToWorkspace(t *testing.T) {
-	// setupFs
-	err := setupFs()
-	require.Nil(t, err)
-
-	// TODO: implement
 	// create a master fs service
 	s, err := NewFileSystemService(&FileSystemServiceOptions{
 		IsMaster: true,
@@ -221,6 +201,114 @@ func TestFileSystemService_SyncToWorkspace(t *testing.T) {
 	// commit to repo
 	err = s.Commit("test commit")
 	require.Nil(t, err)
+
+	// edit the file
+	content2 := "hello world"
+	err = s.Save("test_file.txt", []byte(content2))
+	require.Nil(t, err)
+
+	// test file content
+	data, err := s.GetFile("test_file.txt")
+	require.Nil(t, err)
+	require.Equal(t, content2, string(data))
+
+	// sync to fs
+	err = s.SyncToFs()
+	require.Nil(t, err)
+
+	// test file content
+	data, err = s.GetFile("test_file.txt")
+	require.Nil(t, err)
+	require.Equal(t, content, string(data))
+
+	// cleanupFs
+	err = cleanupFs()
+	require.Nil(t, err)
+}
+
+func TestFileSystemService_SyncToWorkspace(t *testing.T) {
+	// setupFs
+	err := setupFs()
+	require.Nil(t, err)
+
+	// create a master fs service
+	s, err := NewFileSystemService(&FileSystemServiceOptions{
+		IsMaster: true,
+		FsPath:   "/test",
+		RepoPath: "./tmp/test_repo",
+	})
+	require.Nil(t, err)
+
+	// save new file to remote
+	content := "it works"
+	err = s.Save("test_file.txt", []byte(content))
+	require.Nil(t, err)
+
+	// create a worker fs service
+	s2, err := NewFileSystemService(&FileSystemServiceOptions{
+		IsMaster:      false,
+		FsPath:        "/test",
+		WorkspacePath: "./tmp/test_workspace",
+	})
+	require.Nil(t, err)
+
+	// sync to workspace
+	err = s2.SyncToWorkspace()
+	require.Nil(t, err)
+	require.FileExists(t, "./tmp/test_workspace/test_file.txt")
+	data, err := ioutil.ReadFile("./tmp/test_workspace/test_file.txt")
+	require.Nil(t, err)
+	require.Equal(t, content, string(data))
+
+	// cleanupFs
+	err = cleanupFs()
+	require.Nil(t, err)
+}
+
+func TestFileSystemService_WorkerFsService(t *testing.T) {
+	// setupFs
+	err := setupFs()
+	require.Nil(t, err)
+
+	// create a master fs service
+	s, err := NewFileSystemService(&FileSystemServiceOptions{
+		IsMaster: true,
+		FsPath:   "/test",
+		RepoPath: "./tmp/test_repo",
+	})
+	require.Nil(t, err)
+
+	// save new file to remote
+	content := "it works"
+	err = s.Save("test_file.txt", []byte(content))
+	require.Nil(t, err)
+
+	// create a worker fs service
+	s2, err := NewFileSystemService(&FileSystemServiceOptions{
+		IsMaster:      false,
+		FsPath:        "/test",
+		WorkspacePath: "./tmp/test_workspace",
+	})
+	require.Nil(t, err)
+
+	// test methods
+	_, err = s2.GetFile("test_file.txt")
+	require.Equal(t, constants.ErrForbidden, err)
+	err = s2.Save("test_file.txt", []byte("it works"))
+	require.Equal(t, constants.ErrForbidden, err)
+	err = s2.Rename("test_file.txt", "new_test_file.txt")
+	require.Equal(t, constants.ErrForbidden, err)
+	err = s2.Delete("test_file.txt")
+	require.Equal(t, constants.ErrForbidden, err)
+	err = s2.Commit("test commit")
+	require.Equal(t, constants.ErrForbidden, err)
+	err = s2.SyncToFs()
+	require.Equal(t, constants.ErrForbidden, err)
+	err = s2.SyncToWorkspace()
+	require.Nil(t, err)
+	data, err := ioutil.ReadFile("./tmp/test_workspace/test_file.txt")
+	require.Nil(t, err)
+	require.Equal(t, content, string(data))
 
 	// cleanupFs
 	err = cleanupFs()
