@@ -10,6 +10,8 @@ import (
 	"github.com/linxGnu/goseaweedfs"
 	"os"
 	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -71,6 +73,9 @@ func NewFileSystemService(options *FileSystemServiceOptions) (s *FileSystemServi
 			IsBare: true,
 			IsMem:  false,
 		})
+		if err != nil {
+			return s, err
+		}
 
 		// local temp repo (mem)
 		local, err = vcs.NewGitClient(&vcs.GitOptions{
@@ -79,6 +84,9 @@ func NewFileSystemService(options *FileSystemServiceOptions) (s *FileSystemServi
 			IsBare:    false,
 			IsMem:     true,
 		})
+		if err != nil {
+			return s, err
+		}
 	}
 
 	// file system service
@@ -327,10 +335,20 @@ func (s *FileSystemService) GetLocalTempGitClient() (c *vcs.GitClient, dirPath s
 		}
 	}
 
+	// absolute repo path
+	matched, _ := regexp.MatchString("^http|^ssh", s.opts.RepoPath)
+	repoPath := s.opts.RepoPath
+	if !matched {
+		repoPath, err = filepath.Abs(repoPath)
+		if err != nil {
+			return c, dirPath, err
+		}
+	}
+
 	// create git client
 	c, err = vcs.NewGitClient(&vcs.GitOptions{
 		Path:      dirPath,
-		RemoteUrl: s.opts.RepoPath,
+		RemoteUrl: repoPath,
 		IsBare:    false,
 		IsMem:     false,
 	})

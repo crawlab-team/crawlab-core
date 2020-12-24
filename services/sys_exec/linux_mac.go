@@ -23,7 +23,7 @@ func Setpgid(cmd *exec.Cmd) {
 }
 
 func KillProcess(cmd *exec.Cmd) error {
-	if cmd == nil {
+	if cmd == nil || cmd.Process == nil {
 		return nil
 	}
 	return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)

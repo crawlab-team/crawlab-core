@@ -164,8 +164,7 @@ func (s *TaskService) Run(t model.Task) (err error) {
 
 	// create a new task runner
 	runner, err := NewTaskRunner(&TaskRunnerOptions{
-		Task:    &t,
-		Channel: make(chan constants.TaskSignal),
+		Task: &t,
 	})
 
 	// save runner to pool

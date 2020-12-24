@@ -37,4 +37,5 @@ const (
 	TaskSignalFinish TaskSignal = iota
 	TaskSignalCancel
 	TaskSignalError
+	TaskSignalLost
 )

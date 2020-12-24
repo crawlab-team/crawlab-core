@@ -107,7 +107,9 @@ func (spider *Spider) Add() error {
 	s, c := database.GetCol("spiders")
 	defer s.Close()
 
-	spider.Id = bson.NewObjectId()
+	if !bson.IsObjectIdHex(spider.Id.Hex()) {
+		spider.Id = bson.NewObjectId()
+	}
 	spider.CreateTs = time.Now()
 	spider.UpdateTs = time.Now()
 

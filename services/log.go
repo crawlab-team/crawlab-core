@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// =========================
+// TODO: BELOW ARE OLD CODE
+// =========================
 // 任务日志频道映射
 var TaskLogChanMap = utils.NewChanMap()
 
