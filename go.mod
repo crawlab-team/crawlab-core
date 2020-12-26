@@ -3,6 +3,7 @@ module github.com/crawlab-team/crawlab-core
 go 1.15
 
 replace (
+	github.com/crawlab-team/crawlab-db => /Users/marvzhang/projects/crawlab-team/crawlab-db
 	github.com/crawlab-team/crawlab-fs => /Users/marvzhang/projects/crawlab-team/crawlab-fs
 	github.com/crawlab-team/crawlab-log => /Users/marvzhang/projects/crawlab-team/crawlab-log
 	github.com/crawlab-team/crawlab-vcs => /Users/marvzhang/projects/crawlab-team/crawlab-vcs
@@ -17,7 +18,7 @@ require (
 	github.com/aokoli/goutils v1.0.1 // indirect
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/crawlab-team/crawlab-db v0.0.2
+	github.com/crawlab-team/crawlab-db v0.0.0
 	github.com/crawlab-team/crawlab-fs v0.0.0
 	github.com/crawlab-team/crawlab-log v0.0.0
 	github.com/crawlab-team/crawlab-vcs v0.0.0

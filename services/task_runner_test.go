@@ -17,15 +17,24 @@ import (
 	"time"
 )
 
-var spiderId = bson.NewObjectId()
-var spider model.Spider
-var taskId = uuid.New().String()
-var task model.Task
-var fs *FileSystemService
-var fsPath = fmt.Sprintf("%s/%s", "/spiders", spiderId.Hex())
-var repoPath = fmt.Sprintf("./tmp/repo/%s", spiderId.Hex())
+type TaskRunnerTestObject struct {
+	spiderId bson.ObjectId
+	spider   model.Spider
+	taskId   string
+	task     model.Task
+	fs       *FileSystemService
+	fsPath   string
+	repoPath string
+}
 
-func setupTaskRunner() (err error) {
+func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
+	// test object
+	to = &TaskRunnerTestObject{}
+	to.spiderId = bson.NewObjectId()
+	to.taskId = uuid.New().String()
+	to.fsPath = fmt.Sprintf("%s/%s", "/spiders", to.spiderId.Hex())
+	to.repoPath = fmt.Sprintf("./tmp/repo/%s", to.spiderId.Hex())
+
 	// set debug
 	viper.Set("debug", true)
 
@@ -34,7 +43,7 @@ func setupTaskRunner() (err error) {
 	viper.Set("mongo.port", "27017")
 	viper.Set("mongo.db", "test")
 	if err := db.InitMongo(); err != nil {
-		return err
+		return to, err
 	}
 
 	// set paths
@@ -43,21 +52,21 @@ func setupTaskRunner() (err error) {
 	viper.Set("spider.workspace", "./tmp/workspace")
 
 	// cleanup
-	cleanupTaskRunner()
+	cleanupTaskRunner(to)
 
 	// fs
-	fs, err = NewFileSystemService(&FileSystemServiceOptions{
+	to.fs, err = NewFileSystemService(&FileSystemServiceOptions{
 		IsMaster: true,
-		FsPath:   fsPath,
-		RepoPath: repoPath,
+		FsPath:   to.fsPath,
+		RepoPath: to.repoPath,
 	})
 	if err != nil {
-		return err
+		return to, err
 	}
 
 	// spider
-	spider = model.Spider{
-		Id:   spiderId,
+	to.spider = model.Spider{
+		Id:   to.spiderId,
 		Name: "test_spider",
 		Type: constants.Customized,
 		Cmd:  "python main.py",
@@ -69,48 +78,51 @@ func setupTaskRunner() (err error) {
 		ProjectId: bson.ObjectIdHex(constants.ObjectIdNull),
 		UserId:    bson.ObjectIdHex(constants.ObjectIdNull),
 	}
-	if err := spider.Add(); err != nil {
-		return err
+	if err := to.spider.Add(); err != nil {
+		return to, err
 	}
 
 	// task
-	task = model.Task{
-		Id:       taskId,
-		SpiderId: spiderId,
+	to.task = model.Task{
+		Id:       to.taskId,
+		SpiderId: to.spiderId,
 		Type:     constants.TaskTypeSpider,
+	}
+	if err := model.AddTask(to.task); err != nil {
+		return to, err
 	}
 
 	// add python script
 	pythonScript := `print('it works')`
-	if err := fs.Save("main.py", []byte(pythonScript)); err != nil {
-		return err
+	if err := to.fs.Save("main.py", []byte(pythonScript)); err != nil {
+		return to, err
 	}
 
 	// commit
-	if err := fs.Commit("initial commit"); err != nil {
-		return err
+	if err := to.fs.Commit("initial commit"); err != nil {
+		return to, err
 	}
 
-	return nil
+	return to, nil
 }
 
-func cleanupTaskRunner() {
+func cleanupTaskRunner(to *TaskRunnerTestObject) {
 	if m, err := cfs.NewSeaweedFSManager(); err == nil {
 		_ = m.DeleteDir("/logs")
 		_ = m.DeleteDir("/spiders")
 	}
-	_ = model.RemoveSpider(spiderId)
-	_ = model.RemoveTask(taskId)
+	_ = model.RemoveSpider(to.spiderId)
+	_ = model.RemoveTask(to.taskId)
 	_ = os.RemoveAll("./tmp/repo")
 }
 
 func TestNewTaskRunner(t *testing.T) {
-	err := setupTaskRunner()
+	to, err := setupTaskRunner()
 	require.Nil(t, err)
 
 	// create task runner
 	runner, err := NewTaskRunner(&TaskRunnerOptions{
-		Task:          &task,
+		TaskId:        to.task.Id,
 		LogDriverType: clog.DriverTypeFs,
 	})
 	require.Nil(t, err)
@@ -120,16 +132,16 @@ func TestNewTaskRunner(t *testing.T) {
 	require.NotNil(t, runner.l)
 	require.NotNil(t, runner.ch)
 
-	cleanupTaskRunner()
+	cleanupTaskRunner(to)
 }
 
 func TestTaskRunner_Run(t *testing.T) {
-	err := setupTaskRunner()
+	to, err := setupTaskRunner()
 	require.Nil(t, err)
 
 	// create task runner
 	runner, err := NewTaskRunner(&TaskRunnerOptions{
-		Task:          &task,
+		TaskId:        to.task.Id,
 		LogDriverType: clog.DriverTypeFs,
 	})
 	require.Nil(t, err)
@@ -144,23 +156,23 @@ func TestTaskRunner_Run(t *testing.T) {
 	require.Len(t, lines, 1)
 	require.Equal(t, "it works", lines[0])
 
-	cleanupTaskRunner()
+	cleanupTaskRunner(to)
 }
 
 func TestTaskRunner_RunWithError(t *testing.T) {
-	err := setupTaskRunner()
+	to, err := setupTaskRunner()
 	require.Nil(t, err)
 
 	// add error python script
 	pythonScript := `
 raise Exception('an error')
 `
-	err = fs.Save("main.py", []byte(pythonScript))
+	err = to.fs.Save("main.py", []byte(pythonScript))
 	require.Nil(t, err)
 
 	// create task runner
 	runner, err := NewTaskRunner(&TaskRunnerOptions{
-		Task:          &task,
+		TaskId:        to.task.Id,
 		LogDriverType: clog.DriverTypeFs,
 	})
 	require.Nil(t, err)
@@ -182,11 +194,11 @@ raise Exception('an error')
 	}
 	require.True(t, hasExceptionLog)
 
-	cleanupTaskRunner()
+	cleanupTaskRunner(to)
 }
 
 func TestTaskRunner_RunLong(t *testing.T) {
-	err := setupTaskRunner()
+	to, err := setupTaskRunner()
 	require.Nil(t, err)
 
 	// add a long task python script
@@ -199,12 +211,12 @@ for i in range(%d):
     time.sleep(1)
     sys.stdout.flush()
 `, n)
-	err = fs.Save("main.py", []byte(pythonScript))
+	err = to.fs.Save("main.py", []byte(pythonScript))
 	require.Nil(t, err)
 
 	// create task runner
 	runner, err := NewTaskRunner(&TaskRunnerOptions{
-		Task:          &task,
+		TaskId:        to.task.Id,
 		LogDriverType: clog.DriverTypeFs,
 	})
 	require.Nil(t, err)
@@ -221,11 +233,11 @@ for i in range(%d):
 		require.Equal(t, fmt.Sprintf("line: %d", i), line)
 	}
 
-	cleanupTaskRunner()
+	cleanupTaskRunner(to)
 }
 
 func TestTaskRunner_Cancel(t *testing.T) {
-	err := setupTaskRunner()
+	to, err := setupTaskRunner()
 	require.Nil(t, err)
 
 	// add a long task python script
@@ -238,12 +250,12 @@ for i in range(%d):
     time.sleep(1)
     sys.stdout.flush()
 `, n)
-	err = fs.Save("main.py", []byte(pythonScript))
+	err = to.fs.Save("main.py", []byte(pythonScript))
 	require.Nil(t, err)
 
 	// create task runner
 	runner, err := NewTaskRunner(&TaskRunnerOptions{
-		Task:          &task,
+		TaskId:        to.task.Id,
 		LogDriverType: clog.DriverTypeFs,
 	})
 	require.Nil(t, err)
@@ -264,5 +276,5 @@ for i in range(%d):
 	require.Nil(t, err)
 	require.Greater(t, len(lines), 0)
 
-	cleanupTaskRunner()
+	cleanupTaskRunner(to)
 }

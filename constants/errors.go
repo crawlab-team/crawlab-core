@@ -17,6 +17,7 @@ var (
 	ErrNoTasksAvailable            = errors.New("no tasks available")
 	ErrInvalidType                 = errors.New("invalid type")
 	ErrInvalidSignal               = errors.New("invalid signal")
+	ErrEmptyValue                  = errors.New("empty value")
 	ErrTaskError                   = errors.New("task error")
 	ErrTaskLost                    = errors.New("task lost")
 	ErrTaskCancelled               = errors.New("task cancelled")

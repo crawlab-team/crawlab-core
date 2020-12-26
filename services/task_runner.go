@@ -23,58 +23,32 @@ type TaskRunnerInterface interface {
 }
 
 type TaskRunnerOptions struct {
-	Task          *model.Task // Task to run
-	LogDriverType string      // log driver type
+	TaskService   *TaskService // TaskService on which the TaskRunner is executed
+	TaskId        string       // id of task (model.Task) to run
+	LogDriverType string       // log driver type
 }
 
 func NewTaskRunner(options *TaskRunnerOptions) (r *TaskRunner, err error) {
 	// validate options
-	if options.Task == nil {
+	if options == nil {
+		return r, constants.ErrInvalidOptions
+	}
+	if options.TaskId == "" {
 		return r, constants.ErrInvalidOptions
 	}
 
-	// task
-	t := options.Task
-
-	// spider
-	spider, err := model.GetSpider(t.SpiderId)
-	if err != nil {
-		return r, err
-	}
-	s := &spider
-
-	// worker file system service using a temp directory
-	fsPath := fmt.Sprintf("%s/%s", viper.GetString("spider.path"), s.Id.Hex())
-	//cwd := fmt.Sprintf("%s/%s", viper.GetString("spider.workspace"), uuid.New().String())
-	cwd := fmt.Sprintf("%s/%s", os.TempDir(), uuid.New().String())
-	fs, err := NewFileSystemService(&FileSystemServiceOptions{
-		IsMaster:      false,
-		FsPath:        fsPath,
-		WorkspacePath: cwd,
-	})
-	if err != nil {
-		return r, err
-	}
-
-	// sync files to workspace
-	if err := fs.SyncToWorkspace(); err != nil {
-		return r, err
-	}
+	// task service
+	svc := options.TaskService
 
 	// task runner
 	r = &TaskRunner{
-		fs:   fs,
-		t:    t,
-		s:    s,
+		svc:  svc,
 		ch:   make(chan constants.TaskSignal),
-		cwd:  cwd,
 		opts: options,
 	}
 
-	// log driver
-	// TODO: configure TTL
-	r.l, err = r.getLogDriver()
-	if err != nil {
+	// initialize task runner
+	if err := r.Init(); err != nil {
 		return r, err
 	}
 
@@ -84,10 +58,12 @@ func NewTaskRunner(options *TaskRunnerOptions) (r *TaskRunner, err error) {
 type TaskRunner struct {
 	cmd  *exec.Cmd                 // process command instance
 	pid  int                       // process id
-	fs   *FileSystemService        // file system service
-	l    clog.Driver               // log service
-	t    *model.Task               // task
-	s    *model.Spider             // spider
+	svc  *TaskService              // TaskService
+	fs   *FileSystemService        // file system service FileSystemService
+	l    clog.Driver               // log service log.Driver
+	tid  string                    // id of t (model.Task)
+	t    *model.Task               // task model.Task
+	s    *model.Spider             // spider model.Spider
 	ch   chan constants.TaskSignal // channel to communicate between TaskService and TaskRunner
 	envs []model.Env               // environment variables
 	opts *TaskRunnerOptions        // options
@@ -98,7 +74,52 @@ type TaskRunner struct {
 	scannerStderr *bufio.Scanner
 }
 
+func (r *TaskRunner) Init() (err error) {
+	// update task
+	if err := r.updateTask(""); err != nil {
+		return err
+	}
+
+	// spider
+	*r.s, err = model.GetSpider(r.t.SpiderId)
+	if err != nil {
+		return err
+	}
+
+	// worker file system service using a temp directory
+	fsPath := fmt.Sprintf("%s/%s", viper.GetString("spider.path"), r.s.Id.Hex())
+	//cwd := fmt.Sprintf("%s/%s", viper.GetString("spider.workspace"), uuid.New().String())
+	cwd := fmt.Sprintf("%s/%s", os.TempDir(), uuid.New().String())
+	r.fs, err = NewFileSystemService(&FileSystemServiceOptions{
+		IsMaster:      false,
+		FsPath:        fsPath,
+		WorkspacePath: cwd,
+	})
+	if err != nil {
+		return err
+	}
+
+	// sync files to workspace
+	if err := r.fs.SyncToWorkspace(); err != nil {
+		return err
+	}
+
+	// log driver
+	// TODO: configure TTL
+	r.l, err = r.getLogDriver()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *TaskRunner) Run() (err error) {
+	// update task status (processing)
+	if err := r.updateTask(constants.StatusRunning); err != nil {
+		return err
+	}
+
 	// configure cmd
 	if err := r.configureCmd(); err != nil {
 		return err
@@ -134,19 +155,37 @@ func (r *TaskRunner) Run() (err error) {
 	// start health check
 	go r.startHealthCheck()
 
+	// declare task status
+	status := ""
+
 	// wait for signal
 	signal := <-r.ch
 	switch signal {
 	case constants.TaskSignalFinish:
 		err = nil
+		status = constants.StatusFinished
 	case constants.TaskSignalCancel:
 		err = constants.ErrTaskCancelled
+		status = constants.StatusCancelled
 	case constants.TaskSignalError:
 		err = constants.ErrTaskError
+		status = constants.StatusError
 	case constants.TaskSignalLost:
 		err = constants.ErrTaskLost
+		status = constants.StatusError
 	default:
-		return constants.ErrInvalidSignal
+		err = constants.ErrInvalidSignal
+		status = constants.StatusError
+	}
+
+	// validate task status
+	if status == "" {
+		return constants.ErrInvalidType
+	}
+
+	// update task status
+	if err := r.updateTask(status); err != nil {
+		return err
 	}
 
 	// flush log
@@ -183,15 +222,27 @@ func (r *TaskRunner) Cancel() (err error) {
 }
 
 func (r *TaskRunner) Dispose() (err error) {
+	// validate whether it is disposable
 	if r.cwd == "" {
 		return constants.ErrUnableToDispose
 	}
 	if _, err := os.Stat(r.cwd); err != nil {
 		return constants.ErrAlreadyDisposed
 	}
+
+	// remove working directory
 	if err := os.RemoveAll(r.cwd); err != nil {
 		return err
 	}
+
+	// remove in TaskService
+	if r.svc != nil {
+		if err := r.removeTaskRunner(r.t.Id); err != nil {
+			return err
+		}
+	}
+
+	// remove
 	return nil
 }
 
@@ -372,6 +423,8 @@ func (r *TaskRunner) configureEnv() (err error) {
 	return nil
 }
 
+// wait for process to finish and send task signal (constants.TaskSignal)
+// to task runner's channel (TaskRunner.ch) according to exit code
 func (r *TaskRunner) wait() {
 	// wait for process to finish
 	if err := r.cmd.Wait(); err != nil {
@@ -394,4 +447,35 @@ func (r *TaskRunner) wait() {
 
 	// success
 	r.ch <- constants.TaskSignalFinish
+}
+
+// update and get updated info of task (TaskRunner.t)
+func (r *TaskRunner) updateTask(status string) (err error) {
+	// update task status
+	if r.t != nil && status != "" {
+		r.t.Status = status
+		if err := r.t.Save(); err != nil {
+			return err
+		}
+	}
+
+	// get task
+	t, err := model.GetTask(r.tid)
+	if err != nil {
+		return err
+	}
+
+	// set task
+	r.t = &t
+
+	return nil
+}
+
+func (r *TaskRunner) removeTaskRunner(taskId string) (err error) {
+	_, ok := r.svc.runners.Load(taskId)
+	if !ok {
+		return constants.ErrNotExists
+	}
+	r.svc.runners.Delete(taskId)
+	return nil
 }
