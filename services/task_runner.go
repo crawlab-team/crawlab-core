@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"os/exec"
-	"sync"
 	"time"
 )
 
@@ -95,11 +94,8 @@ type TaskRunner struct {
 	cwd  string                    // working directory
 
 	// log internals
-	writeLock     *sync.Mutex
 	scannerStdout *bufio.Scanner
 	scannerStderr *bufio.Scanner
-	readerStdout  *bufio.Reader
-	readerStderr  *bufio.Reader
 }
 
 func (r *TaskRunner) Run() (err error) {
@@ -253,30 +249,13 @@ func (r *TaskRunner) getLogDriverOptions() (options interface{}) {
 }
 
 func (r *TaskRunner) configureLogging() (err error) {
-	// set write lock
-	r.writeLock = &sync.Mutex{}
-
-	// buffer
-	//buf := new([]byte)
-	//buf := make([]byte, 1024)
-
 	// set stdout reader
-	stdout, err := r.cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
+	stdout, _ := r.cmd.StdoutPipe()
 	r.scannerStdout = bufio.NewScanner(stdout)
-	//r.scannerStdout.Buffer(buf, 4096)
-	//r.cmd.Stdout = r.l
 
 	// set stderr reader
-	stderr, err := r.cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
+	stderr, _ := r.cmd.StderrPipe()
 	r.scannerStderr = bufio.NewScanner(stderr)
-	//r.scannerStderr.Buffer(buf, 4096)
-	//r.cmd.Stdout = r.l
 
 	return nil
 }
@@ -301,6 +280,7 @@ func (r *TaskRunner) startLoggingReaderStdout() {
 }
 
 func (r *TaskRunner) startLoggingReaderStderr() {
+	utils.LogDebug("begin startLoggingReaderStderr")
 	for r.scannerStderr.Scan() {
 		line := r.scannerStderr.Text()
 		utils.LogDebug(fmt.Sprintf("scannerStderr line: %s", line))

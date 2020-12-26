@@ -193,9 +193,11 @@ func TestTaskRunner_RunLong(t *testing.T) {
 	n := 5
 	pythonScript := fmt.Sprintf(`
 import time
+import sys
 for i in range(%d):
-   print('line: ' + str(i))
-   time.sleep(1)
+    print('line: ' + str(i))
+    time.sleep(1)
+    sys.stdout.flush()
 `, n)
 	err = fs.Save("main.py", []byte(pythonScript))
 	require.Nil(t, err)
@@ -230,9 +232,11 @@ func TestTaskRunner_Cancel(t *testing.T) {
 	n := 10
 	pythonScript := fmt.Sprintf(`
 import time
+import sys
 for i in range(%d):
-   print('line: ' + str(i))
-   time.sleep(1)
+    print('line: ' + str(i))
+    time.sleep(1)
+    sys.stdout.flush()
 `, n)
 	err = fs.Save("main.py", []byte(pythonScript))
 	require.Nil(t, err)
