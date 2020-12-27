@@ -178,30 +178,33 @@ func (s *TaskService) Run(taskId string) (err error) {
 	}
 
 	// create a new task runner
-	runner, err := NewTaskRunner(&TaskRunnerOptions{
+	r, err := NewTaskRunner(&TaskRunnerOptions{
 		TaskId: taskId,
 	})
+	if err != nil {
+		return err
+	}
 
 	// save runner to pool
-	s.runners.Store(taskId, runner)
+	s.runners.Store(taskId, r)
 	s.runnersCount++
 
 	// create a goroutine to run task
 	go func() {
 		// run task process (blocking)
 		// error or finish after task runner ends
-		if err := runner.Run(); err != nil {
+		if err := r.Run(); err != nil {
 			switch err {
 			case constants.ErrTaskError:
-				log.Error(fmt.Sprintf("task (_id=%s) finished with error: %s", runner.tid, err.Error()))
+				log.Error(fmt.Sprintf("task (_id=%s) finished with error: %s", r.tid, err.Error()))
 			case constants.ErrTaskCancelled:
-				log.Error(fmt.Sprintf("task (_id=%s) was cancelled", runner.tid))
+				log.Error(fmt.Sprintf("task (_id=%s) was cancelled", r.tid))
 			default:
-				log.Error(fmt.Sprintf("task (_id=%s) finished with unknown error: %s", runner.tid, err.Error()))
+				log.Error(fmt.Sprintf("task (_id=%s) finished with unknown error: %s", r.tid, err.Error()))
 			}
 			return
 		}
-		log.Error(fmt.Sprintf("task (_id=%s) finished", runner.tid))
+		log.Error(fmt.Sprintf("task (_id=%s) finished", r.tid))
 	}()
 
 	return nil

@@ -50,7 +50,7 @@ func (to *TaskTestObject) CreateSpider(name string) (s *model.Spider, err error)
 		Id:   bson.NewObjectId(),
 		Name: name,
 		Type: constants.Customized,
-		Cmd:  fmt.Sprintf("python %s.py", name),
+		Cmd:  "python main.py",
 		Envs: []model.Env{
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
@@ -113,11 +113,11 @@ func setupTask() (to *TaskTestObject, err error) {
 	// cleanup
 	cleanupTask(to)
 
-	// fs
+	// fs (global)
+	to.fsPath = viper.GetString("spider.path")
 	to.fs, err = NewFileSystemService(&FileSystemServiceOptions{
 		IsMaster: true,
 		FsPath:   to.fsPath,
-		RepoPath: to.repoPath,
 	})
 	if err != nil {
 		return to, err
@@ -150,7 +150,7 @@ func setupTask() (to *TaskTestObject, err error) {
 
 	// add scripts
 	py1 := `print('it works')`
-	if err := to.fs.Save("s1.py", []byte(py1)); err != nil {
+	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[0].Id.Hex()), []byte(py1)); err != nil {
 		return to, err
 	}
 	py2 := `
@@ -158,13 +158,14 @@ import time
 import sys
 for i in range(3):
     print('line: ' + str(i))
+    time.sleep(1)
     sys.stdout.flush()
 `
-	if err := to.fs.Save("s2.py", []byte(py2)); err != nil {
+	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[1].Id.Hex()), []byte(py2)); err != nil {
 		return to, err
 	}
 	py3 := `print('it works')`
-	if err := to.fs.Save("s3.py", []byte(py3)); err != nil {
+	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[2].Id.Hex()), []byte(py3)); err != nil {
 		return to, err
 	}
 
@@ -302,6 +303,7 @@ func TestTaskService_Run(t *testing.T) {
 	err = s.Run(task.Id)
 	require.Equal(t, constants.ErrAlreadyExists, err)
 	require.Equal(t, 1, s.runnersCount)
+	time.Sleep(1 * time.Second)
 	*task, err = model.GetTask(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)

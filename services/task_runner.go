@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"os/exec"
+	"path"
 	"time"
 )
 
@@ -37,12 +38,18 @@ func NewTaskRunner(options *TaskRunnerOptions) (r *TaskRunner, err error) {
 		return r, constants.ErrInvalidOptions
 	}
 
+	// normalize LogDriverType
+	if options.LogDriverType == "" {
+		options.LogDriverType = clog.DriverTypeFs
+	}
+
 	// task service
 	svc := options.TaskService
 
 	// task runner
 	r = &TaskRunner{
 		svc:  svc,
+		tid:  options.TaskId,
 		ch:   make(chan constants.TaskSignal),
 		opts: options,
 	}
@@ -81,19 +88,20 @@ func (r *TaskRunner) Init() (err error) {
 	}
 
 	// spider
-	*r.s, err = model.GetSpider(r.t.SpiderId)
+	s, err := model.GetSpider(r.t.SpiderId)
 	if err != nil {
 		return err
 	}
+	r.s = &s
 
 	// worker file system service using a temp directory
 	fsPath := fmt.Sprintf("%s/%s", viper.GetString("spider.path"), r.s.Id.Hex())
 	//cwd := fmt.Sprintf("%s/%s", viper.GetString("spider.workspace"), uuid.New().String())
-	cwd := fmt.Sprintf("%s/%s", os.TempDir(), uuid.New().String())
+	r.cwd = path.Join(os.TempDir(), uuid.New().String())
 	r.fs, err = NewFileSystemService(&FileSystemServiceOptions{
 		IsMaster:      false,
 		FsPath:        fsPath,
-		WorkspacePath: cwd,
+		WorkspacePath: r.cwd,
 	})
 	if err != nil {
 		return err
