@@ -84,9 +84,12 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 
 	// task
 	to.task = model.Task{
-		Id:       to.taskId,
-		SpiderId: to.spiderId,
-		Type:     constants.TaskTypeSpider,
+		Id:         to.taskId,
+		SpiderId:   to.spiderId,
+		Type:       constants.TaskTypeSpider,
+		ScheduleId: bson.ObjectIdHex(constants.ObjectIdNull),
+		NodeId:     bson.ObjectIdHex(constants.ObjectIdNull),
+		UserId:     bson.ObjectIdHex(constants.ObjectIdNull),
 	}
 	if err := model.AddTask(to.task); err != nil {
 		return to, err
