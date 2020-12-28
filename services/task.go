@@ -16,6 +16,7 @@ import (
 
 type TaskServiceInterface interface {
 	Init() (err error)
+	Close()
 	Assign(t model.Task) (err error)
 	Fetch() (t model.Task, err error)
 	Run(taskId string) (err error)
@@ -61,13 +62,27 @@ func NewTaskService(options *TaskServiceOptions) (s *TaskService, err error) {
 type TaskService struct {
 	runnersCount int                 // number of task runners
 	runners      sync.Map            // pool of task runners started
+	active       bool                // whether the task service is active
 	opts         *TaskServiceOptions // options
 }
 
 func (s *TaskService) Init() (err error) {
+	// set TaskService.active to true
+	s.active = true
+
 	for {
+		// stop if TaskService.active is set to false
+		if !s.active {
+			return constants.ErrStopped
+		}
+
 		// wait for a period
-		time.Sleep(5 * time.Second)
+		time.Sleep(time.Duration(s.opts.PollWaitSeconds) * time.Second)
+
+		// stop if TaskService.active is set to false
+		if !s.active {
+			return constants.ErrStopped
+		}
 
 		// skip if exceeding max runners
 		if s.runnersCount >= s.opts.MaxRunners {
@@ -91,6 +106,10 @@ func (s *TaskService) Init() (err error) {
 			log.Error("run task error: " + err.Error())
 		}
 	}
+}
+
+func (s *TaskService) Close() {
+	s.active = false
 }
 
 func (s *TaskService) Assign(t model.Task) (err error) {

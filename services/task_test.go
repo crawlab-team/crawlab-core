@@ -212,14 +212,31 @@ func TestTaskService_Init(t *testing.T) {
 
 	// create master TaskService
 	s, err := NewTaskService(&TaskServiceOptions{
-		IsMaster: true,
+		IsMaster:        true,
+		PollWaitSeconds: 1,
 	})
 	require.Nil(t, err)
+	defer s.Close()
 
 	// test init
 	go s.Init()
 
-	// TODO: test
+	// test assign task
+	task, err := to.CreateTask(to.spiders[1])
+	require.Nil(t, err)
+	err = s.Assign(*task)
+	require.Nil(t, err)
+	*task, err = model.GetTask(task.Id)
+	require.Nil(t, err)
+	require.Equal(t, constants.StatusPending, task.Status)
+	time.Sleep(2 * time.Second)
+	*task, err = model.GetTask(task.Id)
+	require.Nil(t, err)
+	require.Equal(t, constants.StatusRunning, task.Status)
+	time.Sleep(3 * time.Second)
+	*task, err = model.GetTask(task.Id)
+	require.Nil(t, err)
+	require.Equal(t, constants.StatusFinished, task.Status)
 
 	cleanupTask(to)
 }
@@ -233,6 +250,7 @@ func TestTaskService_Assign(t *testing.T) {
 		IsMaster: true,
 	})
 	require.Nil(t, err)
+	defer s.Close()
 
 	// test assign (without init)
 	task, err := to.CreateTask(to.spiders[0])
@@ -261,6 +279,7 @@ func TestTaskService_Fetch(t *testing.T) {
 		IsMaster: true,
 	})
 	require.Nil(t, err)
+	defer s.Close()
 
 	// test fetch (without init)
 	task, err := to.CreateTask(to.spiders[0])
@@ -290,6 +309,7 @@ func TestTaskService_Run(t *testing.T) {
 		IsMaster: true,
 	})
 	require.Nil(t, err)
+	defer s.Close()
 
 	// test run (full process: assign -> fetch -> run)
 	task, err := to.CreateTask(to.spiders[1])
@@ -314,3 +334,78 @@ func TestTaskService_Run(t *testing.T) {
 
 	cleanupTask(to)
 }
+
+func TestTaskService_RunMultipleTasks(t *testing.T) {
+	to, err := setupTask()
+	require.Nil(t, err)
+
+	// create master TaskService
+	s, err := NewTaskService(&TaskServiceOptions{
+		IsMaster:        true,
+		PollWaitSeconds: 1,
+	})
+	require.Nil(t, err)
+	defer s.Close()
+
+	// test init
+	go s.Init()
+
+	// test assign multiple tasks
+	nt := 5
+	for i := 0; i < nt; i++ {
+		task, err := to.CreateTask(to.spiders[1])
+		require.Nil(t, err)
+		err = s.Assign(*task)
+		require.Nil(t, err)
+	}
+	maxRunnersCount := 0
+	for i := 0; i < 20; i++ {
+		if maxRunnersCount < s.runnersCount {
+			maxRunnersCount = s.runnersCount
+		}
+		if maxRunnersCount == 5 {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	require.Equal(t, nt, maxRunnersCount)
+
+	cleanupTask(to)
+}
+
+func TestTaskService_RunMultipleTasksDifferentSpiders(t *testing.T) {
+	to, err := setupTask()
+	require.Nil(t, err)
+
+	// create master TaskService
+	s, err := NewTaskService(&TaskServiceOptions{
+		IsMaster:        true,
+		PollWaitSeconds: 1,
+	})
+	require.Nil(t, err)
+	defer s.Close()
+
+	// test init
+	go s.Init()
+
+	// test assign multiple tasks for different spiders
+	nt := 3
+	for i := 0; i < nt; i++ {
+		task, err := to.CreateTask(to.spiders[i])
+		require.Nil(t, err)
+		err = s.Assign(*task)
+		require.Nil(t, err)
+	}
+	time.Sleep(4 * time.Second)
+	for i := 0; i < nt; i++ {
+		task := to.tasks[i]
+		spider := to.spiders[i]
+		r, err := s.getTaskRunner(task.Id)
+		require.Nil(t, err)
+		require.NotNil(t, r.t)
+		require.Equal(t, spider.Id.Hex(), r.t.SpiderId.Hex())
+	}
+
+	cleanupTask(to)
+}
+
