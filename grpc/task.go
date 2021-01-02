@@ -2,10 +2,129 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/model"
+	db "github.com/crawlab-team/crawlab-db"
 	pb "github.com/crawlab-team/crawlab-grpc"
+	"sync"
+	"time"
 )
+
+var itemQueueMap = map[string]*[]entity.ResultItem{}
+var itemQueueMapLock = sync.Mutex{}
+
+type TaskResultItemServiceOptions struct {
+	FlushWaitSeconds int
+}
+
+func NewTaskResultItemService(options *TaskResultItemServiceOptions) (rs *TaskResultItemService) {
+	// normalize FlushWaitSeconds
+	if options.FlushWaitSeconds == 0 {
+		options.FlushWaitSeconds = 1
+	}
+
+	// task result item service
+	rs = &TaskResultItemService{
+		finished: false,
+		flushing: false,
+		opts:     options,
+	}
+
+	// init
+	rs.Init()
+
+	return rs
+}
+
+type TaskResultItemServiceInterface interface {
+	Init()
+	Stop()
+	Flush() (err error)
+}
+
+type TaskResultItemService struct {
+	TaskResultItemServiceInterface
+	finished bool
+	flushing bool
+	opts     *TaskResultItemServiceOptions
+}
+
+func (s *TaskResultItemService) Init() {
+	go func() {
+		for {
+			// if finished flag is set to true, end
+			if s.finished {
+				return
+			}
+
+			// flush
+			if err := s.Flush(); err != nil {
+				log.Error(fmt.Sprintf("flush error: %s", err.Error()))
+			}
+
+			// wait for a period
+			time.Sleep(time.Duration(s.opts.FlushWaitSeconds) * time.Second)
+		}
+	}()
+}
+
+func (s *TaskResultItemService) Stop() {
+	s.finished = true
+}
+
+func (s *TaskResultItemService) Flush() (err error) {
+	if s.flushing {
+		return nil
+	}
+
+	// lock
+	itemQueueMapLock.Lock()
+
+	for colName, itemQueue := range itemQueueMap {
+		// skip if no item in queue
+		if len(*itemQueue) == 0 {
+			continue
+		}
+
+		// save items
+		if err := s.saveItems(colName, *itemQueue); err != nil {
+			itemQueueMapLock.Unlock()
+			return err
+		}
+
+		// reset queue
+		*itemQueue = []entity.ResultItem{}
+	}
+
+	// reset queue map
+	itemQueueMap = map[string]*[]entity.ResultItem{}
+
+	// unlock
+	itemQueueMapLock.Unlock()
+
+	return err
+}
+
+func (s *TaskResultItemService) saveItems(colName string, items []entity.ResultItem) (err error) {
+	sess, col := db.GetCol(colName)
+	defer sess.Close()
+
+	var _items []interface{}
+	for _, item := range items {
+		_items = append(_items, item)
+	}
+
+	// TODO: dedup
+	if err := col.Insert(_items...); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 type taskService struct {
 	pb.UnimplementedTaskServiceServer
@@ -17,13 +136,13 @@ func (s taskService) GetTaskInfo(ctx context.Context, req *pb.TaskServiceRequest
 	// get task
 	t, err := model.GetTask(req.TaskId)
 	if err != nil {
-		return handleTaskServiceError(err)
+		return nil, err
 	}
 
 	// get spider
 	sp, err := model.GetSpider(t.SpiderId)
 	if err != nil {
-		return handleTaskServiceError(err)
+		return nil, err
 	}
 
 	// get node
@@ -31,7 +150,7 @@ func (s taskService) GetTaskInfo(ctx context.Context, req *pb.TaskServiceRequest
 	if t.NodeId != constants.ObjectIdNull {
 		n, err = model.GetNode(t.NodeId)
 		if err != nil {
-			return handleTaskServiceError(err)
+			return nil, err
 		}
 	}
 
@@ -47,23 +166,97 @@ func (s taskService) GetTaskInfo(ctx context.Context, req *pb.TaskServiceRequest
 	return res, nil
 }
 
+func (s taskService) addItemToQueue(colName string, item entity.ResultItem) {
+	// lock
+	itemQueueMapLock.Lock()
+
+	// attempt to get item queue
+	queue, ok := itemQueueMap[colName]
+
+	if ok {
+		// exists
+		*queue = append(*queue, item)
+	} else {
+		// not exists
+		queue = &[]entity.ResultItem{}
+		*queue = append(*queue, item)
+		itemQueueMap[colName] = queue
+	}
+
+	// unlock
+	itemQueueMapLock.Unlock()
+}
+
+func (s taskService) getColName(req *pb.TaskServiceRequest) (colName string, err error) {
+	// task
+	t, err := model.GetTask(req.TaskId)
+	if err != nil {
+		return "", err
+	}
+
+	// spider
+	sp, err := model.GetSpider(t.SpiderId)
+	if err != nil {
+		return "", err
+	}
+
+	// normalize collection name
+	colName = sp.Col
+	if colName == "" {
+		colName = fmt.Sprintf("results_%s", sp.Id.Hex())
+	}
+
+	return colName, nil
+}
+
 func (s taskService) SaveItem(ctx context.Context, req *pb.TaskServiceRequest) (res *pb.TaskServiceResponse, err error) {
-	// TODO: implement
+	// declare result item
+	var item entity.ResultItem
+
+	// deserialize
+	if err := json.Unmarshal(req.Data, &item); err != nil {
+		return nil, err
+	}
+
+	// collection name
+	colName, err := s.getColName(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// add item to queue
+	s.addItemToQueue(colName, item)
+
+	// response
+	res = handleTaskServiceSuccessResponse()
+
 	return res, nil
 }
 
 func (s taskService) SaveItems(ctx context.Context, req *pb.TaskServiceRequest) (res *pb.TaskServiceResponse, err error) {
-	// TODO: implement
-	return res, nil
-}
+	// declare result items
+	var items []entity.ResultItem
 
-func handleTaskServiceError(e error) (res *pb.TaskServiceResponse, err error) {
-	res = &pb.TaskServiceResponse{
-		Code:   pb.ResponseCode_ERROR,
-		Status: constants.GrpcError,
-		Error:  e.Error(),
+	// deserialize
+	if err := json.Unmarshal(req.Data, &items); err != nil {
+		return nil, err
 	}
-	return res, e
+
+	// collection name
+	colName, err := s.getColName(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// add items to queue
+	for _, item := range items {
+		s.addItemToQueue(colName, item)
+	}
+
+	// response
+	res = handleTaskServiceSuccessResponse()
+
+	return res, nil
 }
 
 func getPbTask(t *model.Task) (pbT *pb.Task) {
@@ -149,4 +342,12 @@ func getPbNode(n *model.Node) (pbN *pb.Node) {
 		UpdateTsUnix: n.UpdateTsUnix,
 	}
 	return pbN
+}
+
+func handleTaskServiceSuccessResponse() (res *pb.TaskServiceResponse) {
+	res = &pb.TaskServiceResponse{
+		Code:   pb.ResponseCode_OK,
+		Status: constants.GrpcSuccess,
+	}
+	return res
 }

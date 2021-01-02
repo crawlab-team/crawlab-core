@@ -26,12 +26,16 @@ type CrawlabGrpcService struct {
 	CrawlabGrpcServiceInterface
 	server *grpc.Server
 	ch     chan int
+	rs     *TaskResultItemService
 }
 
 func (s *CrawlabGrpcService) Init() (err error) {
+	// grpc address
 	host := viper.GetString("grpc.host")
 	port := viper.GetString("grpc.port")
 	address := fmt.Sprintf("%s:%s", host, port)
+
+	// listen
 	listen, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -51,6 +55,11 @@ func (s *CrawlabGrpcService) Init() (err error) {
 			}
 		}
 	}()
+
+	// start task result item service
+	s.rs = NewTaskResultItemService(&TaskResultItemServiceOptions{
+		FlushWaitSeconds: viper.GetInt("grpc.task.flushWaitSeconds"),
+	})
 
 	// start grpc server
 	if err := s.server.Serve(listen); err != nil {

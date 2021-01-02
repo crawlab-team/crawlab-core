@@ -6,26 +6,26 @@ import (
 	"time"
 )
 
-func setup() (err error) {
+func setupService() (err error) {
 	return nil
 }
 
-func cleanup() {
+func cleanupService() {
 }
 
 func TestNewCrawlabGrpcService(t *testing.T) {
-	err := setup()
+	err := setupService()
 	require.Nil(t, err)
 
 	s, err := NewCrawlabGrpcService()
 	require.Nil(t, err)
 	require.NotNil(t, s)
 
-	cleanup()
+	cleanupService()
 }
 
 func TestCrawlabGrpcService_Init(t *testing.T) {
-	err := setup()
+	err := setupService()
 	require.Nil(t, err)
 
 	s, err := NewCrawlabGrpcService()
@@ -45,5 +45,5 @@ func TestCrawlabGrpcService_Init(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	require.True(t, isStopped)
 
-	cleanup()
+	cleanupService()
 }

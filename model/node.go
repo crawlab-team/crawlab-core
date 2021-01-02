@@ -60,7 +60,10 @@ func (n *Node) Save() error {
 func (n *Node) Add() error {
 	s, c := database.GetCol("nodes")
 	defer s.Close()
-	n.Id = bson.NewObjectId()
+
+	if !bson.IsObjectIdHex(n.Id.Hex()) {
+		n.Id = bson.NewObjectId()
+	}
 	n.UpdateTs = time.Now()
 	n.UpdateTsUnix = time.Now().Unix()
 	n.CreateTs = time.Now()
