@@ -4,33 +4,32 @@ import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/utils"
-	database "github.com/crawlab-team/crawlab-db"
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"runtime/debug"
 	"time"
 )
 
 type Task struct {
-	Id              string        `json:"_id" bson:"_id"`
-	SpiderId        bson.ObjectId `json:"spider_id" bson:"spider_id"`
-	StartTs         time.Time     `json:"start_ts" bson:"start_ts"`
-	FinishTs        time.Time     `json:"finish_ts" bson:"finish_ts"`
-	Status          string        `json:"status" bson:"status"`
-	NodeId          bson.ObjectId `json:"node_id" bson:"node_id"`
-	LogPath         string        `json:"log_path" bson:"log_path"`
-	Cmd             string        `json:"cmd" bson:"cmd"`
-	Param           string        `json:"param" bson:"param"`
-	Error           string        `json:"error" bson:"error"`
-	ResultCount     int           `json:"result_count" bson:"result_count"`
-	ErrorLogCount   int           `json:"error_log_count" bson:"error_log_count"`
-	WaitDuration    float64       `json:"wait_duration" bson:"wait_duration"`
-	RuntimeDuration float64       `json:"runtime_duration" bson:"runtime_duration"`
-	TotalDuration   float64       `json:"total_duration" bson:"total_duration"`
-	Pid             int           `json:"pid" bson:"pid"`
-	RunType         string        `json:"run_type" bson:"run_type"`
-	ScheduleId      bson.ObjectId `json:"schedule_id" bson:"schedule_id"`
-	Type            string        `json:"type" bson:"type"`
+	Id              primitive.ObjectID `json:"_id" bson:"_id"`
+	SpiderId        primitive.ObjectID `json:"spider_id" bson:"spider_id"`
+	StartTs         time.Time          `json:"start_ts" bson:"start_ts"`
+	FinishTs        time.Time          `json:"finish_ts" bson:"finish_ts"`
+	Status          string             `json:"status" bson:"status"`
+	NodeId          primitive.ObjectID `json:"node_id" bson:"node_id"`
+	LogPath         string             `json:"log_path" bson:"log_path"`
+	Cmd             string             `json:"cmd" bson:"cmd"`
+	Param           string             `json:"param" bson:"param"`
+	Error           string             `json:"error" bson:"error"`
+	ResultCount     int                `json:"result_count" bson:"result_count"`
+	ErrorLogCount   int                `json:"error_log_count" bson:"error_log_count"`
+	WaitDuration    float64            `json:"wait_duration" bson:"wait_duration"`
+	RuntimeDuration float64            `json:"runtime_duration" bson:"runtime_duration"`
+	TotalDuration   float64            `json:"total_duration" bson:"total_duration"`
+	Pid             int                `json:"pid" bson:"pid"`
+	RunType         string             `json:"run_type" bson:"run_type"`
+	ScheduleId      primitive.ObjectID `json:"schedule_id" bson:"schedule_id"`
+	Type            string             `json:"type" bson:"type"`
 
 	// 前端数据
 	SpiderName string   `json:"spider_name"`
@@ -38,9 +37,24 @@ type Task struct {
 	Username   string   `json:"username"`
 	NodeIds    []string `json:"node_ids"`
 
-	UserId   bson.ObjectId `json:"user_id" bson:"user_id"`
-	CreateTs time.Time     `json:"create_ts" bson:"create_ts"`
-	UpdateTs time.Time     `json:"update_ts" bson:"update_ts"`
+	UserId   primitive.ObjectID `json:"user_id" bson:"user_id"`
+	CreateTs time.Time          `json:"create_ts" bson:"create_ts"`
+	UpdateTs time.Time          `json:"update_ts" bson:"update_ts"`
+}
+
+func (t *Task) Add() (err error) {
+	m := NewDelegate(t.Id, TaskColName, t)
+	return m.Add()
+}
+
+func (t *Task) Save() (err error) {
+	m := NewDelegate(t.Id, TaskColName, t)
+	return m.Save()
+}
+
+func (t *Task) Delete() (err error) {
+	m := NewDelegate(t.Id, TaskColName, t)
+	return m.Delete()
 }
 
 type TaskDailyItem struct {
@@ -49,6 +63,11 @@ type TaskDailyItem struct {
 	AvgRuntimeDuration float64 `json:"avg_runtime_duration" bson:"avg_runtime_duration"`
 }
 
+const TaskColName = "tasks"
+
+// =========
+// OLD CODE
+// =========
 func (t *Task) GetSpider() (Spider, error) {
 	spider, err := GetSpider(t.SpiderId)
 	if err != nil {
@@ -65,26 +84,26 @@ func (t *Task) GetNode() (Node, error) {
 	return node, nil
 }
 
-func (t *Task) Save() error {
-	s, c := database.GetCol("tasks")
-	defer s.Close()
-	t.UpdateTs = time.Now()
-	if err := c.UpdateId(t.Id, t); err != nil {
-		log.Errorf("update task error: %s", err.Error())
-		debug.PrintStack()
-		return err
-	}
-	return nil
-}
+//func (t *Task) Save() error {
+//	s, c := database.GetCol("tasks")
+//	defer s.Close()
+//	t.UpdateTs = time.Now()
+//	if err := c.UpdateId(t.Id, t); err != nil {
+//		log.Errorf("update task error: %s", err.Error())
+//		debug.PrintStack()
+//		return err
+//	}
+//	return nil
+//}
 
-func (t *Task) Delete() error {
-	s, c := database.GetCol("tasks")
-	defer s.Close()
-	if err := c.RemoveId(t.Id); err != nil {
-		return err
-	}
-	return nil
-}
+//func (t *Task) Delete() error {
+//	s, c := database.GetCol("tasks")
+//	defer s.Close()
+//	if err := c.RemoveId(t.Id); err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
 func (t *Task) GetResults(pageNum int, pageSize int) (results []interface{}, total int, err error) {
 	spider, err := t.GetSpider()

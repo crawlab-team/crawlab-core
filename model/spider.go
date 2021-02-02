@@ -6,9 +6,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/utils"
-	database "github.com/crawlab-team/crawlab-db"
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"path/filepath"
@@ -22,18 +21,18 @@ type Env struct {
 }
 
 type Spider struct {
-	Id          bson.ObjectId `json:"_id" bson:"_id"`                   // 爬虫ID
-	Name        string        `json:"name" bson:"name"`                 // 爬虫名称（唯一）
-	DisplayName string        `json:"display_name" bson:"display_name"` // 爬虫显示名称
-	Type        string        `json:"type" bson:"type"`                 // 爬虫类别
-	FileId      bson.ObjectId `json:"file_id" bson:"file_id"`           // GridFS文件ID
-	Col         string        `json:"col" bson:"col"`                   // 结果储存位置
-	Site        string        `json:"site" bson:"site"`                 // 爬虫网站
-	Envs        []Env         `json:"envs" bson:"envs"`                 // 环境变量
-	Remark      string        `json:"remark" bson:"remark"`             // 备注
-	Src         string        `json:"src" bson:"src"`                   // 源码位置
-	ProjectId   bson.ObjectId `json:"project_id" bson:"project_id"`     // 项目ID
-	IsPublic    bool          `json:"is_public" bson:"is_public"`       // 是否公开
+	Id          primitive.ObjectID `json:"_id" bson:"_id"`                   // 爬虫ID
+	Name        string             `json:"name" bson:"name"`                 // 爬虫名称（唯一）
+	DisplayName string             `json:"display_name" bson:"display_name"` // 爬虫显示名称
+	Type        string             `json:"type" bson:"type"`                 // 爬虫类别
+	FileId      primitive.ObjectID `json:"file_id" bson:"file_id"`           // GridFS文件ID
+	Col         string             `json:"col" bson:"col"`                   // 结果储存位置
+	Site        string             `json:"site" bson:"site"`                 // 爬虫网站
+	Envs        []Env              `json:"envs" bson:"envs"`                 // 环境变量
+	Remark      string             `json:"remark" bson:"remark"`             // 备注
+	Src         string             `json:"src" bson:"src"`                   // 源码位置
+	ProjectId   primitive.ObjectID `json:"project_id" bson:"project_id"`     // 项目ID
+	IsPublic    bool               `json:"is_public" bson:"is_public"`       // 是否公开
 
 	// 自定义爬虫
 	Cmd string `json:"cmd" bson:"cmd"` // 执行命令
@@ -77,9 +76,9 @@ type Spider struct {
 	ProjectName string                  `json:"project_name"` // 项目名称
 
 	// 时间
-	UserId   bson.ObjectId `json:"user_id" bson:"user_id"`
-	CreateTs time.Time     `json:"create_ts" bson:"create_ts"`
-	UpdateTs time.Time     `json:"update_ts" bson:"update_ts"`
+	UserId   primitive.ObjectID `json:"user_id" bson:"user_id"`
+	CreateTs time.Time          `json:"create_ts" bson:"create_ts"`
+	UpdateTs time.Time          `json:"update_ts" bson:"update_ts"`
 }
 
 // 更新爬虫
@@ -91,7 +90,7 @@ func (spider *Spider) Save() error {
 
 	// 兼容没有项目ID的爬虫
 	if spider.ProjectId.Hex() == "" {
-		spider.ProjectId = bson.ObjectIdHex(constants.ObjectIdNull)
+		spider.ProjectId = primitive.ObjectIDHex(constants.ObjectIdNull)
 	}
 
 	if err := c.UpdateId(spider.Id, spider); err != nil {
@@ -114,7 +113,7 @@ func (spider *Spider) Add() error {
 	spider.UpdateTs = time.Now()
 
 	if !spider.ProjectId.Valid() {
-		spider.ProjectId = bson.ObjectIdHex(constants.ObjectIdNull)
+		spider.ProjectId = primitive.ObjectIDHex(constants.ObjectIdNull)
 	}
 
 	if err := c.Insert(&spider); err != nil {
@@ -240,7 +239,7 @@ func GetSpiderAllList(filter interface{}) (spiders []Spider, err error) {
 }
 
 // 获取爬虫(根据FileId)
-func GetSpiderByFileId(fileId bson.ObjectId) *Spider {
+func GetSpiderByFileId(fileId primitive.ObjectID) *Spider {
 	s, c := database.GetCol("spiders")
 	defer s.Close()
 
@@ -276,7 +275,7 @@ func GetSpiderByName(name string) Spider {
 }
 
 // 获取爬虫(根据ID)
-func GetSpider(id bson.ObjectId) (Spider, error) {
+func GetSpider(id primitive.ObjectID) (Spider, error) {
 	s, c := database.GetCol("spiders")
 	defer s.Close()
 
@@ -310,7 +309,7 @@ func GetSpider(id bson.ObjectId) (Spider, error) {
 }
 
 // 更新爬虫
-func UpdateSpider(id bson.ObjectId, item Spider) error {
+func UpdateSpider(id primitive.ObjectID, item Spider) error {
 	s, c := database.GetCol("spiders")
 	defer s.Close()
 
@@ -327,7 +326,7 @@ func UpdateSpider(id bson.ObjectId, item Spider) error {
 }
 
 // 删除爬虫
-func RemoveSpider(id bson.ObjectId) error {
+func RemoveSpider(id primitive.ObjectID) error {
 	s, c := database.GetCol("spiders")
 	defer s.Close()
 

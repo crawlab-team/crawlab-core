@@ -13,6 +13,7 @@ var (
 	ErrAlreadyExists               = errors.New("already exists")
 	ErrNotExists                   = errors.New("not exists")
 	ErrForbidden                   = errors.New("forbidden")
+	ErrInvalidOperation            = errors.New("invalid operation")
 	ErrInvalidOptions              = errors.New("invalid options")
 	ErrNoTasksAvailable            = errors.New("no tasks available")
 	ErrInvalidType                 = errors.New("invalid type")
@@ -25,4 +26,5 @@ var (
 	ErrUnableToDispose             = errors.New("unable to dispose")
 	ErrAlreadyDisposed             = errors.New("already disposed")
 	ErrStopped                     = errors.New("stopped")
+	ErrMissingId                   = errors.New("missing _id")
 )
