@@ -1,80 +1,35 @@
 package model
 
 import (
-	"github.com/apex/log"
-	database "github.com/crawlab-team/crawlab-db"
-	"github.com/globalsign/mgo/bson"
-	"runtime/debug"
-	"time"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Token struct {
-	Id       bson.ObjectId `json:"_id" bson:"_id"`
-	Token    string        `json:"token" bson:"token"`
-	UserId   bson.ObjectId `json:"user_id" bson:"user_id"`
-	CreateTs time.Time     `json:"create_ts" bson:"create_ts"`
-	UpdateTs time.Time     `json:"update_ts" bson:"update_ts"`
+	Id    primitive.ObjectID `json:"_id" bson:"_id"`
+	Token string             `json:"token" bson:"token"`
 }
 
-func (t *Token) Add() error {
-	s, c := database.GetCol("tokens")
-	defer s.Close()
-
-	if err := c.Insert(t); err != nil {
-		log.Errorf("insert token error: " + err.Error())
-		debug.PrintStack()
-		return err
+func (t *Token) Add() (err error) {
+	if t.Id.IsZero() {
+		t.Id = primitive.NewObjectID()
 	}
-
-	return nil
+	m := NewDelegate(TokenColName, t)
+	return m.Add()
 }
 
-func (t *Token) Delete() error {
-	s, c := database.GetCol("tokens")
-	defer s.Close()
-
-	if err := c.RemoveId(t.Id); err != nil {
-		log.Errorf("insert token error: " + err.Error())
-		debug.PrintStack()
-		return err
-	}
-
-	return nil
+func (t *Token) Save() (err error) {
+	m := NewDelegate(TokenColName, t)
+	return m.Save()
 }
 
-func GetTokenById(id bson.ObjectId) (t Token, err error) {
-	s, c := database.GetCol("tokens")
-	defer s.Close()
-
-	if err = c.FindId(id).One(&t); err != nil {
-		return t, err
-	}
-
-	return t, nil
+func (t *Token) Delete() (err error) {
+	m := NewDelegate(TokenColName, t)
+	return m.Delete()
 }
 
-func GetTokensByUserId(uid bson.ObjectId) (tokens []Token, err error) {
-	s, c := database.GetCol("tokens")
-	defer s.Close()
-
-	if err = c.Find(bson.M{"user_id": uid}).All(&tokens); err != nil {
-		log.Errorf("find tokens error: " + err.Error())
-		debug.PrintStack()
-		return tokens, err
-	}
-
-	return tokens, nil
+func (t *Token) GetArtifact() (a Artifact, err error) {
+	d := NewDelegate(TokenColName, t)
+	return d.GetArtifact()
 }
 
-func DeleteTokenById(id bson.ObjectId) error {
-	t, err := GetTokenById(id)
-	if err != nil {
-		return err
-	}
-
-	if err := t.Delete(); err != nil {
-		return err
-	}
-
-	return nil
-}
+const TokenColName = "tokens"

@@ -1,45 +1,36 @@
 package model
 
 import (
-	database "github.com/crawlab-team/crawlab-db"
-	"github.com/globalsign/mgo/bson"
-	"time"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Setting struct {
-	Keyword  string
-	Document bson.Raw
+	Id    primitive.ObjectID `json:"_id" bson:"_id"`
+	Key   string             `json:"key" bson:"key"`
+	Value string             `json:"value" bson:"value"`
 }
 
-func GetRawSetting(keyword string, pointer interface{}) error {
-	s, col := database.GetCol("settings")
-	defer s.Close()
-	var setting Setting
-	err := col.Find(bson.M{"keyword": keyword}).One(&setting)
-	if err != nil {
-		return err
+func (s *Setting) Add() (err error) {
+	if s.Id.IsZero() {
+		s.Id = primitive.NewObjectID()
 	}
-	return setting.Document.Unmarshal(pointer)
+	m := NewDelegate(SettingColName, s)
+	return m.Add()
 }
 
-type DocumentMeta struct {
-	DocumentVersion  int
-	DocStructVersion int
-	UpdateTime       time.Time
-	CreateTime       time.Time
-	DeleteTime       time.Time
+func (s *Setting) Save() (err error) {
+	m := NewDelegate(SettingColName, s)
+	return m.Save()
 }
 
-//demo
-type SecuritySetting struct {
-	EnableRegister   bool
-	EnableInvitation bool
-	DocumentMeta     `bson:"inline" json:"inline"`
+func (s *Setting) Delete() (err error) {
+	m := NewDelegate(SettingColName, s)
+	return m.Delete()
 }
 
-func GetSecuritySetting() (SecuritySetting, error) {
-	var app SecuritySetting
-	err := GetRawSetting("security", &app)
-	return app, err
-
+func (s *Setting) GetArtifact() (a Artifact, err error) {
+	d := NewDelegate(SettingColName, s)
+	return d.GetArtifact()
 }
+
+const SettingColName = "settings"

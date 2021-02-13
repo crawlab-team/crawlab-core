@@ -1,50 +1,83 @@
 package model
 
 import (
-	"github.com/apex/log"
-	"github.com/crawlab-team/crawlab-core/config"
-	"github.com/crawlab-team/crawlab-core/constants"
-	database "github.com/crawlab-team/crawlab-db"
-	. "github.com/smartystreets/goconvey/convey"
-	"runtime/debug"
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestAddNode(t *testing.T) {
-	Convey("Test AddNode", t, func() {
-		if err := config.InitConfig("../conf/config.yml"); err != nil {
-			log.Error("init config error:" + err.Error())
-			panic(err)
-		}
-		log.Info("初始化配置成功")
+func setupNodeTest() (err error) {
+	return mongo.InitMongo()
+}
 
-		// 初始化Mongodb数据库
-		if err := database.InitMongo(); err != nil {
-			log.Error("init mongodb error:" + err.Error())
-			debug.PrintStack()
-			panic(err)
-		}
-		log.Info("初始化Mongodb数据库成功")
+func cleanupNodeTest() {
+	_ = mongo.GetMongoCol(NodeColName).Delete(nil)
+	_ = mongo.GetMongoCol(ArtifactColName).Delete(nil)
+}
 
-		// 初始化Redis数据库
-		if err := database.InitRedis(); err != nil {
-			log.Error("init redis error:" + err.Error())
-			debug.PrintStack()
-			panic(err)
-		}
+func TestNode_Add(t *testing.T) {
+	err := setupNodeTest()
+	require.Nil(t, err)
 
-		var node = Node{
-			Key:      "c4:b3:01:bd:b5:e7",
-			Name:     "10.27.238.101",
-			Ip:       "10.27.238.101",
-			Port:     "8000",
-			Mac:      "c4:b3:01:bd:b5:e7",
-			Status:   constants.StatusOnline,
-			IsMaster: true,
-		}
-		if err := node.Add(); err != nil {
-			log.Error("add node error:" + err.Error())
-			panic(err)
-		}
-	})
+	n := Node{}
+
+	err = n.Add()
+	require.Nil(t, err)
+	require.NotNil(t, n.Id)
+
+	a, err := n.GetArtifact()
+	require.Nil(t, err)
+	require.Equal(t, n.Id, a.Id)
+	require.NotNil(t, a.CreateTs)
+	require.NotNil(t, a.UpdateTs)
+
+	col := mongo.GetMongoCol(NodeColName)
+	col.GetContext()
+
+	cleanupNodeTest()
+}
+
+func TestNode_Save(t *testing.T) {
+	err := setupNodeTest()
+	require.Nil(t, err)
+
+	n := Node{}
+
+	err = n.Add()
+	require.Nil(t, err)
+
+	name := "test_node"
+	n.Name = name
+	err = n.Save()
+	require.Nil(t, err)
+
+	err = mongo.GetMongoCol(NodeColName).FindId(n.Id).One(&n)
+	require.Nil(t, err)
+	require.Equal(t, name, n.Name)
+
+	cleanupNodeTest()
+}
+
+func TestNode_Delete(t *testing.T) {
+	err := setupNodeTest()
+	require.Nil(t, err)
+
+	n := Node{
+		Name: "test_node",
+	}
+
+	err = n.Add()
+	require.Nil(t, err)
+
+	err = n.Delete()
+	require.Nil(t, err)
+
+	var a Artifact
+	col := mongo.GetMongoCol(ArtifactColName)
+	err = col.FindId(n.Id).One(&a)
+	require.Nil(t, err)
+	require.NotNil(t, a.Obj)
+	require.True(t, a.Del)
+
+	cleanupNodeTest()
 }
