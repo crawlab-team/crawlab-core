@@ -7,7 +7,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/model"
-	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
@@ -132,7 +131,7 @@ func (s *TaskService) Assign(t model.Task) (err error) {
 
 	// queue name
 	var queue string
-	if utils.IsObjectIdNull(t.NodeId) {
+	if t.NodeId.IsZero() {
 		queue = "tasks:public"
 	} else {
 		queue = "tasks:node:" + t.NodeId.Hex()
