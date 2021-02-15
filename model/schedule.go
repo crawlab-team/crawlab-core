@@ -2,6 +2,8 @@ package model
 
 import (
 	"github.com/crawlab-team/crawlab-core/lib/cron"
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -14,7 +16,7 @@ type Schedule struct {
 	EntryId        cron.EntryID         `json:"entry_id" bson:"entry_id"`
 	Param          string               `json:"param" bson:"param"`
 	RunType        string               `json:"run_type" bson:"run_type"`
-	NodeIds        []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
+	ScheduleIds    []primitive.ObjectID `json:"schedule_ids" bson:"schedule_ids"`
 	Status         string               `json:"status" bson:"status"`
 	Enabled        bool                 `json:"enabled" bson:"enabled"`
 	UserId         primitive.ObjectID   `json:"user_id" bson:"user_id"`
@@ -46,3 +48,32 @@ func (s *Schedule) GetArtifact() (a Artifact, err error) {
 }
 
 const ScheduleColName = "schedules"
+
+type scheduleService struct {
+	*Service
+}
+
+func (svc *scheduleService) GetById(id primitive.ObjectID) (res Schedule, err error) {
+	err = svc.findId(id).One(&res)
+	return res, err
+}
+
+func (svc *scheduleService) Get(query bson.M, opts *mongo.FindOptions) (res Schedule, err error) {
+	err = svc.find(query, opts).One(&res)
+	return res, err
+}
+
+func (svc *scheduleService) GetList(query bson.M, opts *mongo.FindOptions) (res []Schedule, err error) {
+	err = svc.find(query, opts).All(&res)
+	return res, err
+}
+
+func (svc *scheduleService) DeleteById(id primitive.ObjectID) (err error) {
+	return svc.deleteId(id)
+}
+
+func (svc *scheduleService) DeleteList(query bson.M) (err error) {
+	return svc.delete(query)
+}
+
+var ScheduleService = scheduleService{NewService(ScheduleColName)}

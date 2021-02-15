@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -33,3 +35,32 @@ func (t *Token) GetArtifact() (a Artifact, err error) {
 }
 
 const TokenColName = "tokens"
+
+type tokenService struct {
+	*Service
+}
+
+func (svc *tokenService) GetById(id primitive.ObjectID) (res Token, err error) {
+	err = svc.findId(id).One(&res)
+	return res, err
+}
+
+func (svc *tokenService) Get(query bson.M, opts *mongo.FindOptions) (res Token, err error) {
+	err = svc.find(query, opts).One(&res)
+	return res, err
+}
+
+func (svc *tokenService) GetList(query bson.M, opts *mongo.FindOptions) (res []Token, err error) {
+	err = svc.find(query, opts).All(&res)
+	return res, err
+}
+
+func (svc *tokenService) DeleteById(id primitive.ObjectID) (err error) {
+	return svc.deleteId(id)
+}
+
+func (svc *tokenService) DeleteList(query bson.M) (err error) {
+	return svc.delete(query)
+}
+
+var TokenService = tokenService{NewService(TokenColName)}

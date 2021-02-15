@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/model"
-	db "github.com/crawlab-team/crawlab-db"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	cfs "github.com/crawlab-team/crawlab-fs"
 	clog "github.com/crawlab-team/crawlab-log"
-	"github.com/globalsign/mgo/bson"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"os"
 	"strings"
 	"testing"
@@ -18,9 +17,9 @@ import (
 )
 
 type TaskRunnerTestObject struct {
-	spiderId bson.ObjectId
+	spiderId primitive.ObjectID
 	spider   model.Spider
-	taskId   string
+	taskId   primitive.ObjectID
 	task     model.Task
 	fs       *FileSystemService
 	fsPath   string
@@ -30,8 +29,8 @@ type TaskRunnerTestObject struct {
 func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 	// test object
 	to = &TaskRunnerTestObject{}
-	to.spiderId = bson.NewObjectId()
-	to.taskId = uuid.New().String()
+	to.spiderId = primitive.NewObjectID()
+	to.taskId = primitive.NewObjectID()
 	to.fsPath = fmt.Sprintf("%s/%s", "/spiders", to.spiderId.Hex())
 	to.repoPath = fmt.Sprintf("./tmp/repo/%s", to.spiderId.Hex())
 
@@ -42,7 +41,7 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 	viper.Set("mongo.host", "localhost")
 	viper.Set("mongo.port", "27017")
 	viper.Set("mongo.db", "test")
-	if err := db.InitMongo(); err != nil {
+	if err := mongo.InitMongo(); err != nil {
 		return to, err
 	}
 
@@ -74,9 +73,6 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
-		FileId:    bson.ObjectIdHex(constants.ObjectIdNull),
-		ProjectId: bson.ObjectIdHex(constants.ObjectIdNull),
-		UserId:    bson.ObjectIdHex(constants.ObjectIdNull),
 	}
 	if err := to.spider.Add(); err != nil {
 		return to, err
@@ -84,14 +80,11 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 
 	// task
 	to.task = model.Task{
-		Id:         to.taskId,
-		SpiderId:   to.spiderId,
-		Type:       constants.TaskTypeSpider,
-		ScheduleId: bson.ObjectIdHex(constants.ObjectIdNull),
-		NodeId:     bson.ObjectIdHex(constants.ObjectIdNull),
-		UserId:     bson.ObjectIdHex(constants.ObjectIdNull),
+		Id:       to.taskId,
+		SpiderId: to.spiderId,
+		Type:     constants.TaskTypeSpider,
 	}
-	if err := model.AddTask(to.task); err != nil {
+	if err := to.task.Add(); err != nil {
 		return to, err
 	}
 
@@ -114,8 +107,8 @@ func cleanupTaskRunner(to *TaskRunnerTestObject) {
 		_ = m.DeleteDir("/logs")
 		_ = m.DeleteDir("/spiders")
 	}
-	_ = model.RemoveSpider(to.spiderId)
-	_ = model.RemoveTask(to.taskId)
+	_ = model.SpiderService.DeleteById(to.spiderId)
+	_ = model.TaskService.DeleteById(to.taskId)
 	_ = os.RemoveAll("./tmp/repo")
 }
 

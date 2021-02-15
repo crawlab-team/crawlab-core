@@ -8,8 +8,9 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/model"
 	"github.com/crawlab-team/crawlab-core/utils"
-	database "github.com/crawlab-team/crawlab-db"
-	"github.com/globalsign/mgo"
+	"github.com/crawlab-team/crawlab-db/redis"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"sync"
 	"time"
 )
@@ -97,7 +98,7 @@ func (s *TaskService) Init() (err error) {
 			}
 			continue
 		}
-		if t.Id == "" {
+		if t.Id.IsZero() {
 			return constants.ErrEmptyValue
 		}
 
@@ -138,7 +139,7 @@ func (s *TaskService) Assign(t model.Task) (err error) {
 	}
 
 	// enqueue
-	if err := database.RedisClient.RPush(queue, msgStr); err != nil {
+	if err := redis.RedisClient.RPush(queue, msgStr); err != nil {
 		return err
 	}
 
@@ -157,14 +158,14 @@ func (s *TaskService) Fetch() (t model.Task, err error) {
 	// fetch task from node queue
 	if s.opts.Node != nil {
 		queueCur := "tasks:node:" + s.opts.Node.Id.Hex()
-		msg, err = database.RedisClient.LPop(queueCur)
+		msg, err = redis.RedisClient.LPop(queueCur)
 	}
 
 	// fetch task from public queue if first fetch is not successful
 	if msg == "" {
 		err = nil
 		queuePub := "tasks:public"
-		msg, err = database.RedisClient.LPop(queuePub)
+		msg, err = redis.RedisClient.LPop(queuePub)
 		if err != nil {
 			return t, err
 		}
@@ -182,7 +183,7 @@ func (s *TaskService) Fetch() (t model.Task, err error) {
 	}
 
 	// fetch task
-	t, err = model.GetTask(tMsg.Id)
+	t, err = model.TaskService.GetById(tMsg.Id)
 	if err != nil {
 		return t, err
 	}
@@ -190,7 +191,7 @@ func (s *TaskService) Fetch() (t model.Task, err error) {
 	return t, nil
 }
 
-func (s *TaskService) Run(taskId string) (err error) {
+func (s *TaskService) Run(taskId primitive.ObjectID) (err error) {
 	_, ok := s.runners.Load(taskId)
 	if ok {
 		return constants.ErrAlreadyExists
@@ -276,11 +277,11 @@ func (s *TaskService) saveTask(t model.Task, status string) (err error) {
 	t.Status = status
 
 	// attempt to get task from database
-	_, err = model.GetTask(t.Id)
+	_, err = model.TaskService.GetById(t.Id)
 	if err != nil {
 		// if task does not exist, add to database
-		if err == mgo.ErrNotFound {
-			if err := model.AddTask(t); err != nil {
+		if err == mongo2.ErrNoDocuments {
+			if err := t.Add(); err != nil {
 				return err
 			}
 			return nil

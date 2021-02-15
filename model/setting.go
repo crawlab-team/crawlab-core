@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -34,3 +36,32 @@ func (s *Setting) GetArtifact() (a Artifact, err error) {
 }
 
 const SettingColName = "settings"
+
+type settingService struct {
+	*Service
+}
+
+func (svc *settingService) GetById(id primitive.ObjectID) (res Setting, err error) {
+	err = svc.findId(id).One(&res)
+	return res, err
+}
+
+func (svc *settingService) Get(query bson.M, opts *mongo.FindOptions) (res Setting, err error) {
+	err = svc.find(query, opts).One(&res)
+	return res, err
+}
+
+func (svc *settingService) GetList(query bson.M, opts *mongo.FindOptions) (res []Setting, err error) {
+	err = svc.find(query, opts).All(&res)
+	return res, err
+}
+
+func (svc *settingService) DeleteById(id primitive.ObjectID) (err error) {
+	return svc.deleteId(id)
+}
+
+func (svc *settingService) DeleteList(query bson.M) (err error) {
+	return svc.delete(query)
+}
+
+var SettingService = settingService{NewService(SettingColName)}

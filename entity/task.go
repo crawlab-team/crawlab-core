@@ -2,10 +2,11 @@ package entity
 
 import (
 	"encoding/json"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TaskMessage struct {
-	Id  string
+	Id  primitive.ObjectID
 	Cmd string
 }
 

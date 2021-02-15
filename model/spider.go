@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -80,6 +82,35 @@ func (s *Spider) GetArtifact() (a Artifact, err error) {
 }
 
 const SpiderColName = "spiders"
+
+type spiderService struct {
+	*Service
+}
+
+func (svc *spiderService) GetById(id primitive.ObjectID) (res Spider, err error) {
+	err = svc.findId(id).One(&res)
+	return res, err
+}
+
+func (svc *spiderService) Get(query bson.M, opts *mongo.FindOptions) (res Spider, err error) {
+	err = svc.find(query, opts).One(&res)
+	return res, err
+}
+
+func (svc *spiderService) GetList(query bson.M, opts *mongo.FindOptions) (res []Spider, err error) {
+	err = svc.find(query, opts).All(&res)
+	return res, err
+}
+
+func (svc *spiderService) DeleteById(id primitive.ObjectID) (err error) {
+	return svc.deleteId(id)
+}
+
+func (svc *spiderService) DeleteList(query bson.M) (err error) {
+	return svc.delete(query)
+}
+
+var SpiderService = spiderService{NewService(SpiderColName)}
 
 // =========
 // OLD CODE

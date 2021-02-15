@@ -7,7 +7,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/model"
 	"github.com/crawlab-team/crawlab-core/services/local_node"
 	"github.com/crawlab-team/crawlab-core/utils"
-	database "github.com/crawlab-team/crawlab-db"
 	"github.com/globalsign/mgo/bson"
 	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"

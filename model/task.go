@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
@@ -11,7 +13,7 @@ type Task struct {
 	StartTs         time.Time          `json:"start_ts" bson:"start_ts"`
 	FinishTs        time.Time          `json:"finish_ts" bson:"finish_ts"`
 	Status          string             `json:"status" bson:"status"`
-	NodeId          primitive.ObjectID `json:"node_id" bson:"node_id"`
+	NodeId          primitive.ObjectID `json:"node_id" bson:"task_id"`
 	LogPath         string             `json:"log_path" bson:"log_path"`
 	Cmd             string             `json:"cmd" bson:"cmd"`
 	Param           string             `json:"param" bson:"param"`
@@ -58,6 +60,35 @@ type TaskDailyItem struct {
 
 const TaskColName = "tasks"
 
+type taskService struct {
+	*Service
+}
+
+func (svc *taskService) GetById(id primitive.ObjectID) (res Task, err error) {
+	err = svc.findId(id).One(&res)
+	return res, err
+}
+
+func (svc *taskService) Get(query bson.M, opts *mongo.FindOptions) (res Task, err error) {
+	err = svc.find(query, opts).One(&res)
+	return res, err
+}
+
+func (svc *taskService) GetList(query bson.M, opts *mongo.FindOptions) (res []Task, err error) {
+	err = svc.find(query, opts).All(&res)
+	return res, err
+}
+
+func (svc *taskService) DeleteById(id primitive.ObjectID) (err error) {
+	return svc.deleteId(id)
+}
+
+func (svc *taskService) DeleteList(query bson.M) (err error) {
+	return svc.delete(query)
+}
+
+var TaskService = taskService{NewService(TaskColName)}
+
 // =========
 // OLD CODE
 // =========
@@ -69,12 +100,12 @@ const TaskColName = "tasks"
 //	return spider, nil
 //}
 //
-//func (t *Task) GetNode() (Node, error) {
-//	node, err := GetNode(t.NodeId)
+//func (t *Task) GetTask() (Task, error) {
+//	task, err := GetTask(t.TaskId)
 //	if err != nil {
-//		return node, err
+//		return task, err
 //	}
-//	return node, nil
+//	return task, nil
 //}
 
 //func (t *Task) Save() error {
@@ -176,8 +207,8 @@ const TaskColName = "tasks"
 //		}
 //
 //		// 获取节点名称
-//		if node, err := task.GetNode(); err == nil {
-//			tasks[i].NodeName = node.Name
+//		if task, err := task.GetTask(); err == nil {
+//			tasks[i].TaskName = task.Name
 //		}
 //
 //		// 获取用户名称
@@ -460,12 +491,12 @@ const TaskColName = "tasks"
 //}
 //
 //// convert all running tasks to abnormal tasks
-//func UpdateTaskToAbnormal(nodeId bson.ObjectId) error {
+//func UpdateTaskToAbnormal(taskId bson.ObjectId) error {
 //	s, c := database.GetCol("tasks")
 //	defer s.Close()
 //
 //	selector := bson.M{
-//		"node_id": nodeId,
+//		"task_id": taskId,
 //		"status": bson.M{
 //			"$in": []string{
 //				constants.StatusPending,
@@ -480,7 +511,7 @@ const TaskColName = "tasks"
 //	}
 //	_, err := c.UpdateAll(selector, update)
 //	if err != nil {
-//		log.Errorf("update task to abnormal error: %s,  node_id : %s", err.Error(), nodeId.Hex())
+//		log.Errorf("update task to abnormal error: %s,  task_id : %s", err.Error(), taskId.Hex())
 //		debug.PrintStack()
 //		return err
 //	}

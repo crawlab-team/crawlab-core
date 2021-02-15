@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -48,3 +50,32 @@ func (u *User) GetArtifact() (a Artifact, err error) {
 
 const UserColName = "users"
 const UserContextKey = "user"
+
+type userService struct {
+	*Service
+}
+
+func (svc *userService) GetById(id primitive.ObjectID) (res User, err error) {
+	err = svc.findId(id).One(&res)
+	return res, err
+}
+
+func (svc *userService) Get(query bson.M, opts *mongo.FindOptions) (res User, err error) {
+	err = svc.find(query, opts).One(&res)
+	return res, err
+}
+
+func (svc *userService) GetList(query bson.M, opts *mongo.FindOptions) (res []User, err error) {
+	err = svc.find(query, opts).All(&res)
+	return res, err
+}
+
+func (svc *userService) DeleteById(id primitive.ObjectID) (err error) {
+	return svc.deleteId(id)
+}
+
+func (svc *userService) DeleteList(query bson.M) (err error) {
+	return svc.delete(query)
+}
+
+var UserService = userService{NewService(UserColName)}

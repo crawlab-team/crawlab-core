@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"os"
 	"os/exec"
 	"path"
@@ -24,9 +25,9 @@ type TaskRunnerInterface interface {
 }
 
 type TaskRunnerOptions struct {
-	TaskService   *TaskService // TaskService on which the TaskRunner is executed
-	TaskId        string       // id of task (model.Task) to run
-	LogDriverType string       // log driver type
+	TaskService   *TaskService       // TaskService on which the TaskRunner is executed
+	TaskId        primitive.ObjectID // id of task (model.Task) to run
+	LogDriverType string             // log driver type
 }
 
 func NewTaskRunner(options *TaskRunnerOptions) (r *TaskRunner, err error) {
@@ -34,7 +35,7 @@ func NewTaskRunner(options *TaskRunnerOptions) (r *TaskRunner, err error) {
 	if options == nil {
 		return r, constants.ErrInvalidOptions
 	}
-	if options.TaskId == "" {
+	if options.TaskId.IsZero() {
 		return r, constants.ErrInvalidOptions
 	}
 
@@ -68,7 +69,7 @@ type TaskRunner struct {
 	svc  *TaskService              // TaskService
 	fs   *FileSystemService        // file system service FileSystemService
 	l    clog.Driver               // log service log.Driver
-	tid  string                    // id of t (model.Task)
+	tid  primitive.ObjectID        // id of t (model.Task)
 	t    *model.Task               // task model.Task
 	s    *model.Spider             // spider model.Spider
 	ch   chan constants.TaskSignal // channel to communicate between TaskService and TaskRunner
@@ -88,7 +89,7 @@ func (r *TaskRunner) Init() (err error) {
 	}
 
 	// spider
-	s, err := model.GetSpider(r.t.SpiderId)
+	s, err := model.SpiderService.GetById(r.t.SpiderId)
 	if err != nil {
 		return err
 	}
@@ -301,7 +302,7 @@ func (r *TaskRunner) getLogDriverOptions() (options interface{}) {
 	case clog.DriverTypeFs:
 		options = &clog.SeaweedFSLogDriverOptions{
 			BaseDir: viper.GetString("log.path"),
-			Prefix:  r.t.Id,
+			Prefix:  r.t.Id.Hex(),
 		}
 	}
 	return options
@@ -391,7 +392,7 @@ func (r *TaskRunner) configureEnv() (err error) {
 	//col := utils.GetSpiderCol(r.s.Col, r.s.Name)
 
 	// 默认环境变量
-	r.cmd.Env = append(os.Environ(), "CRAWLAB_TASK_ID="+r.t.Id)
+	r.cmd.Env = append(os.Environ(), "CRAWLAB_TASK_ID="+r.t.Id.Hex())
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_COLLECTION="+col)
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_HOST="+viper.GetString("mongo.host"))
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_PORT="+viper.GetString("mongo.port"))
@@ -424,7 +425,10 @@ func (r *TaskRunner) configureEnv() (err error) {
 	}
 
 	// global environment variables
-	variables := model.GetVariableList()
+	variables, err := model.VariableService.GetList(nil, nil)
+	if err != nil {
+		return err
+	}
 	for _, variable := range variables {
 		r.cmd.Env = append(r.cmd.Env, variable.Key+"="+variable.Value)
 	}
@@ -468,7 +472,7 @@ func (r *TaskRunner) updateTask(status string) (err error) {
 	}
 
 	// get task
-	t, err := model.GetTask(r.tid)
+	t, err := model.TaskService.GetById(r.tid)
 	if err != nil {
 		return err
 	}
@@ -479,7 +483,7 @@ func (r *TaskRunner) updateTask(status string) (err error) {
 	return nil
 }
 
-func (r *TaskRunner) removeTaskRunner(taskId string) (err error) {
+func (r *TaskRunner) removeTaskRunner(taskId primitive.ObjectID) (err error) {
 	_, ok := r.svc.runners.Load(taskId)
 	if !ok {
 		return constants.ErrNotExists

@@ -11,8 +11,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/model"
 	"github.com/crawlab-team/crawlab-core/services/local_node"
 	"github.com/crawlab-team/crawlab-core/utils"
-	database "github.com/crawlab-team/crawlab-db"
-	"github.com/gomodule/redigo/redis"
+	"github.com/crawlab-team/crawlab-db/redis"
+	redis2 "github.com/gomodule/redigo/redis"
 	uuid "github.com/satori/go.uuid"
 	"runtime/debug"
 )
@@ -31,14 +31,14 @@ func ClientFunc(msg entity.RpcMessage) func() (entity.RpcMessage, error) {
 
 		// 发送RPC消息
 		msgStr := utils.ObjectToString(msg)
-		if err := database.RedisClient.LPush(fmt.Sprintf("rpc:%s", msg.NodeId), msgStr); err != nil {
+		if err := redis.RedisClient.LPush(fmt.Sprintf("rpc:%s", msg.NodeId), msgStr); err != nil {
 			log.Errorf("RpcClientFunc error: " + err.Error())
 			debug.PrintStack()
 			return replyMsg, err
 		}
 
 		// 获取RPC回复消息
-		dataStr, err := database.RedisClient.BRPop(fmt.Sprintf("rpc:%s:%s", msg.NodeId, msg.Id), msg.Timeout)
+		dataStr, err := redis.RedisClient.BRPop(fmt.Sprintf("rpc:%s:%s", msg.NodeId, msg.Id), msg.Timeout)
 		if err != nil {
 			log.Errorf("RpcClientFunc error: " + err.Error())
 			debug.PrintStack()
@@ -104,7 +104,7 @@ func handleMsg(msgStr string, node *model.Node) {
 	}
 
 	// 发送返回消息
-	if err := database.RedisClient.LPush(fmt.Sprintf("rpc:%s:%s", node.Id.Hex(), replyMsg.Id), utils.ObjectToString(replyMsg)); err != nil {
+	if err := redis.RedisClient.LPush(fmt.Sprintf("rpc:%s:%s", node.Id.Hex(), replyMsg.Id), utils.ObjectToString(replyMsg)); err != nil {
 		log.Errorf(err.Error())
 		debug.PrintStack()
 	}
@@ -127,9 +127,9 @@ func InitRpcService() error {
 			var msgStr string
 			var err error
 			err = backoff.Retry(func() error {
-				msgStr, err = database.RedisClient.BRPop(fmt.Sprintf("rpc:%s", node.Id.Hex()), 0)
+				msgStr, err = redis.RedisClient.BRPop(fmt.Sprintf("rpc:%s", node.Id.Hex()), 0)
 
-				if err != nil && err != redis.ErrNil {
+				if err != nil && err != redis2.ErrNil {
 					log.WithError(err).Warnf("waiting for redis pool active connection. will after %f seconds try  again.", b.NextBackOff().Seconds())
 					return err
 				}
