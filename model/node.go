@@ -17,6 +17,8 @@ type Node struct {
 	Description string             `json:"description" bson:"description"`
 	Key         string             `json:"key" bson:"key"`
 	IsMaster    bool               `json:"is_master" bson:"is_master"`
+	Enabled     bool               `json:"enabled" bson:"enabled"`
+	Active      bool               `json:"active" bson:"active"`
 
 	Settings NodeSettings `json:"settings" bson:"settings"`
 }

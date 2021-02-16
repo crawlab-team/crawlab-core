@@ -26,3 +26,12 @@ type NodeMessage struct {
 	// 错误相关
 	Error string `json:"error"`
 }
+
+type NodeData struct {
+	Key        string `json:"key"`
+	Hash       string `json:"hash"`
+	Ip         string `json:"ip"`
+	Hostname   string `json:"hostname"`
+	MacAddress string `json:"mac_address"`
+	UUID       string `json:"uuid"`
+}

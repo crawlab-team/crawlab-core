@@ -32,11 +32,12 @@ func (to *TaskTestObject) GetRepoPath(s model.Spider) (fsPath string) {
 	return fmt.Sprintf("./tmp/repo/%s", s.Id.Hex())
 }
 
-func (to *TaskTestObject) CreateNode(name string, isMaster bool) (n *model.Node, err error) {
+func (to *TaskTestObject) CreateNode(name string, isMaster bool, key string) (n *model.Node, err error) {
 	n = &model.Node{
 		Id:       primitive.NewObjectID(),
 		Name:     name,
 		IsMaster: isMaster,
+		Key:      key,
 	}
 	if err := n.Add(); err != nil {
 		return n, err
@@ -104,6 +105,10 @@ func setupTask() (to *TaskTestObject, err error) {
 	viper.Set("spider.path", "/spiders")
 	viper.Set("spider.workspace", "./tmp/workspace")
 
+	// set node register
+	viper.Set("server.register.type", "ip")
+	viper.Set("server.register.ip", "192.168.0.1")
+
 	// cleanup
 	cleanupTask(to)
 
@@ -117,7 +122,22 @@ func setupTask() (to *TaskTestObject, err error) {
 		return to, err
 	}
 
+	// init services
+	if err := InitNodeService(); err != nil {
+		return to, err
+	}
+	//if err := InitSpiderService(); err != nil {
+	//	return to, err
+	//}
+	if err := InitTaskService(); err != nil {
+		return to, err
+	}
+
 	// nodes
+	ips := []string{
+		"192.168.0.1",
+		"192.168.0.2",
+	}
 	nn := 2
 	for i := 0; i < nn; i++ {
 		name := fmt.Sprintf("node%d", i+1)
@@ -125,7 +145,7 @@ func setupTask() (to *TaskTestObject, err error) {
 		if i == 0 {
 			isMaster = true
 		}
-		n, err := to.CreateNode(name, isMaster)
+		n, err := to.CreateNode(name, isMaster, ips[i])
 		if err != nil {
 			return to, err
 		}

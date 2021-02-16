@@ -59,6 +59,15 @@ func NewTaskService(options *TaskServiceOptions) (s *taskService, err error) {
 	return s, nil
 }
 
+func InitTaskService() (err error) {
+	TaskService, err = NewTaskService(&TaskServiceOptions{
+		IsMaster:        viper.GetBool("server.master"),
+		MaxRunners:      viper.GetInt("task.maxRunners"),      // TODO: implement in db
+		PollWaitSeconds: viper.GetInt("task.pollWaitSeconds"), // TODO: implement in db
+	})
+	return err
+}
+
 type taskService struct {
 	runnersCount int                 // number of task runners
 	runners      sync.Map            // pool of task runners started
@@ -300,8 +309,4 @@ func (s *taskService) saveTask(t *model.Task, status string) (err error) {
 	}
 }
 
-var TaskService, _ = NewTaskService(&TaskServiceOptions{
-	IsMaster:        viper.GetBool("server.master"),
-	MaxRunners:      viper.GetInt("task.maxRunners"),      // TODO: implement in db
-	PollWaitSeconds: viper.GetInt("task.pollWaitSeconds"), // TODO: implement in db
-})
+var TaskService *taskService
