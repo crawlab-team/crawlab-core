@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/model"
-	db "github.com/crawlab-team/crawlab-db"
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/crawlab-db/redis"
 	cfs "github.com/crawlab-team/crawlab-fs"
-	"github.com/globalsign/mgo/bson"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"os"
 	"testing"
 	"time"
@@ -19,7 +19,7 @@ type TaskTestObject struct {
 	nodes    []*model.Node
 	spiders  []*model.Spider
 	tasks    []*model.Task
-	fs       *FileSystemService
+	fs       *fileSystemService
 	fsPath   string
 	repoPath string
 }
@@ -34,7 +34,7 @@ func (to *TaskTestObject) GetRepoPath(s model.Spider) (fsPath string) {
 
 func (to *TaskTestObject) CreateNode(name string, isMaster bool) (n *model.Node, err error) {
 	n = &model.Node{
-		Id:       bson.NewObjectId(),
+		Id:       primitive.NewObjectID(),
 		Name:     name,
 		IsMaster: isMaster,
 	}
@@ -47,7 +47,7 @@ func (to *TaskTestObject) CreateNode(name string, isMaster bool) (n *model.Node,
 
 func (to *TaskTestObject) CreateSpider(name string) (s *model.Spider, err error) {
 	s = &model.Spider{
-		Id:   bson.NewObjectId(),
+		Id:   primitive.NewObjectID(),
 		Name: name,
 		Type: constants.Customized,
 		Cmd:  "python main.py",
@@ -55,9 +55,6 @@ func (to *TaskTestObject) CreateSpider(name string) (s *model.Spider, err error)
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
-		FileId:    bson.ObjectIdHex(constants.ObjectIdNull),
-		ProjectId: bson.ObjectIdHex(constants.ObjectIdNull),
-		UserId:    bson.ObjectIdHex(constants.ObjectIdNull),
 	}
 	if err := s.Add(); err != nil {
 		return s, err
@@ -68,14 +65,11 @@ func (to *TaskTestObject) CreateSpider(name string) (s *model.Spider, err error)
 
 func (to *TaskTestObject) CreateTask(s *model.Spider) (t *model.Task, err error) {
 	t = &model.Task{
-		Id:         uuid.New().String(),
-		SpiderId:   s.Id,
-		Type:       constants.TaskTypeSpider,
-		NodeId:     bson.ObjectIdHex(constants.ObjectIdNull),
-		ScheduleId: bson.ObjectIdHex(constants.ObjectIdNull),
-		UserId:     bson.ObjectIdHex(constants.ObjectIdNull),
+		Id:       primitive.NewObjectID(),
+		SpiderId: s.Id,
+		Type:     constants.TaskTypeSpider,
 	}
-	if err := model.AddTask(*t); err != nil {
+	if err := t.Add(); err != nil {
 		return t, err
 	}
 	to.tasks = append(to.tasks, t)
@@ -93,7 +87,7 @@ func setupTask() (to *TaskTestObject, err error) {
 	viper.Set("mongo.host", "localhost")
 	viper.Set("mongo.port", "27017")
 	viper.Set("mongo.db", "test")
-	if err := db.InitMongo(); err != nil {
+	if err := mongo.InitMongo(); err != nil {
 		return to, err
 	}
 
@@ -101,7 +95,7 @@ func setupTask() (to *TaskTestObject, err error) {
 	viper.Set("redis.address", "localhost")
 	viper.Set("redis.port", "6379")
 	viper.Set("redis.database", "0")
-	if err := db.InitRedis(); err != nil {
+	if err := redis.InitRedis(); err != nil {
 		return to, err
 	}
 
@@ -178,22 +172,22 @@ func cleanupTask(to *TaskTestObject) {
 		_ = m.DeleteDir("/spiders")
 	}
 	for _, s := range to.spiders {
-		_ = model.RemoveSpider(s.Id)
+		_ = model.SpiderService.DeleteById(s.Id)
 	}
 	to.spiders = []*model.Spider{}
 	for _, t := range to.tasks {
-		_ = model.RemoveTask(t.Id)
+		_ = model.TaskService.DeleteById(t.Id)
 	}
 	to.tasks = []*model.Task{}
 	_ = os.RemoveAll("./tmp/repo")
-	_ = db.RedisClient.Del("tasks:public")
+	_ = redis.RedisClient.Del("tasks:public")
 }
 
 func TestNewTaskService(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master TaskService
+	// create master taskService
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -210,7 +204,7 @@ func TestTaskService_Init(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master TaskService
+	// create master taskService
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster:        true,
 		PollWaitSeconds: 1,
@@ -224,17 +218,17 @@ func TestTaskService_Init(t *testing.T) {
 	// test assign task
 	task, err := to.CreateTask(to.spiders[1])
 	require.Nil(t, err)
-	err = s.Assign(*task)
+	err = s.Assign(task)
 	require.Nil(t, err)
-	*task, err = model.GetTask(task.Id)
+	*task, err = model.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusPending, task.Status)
 	time.Sleep(2 * time.Second)
-	*task, err = model.GetTask(task.Id)
+	*task, err = model.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	*task, err = model.GetTask(task.Id)
+	*task, err = model.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 
@@ -245,7 +239,7 @@ func TestTaskService_Assign(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master TaskService
+	// create master taskService
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -255,15 +249,15 @@ func TestTaskService_Assign(t *testing.T) {
 	// test assign (without init)
 	task, err := to.CreateTask(to.spiders[0])
 	require.Nil(t, err)
-	err = s.Assign(*task)
+	err = s.Assign(task)
 	require.Nil(t, err)
-	count, err := db.RedisClient.LLen("tasks:public")
+	count, err := redis.RedisClient.LLen("tasks:public")
 	require.Nil(t, err)
 	require.Equal(t, 1, count)
-	result, err := db.RedisClient.LPop("tasks:public")
+	result, err := redis.RedisClient.LPop("tasks:public")
 	require.Nil(t, err)
 	require.NotEmpty(t, result)
-	count, err = db.RedisClient.LLen("tasks:public")
+	count, err = redis.RedisClient.LLen("tasks:public")
 	require.Nil(t, err)
 	require.Equal(t, 0, count)
 
@@ -274,7 +268,7 @@ func TestTaskService_Fetch(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master TaskService
+	// create master taskService
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -284,16 +278,16 @@ func TestTaskService_Fetch(t *testing.T) {
 	// test fetch (without init)
 	task, err := to.CreateTask(to.spiders[0])
 	require.Nil(t, err)
-	err = s.Assign(*task)
+	err = s.Assign(task)
 	require.Nil(t, err)
-	count, err := db.RedisClient.LLen("tasks:public")
+	count, err := redis.RedisClient.LLen("tasks:public")
 	require.Nil(t, err)
 	require.Equal(t, 1, count)
 	task2, err := s.Fetch()
 	require.Nil(t, err)
 	require.Equal(t, task.Id, task2.Id)
 	require.Nil(t, err)
-	count, err = db.RedisClient.LLen("tasks:public")
+	count, err = redis.RedisClient.LLen("tasks:public")
 	require.Nil(t, err)
 	require.Equal(t, 0, count)
 
@@ -304,7 +298,7 @@ func TestTaskService_Run(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master TaskService
+	// create master taskService
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -314,7 +308,7 @@ func TestTaskService_Run(t *testing.T) {
 	// test run (full process: assign -> fetch -> run)
 	task, err := to.CreateTask(to.spiders[1])
 	require.Nil(t, err)
-	err = s.Assign(*task)
+	err = s.Assign(task)
 	require.Nil(t, err)
 	*task, err = s.Fetch()
 	require.Nil(t, err)
@@ -324,11 +318,11 @@ func TestTaskService_Run(t *testing.T) {
 	require.Equal(t, constants.ErrAlreadyExists, err)
 	require.Equal(t, 1, s.runnersCount)
 	time.Sleep(1 * time.Second)
-	*task, err = model.GetTask(task.Id)
+	*task, err = model.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	*task, err = model.GetTask(task.Id)
+	*task, err = model.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 
@@ -339,7 +333,7 @@ func TestTaskService_RunMultipleTasks(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master TaskService
+	// create master taskService
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster:        true,
 		PollWaitSeconds: 1,
@@ -355,7 +349,7 @@ func TestTaskService_RunMultipleTasks(t *testing.T) {
 	for i := 0; i < nt; i++ {
 		task, err := to.CreateTask(to.spiders[1])
 		require.Nil(t, err)
-		err = s.Assign(*task)
+		err = s.Assign(task)
 		require.Nil(t, err)
 	}
 	maxRunnersCount := 0
@@ -377,7 +371,7 @@ func TestTaskService_RunMultipleTasksDifferentSpiders(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master TaskService
+	// create master taskService
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster:        true,
 		PollWaitSeconds: 1,
@@ -393,7 +387,7 @@ func TestTaskService_RunMultipleTasksDifferentSpiders(t *testing.T) {
 	for i := 0; i < nt; i++ {
 		task, err := to.CreateTask(to.spiders[i])
 		require.Nil(t, err)
-		err = s.Assign(*task)
+		err = s.Assign(task)
 		require.Nil(t, err)
 	}
 	time.Sleep(4 * time.Second)
@@ -408,4 +402,3 @@ func TestTaskService_RunMultipleTasksDifferentSpiders(t *testing.T) {
 
 	cleanupTask(to)
 }
-

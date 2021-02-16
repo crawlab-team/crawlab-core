@@ -1,25 +1,5 @@
 package spider_handler
 
-//import (
-//	"fmt"
-//	"github.com/apex/log"
-//	"github.com/crawlab-team/crawlab-core/constants"
-//	"github.com/crawlab-team/crawlab-core/model"
-//	"github.com/crawlab-team/crawlab-core/services/local_node"
-//	"github.com/crawlab-team/crawlab-core/utils"
-//	"github.com/globalsign/mgo/bson"
-//	"github.com/satori/go.uuid"
-//	"github.com/spf13/viper"
-//	"io"
-//	"os"
-//	"os/exec"
-//	"path"
-//	"path/filepath"
-//	"runtime/debug"
-//	"strings"
-//	"sync"
-//)
-//
 //const (
 //	Md5File = "md5.txt"
 //)

@@ -40,7 +40,7 @@ type FileSystemServiceOptions struct {
 	RepoPath      string
 }
 
-func NewFileSystemService(options *FileSystemServiceOptions) (s *FileSystemService, err error) {
+func NewFileSystemService(options *FileSystemServiceOptions) (s *fileSystemService, err error) {
 	// options
 	if options == nil {
 		options = &FileSystemServiceOptions{
@@ -90,7 +90,7 @@ func NewFileSystemService(options *FileSystemServiceOptions) (s *FileSystemServi
 	}
 
 	// file system service
-	s = &FileSystemService{
+	s = &fileSystemService{
 		fs:    fs,
 		local: local,
 		repo:  repo,
@@ -100,14 +100,14 @@ func NewFileSystemService(options *FileSystemServiceOptions) (s *FileSystemServi
 	return s, nil
 }
 
-type FileSystemService struct {
+type fileSystemService struct {
 	fs    *cfs.SeaweedFSManager
 	local *vcs.GitClient
 	repo  *vcs.GitClient
 	opts  *FileSystemServiceOptions
 }
 
-func (s *FileSystemService) List(path string) (files []entity.FsFileInfo, err error) {
+func (s *fileSystemService) List(path string) (files []entity.FsFileInfo, err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return files, constants.ErrForbidden
@@ -146,7 +146,7 @@ func (s *FileSystemService) List(path string) (files []entity.FsFileInfo, err er
 	return files, nil
 }
 
-func (s *FileSystemService) GetFile(path string) (data []byte, err error) {
+func (s *fileSystemService) GetFile(path string) (data []byte, err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return data, constants.ErrForbidden
@@ -159,7 +159,7 @@ func (s *FileSystemService) GetFile(path string) (data []byte, err error) {
 	return s.fs.GetFile(remotePath)
 }
 
-func (s *FileSystemService) Save(path string, data []byte) (err error) {
+func (s *fileSystemService) Save(path string, data []byte) (err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -172,7 +172,7 @@ func (s *FileSystemService) Save(path string, data []byte) (err error) {
 	return s.fs.UpdateFile(remotePath, data)
 }
 
-func (s *FileSystemService) Rename(path, newPath string) (err error) {
+func (s *fileSystemService) Rename(path, newPath string) (err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -218,7 +218,7 @@ func (s *FileSystemService) Rename(path, newPath string) (err error) {
 	return nil
 }
 
-func (s *FileSystemService) Delete(path string) (err error) {
+func (s *fileSystemService) Delete(path string) (err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -237,7 +237,7 @@ func (s *FileSystemService) Delete(path string) (err error) {
 	return nil
 }
 
-func (s *FileSystemService) Commit(msg string) (err error) {
+func (s *fileSystemService) Commit(msg string) (err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -273,7 +273,7 @@ func (s *FileSystemService) Commit(msg string) (err error) {
 	return nil
 }
 
-func (s *FileSystemService) SyncToFs() (err error) {
+func (s *fileSystemService) SyncToFs() (err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -299,7 +299,7 @@ func (s *FileSystemService) SyncToFs() (err error) {
 	return nil
 }
 
-func (s *FileSystemService) SyncToWorkspace() (err error) {
+func (s *fileSystemService) SyncToWorkspace() (err error) {
 	// validate options
 	if s.opts.WorkspacePath == "" {
 		return constants.ErrInvalidOptions
@@ -320,7 +320,7 @@ func (s *FileSystemService) SyncToWorkspace() (err error) {
 	return nil
 }
 
-func (s *FileSystemService) GetLocalTempGitClient() (c *vcs.GitClient, dirPath string, err error) {
+func (s *fileSystemService) GetLocalTempGitClient() (c *vcs.GitClient, dirPath string, err error) {
 	// validate options
 	if s.opts.RepoPath == "" {
 		return c, dirPath, constants.ErrInvalidOptions
@@ -358,3 +358,11 @@ func (s *FileSystemService) GetLocalTempGitClient() (c *vcs.GitClient, dirPath s
 
 	return c, dirPath, nil
 }
+
+//
+//var FileSystemService, _ = NewFileSystemService(&FileSystemServiceOptions{
+//	IsMaster:      viper.GetBool("server.master"),
+//	FsPath:        viper.GetString("fs.path"),
+//	WorkspacePath: viper.GetString("fs.workspacePath"),
+//	RepoPath:      viper.GetString("fs.repoPath"),
+//})

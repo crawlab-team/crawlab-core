@@ -15,6 +15,9 @@ type ServiceInterface interface {
 }
 
 func NewService(colName string) (svc *Service) {
+	if mongo.Client == nil {
+		_ = mongo.InitMongo()
+	}
 	col := mongo.GetMongoCol(colName)
 	return &Service{
 		col: col,

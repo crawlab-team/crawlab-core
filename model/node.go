@@ -16,6 +16,7 @@ type Node struct {
 	Hostname    string             `json:"hostname" bson:"hostname"`
 	Description string             `json:"description" bson:"description"`
 	Key         string             `json:"key" bson:"key"`
+	IsMaster    bool               `json:"is_master" bson:"is_master"`
 
 	Settings NodeSettings `json:"settings" bson:"settings"`
 }

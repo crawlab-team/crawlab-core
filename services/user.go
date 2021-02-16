@@ -7,14 +7,15 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
 	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
 	"time"
 )
 
 func InitUserService() error {
-	_ = CreateNewUser("admin", "admin", constants.RoleAdmin, "", bson.ObjectIdHex(constants.ObjectIdNull))
+	_ = CreateNewUser("admin", "admin", constants.RoleAdmin, "")
 	return nil
 }
 
@@ -74,9 +75,12 @@ func CheckToken(tokenStr string) (user model.User, err error) {
 		return
 	}
 
-	id := bson.ObjectIdHex(claim["id"].(string))
+	id, err := primitive.ObjectIDFromHex(claim["id"].(string))
+	if err != nil {
+		return user, err
+	}
 	username := claim["username"].(string)
-	user, err = model.GetUser(id)
+	user, err = model.UserService.GetById(id)
 	if err != nil {
 		err = errors.New("cannot get user")
 		return
@@ -90,13 +94,12 @@ func CheckToken(tokenStr string) (user model.User, err error) {
 	return
 }
 
-func CreateNewUser(username string, password string, role string, email string, uid bson.ObjectId) error {
+func CreateNewUser(username string, password string, role string, email string) error {
 	user := model.User{
 		Username: strings.ToLower(username),
 		Password: utils.EncryptPassword(password),
 		Role:     role,
 		Email:    email,
-		UserId:   uid,
 		Setting: model.UserSetting{
 			NotificationTrigger: constants.NotificationTriggerNever,
 			EnabledNotifications: []string{
@@ -120,12 +123,12 @@ func GetCurrentUser(c *gin.Context) *model.User {
 	return data.(*model.User)
 }
 
-func GetCurrentUserId(c *gin.Context) bson.ObjectId {
+func GetCurrentUserId(c *gin.Context) primitive.ObjectID {
 	return GetCurrentUser(c).Id
 }
 
 func GetAdminUser() (user *model.User, err error) {
-	u, err := model.GetUserByUsername("admin")
+	u, err := model.UserService.Get(bson.M{"username": "admin"}, nil)
 	if err != nil {
 		return user, err
 	}

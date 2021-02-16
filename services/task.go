@@ -8,6 +8,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/model"
 	"github.com/crawlab-team/crawlab-db/redis"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"sync"
@@ -17,21 +18,20 @@ import (
 type TaskServiceInterface interface {
 	Init() (err error)
 	Close()
-	Assign(t model.Task) (err error)
+	Assign(t *model.Task) (err error)
 	Fetch() (t model.Task, err error)
-	Run(taskId string) (err error)
-	Cancel(taskId string) (err error)
-	FindLogs(id string, pattern string, skip, size int) (lines []string, err error)
+	Run(taskId primitive.ObjectID) (err error)
+	Cancel(taskId primitive.ObjectID) (err error)
+	FindLogs(id primitive.ObjectID, pattern string, skip, size int) (lines []string, err error)
 }
 
 type TaskServiceOptions struct {
-	IsMaster        bool        // whether TaskService is on master node
-	MaxRunners      int         // max TaskRunner count that can run on TaskService, default: 8
-	PollWaitSeconds int         // number of seconds that TaskService.Fetch will be executed, default: 5
-	Node            *model.Node // Node where TaskService is running
+	IsMaster        bool // whether taskService is on master node
+	MaxRunners      int  // max TaskRunner count that can run on taskService, default: 8
+	PollWaitSeconds int  // number of seconds that taskService.Fetch will be executed, default: 5
 }
 
-func NewTaskService(options *TaskServiceOptions) (s *TaskService, err error) {
+func NewTaskService(options *TaskServiceOptions) (s *taskService, err error) {
 	// normalize options
 	if options == nil {
 		options = &TaskServiceOptions{
@@ -49,8 +49,8 @@ func NewTaskService(options *TaskServiceOptions) (s *TaskService, err error) {
 		options.PollWaitSeconds = 5
 	}
 
-	// construct TaskService
-	s = &TaskService{
+	// construct taskService
+	s = &taskService{
 		runnersCount: 0,
 		runners:      sync.Map{},
 		opts:         options,
@@ -59,19 +59,19 @@ func NewTaskService(options *TaskServiceOptions) (s *TaskService, err error) {
 	return s, nil
 }
 
-type TaskService struct {
+type taskService struct {
 	runnersCount int                 // number of task runners
 	runners      sync.Map            // pool of task runners started
 	active       bool                // whether the task service is active
 	opts         *TaskServiceOptions // options
 }
 
-func (s *TaskService) Init() (err error) {
-	// set TaskService.active to true
+func (s *taskService) Init() (err error) {
+	// set taskService.active to true
 	s.active = true
 
 	for {
-		// stop if TaskService.active is set to false
+		// stop if taskService.active is set to false
 		if !s.active {
 			return constants.ErrStopped
 		}
@@ -79,7 +79,7 @@ func (s *TaskService) Init() (err error) {
 		// wait for a period
 		time.Sleep(time.Duration(s.opts.PollWaitSeconds) * time.Second)
 
-		// stop if TaskService.active is set to false
+		// stop if taskService.active is set to false
 		if !s.active {
 			return constants.ErrStopped
 		}
@@ -108,11 +108,11 @@ func (s *TaskService) Init() (err error) {
 	}
 }
 
-func (s *TaskService) Close() {
+func (s *taskService) Close() {
 	s.active = false
 }
 
-func (s *TaskService) Assign(t model.Task) (err error) {
+func (s *taskService) Assign(t *model.Task) (err error) {
 	// validate options
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -150,13 +150,17 @@ func (s *TaskService) Assign(t model.Task) (err error) {
 	return nil
 }
 
-func (s *TaskService) Fetch() (t model.Task, err error) {
+func (s *taskService) Fetch() (t model.Task, err error) {
 	// message
 	var msg string
 
 	// fetch task from node queue
-	if s.opts.Node != nil {
-		queueCur := "tasks:node:" + s.opts.Node.Id.Hex()
+	n, err := NodeService.GetCurrentNode()
+	if err != nil {
+		return t, err
+	}
+	if n != nil {
+		queueCur := "tasks:node:" + n.Id.Hex()
 		msg, err = redis.RedisClient.LPop(queueCur)
 	}
 
@@ -190,7 +194,7 @@ func (s *TaskService) Fetch() (t model.Task, err error) {
 	return t, nil
 }
 
-func (s *TaskService) Run(taskId primitive.ObjectID) (err error) {
+func (s *taskService) Run(taskId primitive.ObjectID) (err error) {
 	_, ok := s.runners.Load(taskId)
 	if ok {
 		return constants.ErrAlreadyExists
@@ -229,7 +233,7 @@ func (s *TaskService) Run(taskId primitive.ObjectID) (err error) {
 	return nil
 }
 
-func (s *TaskService) Cancel(taskId string) (err error) {
+func (s *taskService) Cancel(taskId primitive.ObjectID) (err error) {
 	r, err := s.getTaskRunner(taskId)
 	if err != nil {
 		return err
@@ -240,7 +244,7 @@ func (s *TaskService) Cancel(taskId string) (err error) {
 	return nil
 }
 
-func (s *TaskService) FindLogs(taskId string, pattern string, skip, size int) (lines []string, err error) {
+func (s *taskService) FindLogs(taskId primitive.ObjectID, pattern string, skip, size int) (lines []string, err error) {
 	r, err := s.getTaskRunner(taskId)
 	if err != nil {
 		return lines, err
@@ -252,7 +256,7 @@ func (s *TaskService) FindLogs(taskId string, pattern string, skip, size int) (l
 	return lines, nil
 }
 
-func (s *TaskService) getTaskRunner(taskId string) (r *TaskRunner, err error) {
+func (s *taskService) getTaskRunner(taskId primitive.ObjectID) (r *TaskRunner, err error) {
 	v, ok := s.runners.Load(taskId)
 	if !ok {
 		return r, constants.ErrNotExists
@@ -266,7 +270,7 @@ func (s *TaskService) getTaskRunner(taskId string) (r *TaskRunner, err error) {
 	return r, nil
 }
 
-func (s *TaskService) saveTask(t model.Task, status string) (err error) {
+func (s *taskService) saveTask(t *model.Task, status string) (err error) {
 	// normalize status
 	if status == "" {
 		status = constants.StatusPending
@@ -295,3 +299,9 @@ func (s *TaskService) saveTask(t model.Task, status string) (err error) {
 		return nil
 	}
 }
+
+var TaskService, _ = NewTaskService(&TaskServiceOptions{
+	IsMaster:        viper.GetBool("server.master"),
+	MaxRunners:      viper.GetInt("task.maxRunners"),      // TODO: implement in db
+	PollWaitSeconds: viper.GetInt("task.pollWaitSeconds"), // TODO: implement in db
+})

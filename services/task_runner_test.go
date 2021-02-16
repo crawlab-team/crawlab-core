@@ -21,7 +21,7 @@ type TaskRunnerTestObject struct {
 	spider   model.Spider
 	taskId   primitive.ObjectID
 	task     model.Task
-	fs       *FileSystemService
+	fs       *fileSystemService
 	fsPath   string
 	repoPath string
 }

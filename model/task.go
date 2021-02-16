@@ -27,6 +27,8 @@ type Task struct {
 	RunType         string             `json:"run_type" bson:"run_type"`
 	ScheduleId      primitive.ObjectID `json:"schedule_id" bson:"schedule_id"`
 	Type            string             `json:"type" bson:"type"`
+	Mode            string             `json:"mode" bson:"mode"`           // running mode
+	ParentId        primitive.ObjectID `json:"parent_id" bson:"parent_id"` // parent task id if it's a sub-task
 }
 
 func (t *Task) Add() (err error) {
