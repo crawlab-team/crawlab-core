@@ -61,4 +61,5 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 	github.com/ztrue/tracerr v0.3.0
 	github.com/crawlab-team/go-trace v0.0.0
+	github.com/robfig/cron/v3 v3.0.1
 )

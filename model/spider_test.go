@@ -81,3 +81,23 @@ func TestSpider_Delete(t *testing.T) {
 
 	cleanupSpiderTest()
 }
+
+func TestSpider_DeleteList(t *testing.T) {
+	err := setupSpiderTest()
+	require.Nil(t, err)
+
+	doc := Spider{
+		Name: "test_Spider",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = SpiderService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := SpiderService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupSpiderTest()
+}

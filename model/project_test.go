@@ -81,3 +81,23 @@ func TestProject_Delete(t *testing.T) {
 
 	cleanupProjectTest()
 }
+
+func TestProject_DeleteList(t *testing.T) {
+	err := setupProjectTest()
+	require.Nil(t, err)
+
+	doc := Project{
+		Name: "test_Project",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = ProjectService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := ProjectService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupProjectTest()
+}

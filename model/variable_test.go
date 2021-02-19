@@ -81,3 +81,23 @@ func TestVariable_Delete(t *testing.T) {
 
 	cleanupVariableTest()
 }
+
+func TestVariable_DeleteList(t *testing.T) {
+	err := setupVariableTest()
+	require.Nil(t, err)
+
+	doc := Variable{
+		Key: "test_Variable",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = VariableService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := VariableService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupVariableTest()
+}

@@ -81,3 +81,23 @@ func TestNode_Delete(t *testing.T) {
 
 	cleanupNodeTest()
 }
+
+func TestNode_DeleteList(t *testing.T) {
+	err := setupNodeTest()
+	require.Nil(t, err)
+
+	doc := Node{
+		Name: "test_node",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = NodeService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := NodeService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupNodeTest()
+}

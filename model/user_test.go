@@ -81,3 +81,23 @@ func TestUser_Delete(t *testing.T) {
 
 	cleanupUserTest()
 }
+
+func TestUser_DeleteList(t *testing.T) {
+	err := setupUserTest()
+	require.Nil(t, err)
+
+	doc := User{
+		Username: "test_User",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = UserService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := UserService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupUserTest()
+}

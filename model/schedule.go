@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/crawlab-team/crawlab-core/lib/cron"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -16,7 +16,7 @@ type Schedule struct {
 	EntryId        cron.EntryID         `json:"entry_id" bson:"entry_id"`
 	Param          string               `json:"param" bson:"param"`
 	RunType        string               `json:"run_type" bson:"run_type"`
-	ScheduleIds    []primitive.ObjectID `json:"schedule_ids" bson:"schedule_ids"`
+	NodeIds        []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
 	Status         string               `json:"status" bson:"status"`
 	Enabled        bool                 `json:"enabled" bson:"enabled"`
 	UserId         primitive.ObjectID   `json:"user_id" bson:"user_id"`
@@ -74,6 +74,10 @@ func (svc *scheduleService) DeleteById(id primitive.ObjectID) (err error) {
 
 func (svc *scheduleService) DeleteList(query bson.M) (err error) {
 	return svc.delete(query)
+}
+
+func (svc *scheduleService) Count(query bson.M) (total int, err error) {
+	return svc.count(query)
 }
 
 var ScheduleService = scheduleService{NewService(ScheduleColName)}

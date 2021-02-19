@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -12,6 +13,7 @@ type ServiceInterface interface {
 	find(query bson.M, opts *mongo.FindOptions) (fr *mongo.FindResult)
 	deleteId(id primitive.ObjectID) (err error)
 	delete(query bson.M) (err error)
+	count(query bson.M) (total int, err error)
 }
 
 func NewService(colName string) (svc *Service) {
@@ -44,19 +46,19 @@ func (s *Service) find(query bson.M, opts *mongo.FindOptions) (fr *mongo.FindRes
 
 func (s *Service) deleteId(id primitive.ObjectID) (err error) {
 	if s.col == nil {
-		return constants.ErrMissingCol
+		return trace.TraceError(constants.ErrMissingCol)
 	}
 	var doc BaseModel
 	if err := s.findId(id).One(&doc); err != nil {
 		return err
 	}
-	d := NewDelegate(s.col.GetName(), doc)
+	d := NewDelegate(s.col.GetName(), &doc)
 	return d.Delete()
 }
 
 func (s *Service) delete(query bson.M) (err error) {
 	if s.col == nil {
-		return constants.ErrMissingCol
+		return trace.TraceError(constants.ErrMissingCol)
 	}
 	var docs []BaseModel
 	if err := s.find(query, nil).All(&docs); err != nil {
@@ -68,4 +70,11 @@ func (s *Service) delete(query bson.M) (err error) {
 		}
 	}
 	return nil
+}
+
+func (s *Service) count(query bson.M) (total int, err error) {
+	if s.col == nil {
+		return total, trace.TraceError(constants.ErrMissingCol)
+	}
+	return s.col.Count(query)
 }

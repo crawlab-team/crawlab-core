@@ -28,4 +28,6 @@ var (
 	ErrStopped                     = errors.New("stopped")
 	ErrMissingId                   = errors.New("missing _id")
 	ErrMissingCol                  = errors.New("missing col")
+	ErrInvalidValue                = errors.New("invalid value")
+	ErrInvalidCronSpec             = errors.New("invalid cron spec")
 )

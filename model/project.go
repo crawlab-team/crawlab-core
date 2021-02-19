@@ -65,4 +65,8 @@ func (svc *projectService) DeleteList(query bson.M) (err error) {
 	return svc.delete(query)
 }
 
+func (svc *projectService) Count(query bson.M) (total int, err error) {
+	return svc.count(query)
+}
+
 var ProjectService = projectService{NewService(ProjectColName)}

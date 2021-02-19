@@ -81,3 +81,23 @@ func TestSetting_Delete(t *testing.T) {
 
 	cleanupSettingTest()
 }
+
+func TestSetting_DeleteList(t *testing.T) {
+	err := setupSettingTest()
+	require.Nil(t, err)
+
+	doc := Setting{
+		Key: "test_Setting",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = SettingService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := SettingService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupSettingTest()
+}

@@ -81,3 +81,23 @@ func TestSchedule_Delete(t *testing.T) {
 
 	cleanupScheduleTest()
 }
+
+func TestSchedule_DeleteList(t *testing.T) {
+	err := setupScheduleTest()
+	require.Nil(t, err)
+
+	doc := Schedule{
+		Name: "test_Schedule",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = ScheduleService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := ScheduleService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupScheduleTest()
+}

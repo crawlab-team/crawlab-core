@@ -25,5 +25,8 @@ func InitAll() (err error) {
 	if err := InitTaskService(); err != nil {
 		return err
 	}
+	if err := InitScheduleService(); err != nil {
+		return err
+	}
 	return nil
 }

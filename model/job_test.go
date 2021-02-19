@@ -82,3 +82,23 @@ func TestJob_Delete(t *testing.T) {
 
 	cleanupJobTest()
 }
+
+func TestJob_DeleteList(t *testing.T) {
+	err := setupJobTest()
+	require.Nil(t, err)
+
+	doc := Job{
+		TaskId: primitive.NewObjectID(),
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = JobService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := JobService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupJobTest()
+}

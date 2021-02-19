@@ -81,3 +81,23 @@ func TestToken_Delete(t *testing.T) {
 
 	cleanupTokenTest()
 }
+
+func TestToken_DeleteList(t *testing.T) {
+	err := setupTokenTest()
+	require.Nil(t, err)
+
+	doc := Token{
+		Token: "test_Token",
+	}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = TokenService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := TokenService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupTokenTest()
+}

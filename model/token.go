@@ -63,4 +63,8 @@ func (svc *tokenService) DeleteList(query bson.M) (err error) {
 	return svc.delete(query)
 }
 
+func (svc *tokenService) Count(query bson.M) (total int, err error) {
+	return svc.count(query)
+}
+
 var TokenService = tokenService{NewService(TokenColName)}

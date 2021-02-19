@@ -65,4 +65,8 @@ func (svc *variableService) DeleteList(query bson.M) (err error) {
 	return svc.delete(query)
 }
 
+func (svc *variableService) Count(query bson.M) (total int, err error) {
+	return svc.count(query)
+}
+
 var VariableService = variableService{NewService(VariableColName)}

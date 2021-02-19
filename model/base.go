@@ -4,6 +4,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-db/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
@@ -101,7 +102,7 @@ func (d *Delegate) Save() (err error) {
 
 func (d *Delegate) Delete() (err error) {
 	if d.doc.Id.IsZero() {
-		return constants.ErrMissingId
+		return trace.TraceError(constants.ErrMissingId)
 	}
 	col := mongo.GetMongoCol(d.colName)
 	if err := col.FindId(d.doc.Id).One(d.obj); err != nil {

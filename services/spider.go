@@ -21,9 +21,10 @@ type SpiderServiceOptions struct {
 }
 
 type SpiderRunOptions struct {
-	Mode    string
-	NodeIds []primitive.ObjectID
-	Param   string
+	Mode       string
+	NodeIds    []primitive.ObjectID
+	Param      string
+	ScheduleId primitive.ObjectID
 }
 
 type SpiderCloneOptions struct {
@@ -92,11 +93,12 @@ func (svc *spiderService) GetFs(id primitive.ObjectID) (fsSvc *spiderFsService, 
 func (svc *spiderService) assignTasks(s *model.Spider, opts *SpiderRunOptions) (err error) {
 	// main task
 	mainTask := model.Task{
-		SpiderId: s.Id,
-		Mode:     opts.Mode,
-		Cmd:      s.Cmd,
-		Param:    opts.Param,
-		Status:   constants.StatusPending,
+		SpiderId:   s.Id,
+		Mode:       opts.Mode,
+		Cmd:        s.Cmd,
+		Param:      opts.Param,
+		Status:     constants.StatusPending,
+		ScheduleId: opts.ScheduleId,
 	}
 	if err := mainTask.Add(); err != nil {
 		return err

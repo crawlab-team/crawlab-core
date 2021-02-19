@@ -79,4 +79,8 @@ func (svc *nodeService) DeleteList(query bson.M) (err error) {
 	return svc.delete(query)
 }
 
+func (svc *nodeService) Count(query bson.M) (total int, err error) {
+	return svc.count(query)
+}
+
 var NodeService = nodeService{NewService(NodeColName)}

@@ -99,3 +99,21 @@ func TestTask_Delete(t *testing.T) {
 
 	cleanupTaskTest()
 }
+
+func TestTask_DeleteList(t *testing.T) {
+	err := setupTaskTest()
+	require.Nil(t, err)
+
+	doc := Task{}
+
+	err = doc.Add()
+	require.Nil(t, err)
+
+	err = TaskService.DeleteList(nil)
+	require.Nil(t, err)
+
+	total, err := TaskService.Count(nil)
+	require.Equal(t, 0, total)
+
+	cleanupTaskTest()
+}
