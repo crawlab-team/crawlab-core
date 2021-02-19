@@ -6,8 +6,9 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	cfs "github.com/crawlab-team/crawlab-fs"
 	vcs "github.com/crawlab-team/crawlab-vcs"
+	"github.com/crawlab-team/go-trace"
 	"github.com/google/uuid"
-	"github.com/linxGnu/goseaweedfs"
+	"github.com/ztrue/tracerr"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,11 +18,12 @@ import (
 
 type FileSystemServiceInterface interface {
 	// CRUD actions on fs
-	List(path string) (files []goseaweedfs.FileInfo, err error)
-	GetFile(path string) (data []byte, err error)
-	Save(path string, data []byte) (err error)
-	Rename(path, newPath string) (err error)
-	Delete(path string) (err error)
+	List(path string, opts *FileSystemServiceCRUDOptions) (files []entity.FsFileInfo, err error)
+	GetFile(path string, opts *FileSystemServiceCRUDOptions) (data []byte, err error)
+	Save(path string, data []byte, opts *FileSystemServiceCRUDOptions) (err error)
+	Rename(path, newPath string, opts *FileSystemServiceCRUDOptions) (err error)
+	Delete(path string, opts *FileSystemServiceCRUDOptions) (err error)
+	Copy(path, newPath string, opts *FileSystemServiceCRUDOptions) (err error)
 
 	// commit all files from fs and push to git repo
 	Commit(msg string) (err error)
@@ -100,6 +102,10 @@ func NewFileSystemService(options *FileSystemServiceOptions) (s *fileSystemServi
 	return s, nil
 }
 
+type FileSystemServiceCRUDOptions struct {
+	IsAbsolute bool
+}
+
 type fileSystemService struct {
 	fs    *cfs.SeaweedFSManager
 	local *vcs.GitClient
@@ -107,17 +113,23 @@ type fileSystemService struct {
 	opts  *FileSystemServiceOptions
 }
 
-func (s *fileSystemService) List(path string) (files []entity.FsFileInfo, err error) {
+func (s *fileSystemService) List(path string, opts *FileSystemServiceCRUDOptions) (files []entity.FsFileInfo, err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return files, constants.ErrForbidden
 	}
+
+	// normalize options
+	opts = s.normalizeCRUDOptions(opts)
 
 	// normalize path
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
 	remotePath := fmt.Sprintf("%s%s", s.opts.FsPath, path)
+	if opts.IsAbsolute {
+		remotePath = path
+	}
 
 	// list items of remote path recursively
 	items, err := s.fs.ListDir(remotePath, false)
@@ -125,9 +137,14 @@ func (s *fileSystemService) List(path string) (files []entity.FsFileInfo, err er
 		return files, err
 	}
 	for _, item := range items {
+		itemPath := strings.Replace(item.FullPath, s.opts.FsPath, "", 1)
+		if opts.IsAbsolute {
+			itemPath = item.FullPath
+		}
 		info := entity.FsFileInfo{
 			Name:      item.Name,
-			Path:      item.FullPath,
+			Path:      itemPath,
+			FullPath:  item.FullPath,
 			Extension: item.Extension,
 			Md5:       item.Md5,
 			IsDir:     item.IsDir,
@@ -135,7 +152,10 @@ func (s *fileSystemService) List(path string) (files []entity.FsFileInfo, err er
 		}
 		if item.IsDir {
 			relativePath := strings.Replace(item.FullPath, s.opts.FsPath, "", 1)
-			info.Children, err = s.List(relativePath)
+			if opts.IsAbsolute {
+				relativePath = item.FullPath
+			}
+			info.Children, err = s.List(relativePath, opts)
 			if err != nil {
 				return files, err
 			}
@@ -146,37 +166,53 @@ func (s *fileSystemService) List(path string) (files []entity.FsFileInfo, err er
 	return files, nil
 }
 
-func (s *fileSystemService) GetFile(path string) (data []byte, err error) {
+func (s *fileSystemService) GetFile(path string, opts *FileSystemServiceCRUDOptions) (data []byte, err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
-		return data, constants.ErrForbidden
+		return data, trace.TraceError(constants.ErrForbidden)
 	}
+
+	// normalize options
+	opts = s.normalizeCRUDOptions(opts)
 
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
 	remotePath := fmt.Sprintf("%s%s", s.opts.FsPath, path)
+	if opts.IsAbsolute {
+		remotePath = path
+	}
 	return s.fs.GetFile(remotePath)
 }
 
-func (s *fileSystemService) Save(path string, data []byte) (err error) {
+func (s *fileSystemService) Save(path string, data []byte, opts *FileSystemServiceCRUDOptions) (err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
-		return constants.ErrForbidden
+		return trace.TraceError(constants.ErrForbidden)
 	}
+
+	// normalize options
+	opts = s.normalizeCRUDOptions(opts)
 
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
 	remotePath := fmt.Sprintf("%s%s", s.opts.FsPath, path)
+	if opts.IsAbsolute {
+		remotePath = path
+	}
 	return s.fs.UpdateFile(remotePath, data)
 }
 
-func (s *fileSystemService) Rename(path, newPath string) (err error) {
+func (s *fileSystemService) Rename(path, newPath string, opts *FileSystemServiceCRUDOptions) (err error) {
+	// TODO: implement rename directory
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
 	}
+
+	// normalize options
+	opts = s.normalizeCRUDOptions(opts)
 
 	// normalize paths
 	if !strings.HasPrefix(path, "/") {
@@ -189,6 +225,10 @@ func (s *fileSystemService) Rename(path, newPath string) (err error) {
 	// remote paths
 	remotePath := fmt.Sprintf("%s%s", s.opts.FsPath, path)
 	newRemotePath := fmt.Sprintf("%s%s", s.opts.FsPath, newPath)
+	if opts.IsAbsolute {
+		remotePath = path
+		newRemotePath = newPath
+	}
 
 	// error if new remote path exists
 	ok, err := s.fs.Exists(newRemotePath)
@@ -218,11 +258,14 @@ func (s *fileSystemService) Rename(path, newPath string) (err error) {
 	return nil
 }
 
-func (s *fileSystemService) Delete(path string) (err error) {
+func (s *fileSystemService) Delete(path string, opts *FileSystemServiceCRUDOptions) (err error) {
 	// forbidden if not master
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
 	}
+
+	// normalize options
+	opts = s.normalizeCRUDOptions(opts)
 
 	// normalize paths
 	if !strings.HasPrefix(path, "/") {
@@ -231,9 +274,65 @@ func (s *fileSystemService) Delete(path string) (err error) {
 
 	// delete remote file
 	remotePath := fmt.Sprintf("%s%s", s.opts.FsPath, path)
+	if opts.IsAbsolute {
+		remotePath = path
+	}
 	if err := s.fs.DeleteFile(remotePath); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (s *fileSystemService) Copy(path, newPath string, opts *FileSystemServiceCRUDOptions) (err error) {
+	// forbidden if not master
+	if !s.opts.IsMaster {
+		return tracerr.Wrap(constants.ErrForbidden)
+	}
+
+	// normalize options
+	opts = s.normalizeCRUDOptions(opts)
+
+	// normalize paths
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	if !strings.HasPrefix(newPath, "/") {
+		newPath = "/" + newPath
+	}
+
+	// iterate all files
+	files, err := s.List(path, opts)
+	if err != nil {
+		return trace.TraceError(err)
+	}
+	for _, file := range files {
+		if file.IsDir {
+			// directory
+			dirPathNew := fmt.Sprintf("%s/%s", newPath, file.Name)
+			dirPath := file.Path
+			if opts.IsAbsolute {
+				dirPath = file.FullPath
+			}
+			if err := s.Copy(dirPath, dirPathNew, opts); err != nil {
+				return err
+			}
+		} else {
+			// file
+			filePath := file.Path
+			if opts.IsAbsolute {
+				filePath = file.FullPath
+			}
+			data, err := s.GetFile(filePath, opts)
+			if err != nil {
+				return trace.TraceError(err)
+			}
+			filePathNew := fmt.Sprintf("%s/%s", newPath, file.Name)
+			if err := s.Save(filePathNew, data, opts); err != nil {
+				return trace.TraceError(err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -249,7 +348,7 @@ func (s *fileSystemService) Commit(msg string) (err error) {
 	}
 
 	// local temp repo
-	c, dirPath, err := s.GetLocalTempGitClient()
+	c, dirPath, err := s.getLocalTempGitClient()
 	if err != nil {
 		return err
 	}
@@ -285,7 +384,7 @@ func (s *fileSystemService) SyncToFs() (err error) {
 	}
 
 	// local temp repo
-	c, dirPath, err := s.GetLocalTempGitClient()
+	c, dirPath, err := s.getLocalTempGitClient()
 	if err != nil {
 		return err
 	}
@@ -320,7 +419,7 @@ func (s *fileSystemService) SyncToWorkspace() (err error) {
 	return nil
 }
 
-func (s *fileSystemService) GetLocalTempGitClient() (c *vcs.GitClient, dirPath string, err error) {
+func (s *fileSystemService) getLocalTempGitClient() (c *vcs.GitClient, dirPath string, err error) {
 	// validate options
 	if s.opts.RepoPath == "" {
 		return c, dirPath, constants.ErrInvalidOptions
@@ -357,6 +456,14 @@ func (s *fileSystemService) GetLocalTempGitClient() (c *vcs.GitClient, dirPath s
 	}
 
 	return c, dirPath, nil
+}
+
+func (s *fileSystemService) normalizeCRUDOptions(opts *FileSystemServiceCRUDOptions) *FileSystemServiceCRUDOptions {
+	if opts == nil {
+		opts = &FileSystemServiceCRUDOptions{}
+	}
+
+	return opts
 }
 
 //

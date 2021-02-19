@@ -90,7 +90,7 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 
 	// add python script
 	pythonScript := `print('it works')`
-	if err := to.fs.Save("main.py", []byte(pythonScript)); err != nil {
+	if err := to.fs.Save("main.py", []byte(pythonScript), nil); err != nil {
 		return to, err
 	}
 
@@ -163,7 +163,7 @@ func TestTaskRunner_RunWithError(t *testing.T) {
 	pythonScript := `
 raise Exception('an error')
 `
-	err = to.fs.Save("main.py", []byte(pythonScript))
+	err = to.fs.Save("main.py", []byte(pythonScript), nil)
 	require.Nil(t, err)
 
 	// create task runner
@@ -207,7 +207,7 @@ for i in range(%d):
     time.sleep(1)
     sys.stdout.flush()
 `, n)
-	err = to.fs.Save("main.py", []byte(pythonScript))
+	err = to.fs.Save("main.py", []byte(pythonScript), nil)
 	require.Nil(t, err)
 
 	// create task runner
@@ -246,7 +246,7 @@ for i in range(%d):
     time.sleep(1)
     sys.stdout.flush()
 `, n)
-	err = to.fs.Save("main.py", []byte(pythonScript))
+	err = to.fs.Save("main.py", []byte(pythonScript), nil)
 	require.Nil(t, err)
 
 	// create task runner

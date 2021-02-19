@@ -31,7 +31,7 @@ package services
 //		return model.File{
 //			Label:    fileInfo.Name(),
 //			Name:     fileInfo.Name(),
-//			Path:     strings.Replace(dstPath, rootPath, "", -1),
+//			FullPath:     strings.Replace(dstPath, rootPath, "", -1),
 //			IsDir:    false,
 //			Size:     fileInfo.Size(),
 //			Children: nil,
@@ -46,7 +46,7 @@ package services
 //		f = model.File{
 //			Label:    path.Base(dstPath),
 //			Name:     path.Base(dstPath),
-//			Path:     strings.Replace(dstPath, rootPath, "", -1),
+//			FullPath:     strings.Replace(dstPath, rootPath, "", -1),
 //			IsDir:    true,
 //			Size:     0,
 //			Children: nil,

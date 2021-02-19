@@ -8,6 +8,7 @@ replace (
 	github.com/crawlab-team/crawlab-grpc => /Users/marvzhang/projects/crawlab-team/crawlab-grpc/dist/go
 	github.com/crawlab-team/crawlab-log => /Users/marvzhang/projects/crawlab-team/crawlab-log
 	github.com/crawlab-team/crawlab-vcs => /Users/marvzhang/projects/crawlab-team/crawlab-vcs
+	github.com/crawlab-team/go-trace => /Users/marvzhang/projects/crawlab-team/go-trace
 	github.com/linxGnu/goseaweedfs => /Users/marvzhang/projects/tikazyq/goseaweedfs
 )
 
@@ -35,7 +36,6 @@ require (
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imroc/req v0.3.0
 	github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0 // indirect
-	github.com/linxGnu/goseaweedfs v0.1.5
 	github.com/matcornic/hermes v1.2.0
 	github.com/mattn/go-runewidth v0.0.3 // indirect
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
@@ -59,4 +59,6 @@ require (
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/russross/blackfriday.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
+	github.com/ztrue/tracerr v0.3.0
+	github.com/crawlab-team/go-trace v0.0.0
 )

@@ -141,7 +141,7 @@ package services
 //			username,
 //			password,
 //			u.Hostname(),
-//			u.Path,
+//			u.FullPath,
 //		)
 //	} else {
 //		auth, err := ssh.NewPublicKeysFromFile(username, path.Join(os.Getenv("HOME"), ".ssh", "id_rsa"), "")
@@ -235,7 +235,7 @@ package services
 //			s.GitUsername,
 //			s.GitPassword,
 //			u.Hostname(),
-//			u.Path,
+//			u.FullPath,
 //		)
 //	}
 //

@@ -164,7 +164,7 @@ func setupTask() (to *TaskTestObject, err error) {
 
 	// add scripts
 	py1 := `print('it works')`
-	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[0].Id.Hex()), []byte(py1)); err != nil {
+	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[0].Id.Hex()), []byte(py1), nil); err != nil {
 		return to, err
 	}
 	py2 := `
@@ -175,11 +175,11 @@ for i in range(3):
     time.sleep(1)
     sys.stdout.flush()
 `
-	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[1].Id.Hex()), []byte(py2)); err != nil {
+	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[1].Id.Hex()), []byte(py2), nil); err != nil {
 		return to, err
 	}
 	py3 := `print('it works')`
-	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[2].Id.Hex()), []byte(py3)); err != nil {
+	if err := to.fs.Save(fmt.Sprintf("/%s/main.py", to.spiders[2].Id.Hex()), []byte(py3), nil); err != nil {
 		return to, err
 	}
 
@@ -201,6 +201,7 @@ func cleanupTask(to *TaskTestObject) {
 	to.tasks = []*model.Task{}
 	_ = os.RemoveAll("./tmp/repo")
 	_ = redis.RedisClient.Del("tasks:public")
+	CloseTaskService()
 }
 
 func TestNewTaskService(t *testing.T) {
@@ -365,7 +366,7 @@ func TestTaskService_RunMultipleTasks(t *testing.T) {
 	go s.Init()
 
 	// test assign multiple tasks
-	nt := 5
+	nt := 3
 	for i := 0; i < nt; i++ {
 		task, err := to.CreateTask(to.spiders[1])
 		require.Nil(t, err)
@@ -377,7 +378,7 @@ func TestTaskService_RunMultipleTasks(t *testing.T) {
 		if maxRunnersCount < s.runnersCount {
 			maxRunnersCount = s.runnersCount
 		}
-		if maxRunnersCount == 5 {
+		if maxRunnersCount == nt {
 			break
 		}
 		time.Sleep(500 * time.Millisecond)

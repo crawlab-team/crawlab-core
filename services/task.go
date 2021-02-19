@@ -65,7 +65,15 @@ func InitTaskService() (err error) {
 		MaxRunners:      viper.GetInt("task.maxRunners"),      // TODO: implement in db
 		PollWaitSeconds: viper.GetInt("task.pollWaitSeconds"), // TODO: implement in db
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	go TaskService.Init()
+	return nil
+}
+
+func CloseTaskService() {
+	TaskService.Close()
 }
 
 type taskService struct {
@@ -236,7 +244,7 @@ func (s *taskService) Run(taskId primitive.ObjectID) (err error) {
 			}
 			return
 		}
-		log.Error(fmt.Sprintf("task (_id=%s) finished", r.tid))
+		log.Info(fmt.Sprintf("task (_id=%s) finished", r.tid))
 	}()
 
 	return nil

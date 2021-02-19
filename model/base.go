@@ -144,31 +144,32 @@ func (d *Delegate) upsertArtifact() (err error) {
 	// TODO: implement user
 	user, ok := ctx.Value(UserContextKey).(*User)
 	d.a.Id = d.doc.Id
-	err = col.FindId(d.doc.Id).One(d.a)
-	if err == mongo2.ErrNoDocuments {
-		// new artifact
-		d.a.CreateTs = time.Now()
-		d.a.UpdateTs = time.Now()
-		if ok {
-			d.a.CreateUid = user.Id
-			d.a.UpdateUid = user.Id
-		}
-		_, err = col.Insert(d.a)
-		if err != nil {
+	if err := col.FindId(d.doc.Id).One(d.a); err != nil {
+		if err == mongo2.ErrNoDocuments {
+			// new artifact
+			d.a.CreateTs = time.Now()
+			d.a.UpdateTs = time.Now()
+			if ok {
+				d.a.CreateUid = user.Id
+				d.a.UpdateUid = user.Id
+			}
+			_, err = col.Insert(d.a)
+			if err != nil {
+				return err
+			}
+			return nil
+		} else {
+			// error
 			return err
 		}
-		return nil
-	} else if err != nil {
-		// error
-		return err
-	} else {
-		// existing artifact
-		d.a.UpdateTs = time.Now()
-		if ok {
-			d.a.UpdateUid = user.Id
-		}
-		return col.ReplaceId(d.a.Id, d.a)
 	}
+
+	// existing artifact
+	d.a.UpdateTs = time.Now()
+	if ok {
+		d.a.UpdateUid = user.Id
+	}
+	return col.ReplaceId(d.a.Id, d.a)
 }
 
 func (d *Delegate) deleteArtifact() (err error) {

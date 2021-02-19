@@ -1,18 +1,20 @@
 package services
 
 import (
-	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/model"
-	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SpiderServiceInterface interface {
+	// basic operations
 	Run(id primitive.ObjectID, opts *SpiderRunOptions) (err error)
 	Clone(id primitive.ObjectID, opts *SpiderCloneOptions) (err error)
 	Delete(id primitive.ObjectID) (err error)
 	Sync(id primitive.ObjectID) (err error)
+
+	// get *spiderFsService
+	GetFs(id primitive.ObjectID) (fsSvc *spiderFsService, err error)
 }
 
 type SpiderServiceOptions struct {
@@ -31,6 +33,11 @@ type SpiderCloneOptions struct {
 func NewSpiderService(opts *SpiderServiceOptions) (svc *spiderService, err error) {
 	svc = &spiderService{}
 	return svc, nil
+}
+
+func InitSpiderService() (err error) {
+	SpiderService, err = NewSpiderService(nil)
+	return err
 }
 
 type spiderService struct {
@@ -57,7 +64,8 @@ func (svc *spiderService) Run(id primitive.ObjectID, opts *SpiderRunOptions) (er
 }
 
 func (svc *spiderService) Clone(id primitive.ObjectID, opts *SpiderCloneOptions) (err error) {
-	panic("implement me")
+	// TODO: implement
+	return nil
 }
 
 func (svc *spiderService) Delete(id primitive.ObjectID) (err error) {
@@ -65,28 +73,20 @@ func (svc *spiderService) Delete(id primitive.ObjectID) (err error) {
 }
 
 func (svc *spiderService) Sync(id primitive.ObjectID) (err error) {
-	fsSvc, err := NewFileSystemService(&FileSystemServiceOptions{
-		IsMaster:      viper.GetBool("server.master"),
-		FsPath:        svc.getFsPath(id),
-		WorkspacePath: svc.getWorkspacePath(id),
-		RepoPath:      svc.getRepoPath(id),
+	if fsSvc, err := svc.GetFs(id); err == nil {
+		return fsSvc.SyncToWorkspace()
+	}
+	return err
+}
+
+func (svc *spiderService) GetFs(id primitive.ObjectID) (fsSvc *spiderFsService, err error) {
+	fsSvc, err = NewSpiderFsService(&SpiderFsServiceOptions{
+		Id: id,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return fsSvc.SyncToWorkspace()
-}
-
-func (svc *spiderService) getFsPath(id primitive.ObjectID) (res string) {
-	return fmt.Sprintf("%s/%s", viper.GetString("spider.fs"), id.Hex())
-}
-
-func (svc *spiderService) getWorkspacePath(id primitive.ObjectID) (res string) {
-	return fmt.Sprintf("%s/%s", viper.GetString("spider.workspace"), id.Hex())
-}
-
-func (svc *spiderService) getRepoPath(id primitive.ObjectID) (res string) {
-	return fmt.Sprintf("%s/%s", viper.GetString("spider.repo"), id.Hex())
+	return fsSvc, nil
 }
 
 func (svc *spiderService) assignTasks(s *model.Spider, opts *SpiderRunOptions) (err error) {
@@ -164,4 +164,4 @@ func (svc *spiderService) isMultiTask(opts *SpiderRunOptions) (res bool) {
 	}
 }
 
-var SpiderService, _ = NewSpiderService(nil)
+var SpiderService *spiderService
