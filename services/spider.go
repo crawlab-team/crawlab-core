@@ -45,11 +45,6 @@ type spiderService struct {
 }
 
 func (svc *spiderService) Run(id primitive.ObjectID, opts *SpiderRunOptions) (err error) {
-	// sync to workspace
-	if err := svc.Sync(id); err != nil {
-		return err
-	}
-
 	// spider
 	s, err := model.SpiderService.GetById(id)
 	if err != nil {
