@@ -59,7 +59,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 		Cron:     "* * * * *",
 		Enabled:  true,
 	}
-	err = ScheduleService.AddSchedule(&sch)
+	err = ScheduleService.Add(&sch)
 	require.Nil(t, err)
 
 	// wait until it triggers
@@ -78,6 +78,117 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.False(t, task.Id.IsZero())
 	require.Equal(t, sch.Id, task.ScheduleId)
 	require.Equal(t, spider.Id, task.SpiderId)
+
+	cleanupTestSchedule()
+}
+
+func TestScheduleService_UpdateSchedule(t *testing.T) {
+	err := setupTestSchedule()
+	require.Nil(t, err)
+
+	// spider
+	spider := model.Spider{
+		Name: "test_spider",
+		Cmd:  "python main.py",
+	}
+	err = spider.Add()
+	require.Nil(t, err)
+	require.False(t, spider.Id.IsZero())
+
+	// script
+	script := `print('it works')`
+	fsSvc, err := SpiderService.GetFs(spider.Id)
+	require.Nil(t, err)
+	err = fsSvc.Save("main.py", []byte(script), nil)
+	require.Nil(t, err)
+
+	// add schedule
+	sch := model.Schedule{
+		Name:     "test_schedule",
+		SpiderId: spider.Id,
+		Cron:     "* * * * *",
+		Enabled:  false,
+	}
+	err = ScheduleService.Add(&sch)
+	require.Nil(t, err)
+
+	// test method
+	sch.Enabled = true
+	err = ScheduleService.Update(&sch)
+	require.Nil(t, err)
+
+	// wait until it triggers
+	var task model.Task
+	timeout := 60
+	for i := 0; i < timeout; i++ {
+		task, err = model.TaskService.Get(bson.M{"schedule_id": sch.Id}, nil)
+		if err == mongo2.ErrNoDocuments {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		require.Nil(t, err)
+		break
+	}
+	require.NotNil(t, task)
+	require.False(t, task.Id.IsZero())
+	require.Equal(t, sch.Id, task.ScheduleId)
+	require.Equal(t, spider.Id, task.SpiderId)
+
+	cleanupTestSchedule()
+}
+
+func TestScheduleService_DeleteSchedule(t *testing.T) {
+	err := setupTestSchedule()
+	require.Nil(t, err)
+
+	// spider
+	spider := model.Spider{
+		Name: "test_spider",
+		Cmd:  "python main.py",
+	}
+	err = spider.Add()
+	require.Nil(t, err)
+	require.False(t, spider.Id.IsZero())
+
+	// script
+	script := `print('it works')`
+	fsSvc, err := SpiderService.GetFs(spider.Id)
+	require.Nil(t, err)
+	err = fsSvc.Save("main.py", []byte(script), nil)
+	require.Nil(t, err)
+
+	// add schedule
+	sch := model.Schedule{
+		Name:     "test_schedule",
+		SpiderId: spider.Id,
+		Cron:     "* * * * *",
+		Enabled:  false,
+	}
+	err = ScheduleService.Add(&sch)
+	require.Nil(t, err)
+
+	// test method
+	sch.Enabled = true
+	err = ScheduleService.Delete(sch.Id)
+	require.Nil(t, err)
+
+	// validate
+	entry := ScheduleService.c.Entry(sch.EntryId)
+	require.False(t, entry.Valid())
+	_, err = model.ScheduleService.GetById(sch.Id)
+	require.NotNil(t, err)
+	require.Equal(t, mongo2.ErrNoDocuments.Error(), err.Error())
+
+	cleanupTestSchedule()
+}
+
+func TestScheduleService_ParseCronSpec(t *testing.T) {
+	err := setupTestSchedule()
+	require.Nil(t, err)
+
+	// test method
+	_, err = ScheduleService.ParseCronSpec("* * * * *")
+	require.Nil(t, err)
 
 	cleanupTestSchedule()
 }

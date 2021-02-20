@@ -14,9 +14,9 @@ import (
 type ScheduleServiceInterface interface {
 	Init() (err error)
 	Close() (err error)
-	AddSchedule(s *model.Schedule) (err error)
-	UpdateSchedule(s *model.Schedule) (err error)
-	DeleteSchedule(id primitive.ObjectID) (err error)
+	Add(s *model.Schedule) (err error)
+	Update(s *model.Schedule) (err error)
+	Delete(id primitive.ObjectID) (err error)
 	ParseCronSpec(spec string) (s *cron.SpecSchedule, err error)
 }
 
@@ -76,7 +76,7 @@ func (svc *scheduleService) Close() (err error) {
 	return nil
 }
 
-func (svc *scheduleService) AddSchedule(s *model.Schedule) (err error) {
+func (svc *scheduleService) Add(s *model.Schedule) (err error) {
 	// validate schedule
 	if !svc.isValidCronSpec(s.Cron) {
 		return trace.TraceError(constants.ErrInvalidCronSpec)
@@ -101,10 +101,10 @@ func (svc *scheduleService) AddSchedule(s *model.Schedule) (err error) {
 	}
 
 	// update schedule
-	return svc.UpdateSchedule(s)
+	return svc.Update(s)
 }
 
-func (svc *scheduleService) UpdateSchedule(s *model.Schedule) (err error) {
+func (svc *scheduleService) Update(s *model.Schedule) (err error) {
 	// validate
 	if s.Id.IsZero() {
 		return trace.TraceError(constants.ErrMissingId)
@@ -126,7 +126,7 @@ func (svc *scheduleService) UpdateSchedule(s *model.Schedule) (err error) {
 	return s.Save()
 }
 
-func (svc *scheduleService) DeleteSchedule(id primitive.ObjectID) (err error) {
+func (svc *scheduleService) Delete(id primitive.ObjectID) (err error) {
 	// schedule
 	s, err := model.ScheduleService.GetById(id)
 	if err != nil {
@@ -177,7 +177,7 @@ func (svc *scheduleService) monitorAndUpdateCron() {
 		for _, sch := range schedules {
 			// validate entry id duplication
 			if _, ok := schedulesMap[sch.EntryId]; ok {
-				_ = svc.UpdateSchedule(&sch)
+				_ = svc.Update(&sch)
 			}
 
 			// assign to map
@@ -206,7 +206,7 @@ func (svc *scheduleService) monitorAndUpdateCron() {
 
 			// add to cron if not in entries
 			if _, ok := entriesMap[sch.EntryId]; !ok {
-				_ = svc.AddSchedule(sch)
+				_ = svc.Add(sch)
 			}
 		}
 
