@@ -12,20 +12,22 @@ type Env struct {
 }
 
 type Spider struct {
-	Id          primitive.ObjectID `json:"_id" bson:"_id"`                   // 爬虫ID
-	Name        string             `json:"name" bson:"name"`                 // 爬虫名称（唯一）
-	DisplayName string             `json:"display_name" bson:"display_name"` // 爬虫显示名称
-	Type        string             `json:"type" bson:"type"`                 // 爬虫类别
-	Col         string             `json:"col" bson:"col"`                   // 结果储存位置
-	Site        string             `json:"site" bson:"site"`                 // 爬虫网站
-	Envs        []Env              `json:"envs" bson:"envs"`                 // 环境变量
-	Remark      string             `json:"remark" bson:"remark"`             // 备注
-	Src         string             `json:"src" bson:"src"`                   // 源码位置
-	ProjectId   primitive.ObjectID `json:"project_id" bson:"project_id"`     // 项目ID
-	IsPublic    bool               `json:"is_public" bson:"is_public"`       // 是否公开
+	Id          primitive.ObjectID   `json:"_id" bson:"_id"`                   // 爬虫ID
+	Name        string               `json:"name" bson:"name"`                 // 爬虫名称（唯一）
+	DisplayName string               `json:"display_name" bson:"display_name"` // 爬虫显示名称
+	Type        string               `json:"type" bson:"type"`                 // 爬虫类别
+	Col         string               `json:"col" bson:"col"`                   // 结果储存位置
+	Envs        []Env                `json:"envs" bson:"envs"`                 // 环境变量
+	Description string               `json:"description" bson:"description"`   // 备注
+	ProjectId   primitive.ObjectID   `json:"project_id" bson:"project_id"`     // Project.Id
+	IsPublic    bool                 `json:"is_public" bson:"is_public"`       // 是否公开
+	Mode        string               `json:"mode" bson:"mode"`                 // default Task.Mode
+	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`         // default Task.NodeIds
+	NodeTags    []string             `json:"node_tags" bson:"node_tags"`       // default Task.NodeTags
 
 	// 自定义爬虫
-	Cmd string `json:"cmd" bson:"cmd"` // 执行命令
+	Cmd   string `json:"cmd" bson:"cmd"`     // 执行命令
+	Param string `json:"param" bson:"param"` // default task param
 
 	// Scrapy 爬虫（属于自定义爬虫）
 	IsScrapy    bool     `json:"is_scrapy" bson:"is_scrapy"`       // 是否为 Scrapy 爬虫

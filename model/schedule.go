@@ -8,16 +8,15 @@ import (
 )
 
 type Schedule struct {
-	Id             primitive.ObjectID   `json:"_id" bson:"_id"`
-	Name           string               `json:"name" bson:"name"`
-	Description    string               `json:"description" bson:"description"`
-	SpiderId       primitive.ObjectID   `json:"spider_id" bson:"spider_id"`
-	Cron           string               `json:"cron" bson:"cron"`
-	EntryId        cron.EntryID         `json:"entry_id" bson:"entry_id"`
-	Param          string               `json:"param" bson:"param"`
-	RunType        string               `json:"run_type" bson:"run_type"`
+	Id          primitive.ObjectID `json:"_id" bson:"_id"`
+	Name        string             `json:"name" bson:"name"`
+	Description string             `json:"description" bson:"description"`
+	SpiderId    primitive.ObjectID `json:"spider_id" bson:"spider_id"`
+	Cron        string             `json:"cron" bson:"cron"`
+	EntryId     cron.EntryID       `json:"entry_id" bson:"entry_id"`
+	Param       string             `json:"param" bson:"param"`
+	//RunType        string               `json:"run_type" bson:"run_type"`
 	NodeIds        []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
-	Status         string               `json:"status" bson:"status"`
 	Enabled        bool                 `json:"enabled" bson:"enabled"`
 	UserId         primitive.ObjectID   `json:"user_id" bson:"user_id"`
 	ScrapySpider   string               `json:"scrapy_spider" bson:"scrapy_spider"`

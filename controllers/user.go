@@ -1,4 +1,4 @@
-package routes
+package controllers
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
@@ -213,7 +213,7 @@ func DeleteUser(c *gin.Context) {
 	})
 }
 
-func Login(c *gin.Context) {
+func PostLogin(c *gin.Context) {
 	// 绑定请求数据
 	var reqData UserRequestData
 	if err := c.ShouldBindJSON(&reqData); err != nil {

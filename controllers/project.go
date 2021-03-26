@@ -1,14 +1,50 @@
-package routes
+package controllers
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/model"
 	"github.com/crawlab-team/crawlab-core/services"
-	database "github.com/crawlab-team/crawlab-db"
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 	"net/http"
 )
+
+var ProjectController = projectController{}
+
+type projectController struct {
+}
+
+func (ctr *projectController) Get(c *gin.Context) {
+	panic("implement me")
+}
+
+func (ctr *projectController) GetList(c *gin.Context) {
+	panic("implement me")
+}
+
+func (ctr *projectController) Post(c *gin.Context) {
+	panic("implement me")
+}
+
+func (ctr *projectController) PostList(c *gin.Context) {
+	panic("implement me")
+}
+
+func (ctr *projectController) Put(c *gin.Context) {
+	panic("implement me")
+}
+
+func (ctr *projectController) PutList(c *gin.Context) {
+	panic("implement me")
+}
+
+func (ctr *projectController) Delete(c *gin.Context) {
+	panic("implement me")
+}
+
+func (ctr *projectController) DeleteList(c *gin.Context) {
+	panic("implement me")
+}
 
 // @Summary Get projects
 // @Description Get projects

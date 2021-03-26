@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/routes"
 	"github.com/crawlab-team/crawlab-core/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -19,7 +18,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 
 		// 校验失败，返回错误响应
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, routes.Response{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, controllers.Response{
 				Status:  "ok",
 				Message: "unauthorized",
 				Error:   "unauthorized",
@@ -30,7 +29,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 		// 如果为普通权限，校验请求地址是否符合要求
 		if user.Role == constants.RoleNormal {
 			if strings.HasPrefix(strings.ToLower(c.Request.URL.Path), "/users") {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, routes.Response{
+				c.AbortWithStatusJSON(http.StatusUnauthorized, controllers.Response{
 					Status:  "ok",
 					Message: "unauthorized",
 					Error:   "unauthorized",
