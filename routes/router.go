@@ -9,7 +9,7 @@ import (
 )
 
 type RouterServiceInterface interface {
-	RegisterControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.Controller)
+	RegisterControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ListController)
 	RegisterHandlerToGroup(group *gin.RouterGroup, path string, method string, handler gin.HandlerFunc)
 }
 
@@ -25,13 +25,24 @@ func NewRouterService(app *gin.Engine) (svc *RouterService) {
 
 func (svc *RouterService) RegisterControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.Controller) {
 	group.GET(basePath, ctr.Get)
+	group.PUT(basePath, ctr.Put)
+	group.POST(basePath, ctr.Post)
+	group.DELETE(basePath, ctr.Delete)
+}
+
+func (svc *RouterService) RegisterListControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ListController) {
+	group.GET(basePath+"/:id", ctr.Get)
 	group.GET(basePath, ctr.GetList)
 	group.PUT(basePath, ctr.Put)
-	group.PUT(basePath, ctr.PutList)
-	group.POST(basePath, ctr.Post)
+	group.PUT(basePath+"/batch", ctr.PutList)
+	group.POST(basePath+"/:id", ctr.Post)
 	group.POST(basePath, ctr.PostList)
-	group.DELETE(basePath, ctr.Delete)
+	group.DELETE(basePath+"/:id", ctr.Delete)
 	group.DELETE(basePath, ctr.DeleteList)
+}
+
+func (svc *RouterService) RegisterPostControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.PostController) {
+	group.POST(basePath+"/:action", ctr.Post)
 }
 
 func (svc *RouterService) RegisterHandlerToGroup(group *gin.RouterGroup, path string, method string, handler gin.HandlerFunc) {
@@ -56,11 +67,14 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// router service
 	svc := NewRouterService(app)
 
-	// login
-	svc.RegisterHandlerToGroup(groups.AnonymousGroup, "/login", http.MethodPost, controllers.PostLogin)
-
 	// project
 	svc.RegisterControllerToGroup(groups.AuthGroup, "/projects", &controllers.ProjectController)
+
+	// user
+	svc.RegisterControllerToGroup(groups.AuthGroup, "/users", &controllers.UserController)
+
+	// login
+	svc.RegisterPostControllerToGroup(groups.AnonymousGroup, "/", &controllers.LoginController)
 
 	return nil
 }
