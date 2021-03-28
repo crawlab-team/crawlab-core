@@ -10,7 +10,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	db "github.com/crawlab-team/crawlab-db"
 	pb "github.com/crawlab-team/crawlab-grpc"
-	"github.com/globalsign/mgo/bson"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"

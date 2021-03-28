@@ -3,7 +3,7 @@ package services
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func GetAuthQuery(query bson.M, c *gin.Context) bson.M {

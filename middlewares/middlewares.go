@@ -12,5 +12,8 @@ func InitMiddlewares(app *gin.Engine) (err error) {
 	// cors
 	app.Use(CORSMiddleware())
 
+	// pagination
+	app.Use(PaginationMiddleware())
+
 	return nil
 }

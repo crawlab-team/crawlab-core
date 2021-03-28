@@ -6,7 +6,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/services"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func AuthorizationMiddleware() gin.HandlerFunc {
@@ -19,7 +18,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 
 		// validation failed, return error response
 		if err != nil {
-			controllers.HandleErrorF(http.StatusUnauthorized, c, errors.AuthUnauthorized)
+			controllers.HandleErrorUnauthorized(c, errors.ErrorUnauthorized)
 			return
 		}
 

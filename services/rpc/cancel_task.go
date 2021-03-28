@@ -7,7 +7,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/model"
 	"github.com/crawlab-team/crawlab-core/utils"
-	"github.com/globalsign/mgo/bson"
 )
 
 type CancelTaskService struct {

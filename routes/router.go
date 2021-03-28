@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/controllers"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -50,7 +51,7 @@ func (svc *RouterService) RegisterPostActionControllerToGroup(group *gin.RouterG
 				return
 			}
 		}
-		controllers.HandleErrorF(http.StatusNotFound, c, "not found")
+		controllers.HandleErrorNotFound(c, errors.ErrorNotFound)
 	})
 }
 

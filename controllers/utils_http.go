@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/go-trace"
@@ -18,14 +17,20 @@ func HandleError(statusCode int, c *gin.Context, err error) {
 	})
 }
 
-func HandleErrorF(statusCode int, c *gin.Context, errStr string) {
-	err := errors.New(errStr)
-	_ = trace.TraceError(err)
-	c.AbortWithStatusJSON(statusCode, entity.Response{
-		Status:  constants.HttpResponseStatusOk,
-		Message: constants.HttpResponseMessageError,
-		Error:   errStr,
-	})
+func HandleErrorBadRequest(c *gin.Context, err error) {
+	HandleError(http.StatusBadRequest, c, err)
+}
+
+func HandleErrorUnauthorized(c *gin.Context, err error) {
+	HandleError(http.StatusUnauthorized, c, err)
+}
+
+func HandleErrorNotFound(c *gin.Context, err error) {
+	HandleError(http.StatusNotFound, c, err)
+}
+
+func HandleErrorInternalServerError(c *gin.Context, err error) {
+	HandleError(http.StatusInternalServerError, c, err)
 }
 
 func HandleSuccess(c *gin.Context) {

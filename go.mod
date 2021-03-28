@@ -24,10 +24,11 @@ require (
 	github.com/crawlab-team/crawlab-grpc v0.0.0
 	github.com/crawlab-team/crawlab-log v0.0.0
 	github.com/crawlab-team/crawlab-vcs v0.0.0
+	github.com/crawlab-team/go-trace v0.0.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.6.3
-	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-playground/validator/v10 v10.3.0
 	github.com/gomodule/redigo v2.0.0+incompatible
@@ -41,6 +42,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic/v7 v7.0.15
 	github.com/pkg/errors v0.9.1
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil v3.20.11+incompatible
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
@@ -48,6 +50,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
 	github.com/stretchr/testify v1.6.1
+	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.4.5
 	go.uber.org/atomic v1.6.0
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
@@ -59,7 +62,4 @@ require (
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/russross/blackfriday.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
-	github.com/ztrue/tracerr v0.3.0
-	github.com/crawlab-team/go-trace v0.0.0
-	github.com/robfig/cron/v3 v3.0.1
 )
