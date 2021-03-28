@@ -18,7 +18,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 
 		// validation failed, return error response
 		if err != nil {
-			controllers.HandleErrorUnauthorized(c, errors.ErrorUnauthorized)
+			controllers.HandleErrorUnauthorized(c, errors.ErrorHttpUnauthorized)
 			return
 		}
 

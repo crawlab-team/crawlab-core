@@ -32,8 +32,8 @@ func (p *Project) Delete() (err error) {
 }
 
 func (p *Project) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(ProjectColName, p)
-	return d.GetArtifact()
+	m := NewDelegate(ProjectColName, p)
+	return m.GetArtifact()
 }
 
 const ProjectColName = "projects"
@@ -65,8 +65,27 @@ func (svc *projectService) DeleteList(query bson.M) (err error) {
 	return svc.delete(query)
 }
 
+func (svc *projectService) UpdateList(query bson.M, doc Project) (err error) {
+	update := svc.getUpdate(doc)
+	return svc.update(query, update)
+}
+
 func (svc *projectService) Count(query bson.M) (total int, err error) {
 	return svc.count(query)
+}
+
+func (svc *projectService) getUpdate(doc Project) (update bson.M) {
+	update = bson.M{}
+	if doc.Name != "" {
+		update["name"] = doc.Name
+	}
+	if doc.Description != "" {
+		update["description"] = doc.Description
+	}
+	if doc.Tags != nil {
+		update["tags"] = doc.Tags
+	}
+	return update
 }
 
 var ProjectService = projectService{NewService(ProjectColName)}

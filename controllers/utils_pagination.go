@@ -8,7 +8,7 @@ import (
 
 func GetDefaultPagination() (p *entity.Pagination) {
 	return &entity.Pagination{
-		Page: constants.PaginationDeafultPage,
+		Page: constants.PaginationDefaultPage,
 		Size: constants.PaginationDefaultSize,
 	}
 }
@@ -21,7 +21,8 @@ func GetPagination(c *gin.Context) (p *entity.Pagination, err error) {
 }
 
 func MustGetPagination(c *gin.Context) (p *entity.Pagination) {
-	if err := c.ShouldBindQuery(&p); err != nil {
+	p, err := GetPagination(c)
+	if err != nil || p == nil {
 		return GetDefaultPagination()
 	}
 	return p

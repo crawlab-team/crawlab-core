@@ -1,6 +1,6 @@
 package entity
 
 type Pagination struct {
-	Page int `json:"page"`
-	Size int `json:"size"`
+	Page int `form:"page" url:"page"`
+	Size int `form:"size" url:"size"`
 }

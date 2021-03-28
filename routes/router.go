@@ -51,7 +51,7 @@ func (svc *RouterService) RegisterPostActionControllerToGroup(group *gin.RouterG
 				return
 			}
 		}
-		controllers.HandleErrorNotFound(c, errors.ErrorNotFound)
+		controllers.HandleErrorNotFound(c, errors.ErrorHttpNotFound)
 	})
 }
 

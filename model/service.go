@@ -14,6 +14,8 @@ type ServiceInterface interface {
 	deleteId(id primitive.ObjectID) (err error)
 	delete(query bson.M) (err error)
 	count(query bson.M) (total int, err error)
+	update(query bson.M, update interface{}) (err error)
+	updateId(id primitive.ObjectID, update interface{}) (err error)
 }
 
 func NewService(colName string) (svc *Service) {
@@ -77,4 +79,17 @@ func (s *Service) count(query bson.M) (total int, err error) {
 		return total, trace.TraceError(constants.ErrMissingCol)
 	}
 	return s.col.Count(query)
+}
+
+func (s *Service) update(query bson.M, update interface{}) (err error) {
+	return s.col.Update(query, bson.M{
+		"$set": update,
+	})
+}
+
+func (s *Service) updateId(id primitive.ObjectID, update interface{}) (err error) {
+	if s.col == nil {
+		return trace.TraceError(constants.ErrMissingCol)
+	}
+	return s.col.UpdateId(id, update)
 }
