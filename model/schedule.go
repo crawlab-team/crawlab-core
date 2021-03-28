@@ -18,6 +18,7 @@ type Schedule struct {
 	//RunType        string               `json:"run_type" bson:"run_type"`
 	NodeIds        []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
 	Enabled        bool                 `json:"enabled" bson:"enabled"`
+	Mode           string               `json:"mode" bson:"mode"`
 	UserId         primitive.ObjectID   `json:"user_id" bson:"user_id"`
 	ScrapySpider   string               `json:"scrapy_spider" bson:"scrapy_spider"`
 	ScrapyLogLevel string               `json:"scrapy_log_level" bson:"scrapy_log_level"`

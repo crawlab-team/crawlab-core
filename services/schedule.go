@@ -155,7 +155,7 @@ func (svc *scheduleService) ParseCronSpec(spec string) (s *cron.SpecSchedule, er
 func (svc *scheduleService) addFunc(s *model.Schedule) (entryId cron.EntryID, err error) {
 	return svc.c.AddFunc(s.Cron, func() {
 		_ = SpiderService.Run(s.SpiderId, &SpiderRunOptions{
-			Mode:       s.RunType,
+			Mode:       s.Mode,
 			NodeIds:    s.NodeIds,
 			Param:      s.Param,
 			ScheduleId: s.Id,

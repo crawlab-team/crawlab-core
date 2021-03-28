@@ -17,6 +17,11 @@ type ListController interface {
 	DeleteList(c *gin.Context)
 }
 
-type PostController interface {
-	Post(c *gin.Context)
+type PostAction struct {
+	Name        string
+	HandlerFunc gin.HandlerFunc
+}
+
+type PostActionController interface {
+	Actions() (actions []PostAction)
 }

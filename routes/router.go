@@ -41,8 +41,17 @@ func (svc *RouterService) RegisterListControllerToGroup(group *gin.RouterGroup, 
 	group.DELETE(basePath, ctr.DeleteList)
 }
 
-func (svc *RouterService) RegisterPostControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.PostController) {
-	group.POST(basePath+"/:action", ctr.Post)
+func (svc *RouterService) RegisterPostActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.PostActionController) {
+	group.POST(basePath+"/:action", func(c *gin.Context) {
+		param := c.Param("action")
+		for _, action := range ctr.Actions() {
+			if action.Name == param {
+				action.HandlerFunc(c)
+				return
+			}
+		}
+		controllers.HandleErrorF(http.StatusNotFound, c, "not found")
+	})
 }
 
 func (svc *RouterService) RegisterHandlerToGroup(group *gin.RouterGroup, path string, method string, handler gin.HandlerFunc) {
@@ -67,14 +76,15 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// router service
 	svc := NewRouterService(app)
 
+	// login/logout
+	svc.RegisterHandlerToGroup(groups.AnonymousGroup, "/login", http.MethodPost, controllers.LoginController.Login)
+	svc.RegisterHandlerToGroup(groups.AnonymousGroup, "/logout", http.MethodPost, controllers.LoginController.Logout)
+
 	// project
 	svc.RegisterControllerToGroup(groups.AuthGroup, "/projects", &controllers.ProjectController)
 
 	// user
 	svc.RegisterControllerToGroup(groups.AuthGroup, "/users", &controllers.UserController)
-
-	// login
-	svc.RegisterPostControllerToGroup(groups.AnonymousGroup, "/", &controllers.LoginController)
 
 	return nil
 }
