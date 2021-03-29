@@ -71,7 +71,7 @@ func (ctr *projectController) Post(c *gin.Context) {
 		HandleErrorNotFound(c, err)
 		return
 	}
-	if err := p.Add(); err != nil {
+	if err := p.Save(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
