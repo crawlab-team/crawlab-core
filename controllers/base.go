@@ -25,3 +25,8 @@ type PostAction struct {
 type PostActionController interface {
 	Actions() (actions []PostAction)
 }
+
+type ListPostActionController interface {
+	ListController
+	PostActionController
+}

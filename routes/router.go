@@ -55,6 +55,11 @@ func (svc *RouterService) RegisterPostActionControllerToGroup(group *gin.RouterG
 	})
 }
 
+func (svc *RouterService) RegisterListPostActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ListPostActionController) {
+	svc.RegisterControllerToGroup(group, basePath, ctr)
+	svc.RegisterPostActionControllerToGroup(group, basePath, ctr)
+}
+
 func (svc *RouterService) RegisterHandlerToGroup(group *gin.RouterGroup, path string, method string, handler gin.HandlerFunc) {
 	switch method {
 	case http.MethodGet:
