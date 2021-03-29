@@ -2,7 +2,7 @@ package controllers
 
 import "github.com/gin-gonic/gin"
 
-type Controller interface {
+type BasicController interface {
 	Get(c *gin.Context)
 	Post(c *gin.Context)
 	Put(c *gin.Context)
@@ -10,7 +10,7 @@ type Controller interface {
 }
 
 type ListController interface {
-	Controller
+	BasicController
 	GetList(c *gin.Context)
 	PutList(c *gin.Context)
 	PostList(c *gin.Context)

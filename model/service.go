@@ -16,6 +16,18 @@ type ServiceInterface interface {
 	count(query bson.M) (total int, err error)
 	update(query bson.M, update interface{}) (err error)
 	updateId(id primitive.ObjectID, update interface{}) (err error)
+	//insert(docs ...interface{}) (err error) // TODO: implement
+}
+
+type PublicServiceInterface interface {
+	GetById(id primitive.ObjectID) (res interface{}, err error)
+	Get(query bson.M, opts *mongo.FindOptions) (res interface{}, err error)
+	GetList(query bson.M, opts *mongo.FindOptions) (res []interface{}, err error)
+	DeleteById(id primitive.ObjectID) (err error)
+	Delete(query bson.M) (err error)
+	DeleteList(query bson.M) (err error)
+	//UpdateList(query bson.M, doc interface{}) (err error)  // TODO: implement
+	Count(query bson.M) (total int, err error)
 }
 
 func NewService(colName string) (svc *Service) {

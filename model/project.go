@@ -40,19 +40,20 @@ const ProjectColName = "projects"
 
 type projectService struct {
 	*Service
+	PublicServiceInterface
 }
 
-func (svc *projectService) GetById(id primitive.ObjectID) (res Project, err error) {
+func (svc *projectService) GetById(id primitive.ObjectID) (res interface{}, err error) {
 	err = svc.findId(id).One(&res)
 	return res, err
 }
 
-func (svc *projectService) Get(query bson.M, opts *mongo.FindOptions) (res Project, err error) {
+func (svc *projectService) Get(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
 	err = svc.find(query, opts).One(&res)
 	return res, err
 }
 
-func (svc *projectService) GetList(query bson.M, opts *mongo.FindOptions) (res []Project, err error) {
+func (svc *projectService) GetList(query bson.M, opts *mongo.FindOptions) (res []interface{}, err error) {
 	err = svc.find(query, opts).All(&res)
 	return res, err
 }
@@ -88,4 +89,4 @@ func (svc *projectService) getUpdate(doc Project) (update bson.M) {
 	return update
 }
 
-var ProjectService = projectService{NewService(ProjectColName)}
+var ProjectService = projectService{NewService(ProjectColName), nil}

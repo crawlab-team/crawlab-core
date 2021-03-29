@@ -13,7 +13,7 @@ import (
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 )
 
-var ProjectController = projectController{}
+var ProjectController = NewListControllerDelegate(&model.ProjectService)
 
 type projectController struct {
 }

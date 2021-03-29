@@ -24,7 +24,7 @@ func NewRouterService(app *gin.Engine) (svc *RouterService) {
 	}
 }
 
-func (svc *RouterService) RegisterControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.Controller) {
+func (svc *RouterService) RegisterControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.BasicController) {
 	group.GET(basePath, ctr.Get)
 	group.PUT(basePath, ctr.Put)
 	group.POST(basePath, ctr.Post)
