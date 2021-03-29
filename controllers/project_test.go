@@ -144,7 +144,6 @@ func TestProjectController_GetList(t *testing.T) {
 		Conditions: []entity.Condition{
 			{Key: "tags", Op: constants.FilterOpIn, Value: []string{"test tag"}},
 		},
-		//Conditions: []entity.Condition{},
 	}
 	condBytes, err := json.Marshal(&f.Conditions)
 	require.Nil(t, err)
@@ -167,6 +166,106 @@ func TestProjectController_GetList(t *testing.T) {
 		obj.Path("$.name").Equal(fmt.Sprintf("test name %d", i+1))
 		obj.Path("$.tags").Array().First().Equal("test tag")
 	}
+
+	cleanupTestProject()
+}
+
+func TestProjectController_Delete(t *testing.T) {
+	setupTest(t)
+	app := gin.New()
+	app.GET("/projects/:id", ProjectController.Get)
+	app.PUT("/projects", ProjectController.Put)
+	app.DELETE("/projects/:id", ProjectController.Delete)
+	s := httptest.NewServer(app)
+	e := httpexpect.New(t, s.URL)
+	defer s.Close()
+
+	p := model.Project{
+		Name:        "test project",
+		Description: "this is a test project",
+		Tags:        []string{"test tag"},
+	}
+
+	// add
+	res := e.PUT("/projects").
+		WithJSON(p).
+		Expect().Status(http.StatusOK).
+		JSON().Object()
+	res.Path("$.data._id").NotNull()
+	id := res.Path("$.data._id").String().Raw()
+	oid, err := primitive.ObjectIDFromHex(id)
+	require.Nil(t, err)
+	require.False(t, oid.IsZero())
+
+	// get
+	res = e.GET("/projects/" + id).
+		Expect().Status(http.StatusOK).
+		JSON().Object()
+	res.Path("$.data._id").NotNull()
+	id = res.Path("$.data._id").String().Raw()
+	oid, err = primitive.ObjectIDFromHex(id)
+	require.Nil(t, err)
+	require.False(t, oid.IsZero())
+
+	// delete
+	e.DELETE("/projects/" + id).
+		Expect().Status(http.StatusOK).
+		JSON().Object()
+
+	// get
+	e.GET("/projects/" + id).
+		Expect().Status(http.StatusNotFound)
+
+	cleanupTestProject()
+}
+
+func TestProjectController_DeleteList(t *testing.T) {
+	setupTest(t)
+	app := gin.New()
+	app.GET("/projects", ProjectController.GetList)
+	app.PUT("/projects/batch", ProjectController.PutList)
+	app.DELETE("/projects", ProjectController.DeleteList)
+	s := httptest.NewServer(app)
+	e := httpexpect.New(t, s.URL)
+	defer s.Close()
+
+	n := 10
+	var docs []model.Project
+	for i := 0; i < n; i++ {
+		docs = append(docs, model.Project{
+			Name:        fmt.Sprintf("project %d", i+1),
+			Description: "this is a project",
+			Tags:        []string{strconv.Itoa(i % 2)},
+		})
+	}
+
+	// add
+	res := e.PUT("/projects/batch").WithJSON(docs).Expect().Status(http.StatusOK).
+		JSON().Object()
+	var ids []primitive.ObjectID
+	data := res.Path("$.data").Array()
+	for i := 0; i < n; i++ {
+		obj := data.Element(i)
+		id := obj.Path("$._id").String().Raw()
+		oid, err := primitive.ObjectIDFromHex(id)
+		require.Nil(t, err)
+		require.False(t, oid.IsZero())
+		ids = append(ids, oid)
+	}
+
+	// delete
+	payload := entity.BatchRequestPayload{
+		Ids: ids,
+	}
+	e.DELETE("/projects").
+		WithJSON(payload).
+		Expect().Status(http.StatusOK)
+
+	// check
+	res = e.GET("/projects").
+		Expect().Status(http.StatusOK).JSON().Object()
+	res.Path("$.data").Null()
+	res.Path("$.total").Number().Equal(0)
 
 	cleanupTestProject()
 }

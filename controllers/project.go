@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
 )
 
 var ProjectController = projectController{}
@@ -24,6 +25,10 @@ func (ctr *projectController) Get(c *gin.Context) {
 		return
 	}
 	p, err := model.ProjectService.GetById(id)
+	if err == mongo2.ErrNoDocuments {
+		HandleErrorNotFound(c, err)
+		return
+	}
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -119,6 +124,7 @@ func (ctr *projectController) PutList(c *gin.Context) {
 	for _, p := range docs {
 		if err := p.Add(); err != nil {
 			_ = trace.TraceError(err)
+			continue
 		}
 		resDocs = append(resDocs, p)
 	}
@@ -126,7 +132,7 @@ func (ctr *projectController) PutList(c *gin.Context) {
 		HandleErrorInternalServerError(c, errors.ErrorCrudAddError)
 		return
 	}
-	HandleSuccessData(c, docs)
+	HandleSuccessData(c, resDocs)
 }
 
 func (ctr *projectController) Delete(c *gin.Context) {
