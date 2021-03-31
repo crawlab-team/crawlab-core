@@ -17,31 +17,30 @@ func NewListControllerDelegate(id ControllerId, svc models.PublicServiceInterfac
 	return &ListControllerDelegate{
 		id:  id,
 		svc: svc,
+		bc:  NewBasicControllerDelegate(id, svc),
 	}
 }
 
 type ListControllerDelegate struct {
 	id  ControllerId
 	svc models.PublicServiceInterface
-	ListController
+	bc  BasicController
 }
 
 func (d *ListControllerDelegate) Get(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-	doc, err := d.svc.GetById(id)
-	if err == mongo2.ErrNoDocuments {
-		HandleErrorNotFound(c, err)
-		return
-	}
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	HandleSuccessData(c, doc)
+	d.bc.Get(c)
+}
+
+func (d *ListControllerDelegate) Post(c *gin.Context) {
+	d.bc.Post(c)
+}
+
+func (d *ListControllerDelegate) Put(c *gin.Context) {
+	d.bc.Put(c)
+}
+
+func (d *ListControllerDelegate) Delete(c *gin.Context) {
+	d.bc.Delete(c)
 }
 
 func (d *ListControllerDelegate) GetList(c *gin.Context) {
@@ -67,33 +66,6 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 	HandleSuccessListData(c, data, total)
 }
 
-func (d *ListControllerDelegate) Post(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-	doc, err := NewJsonBinder(d.id).Bind(c)
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-	if doc.GetId() != id {
-		HandleErrorBadRequest(c, errors.ErrorHttpBadRequest)
-		return
-	}
-	_, err = d.svc.GetById(id)
-	if err != nil {
-		HandleErrorNotFound(c, err)
-		return
-	}
-	if err := doc.Save(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	HandleSuccessData(c, doc)
-}
-
 func (d *ListControllerDelegate) PostList(c *gin.Context) {
 	payload, doc, err := NewJsonBinder(d.id).BindBatchRequestPayloadWithStringData(c)
 	if err != nil {
@@ -112,25 +84,15 @@ func (d *ListControllerDelegate) PostList(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-func (d *ListControllerDelegate) Put(c *gin.Context) {
-	doc, err := NewJsonBinder(d.id).Bind(c)
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-	if err := doc.Add(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	HandleSuccessData(c, doc)
-}
-
 func (d *ListControllerDelegate) PutList(c *gin.Context) {
+	// bind
 	docs, err := NewJsonBinder(d.id).BindList(c)
 	if err != nil {
 		HandleErrorBadRequest(c, err)
 		return
 	}
+
+	// success ids
 	var ids []primitive.ObjectID
 
 	// reflect
@@ -139,9 +101,12 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 		s := reflect.ValueOf(docs)
 		for i := 0; i < s.Len(); i++ {
 			item := s.Index(i)
+			if !item.CanAddr() {
+				HandleErrorInternalServerError(c, errors.ErrorModelInvalidType)
+				return
+			}
 			ptr := item.Addr()
 			doc, ok := ptr.Interface().(models.BaseModelInterface)
-			//doc, ok := item.Interface().(model.BaseModelInterface)
 			if !ok {
 				HandleErrorInternalServerError(c, errors.ErrorModelInvalidType)
 				return
@@ -154,38 +119,19 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 		}
 	}
 
-	//for _, doc := range docs {
-	//	if err := doc.Add(); err != nil {
-	//		_ = trace.TraceError(err)
-	//		continue
-	//	}
-	//	ids = append(ids, doc.GetId())
-	//}
-
+	// check
 	items, err := utils.GetArrayItems(docs)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 	if len(ids) < len(items) {
-		HandleErrorInternalServerError(c, errors.ErrorCrudAddError)
+		HandleErrorInternalServerError(c, errors.ErrorControllerAddError)
 		return
 	}
-	HandleSuccessData(c, docs)
-}
 
-func (d *ListControllerDelegate) Delete(c *gin.Context) {
-	id := c.Param("id")
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-	if err := d.svc.DeleteById(oid); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	HandleSuccess(c)
+	// success
+	HandleSuccessData(c, docs)
 }
 
 func (d *ListControllerDelegate) DeleteList(c *gin.Context) {

@@ -31,3 +31,7 @@ func (t *Token) GetArtifact() (a Artifact, err error) {
 	d := NewDelegate(ModelColNameToken, t)
 	return d.GetArtifact()
 }
+
+func (t *Token) GetId() (id primitive.ObjectID) {
+	return t.Id
+}

@@ -3,8 +3,17 @@ package controllers
 import "github.com/gin-gonic/gin"
 
 const (
-	ControllerIdProject = iota
+	ControllerIdNode = iota
+	ControllerIdProject
+	ControllerIdSpider
+	ControllerIdTask
+	ControllerIdJob
+	ControllerIdSchedule
 	ControllerIdUser
+	ControllerIdSetting
+	ControllerIdToken
+	ControllerIdVariable
+	ControllerIdLogin
 )
 
 type ControllerId int

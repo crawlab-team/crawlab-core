@@ -1,16 +1,19 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
 )
 
-var LoginController = loginController{}
-
-type loginController struct {
+func Login(c *gin.Context) {
+	panic(errors.ErrorControllerNotImplemented)
 }
 
-func (ctr *loginController) Login(c *gin.Context) {
+func Logout(c *gin.Context) {
+	panic(errors.ErrorControllerNotImplemented)
 }
 
-func (ctr *loginController) Logout(c *gin.Context) {
-}
+var LoginController = NewPostActionControllerDelegate(ControllerIdLogin, []PostAction{
+	{"/login", Login},
+	{"/logout", Logout},
+})

@@ -48,3 +48,7 @@ func (n *Node) GetArtifact() (a Artifact, err error) {
 	m := NewDelegate(ModelColNameNode, n)
 	return m.GetArtifact()
 }
+
+func (n *Node) GetId() (id primitive.ObjectID) {
+	return n.Id
+}

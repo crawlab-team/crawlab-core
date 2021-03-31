@@ -1,12 +1,15 @@
 package models
 
 import (
+	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"reflect"
+	"time"
 )
 
 type ServiceInterface interface {
@@ -45,28 +48,7 @@ func NewService(id ModelId) (svc *Service) {
 }
 
 func getModelColName(id ModelId) (colName string) {
-	switch id {
-	case ModelIdNode:
-		return ModelColNameNode
-	case ModelIdProject:
-		return ModelColNameProject
-	case ModelIdSpider:
-		return ModelColNameSpider
-	case ModelIdTask:
-		return ModelColNameTask
-	case ModelIdSchedule:
-		return ModelColNameSchedule
-	case ModelIdUser:
-		return ModelColNameUser
-	case ModelIdSetting:
-		return ModelColNameSetting
-	case ModelIdToken:
-		return ModelColNameToken
-	case ModelIdVariable:
-		return ModelColNameVariable
-	default:
-		panic(errors.ErrorModelNotImplemented)
-	}
+	return NewColNameBinder(id).MustBindString()
 }
 
 type Service struct {
@@ -126,9 +108,65 @@ func (svc *Service) count(query bson.M) (total int, err error) {
 }
 
 func (svc *Service) update(query bson.M, update interface{}) (err error) {
-	return svc.col.Update(query, bson.M{
-		"$set": update,
-	})
+	v := reflect.ValueOf(update)
+	switch reflect.TypeOf(update).Kind() {
+	case reflect.Struct:
+		// ids of query
+		var ids []primitive.ObjectID
+		docs := NewListBinder(svc.id, NewModelListMap(), svc.find(query, nil)).MustBind()
+		vDocs := reflect.ValueOf(docs)
+		for i := 0; i < vDocs.Len(); i++ {
+			item := vDocs.Index(i)
+			fId := item.FieldByName("Id")
+			if !fId.CanInterface() {
+				return errors.ErrorModelInvalidType
+			}
+			objId := fId.Interface()
+			id, ok := objId.(primitive.ObjectID)
+			if !ok {
+				return errors.ErrorModelInvalidType
+			}
+			ids = append(ids, id)
+		}
+
+		// convert to bson.M
+		var updateBsonM bson.M
+		bytes, err := json.Marshal(&update)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(bytes, &updateBsonM); err != nil {
+			return err
+		}
+
+		// remove _id
+		_, ok := updateBsonM["_id"]
+		if ok {
+			delete(updateBsonM, "_id")
+		}
+
+		// update model objects
+		if err := svc.col.Update(query, bson.M{"$set": updateBsonM}); err != nil {
+			return err
+		}
+
+		// update artifacts
+		colA := mongo.GetMongoCol(ArtifactColName)
+		if err := colA.Update(query, bson.M{
+			"$set": bson.M{
+				"_sys.update_ts": time.Now(),
+				// TODO: update_uid
+			},
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	case reflect.Ptr:
+		return svc.update(query, v.Elem().Interface())
+	default:
+		return errors.ErrorModelInvalidType
+	}
 }
 
 func (svc *Service) updateId(id primitive.ObjectID, update interface{}) (err error) {
@@ -139,106 +177,36 @@ func (svc *Service) updateId(id primitive.ObjectID, update interface{}) (err err
 }
 
 func (svc *Service) GetById(id primitive.ObjectID) (res interface{}, err error) {
-	err = svc.findId(id).One(&res)
-	return res, err
+	// declare
+	m := NewModelMap()
+
+	// find result
+	fr := svc.findId(id)
+
+	// bind
+	return NewBasicBinder(svc.id, m, fr).Bind()
 }
 
 func (svc *Service) Get(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
 	// declare
-	var n Node
-	var p Project
-	var s Spider
-	var t Task
-	var sch Schedule
-	var u User
-	var st Setting
-	var tk Token
-	var v Variable
+	m := NewModelMap()
 
 	// find result
 	fr := svc.find(query, opts)
 
 	// bind
-	switch svc.id {
-	case ModelIdNode:
-		err = fr.One(&n)
-		return n, err
-	case ModelIdProject:
-		err = fr.One(&p)
-		return p, err
-	case ModelIdSpider:
-		err = fr.One(&s)
-		return s, err
-	case ModelIdTask:
-		err = fr.One(&t)
-		return t, err
-	case ModelIdSchedule:
-		err = fr.One(&sch)
-		return sch, err
-	case ModelIdUser:
-		err = fr.One(&u)
-		return u, err
-	case ModelIdSetting:
-		err = fr.One(&st)
-		return st, err
-	case ModelIdToken:
-		err = fr.One(&tk)
-		return tk, err
-	case ModelIdVariable:
-		err = fr.One(&v)
-		return v, err
-	default:
-		return nil, errors.ErrorModelInvalidModelId
-	}
+	return NewBasicBinder(svc.id, m, fr).Bind()
 }
 
 func (svc *Service) GetList(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
 	// declare
-	var n []Node
-	var p []Project
-	var s []Spider
-	var t []Task
-	var sch []Schedule
-	var u []User
-	var st []Setting
-	var tk []Token
-	var v []Variable
+	m := NewModelListMap()
 
 	// find result
 	fr := svc.find(query, opts)
 
 	// bind
-	switch svc.id {
-	case ModelIdNode:
-		err = fr.All(&n)
-		return n, err
-	case ModelIdProject:
-		err = fr.All(&p)
-		return p, err
-	case ModelIdSpider:
-		err = fr.All(&s)
-		return s, err
-	case ModelIdTask:
-		err = fr.All(&t)
-		return t, err
-	case ModelIdSchedule:
-		err = fr.All(&sch)
-		return sch, err
-	case ModelIdUser:
-		err = fr.All(&u)
-		return u, err
-	case ModelIdSetting:
-		err = fr.All(&st)
-		return st, err
-	case ModelIdToken:
-		err = fr.All(&tk)
-		return tk, err
-	case ModelIdVariable:
-		err = fr.All(&v)
-		return v, err
-	default:
-		return nil, errors.ErrorModelInvalidModelId
-	}
+	return NewListBinder(svc.id, m, fr).Bind()
 }
 
 func (svc *Service) DeleteById(id primitive.ObjectID) (err error) {

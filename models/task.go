@@ -28,7 +28,7 @@ type Task struct {
 	Mode            string               `json:"mode" bson:"mode"`           // running mode of Task
 	NodeIds         []primitive.ObjectID `json:"node_ids" bson:"node_ids"`   // list of Node.Id
 	NodeTags        []string             `json:"node_tags" bson:"node_tags"` // list of Node.Tag
-	ParentId        primitive.ObjectID   `json:"parent_id" bson:"parent_id"` // parent Task.Id if it's a sub-task
+	ParentId        primitive.ObjectID   `json:"parent_id" bson:"parent_id"` // parent Task.Id if it'Spider a sub-task
 }
 
 func (t *Task) Add() (err error) {
@@ -52,6 +52,10 @@ func (t *Task) Delete() (err error) {
 func (t *Task) GetArtifact() (a Artifact, err error) {
 	d := NewDelegate(ModelColNameTask, t)
 	return d.GetArtifact()
+}
+
+func (t *Task) GetId() (id primitive.ObjectID) {
+	return t.Id
 }
 
 type TaskDailyItem struct {

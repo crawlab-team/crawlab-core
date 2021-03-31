@@ -1,7 +1,9 @@
 package errors
 
-import "errors"
+func NewModelError(msg string) (err error) {
+	return NewError(ErrorPrefixModel, msg)
+}
 
-var ErrorModelInvalidType = errors.New("invalid type")
-var ErrorModelInvalidModelId = errors.New("invalid model id")
-var ErrorModelNotImplemented = errors.New("not implemented")
+var ErrorModelInvalidType = NewModelError("invalid type")
+var ErrorModelInvalidModelId = NewModelError("invalid model id")
+var ErrorModelNotImplemented = NewModelError("not implemented")

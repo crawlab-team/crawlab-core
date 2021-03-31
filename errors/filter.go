@@ -1,6 +1,8 @@
 package errors
 
-import "errors"
+func NewFilterError(msg string) (err error) {
+	return NewError(ErrorPrefixFilter, msg)
+}
 
-var ErrorFilterInvalidOperation = errors.New("invalid operation")
-var ErrorFilterUnableToParseQuery = errors.New("unable to parse query")
+var ErrorFilterInvalidOperation = NewFilterError("invalid operation")
+var ErrorFilterUnableToParseQuery = NewFilterError("unable to parse query")

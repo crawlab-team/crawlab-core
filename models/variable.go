@@ -33,3 +33,7 @@ func (v *Variable) GetArtifact() (a Artifact, err error) {
 	d := NewDelegate(ModelColNameVariable, v)
 	return d.GetArtifact()
 }
+
+func (v *Variable) GetId() (id primitive.ObjectID) {
+	return v.Id
+}
