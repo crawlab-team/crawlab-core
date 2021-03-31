@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/services/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
 	clog "github.com/crawlab-team/crawlab-log"
@@ -70,10 +70,10 @@ type TaskRunner struct {
 	fs   *fileSystemService        // file system service fileSystemService
 	l    clog.Driver               // log service log.Driver
 	tid  primitive.ObjectID        // id of t (model.Task)
-	t    *model.Task               // task model.Task
-	s    *model.Spider             // spider model.Spider
+	t    *models.Task              // task model.Task
+	s    *models.Spider            // spider model.Spider
 	ch   chan constants.TaskSignal // channel to communicate between taskService and TaskRunner
-	envs []model.Env               // environment variables
+	envs []models.Env              // environment variables
 	opts *TaskRunnerOptions        // options
 	cwd  string                    // working directory
 
@@ -89,7 +89,7 @@ func (r *TaskRunner) Init() (err error) {
 	}
 
 	// spider
-	s, err := model.SpiderService.GetById(r.t.SpiderId)
+	s, err := models.SpiderService.GetById(r.t.SpiderId)
 	if err != nil {
 		return err
 	}
@@ -425,7 +425,7 @@ func (r *TaskRunner) configureEnv() (err error) {
 	}
 
 	// global environment variables
-	variables, err := model.VariableService.GetList(nil, nil)
+	variables, err := models.VariableService.GetList(nil, nil)
 	if err != nil {
 		return err
 	}
@@ -472,7 +472,7 @@ func (r *TaskRunner) updateTask(status string) (err error) {
 	}
 
 	// get task
-	t, err := model.TaskService.GetById(r.tid)
+	t, err := models.TaskService.GetById(r.tid)
 	if err != nil {
 		return err
 	}

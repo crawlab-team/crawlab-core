@@ -9,7 +9,7 @@ package services
 //	"github.com/apex/log"
 //	"github.com/crawlab-team/crawlab-core/constants"
 //	"github.com/crawlab-team/crawlab-core/entity"
-//	"github.com/crawlab-team/crawlab-core/model"
+//	"github.com/crawlab-team/crawlab-core/models"
 //	"io/ioutil"
 //	"os"
 //	"os/exec"

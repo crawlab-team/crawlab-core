@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,7 +18,7 @@ import (
 
 type NodeServiceInterface interface {
 	Init() (err error)
-	GetCurrentNode() (n *model.Node, err error)
+	GetCurrentNode() (n *models.Node, err error)
 	GetAllNodeIds() (ids []primitive.ObjectID, err error)
 }
 
@@ -107,8 +107,8 @@ func (svc *nodeService) Init() (err error) {
 	return nil
 }
 
-func (svc *nodeService) GetCurrentNode() (n *model.Node, err error) {
-	node, err := model.NodeService.Get(bson.M{"key": svc.data.Key}, nil)
+func (svc *nodeService) GetCurrentNode() (n *models.Node, err error) {
+	node, err := models.NodeService.Get(bson.M{"key": svc.data.Key}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (svc *nodeService) GetCurrentNode() (n *model.Node, err error) {
 }
 
 func (svc *nodeService) GetAllNodeIds() (ids []primitive.ObjectID, err error) {
-	nodes, err := model.NodeService.GetList(bson.M{"enabled": true, "active": true}, nil)
+	nodes, err := models.NodeService.GetList(bson.M{"enabled": true, "active": true}, nil)
 	if err != nil {
 		return nil, err
 	}

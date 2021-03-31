@@ -3,7 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	cfs "github.com/crawlab-team/crawlab-fs"
 	clog "github.com/crawlab-team/crawlab-log"
@@ -18,9 +18,9 @@ import (
 
 type TaskRunnerTestObject struct {
 	spiderId primitive.ObjectID
-	spider   model.Spider
+	spider   models.Spider
 	taskId   primitive.ObjectID
-	task     model.Task
+	task     models.Task
 	fs       *fileSystemService
 	fsPath   string
 	repoPath string
@@ -64,12 +64,12 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 	}
 
 	// spider
-	to.spider = model.Spider{
+	to.spider = models.Spider{
 		Id:   to.spiderId,
 		Name: "test_spider",
 		Type: constants.Customized,
 		Cmd:  "python main.py",
-		Envs: []model.Env{
+		Envs: []models.Env{
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
@@ -79,7 +79,7 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 	}
 
 	// task
-	to.task = model.Task{
+	to.task = models.Task{
 		Id:       to.taskId,
 		SpiderId: to.spiderId,
 		Type:     constants.TaskTypeSpider,
@@ -107,8 +107,8 @@ func cleanupTaskRunner(to *TaskRunnerTestObject) {
 		_ = m.DeleteDir("/logs")
 		_ = m.DeleteDir("/spiders")
 	}
-	_ = model.SpiderService.DeleteById(to.spiderId)
-	_ = model.TaskService.DeleteById(to.taskId)
+	_ = models.SpiderService.DeleteById(to.spiderId)
+	_ = models.TaskService.DeleteById(to.taskId)
 	_ = os.RemoveAll("./tmp/repo")
 }
 

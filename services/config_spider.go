@@ -5,7 +5,7 @@ package services
 //	"fmt"
 //	"github.com/crawlab-team/crawlab-core/constants"
 //	"github.com/crawlab-team/crawlab-core/entity"
-//	"github.com/crawlab-team/crawlab-core/model"
+//	"github.com/crawlab-team/crawlab-core/models"
 //	"github.com/crawlab-team/crawlab-core/model/config_spider"
 //	"strings"
 //)

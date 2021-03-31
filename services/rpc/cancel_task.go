@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/utils"
 )
 
@@ -36,7 +36,7 @@ func (s *CancelTaskService) ClientHandle() (o interface{}, err error) {
 
 func CancelTaskLocal(taskId string, nodeId string) error {
 	if !utils.TaskExecChanMap.HasChanKey(taskId) {
-		_ = model.UpdateTaskToAbnormal(bson.ObjectIdHex(nodeId))
+		_ = models.UpdateTaskToAbnormal(bson.ObjectIdHex(nodeId))
 		return errors.New(fmt.Sprintf("task id (%s) does not exist", taskId))
 	}
 	ch := utils.TaskExecChanMap.ChanBlocked(taskId)

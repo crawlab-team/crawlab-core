@@ -2,7 +2,7 @@ package services
 
 //import (
 //	"github.com/crawlab-team/crawlab-core/lib/cron"
-//	"github.com/crawlab-team/crawlab-core/model"
+//	"github.com/crawlab-team/crawlab-core/models"
 //	"github.com/crawlab-team/crawlab-core/utils"
 //	"io/ioutil"
 //	"net/url"

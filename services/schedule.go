@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/go-trace"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
@@ -14,8 +14,8 @@ import (
 type ScheduleServiceInterface interface {
 	Init() (err error)
 	Close() (err error)
-	Add(s *model.Schedule) (err error)
-	Update(s *model.Schedule) (err error)
+	Add(s *models.Schedule) (err error)
+	Update(s *models.Schedule) (err error)
 	Delete(id primitive.ObjectID) (err error)
 	ParseCronSpec(spec string) (s *cron.SpecSchedule, err error)
 }
@@ -76,7 +76,7 @@ func (svc *scheduleService) Close() (err error) {
 	return nil
 }
 
-func (svc *scheduleService) Add(s *model.Schedule) (err error) {
+func (svc *scheduleService) Add(s *models.Schedule) (err error) {
 	// validate schedule
 	if !svc.isValidCronSpec(s.Cron) {
 		return trace.TraceError(constants.ErrInvalidCronSpec)
@@ -88,7 +88,7 @@ func (svc *scheduleService) Add(s *model.Schedule) (err error) {
 			return err
 		}
 	} else {
-		_, err = model.ScheduleService.GetById(s.Id)
+		_, err = models.ScheduleService.GetById(s.Id)
 		if err == nil {
 			return constants.ErrAlreadyExists
 		}
@@ -104,7 +104,7 @@ func (svc *scheduleService) Add(s *model.Schedule) (err error) {
 	return svc.Update(s)
 }
 
-func (svc *scheduleService) Update(s *model.Schedule) (err error) {
+func (svc *scheduleService) Update(s *models.Schedule) (err error) {
 	// validate
 	if s.Id.IsZero() {
 		return trace.TraceError(constants.ErrMissingId)
@@ -128,7 +128,7 @@ func (svc *scheduleService) Update(s *model.Schedule) (err error) {
 
 func (svc *scheduleService) Delete(id primitive.ObjectID) (err error) {
 	// schedule
-	s, err := model.ScheduleService.GetById(id)
+	s, err := models.ScheduleService.GetById(id)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (svc *scheduleService) ParseCronSpec(spec string) (s *cron.SpecSchedule, er
 	return s, nil
 }
 
-func (svc *scheduleService) addFunc(s *model.Schedule) (entryId cron.EntryID, err error) {
+func (svc *scheduleService) addFunc(s *models.Schedule) (entryId cron.EntryID, err error) {
 	return svc.c.AddFunc(s.Cron, func() {
 		_ = SpiderService.Run(s.SpiderId, &SpiderRunOptions{
 			Mode:       s.Mode,
@@ -166,8 +166,8 @@ func (svc *scheduleService) addFunc(s *model.Schedule) (entryId cron.EntryID, er
 func (svc *scheduleService) monitorAndUpdateCron() {
 	for {
 		// all schedules
-		schedulesMap := map[cron.EntryID]*model.Schedule{}
-		schedules, err := model.ScheduleService.GetList(nil, nil)
+		schedulesMap := map[cron.EntryID]*models.Schedule{}
+		schedules, err := models.ScheduleService.GetList(nil, nil)
 		if err != nil {
 			if err != mongo2.ErrNoDocuments {
 				trace.PrintError(err)

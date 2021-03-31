@@ -8,7 +8,7 @@ package services
 //	"github.com/crawlab-team/crawlab-core/constants"
 //	"github.com/crawlab-team/crawlab-core/entity"
 //	"github.com/crawlab-team/crawlab-core/lib/cron"
-//	"github.com/crawlab-team/crawlab-core/model"
+//	"github.com/crawlab-team/crawlab-core/models"
 //	"github.com/crawlab-team/crawlab-core/services/rpc"
 //	"github.com/crawlab-team/crawlab-core/utils"
 //	database "github.com/crawlab-team/crawlab-db"

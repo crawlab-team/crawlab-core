@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/utils"
 	db "github.com/crawlab-team/crawlab-db"
 	pb "github.com/crawlab-team/crawlab-grpc"
@@ -25,11 +25,11 @@ type TaskTestObject struct {
 	c        pb.TaskServiceClient
 	conn     *grpc.ClientConn
 	spiderId bson.ObjectId
-	spider   model.Spider
+	spider   models.Spider
 	taskId   string
-	task     model.Task
+	task     models.Task
 	nodeId   bson.ObjectId
-	node     model.Node
+	node     models.Node
 }
 
 func setupTask() (to *TaskTestObject, err error) {
@@ -81,12 +81,12 @@ func setupTask() (to *TaskTestObject, err error) {
 	}
 
 	// spider
-	to.spider = model.Spider{
+	to.spider = models.Spider{
 		Id:   to.spiderId,
 		Name: "test_spider",
 		Type: constants.Customized,
 		Cmd:  "python main.py",
-		Envs: []model.Env{
+		Envs: []models.Env{
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
@@ -100,7 +100,7 @@ func setupTask() (to *TaskTestObject, err error) {
 	}
 
 	// task
-	to.task = model.Task{
+	to.task = models.Task{
 		Id:         to.taskId,
 		SpiderId:   to.spiderId,
 		NodeId:     to.nodeId,
@@ -108,12 +108,12 @@ func setupTask() (to *TaskTestObject, err error) {
 		ScheduleId: bson.ObjectIdHex(constants.ObjectIdNull),
 		UserId:     bson.ObjectIdHex(constants.ObjectIdNull),
 	}
-	if err := model.AddTask(to.task); err != nil {
+	if err := models.AddTask(to.task); err != nil {
 		return nil, err
 	}
 
 	// node
-	to.node = model.Node{
+	to.node = models.Node{
 		Id:       to.nodeId,
 		Name:     "node name",
 		IsMaster: true,
@@ -126,8 +126,8 @@ func setupTask() (to *TaskTestObject, err error) {
 }
 
 func cleanupTask(to *TaskTestObject) {
-	_ = model.RemoveSpider(to.spiderId)
-	_ = model.RemoveTask(to.taskId)
+	_ = models.RemoveSpider(to.spiderId)
+	_ = models.RemoveTask(to.taskId)
 	_ = to.node.Delete()
 	to.s.server.Stop()
 	_ = to.conn.Close()

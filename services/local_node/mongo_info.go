@@ -3,7 +3,7 @@ package local_node
 import (
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"go.uber.org/atomic"
 	"sync"
 	"time"
@@ -12,25 +12,25 @@ import (
 var locker atomic.Int32
 
 type mongo struct {
-	node *model.Node
+	node *models.Node
 	sync.RWMutex
 }
 
 func (n *mongo) load(retry bool) (err error) {
 	n.Lock()
 	defer n.Unlock()
-	var node model.Node
+	var node models.Node
 	if retry {
 		b := backoff.NewConstantBackOff(1 * time.Second)
 		err = backoff.Retry(func() error {
-			node, err = model.GetNodeByKey(GetLocalNode().Identify)
+			node, err = models.GetNodeByKey(GetLocalNode().Identify)
 			if err != nil {
 				log.WithError(err).Warnf("Get current node info from database failed.  Will after %f seconds, try again.", b.NextBackOff().Seconds())
 			}
 			return err
 		}, b)
 	} else {
-		node, err = model.GetNodeByKey(localNode.Identify)
+		node, err = models.GetNodeByKey(localNode.Identify)
 	}
 
 	if err != nil {
@@ -55,7 +55,7 @@ func (n *mongo) watch() {
 	}
 }
 
-func (n *mongo) Current() *model.Node {
+func (n *mongo) Current() *models.Node {
 	n.RLock()
 	defer n.RUnlock()
 	return n.node

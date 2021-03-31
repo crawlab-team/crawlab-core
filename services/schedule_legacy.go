@@ -5,7 +5,7 @@ package services
 //	"github.com/apex/log"
 //	"github.com/crawlab-team/crawlab-core/constants"
 //	"github.com/crawlab-team/crawlab-core/lib/cron"
-//	"github.com/crawlab-team/crawlab-core/model"
+//	"github.com/crawlab-team/crawlab-core/models"
 //	"github.com/globalsign/mgo/bson"
 //	uuid "github.com/satori/go.uuid"
 //	"runtime/debug"

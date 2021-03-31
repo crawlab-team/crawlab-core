@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -26,10 +26,10 @@ func setupTestSchedule() (err error) {
 
 func cleanupTestSchedule() {
 	_ = redis.RedisClient.Del("tasks:public")
-	_ = model.NodeService.DeleteList(nil)
-	_ = model.SpiderService.DeleteList(nil)
-	_ = model.TaskService.DeleteList(nil)
-	_ = model.ScheduleService.DeleteList(nil)
+	_ = models.NodeService.DeleteList(nil)
+	_ = models.SpiderService.DeleteList(nil)
+	_ = models.TaskService.DeleteList(nil)
+	_ = models.ScheduleService.DeleteList(nil)
 }
 
 func TestScheduleService_AddSchedule(t *testing.T) {
@@ -37,7 +37,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	spider := model.Spider{
+	spider := models.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}
@@ -53,7 +53,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// test method
-	sch := model.Schedule{
+	sch := models.Schedule{
 		Name:     "test_schedule",
 		SpiderId: spider.Id,
 		Cron:     "* * * * *",
@@ -63,10 +63,10 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// wait until it triggers
-	var task model.Task
+	var task models.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
-		task, err = model.TaskService.Get(bson.M{"schedule_id": sch.Id}, nil)
+		task, err = models.TaskService.Get(bson.M{"schedule_id": sch.Id}, nil)
 		if err == mongo2.ErrNoDocuments {
 			time.Sleep(1 * time.Second)
 			continue
@@ -87,7 +87,7 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	spider := model.Spider{
+	spider := models.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}
@@ -103,7 +103,7 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// add schedule
-	sch := model.Schedule{
+	sch := models.Schedule{
 		Name:     "test_schedule",
 		SpiderId: spider.Id,
 		Cron:     "* * * * *",
@@ -118,10 +118,10 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// wait until it triggers
-	var task model.Task
+	var task models.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
-		task, err = model.TaskService.Get(bson.M{"schedule_id": sch.Id}, nil)
+		task, err = models.TaskService.Get(bson.M{"schedule_id": sch.Id}, nil)
 		if err == mongo2.ErrNoDocuments {
 			time.Sleep(1 * time.Second)
 			continue
@@ -142,7 +142,7 @@ func TestScheduleService_DeleteSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	spider := model.Spider{
+	spider := models.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}
@@ -158,7 +158,7 @@ func TestScheduleService_DeleteSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// add schedule
-	sch := model.Schedule{
+	sch := models.Schedule{
 		Name:     "test_schedule",
 		SpiderId: spider.Id,
 		Cron:     "* * * * *",
@@ -175,7 +175,7 @@ func TestScheduleService_DeleteSchedule(t *testing.T) {
 	// validate
 	entry := ScheduleService.c.Entry(sch.EntryId)
 	require.False(t, entry.Valid())
-	_, err = model.ScheduleService.GetById(sch.Id)
+	_, err = models.ScheduleService.GetById(sch.Id)
 	require.NotNil(t, err)
 	require.Equal(t, mongo2.ErrNoDocuments.Error(), err.Error())
 

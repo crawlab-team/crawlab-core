@@ -6,7 +6,7 @@ import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,8 +18,8 @@ import (
 type TaskServiceInterface interface {
 	Init() (err error)
 	Close()
-	Assign(t *model.Task) (err error)
-	Fetch() (t model.Task, err error)
+	Assign(t *models.Task) (err error)
+	Fetch() (t models.Task, err error)
 	Run(taskId primitive.ObjectID) (err error)
 	Cancel(taskId primitive.ObjectID) (err error)
 	FindLogs(id primitive.ObjectID, pattern string, skip, size int) (lines []string, err error)
@@ -129,7 +129,7 @@ func (s *taskService) Close() {
 	s.active = false
 }
 
-func (s *taskService) Assign(t *model.Task) (err error) {
+func (s *taskService) Assign(t *models.Task) (err error) {
 	// validate options
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -167,7 +167,7 @@ func (s *taskService) Assign(t *model.Task) (err error) {
 	return nil
 }
 
-func (s *taskService) Fetch() (t model.Task, err error) {
+func (s *taskService) Fetch() (t models.Task, err error) {
 	// message
 	var msg string
 
@@ -203,7 +203,7 @@ func (s *taskService) Fetch() (t model.Task, err error) {
 	}
 
 	// fetch task
-	t, err = model.TaskService.GetById(tMsg.Id)
+	t, err = models.TaskService.GetById(tMsg.Id)
 	if err != nil {
 		return t, err
 	}
@@ -287,7 +287,7 @@ func (s *taskService) getTaskRunner(taskId primitive.ObjectID) (r *TaskRunner, e
 	return r, nil
 }
 
-func (s *taskService) saveTask(t *model.Task, status string) (err error) {
+func (s *taskService) saveTask(t *models.Task, status string) (err error) {
 	// normalize status
 	if status == "" {
 		status = constants.StatusPending
@@ -297,7 +297,7 @@ func (s *taskService) saveTask(t *model.Task, status string) (err error) {
 	t.Status = status
 
 	// attempt to get task from database
-	_, err = model.TaskService.GetById(t.Id)
+	_, err = models.TaskService.GetById(t.Id)
 	if err != nil {
 		// if task does not exist, add to database
 		if err == mongo2.ErrNoDocuments {

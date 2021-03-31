@@ -3,7 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/crawlab-db/redis"
 	cfs "github.com/crawlab-team/crawlab-fs"
@@ -16,24 +16,24 @@ import (
 )
 
 type TaskTestObject struct {
-	nodes    []*model.Node
-	spiders  []*model.Spider
-	tasks    []*model.Task
+	nodes    []*models.Node
+	spiders  []*models.Spider
+	tasks    []*models.Task
 	fs       *fileSystemService
 	fsPath   string
 	repoPath string
 }
 
-func (to *TaskTestObject) GetFsPath(s model.Spider) (fsPath string) {
+func (to *TaskTestObject) GetFsPath(s models.Spider) (fsPath string) {
 	return fmt.Sprintf("%s/%s", "/spiders", s.Id.Hex())
 }
 
-func (to *TaskTestObject) GetRepoPath(s model.Spider) (fsPath string) {
+func (to *TaskTestObject) GetRepoPath(s models.Spider) (fsPath string) {
 	return fmt.Sprintf("./tmp/repo/%s", s.Id.Hex())
 }
 
-func (to *TaskTestObject) CreateNode(name string, isMaster bool, key string) (n *model.Node, err error) {
-	n = &model.Node{
+func (to *TaskTestObject) CreateNode(name string, isMaster bool, key string) (n *models.Node, err error) {
+	n = &models.Node{
 		Id:       primitive.NewObjectID(),
 		Name:     name,
 		IsMaster: isMaster,
@@ -46,13 +46,13 @@ func (to *TaskTestObject) CreateNode(name string, isMaster bool, key string) (n 
 	return n, nil
 }
 
-func (to *TaskTestObject) CreateSpider(name string) (s *model.Spider, err error) {
-	s = &model.Spider{
+func (to *TaskTestObject) CreateSpider(name string) (s *models.Spider, err error) {
+	s = &models.Spider{
 		Id:   primitive.NewObjectID(),
 		Name: name,
 		Type: constants.Customized,
 		Cmd:  "python main.py",
-		Envs: []model.Env{
+		Envs: []models.Env{
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
@@ -64,8 +64,8 @@ func (to *TaskTestObject) CreateSpider(name string) (s *model.Spider, err error)
 	return s, nil
 }
 
-func (to *TaskTestObject) CreateTask(s *model.Spider) (t *model.Task, err error) {
-	t = &model.Task{
+func (to *TaskTestObject) CreateTask(s *models.Spider) (t *models.Task, err error) {
+	t = &models.Task{
 		Id:       primitive.NewObjectID(),
 		SpiderId: s.Id,
 		Type:     constants.TaskTypeSpider,
@@ -192,13 +192,13 @@ func cleanupTask(to *TaskTestObject) {
 		_ = m.DeleteDir("/spiders")
 	}
 	for _, s := range to.spiders {
-		_ = model.SpiderService.DeleteById(s.Id)
+		_ = models.SpiderService.DeleteById(s.Id)
 	}
-	to.spiders = []*model.Spider{}
+	to.spiders = []*models.Spider{}
 	for _, t := range to.tasks {
-		_ = model.TaskService.DeleteById(t.Id)
+		_ = models.TaskService.DeleteById(t.Id)
 	}
-	to.tasks = []*model.Task{}
+	to.tasks = []*models.Task{}
 	_ = os.RemoveAll("./tmp/repo")
 	_ = redis.RedisClient.Del("tasks:public")
 	CloseTaskService()
@@ -241,15 +241,15 @@ func TestTaskService_Init(t *testing.T) {
 	require.Nil(t, err)
 	err = s.Assign(task)
 	require.Nil(t, err)
-	*task, err = model.TaskService.GetById(task.Id)
+	*task, err = models.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusPending, task.Status)
 	time.Sleep(2 * time.Second)
-	*task, err = model.TaskService.GetById(task.Id)
+	*task, err = models.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	*task, err = model.TaskService.GetById(task.Id)
+	*task, err = models.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 
@@ -339,11 +339,11 @@ func TestTaskService_Run(t *testing.T) {
 	require.Equal(t, constants.ErrAlreadyExists, err)
 	require.Equal(t, 1, s.runnersCount)
 	time.Sleep(1 * time.Second)
-	*task, err = model.TaskService.GetById(task.Id)
+	*task, err = models.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	*task, err = model.TaskService.GetById(task.Id)
+	*task, err = models.TaskService.GetById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 

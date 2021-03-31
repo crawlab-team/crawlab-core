@@ -1,18 +1,18 @@
 package controllers
 
 import (
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewBasicControllerDelegate(svc model.PublicServiceInterface) (d *BasicControllerDelegate) {
+func NewBasicControllerDelegate(svc models.PublicServiceInterface) (d *BasicControllerDelegate) {
 	return &BasicControllerDelegate{svc: svc}
 }
 
 type BasicControllerDelegate struct {
-	svc model.PublicServiceInterface
+	svc models.PublicServiceInterface
 }
 
 func (d *BasicControllerDelegate) Get(c *gin.Context) {

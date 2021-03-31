@@ -7,9 +7,10 @@ import (
 	"testing"
 )
 
-func setupTest(t *testing.T) {
+func setupTest(t *testing.T, cleanup func()) {
 	err := mongo.InitMongo()
 	require.Nil(t, err)
 	err = redis.InitRedis()
 	require.Nil(t, err)
+	t.Cleanup(cleanup)
 }

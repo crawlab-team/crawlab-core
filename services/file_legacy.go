@@ -2,7 +2,7 @@ package services
 
 //import (
 //	"github.com/apex/log"
-//	"github.com/crawlab-team/crawlab-core/model"
+//	"github.com/crawlab-team/crawlab-core/models"
 //	"os"
 //	"path"
 //	"runtime/debug"

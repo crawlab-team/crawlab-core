@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -19,7 +19,7 @@ func InitUserService() error {
 	return nil
 }
 
-func MakeToken(user *model.User) (tokenStr string, err error) {
+func MakeToken(user *models.User) (tokenStr string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       user.Id,
 		"username": user.Username,
@@ -57,7 +57,7 @@ func SecretFunc() jwt.Keyfunc {
 	}
 }
 
-func CheckToken(tokenStr string) (user model.User, err error) {
+func CheckToken(tokenStr string) (user models.User, err error) {
 	token, err := jwt.Parse(tokenStr, SecretFunc())
 	if err != nil {
 		return
@@ -80,7 +80,7 @@ func CheckToken(tokenStr string) (user model.User, err error) {
 		return user, err
 	}
 	username := claim["username"].(string)
-	user, err = model.UserService.GetById(id)
+	user, err = models.UserService.GetById(id)
 	if err != nil {
 		err = errors.New("cannot get user")
 		return
@@ -95,12 +95,12 @@ func CheckToken(tokenStr string) (user model.User, err error) {
 }
 
 func CreateNewUser(username string, password string, role string, email string) error {
-	user := model.User{
+	user := models.User{
 		Username: strings.ToLower(username),
 		Password: utils.EncryptPassword(password),
 		Role:     role,
 		Email:    email,
-		Setting: model.UserSetting{
+		Setting: models.UserSetting{
 			NotificationTrigger: constants.NotificationTriggerNever,
 			EnabledNotifications: []string{
 				constants.NotificationTypeMail,
@@ -115,20 +115,20 @@ func CreateNewUser(username string, password string, role string, email string) 
 	return nil
 }
 
-func GetCurrentUser(c *gin.Context) *model.User {
+func GetCurrentUser(c *gin.Context) *models.User {
 	data, _ := c.Get(constants.ContextUser)
 	if data == nil {
-		return &model.User{}
+		return &models.User{}
 	}
-	return data.(*model.User)
+	return data.(*models.User)
 }
 
 func GetCurrentUserId(c *gin.Context) primitive.ObjectID {
 	return GetCurrentUser(c).Id
 }
 
-func GetAdminUser() (user *model.User, err error) {
-	u, err := model.UserService.Get(bson.M{"username": "admin"}, nil)
+func GetAdminUser() (user *models.User, err error) {
+	u, err := models.UserService.Get(bson.M{"username": "admin"}, nil)
 	if err != nil {
 		return user, err
 	}

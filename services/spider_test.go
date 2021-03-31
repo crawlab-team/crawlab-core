@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -25,9 +25,9 @@ func setupTestSpider() (err error) {
 
 func cleanupTestSpider() {
 	_ = redis.RedisClient.Del("tasks:public")
-	_ = model.NodeService.DeleteList(nil)
-	_ = model.SpiderService.DeleteList(nil)
-	_ = model.TaskService.DeleteList(nil)
+	_ = models.NodeService.DeleteList(nil)
+	_ = models.SpiderService.DeleteList(nil)
+	_ = models.TaskService.DeleteList(nil)
 }
 
 func TestSpiderService_Run(t *testing.T) {
@@ -35,7 +35,7 @@ func TestSpiderService_Run(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	s := model.Spider{
+	s := models.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}
@@ -58,7 +58,7 @@ func TestSpiderService_Run(t *testing.T) {
 
 	// validate task status
 	time.Sleep(5 * time.Second)
-	task, err := model.TaskService.Get(bson.M{"spider_id": s.Id}, nil)
+	task, err := models.TaskService.Get(bson.M{"spider_id": s.Id}, nil)
 	require.Nil(t, err)
 	require.False(t, task.Id.IsZero())
 	require.Equal(t, constants.StatusFinished, task.Status)

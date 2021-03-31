@@ -3,7 +3,7 @@ package rpc
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/spf13/viper"
 	"path/filepath"
@@ -35,7 +35,7 @@ func (s *RemoveSpiderService) ClientHandle() (o interface{}, err error) {
 
 func RemoveSpiderServiceLocal(spiderId string) error {
 	// 移除本地的爬虫目录
-	spider, err := model.GetSpider(bson.ObjectIdHex(spiderId))
+	spider, err := models.GetSpider(bson.ObjectIdHex(spiderId))
 	if err != nil {
 		return err
 	}

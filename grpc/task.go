@@ -7,7 +7,7 @@ import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	db "github.com/crawlab-team/crawlab-db"
 	pb "github.com/crawlab-team/crawlab-grpc"
 	"sync"
@@ -134,21 +134,21 @@ var TaskService = taskService{}
 
 func (s taskService) GetTaskInfo(ctx context.Context, req *pb.TaskServiceRequest) (res *pb.TaskServiceResponse, err error) {
 	// get task
-	t, err := model.GetTask(req.TaskId)
+	t, err := models.GetTask(req.TaskId)
 	if err != nil {
 		return nil, err
 	}
 
 	// get spider
-	sp, err := model.GetSpider(t.SpiderId)
+	sp, err := models.GetSpider(t.SpiderId)
 	if err != nil {
 		return nil, err
 	}
 
 	// get node
-	var n model.Node
+	var n models.Node
 	if t.NodeId != constants.ObjectIdNull {
-		n, err = model.GetNode(t.NodeId)
+		n, err = models.GetNode(t.NodeId)
 		if err != nil {
 			return nil, err
 		}
@@ -189,13 +189,13 @@ func (s taskService) addItemToQueue(colName string, item entity.ResultItem) {
 
 func (s taskService) getColName(req *pb.TaskServiceRequest) (colName string, err error) {
 	// task
-	t, err := model.GetTask(req.TaskId)
+	t, err := models.GetTask(req.TaskId)
 	if err != nil {
 		return "", err
 	}
 
 	// spider
-	sp, err := model.GetSpider(t.SpiderId)
+	sp, err := models.GetSpider(t.SpiderId)
 	if err != nil {
 		return "", err
 	}
@@ -259,7 +259,7 @@ func (s taskService) SaveItems(ctx context.Context, req *pb.TaskServiceRequest) 
 	return res, nil
 }
 
-func getPbTask(t *model.Task) (pbT *pb.Task) {
+func getPbTask(t *models.Task) (pbT *pb.Task) {
 	if t == nil {
 		return nil
 	}
@@ -289,7 +289,7 @@ func getPbTask(t *model.Task) (pbT *pb.Task) {
 	return pbT
 }
 
-func getPbSpider(sp *model.Spider) (pbSp *pb.Spider) {
+func getPbSpider(sp *models.Spider) (pbSp *pb.Spider) {
 	if sp == nil {
 		return nil
 	}
@@ -318,7 +318,7 @@ func getPbSpider(sp *model.Spider) (pbSp *pb.Spider) {
 	return pbSp
 }
 
-func getPbNode(n *model.Node) (pbN *pb.Node) {
+func getPbNode(n *models.Node) (pbN *pb.Node) {
 	if n == nil {
 		return nil
 	}

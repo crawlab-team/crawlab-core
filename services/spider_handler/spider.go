@@ -4,7 +4,7 @@ package spider_handler
 //	"fmt"
 //	"github.com/apex/log"
 //	"github.com/crawlab-team/crawlab-core/constants"
-//	"github.com/crawlab-team/crawlab-core/model"
+//	"github.com/crawlab-team/crawlab-core/models"
 //	"github.com/crawlab-team/crawlab-core/services/local_node"
 //	"github.com/crawlab-team/crawlab-core/utils"
 //	"github.com/globalsign/mgo/bson"

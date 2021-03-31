@@ -3,7 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/model"
+	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -19,7 +19,7 @@ func NewSpiderFsService(opts *SpiderFsServiceOptions) (svc *spiderFsService, err
 	}
 
 	// spider
-	s, err := model.SpiderService.GetById(opts.Id)
+	s, err := models.SpiderService.GetById(opts.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func NewSpiderFsService(opts *SpiderFsServiceOptions) (svc *spiderFsService, err
 }
 
 type spiderFsService struct {
-	s    *model.Spider
+	s    *models.Spider
 	opts *SpiderFsServiceOptions
 	*fileSystemService
 }
