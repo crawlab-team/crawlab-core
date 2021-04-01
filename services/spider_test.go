@@ -58,7 +58,7 @@ func TestSpiderService_Run(t *testing.T) {
 
 	// validate task status
 	time.Sleep(5 * time.Second)
-	task, err := models.TaskService.Get(bson.M{"spider_id": s.Id}, nil)
+	task, err := models.TaskService.GetModel(bson.M{"spider_id": s.Id}, nil)
 	require.Nil(t, err)
 	require.False(t, task.Id.IsZero())
 	require.Equal(t, constants.StatusFinished, task.Status)

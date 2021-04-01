@@ -13,7 +13,7 @@ const (
 	ControllerIdSetting
 	ControllerIdToken
 	ControllerIdVariable
-	ControllerIdLogin
+	ControllerIdAuth
 )
 
 type ControllerId int

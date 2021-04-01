@@ -13,7 +13,7 @@ func Logout(c *gin.Context) {
 	panic(errors.ErrorControllerNotImplemented)
 }
 
-var LoginController = NewPostActionControllerDelegate(ControllerIdLogin, []PostAction{
+var AuthController = NewPostActionControllerDelegate(ControllerIdAuth, []PostAction{
 	{"/login", Login},
 	{"/logout", Logout},
 })

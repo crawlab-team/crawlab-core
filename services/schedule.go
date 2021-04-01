@@ -128,7 +128,7 @@ func (svc *scheduleService) Update(s *models.Schedule) (err error) {
 
 func (svc *scheduleService) Delete(id primitive.ObjectID) (err error) {
 	// schedule
-	s, err := models.ScheduleService.GetById(id)
+	s, err := models.ScheduleService.GetModelById(id)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (svc *scheduleService) monitorAndUpdateCron() {
 	for {
 		// all schedules
 		schedulesMap := map[cron.EntryID]*models.Schedule{}
-		schedules, err := models.ScheduleService.GetList(nil, nil)
+		schedules, err := models.ScheduleService.GetModelList(nil, nil)
 		if err != nil {
 			if err != mongo2.ErrNoDocuments {
 				trace.PrintError(err)

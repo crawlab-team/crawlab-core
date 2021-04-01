@@ -203,7 +203,7 @@ func (s *taskService) Fetch() (t models.Task, err error) {
 	}
 
 	// fetch task
-	t, err = models.TaskService.GetById(tMsg.Id)
+	t, err = models.TaskService.GetModelById(tMsg.Id)
 	if err != nil {
 		return t, err
 	}

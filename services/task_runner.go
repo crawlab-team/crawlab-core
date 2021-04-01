@@ -89,7 +89,7 @@ func (r *TaskRunner) Init() (err error) {
 	}
 
 	// spider
-	s, err := models.SpiderService.GetById(r.t.SpiderId)
+	s, err := models.SpiderService.GetModelById(r.t.SpiderId)
 	if err != nil {
 		return err
 	}
@@ -425,7 +425,7 @@ func (r *TaskRunner) configureEnv() (err error) {
 	}
 
 	// global environment variables
-	variables, err := models.VariableService.GetList(nil, nil)
+	variables, err := models.VariableService.GetModelList(nil, nil)
 	if err != nil {
 		return err
 	}
@@ -472,7 +472,7 @@ func (r *TaskRunner) updateTask(status string) (err error) {
 	}
 
 	// get task
-	t, err := models.TaskService.GetById(r.tid)
+	t, err := models.TaskService.GetModelById(r.tid)
 	if err != nil {
 		return err
 	}

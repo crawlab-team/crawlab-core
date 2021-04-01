@@ -66,7 +66,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	var task models.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
-		task, err = models.TaskService.Get(bson.M{"schedule_id": sch.Id}, nil)
+		task, err = models.TaskService.GetModel(bson.M{"schedule_id": sch.Id}, nil)
 		if err == mongo2.ErrNoDocuments {
 			time.Sleep(1 * time.Second)
 			continue
@@ -121,7 +121,7 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	var task models.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
-		task, err = models.TaskService.Get(bson.M{"schedule_id": sch.Id}, nil)
+		task, err = models.TaskService.GetModel(bson.M{"schedule_id": sch.Id}, nil)
 		if err == mongo2.ErrNoDocuments {
 			time.Sleep(1 * time.Second)
 			continue

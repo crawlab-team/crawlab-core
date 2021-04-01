@@ -36,4 +36,4 @@ func (svc *settingService) GetModelList(query bson.M, opts *mongo.FindOptions) (
 	return res, err
 }
 
-var SettingService SettingServiceInterface = NewSettingService()
+var SettingService = NewSettingService()

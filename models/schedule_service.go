@@ -36,4 +36,4 @@ func (svc *scheduleService) GetModelList(query bson.M, opts *mongo.FindOptions) 
 	return res, err
 }
 
-var ScheduleService ScheduleServiceInterface = NewScheduleService()
+var ScheduleService = NewScheduleService()

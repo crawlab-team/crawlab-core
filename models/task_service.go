@@ -35,4 +35,4 @@ func NewTaskService() (svc *taskService) {
 	return &taskService{NewCommonService(ModelIdTask)}
 }
 
-var TaskService TaskServiceInterface = NewTaskService()
+var TaskService = NewTaskService()

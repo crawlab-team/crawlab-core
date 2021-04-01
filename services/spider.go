@@ -46,7 +46,7 @@ type spiderService struct {
 
 func (svc *spiderService) Run(id primitive.ObjectID, opts *SpiderRunOptions) (err error) {
 	// spider
-	s, err := models.SpiderService.GetById(id)
+	s, err := models.SpiderService.GetModelById(id)
 	if err != nil {
 		return err
 	}

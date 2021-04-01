@@ -83,8 +83,7 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc := NewRouterService(app)
 
 	// login/logout
-	svc.RegisterHandlerToGroup(groups.AnonymousGroup, "/login", http.MethodPost, controllers.LoginController.Login)
-	svc.RegisterHandlerToGroup(groups.AnonymousGroup, "/logout", http.MethodPost, controllers.LoginController.Logout)
+	svc.RegisterPostActionControllerToGroup(groups.AnonymousGroup, "/auth", controllers.AuthController)
 
 	// project
 	svc.RegisterControllerToGroup(groups.AuthGroup, "/projects", controllers.ProjectController)
