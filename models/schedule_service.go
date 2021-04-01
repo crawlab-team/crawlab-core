@@ -6,39 +6,34 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type scheduleService struct {
-	*Service
+type ScheduleServiceInterface interface {
+	GetModelById(id primitive.ObjectID) (res Schedule, err error)
+	GetModel(query bson.M, opts *mongo.FindOptions) (res Schedule, err error)
+	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Schedule, err error)
 }
 
-func (svc *scheduleService) GetById(id primitive.ObjectID) (res Schedule, err error) {
+type scheduleService struct {
+	*CommonService
+}
+
+func NewScheduleService() (svc *scheduleService) {
+	return &scheduleService{
+		NewCommonService(ModelIdSchedule),
+	}
+}
+func (svc *scheduleService) GetModelById(id primitive.ObjectID) (res Schedule, err error) {
 	err = svc.findId(id).One(&res)
 	return res, err
 }
 
-func (svc *scheduleService) Get(query bson.M, opts *mongo.FindOptions) (res Schedule, err error) {
+func (svc *scheduleService) GetModel(query bson.M, opts *mongo.FindOptions) (res Schedule, err error) {
 	err = svc.find(query, opts).One(&res)
 	return res, err
 }
 
-func (svc *scheduleService) GetList(query bson.M, opts *mongo.FindOptions) (res []Schedule, err error) {
+func (svc *scheduleService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Schedule, err error) {
 	err = svc.find(query, opts).All(&res)
 	return res, err
 }
 
-func (svc *scheduleService) DeleteById(id primitive.ObjectID) (err error) {
-	return svc.deleteId(id)
-}
-
-func (svc *scheduleService) DeleteList(query bson.M) (err error) {
-	return svc.delete(query)
-}
-
-func (svc *scheduleService) Count(query bson.M) (total int, err error) {
-	return svc.count(query)
-}
-
-func NewScheduleService() (svc *scheduleService) {
-	return &scheduleService{NewService(ModelIdSchedule)}
-}
-
-var ScheduleService = NewScheduleService()
+var ScheduleService ScheduleServiceInterface = NewScheduleService()

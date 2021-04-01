@@ -8,8 +8,9 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models"
-	db "github.com/crawlab-team/crawlab-db"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	pb "github.com/crawlab-team/crawlab-grpc"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"sync"
 	"time"
 )
@@ -110,8 +111,7 @@ func (s *TaskResultItemService) Flush() (err error) {
 }
 
 func (s *TaskResultItemService) saveItems(colName string, items []entity.ResultItem) (err error) {
-	sess, col := db.GetCol(colName)
-	defer sess.Close()
+	col := mongo.GetMongoCol(colName)
 
 	var _items []interface{}
 	for _, item := range items {
@@ -119,7 +119,8 @@ func (s *TaskResultItemService) saveItems(colName string, items []entity.ResultI
 	}
 
 	// TODO: dedup
-	if err := col.Insert(_items...); err != nil {
+	_, err = col.InsertMany(_items)
+	if err != nil {
 		return err
 	}
 
@@ -134,21 +135,25 @@ var TaskService = taskService{}
 
 func (s taskService) GetTaskInfo(ctx context.Context, req *pb.TaskServiceRequest) (res *pb.TaskServiceResponse, err error) {
 	// get task
-	t, err := models.GetTask(req.TaskId)
+	id, err := primitive.ObjectIDFromHex(req.TaskId)
+	if err != nil {
+		return nil, err
+	}
+	t, err := models.TaskService.GetModelById(id)
 	if err != nil {
 		return nil, err
 	}
 
 	// get spider
-	sp, err := models.GetSpider(t.SpiderId)
+	sp, err := models.SpiderService.GetModelById(t.SpiderId)
 	if err != nil {
 		return nil, err
 	}
 
 	// get node
 	var n models.Node
-	if t.NodeId != constants.ObjectIdNull {
-		n, err = models.GetNode(t.NodeId)
+	if !t.NodeId.IsZero() {
+		n, err = models.NodeService.GetModelById(t.NodeId)
 		if err != nil {
 			return nil, err
 		}
@@ -189,13 +194,17 @@ func (s taskService) addItemToQueue(colName string, item entity.ResultItem) {
 
 func (s taskService) getColName(req *pb.TaskServiceRequest) (colName string, err error) {
 	// task
-	t, err := models.GetTask(req.TaskId)
+	id, err := primitive.ObjectIDFromHex(req.TaskId)
+	if err != nil {
+		return "", err
+	}
+	t, err := models.TaskService.GetModelById(id)
 	if err != nil {
 		return "", err
 	}
 
 	// spider
-	sp, err := models.GetSpider(t.SpiderId)
+	sp, err := models.SpiderService.GetModelById(t.SpiderId)
 	if err != nil {
 		return "", err
 	}
@@ -263,8 +272,12 @@ func getPbTask(t *models.Task) (pbT *pb.Task) {
 	if t == nil {
 		return nil
 	}
+	ta, err := t.GetArtifact()
+	if err != nil {
+		return nil
+	}
 	pbT = &pb.Task{
-		XId:             t.Id,
+		XId:             t.Id.Hex(),
 		SpiderId:        t.SpiderId.Hex(),
 		StartTs:         t.StartTs.String(),
 		FinishTs:        t.FinishTs.String(),
@@ -282,38 +295,42 @@ func getPbTask(t *models.Task) (pbT *pb.Task) {
 		RunType:         t.RunType,
 		ScheduleId:      t.ScheduleId.Hex(),
 		Type:            t.Type,
-		UserId:          t.UserId.Hex(),
-		CreateTs:        t.CreateTs.String(),
-		UpdateTs:        t.UpdateTs.String(),
+		UserId:          ta.CreateUid.Hex(),
+		CreateTs:        ta.CreateTs.String(),
+		UpdateTs:        ta.UpdateTs.String(),
 	}
 	return pbT
 }
 
-func getPbSpider(sp *models.Spider) (pbSp *pb.Spider) {
-	if sp == nil {
+func getPbSpider(s *models.Spider) (pbSp *pb.Spider) {
+	if s == nil {
+		return nil
+	}
+	sa, err := s.GetArtifact()
+	if err != nil {
 		return nil
 	}
 	pbSp = &pb.Spider{
-		XId:         sp.Id.Hex(),
-		Name:        sp.Name,
-		DisplayName: sp.DisplayName,
-		Type:        sp.Type,
-		Col:         sp.Col,
+		XId:         s.Id.Hex(),
+		Name:        s.Name,
+		DisplayName: s.DisplayName,
+		Type:        s.Type,
+		Col:         s.Col,
 		//Envs:        &[]pb.Env{},
-		Remark:      sp.Remark,
-		ProjectId:   sp.ProjectId.Hex(),
-		IsPublic:    sp.IsPublic,
-		Cmd:         sp.Cmd,
-		IsScrapy:    sp.IsScrapy,
-		Template:    sp.Template,
-		IsDedup:     sp.IsDedup,
-		DedupField:  sp.DedupField,
-		DedupMethod: sp.DedupMethod,
-		IsWebHook:   sp.IsWebHook,
-		WebHookUrl:  sp.WebHookUrl,
-		UserId:      sp.UserId.Hex(),
-		CreateTs:    sp.CreateTs.String(),
-		UpdateTs:    sp.UpdateTs.String(),
+		Remark:      s.Description,
+		ProjectId:   s.ProjectId.Hex(),
+		IsPublic:    s.IsPublic,
+		Cmd:         s.Cmd,
+		IsScrapy:    s.IsScrapy,
+		Template:    s.Template,
+		IsDedup:     s.IsDedup,
+		DedupField:  s.DedupField,
+		DedupMethod: s.DedupMethod,
+		IsWebHook:   s.IsWebHook,
+		WebHookUrl:  s.WebHookUrl,
+		UserId:      sa.CreateUid.String(),
+		CreateTs:    sa.CreateTs.String(),
+		UpdateTs:    sa.UpdateTs.String(),
 	}
 	return pbSp
 }
@@ -322,13 +339,17 @@ func getPbNode(n *models.Node) (pbN *pb.Node) {
 	if n == nil {
 		return nil
 	}
+	na, err := n.GetArtifact()
+	if err != nil {
+		return nil
+	}
 	settings := &pb.NodeSettings{
 		MaxRunners: int32(n.Settings.MaxRunners),
 	}
 	pbN = &pb.Node{
-		XId:          n.Id.Hex(),
-		Name:         n.Name,
-		Status:       n.Status,
+		XId:  n.Id.Hex(),
+		Name: n.Name,
+		//Status:       n.Status,
 		Ip:           n.Ip,
 		Port:         n.Port,
 		Mac:          n.Mac,
@@ -337,9 +358,9 @@ func getPbNode(n *models.Node) (pbN *pb.Node) {
 		Key:          n.Key,
 		Settings:     settings,
 		IsMaster:     n.IsMaster,
-		CreateTs:     n.CreateTs.String(),
-		UpdateTs:     n.UpdateTs.String(),
-		UpdateTsUnix: n.UpdateTsUnix,
+		CreateTs:     na.CreateTs.String(),
+		UpdateTs:     na.UpdateTs.String(),
+		UpdateTsUnix: na.UpdateTs.Unix(),
 	}
 	return pbN
 }

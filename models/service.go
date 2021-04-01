@@ -35,13 +35,13 @@ type PublicServiceInterface interface {
 	Count(query bson.M) (total int, err error)
 }
 
-func NewService(id ModelId) (svc *Service) {
+func NewCommonService(id ModelId) (svc *CommonService) {
 	if mongo.Client == nil {
 		_ = mongo.InitMongo()
 	}
 	colName := getModelColName(id)
 	col := mongo.GetMongoCol(colName)
-	return &Service{
+	return &CommonService{
 		id:  id,
 		col: col,
 	}
@@ -51,28 +51,28 @@ func getModelColName(id ModelId) (colName string) {
 	return NewColNameBinder(id).MustBindString()
 }
 
-type Service struct {
+type CommonService struct {
 	id  ModelId
 	col *mongo.Col
 	ServiceInterface
 	PublicServiceInterface
 }
 
-func (svc *Service) findId(id primitive.ObjectID) (fr *mongo.FindResult) {
+func (svc *CommonService) findId(id primitive.ObjectID) (fr *mongo.FindResult) {
 	if svc.col == nil {
 		return mongo.NewFindResultWithError(constants.ErrMissingCol)
 	}
 	return svc.col.FindId(id)
 }
 
-func (svc *Service) find(query bson.M, opts *mongo.FindOptions) (fr *mongo.FindResult) {
+func (svc *CommonService) find(query bson.M, opts *mongo.FindOptions) (fr *mongo.FindResult) {
 	if svc.col == nil {
 		return mongo.NewFindResultWithError(constants.ErrMissingCol)
 	}
 	return svc.col.Find(query, opts)
 }
 
-func (svc *Service) deleteId(id primitive.ObjectID) (err error) {
+func (svc *CommonService) deleteId(id primitive.ObjectID) (err error) {
 	if svc.col == nil {
 		return trace.TraceError(constants.ErrMissingCol)
 	}
@@ -84,7 +84,7 @@ func (svc *Service) deleteId(id primitive.ObjectID) (err error) {
 	return d.Delete()
 }
 
-func (svc *Service) delete(query bson.M) (err error) {
+func (svc *CommonService) delete(query bson.M) (err error) {
 	if svc.col == nil {
 		return trace.TraceError(constants.ErrMissingCol)
 	}
@@ -100,14 +100,14 @@ func (svc *Service) delete(query bson.M) (err error) {
 	return nil
 }
 
-func (svc *Service) count(query bson.M) (total int, err error) {
+func (svc *CommonService) count(query bson.M) (total int, err error) {
 	if svc.col == nil {
 		return total, trace.TraceError(constants.ErrMissingCol)
 	}
 	return svc.col.Count(query)
 }
 
-func (svc *Service) update(query bson.M, update interface{}) (err error) {
+func (svc *CommonService) update(query bson.M, update interface{}) (err error) {
 	v := reflect.ValueOf(update)
 	switch reflect.TypeOf(update).Kind() {
 	case reflect.Struct:
@@ -169,14 +169,14 @@ func (svc *Service) update(query bson.M, update interface{}) (err error) {
 	}
 }
 
-func (svc *Service) updateId(id primitive.ObjectID, update interface{}) (err error) {
+func (svc *CommonService) updateId(id primitive.ObjectID, update interface{}) (err error) {
 	if svc.col == nil {
 		return trace.TraceError(constants.ErrMissingCol)
 	}
 	return svc.col.UpdateId(id, update)
 }
 
-func (svc *Service) GetById(id primitive.ObjectID) (res interface{}, err error) {
+func (svc *CommonService) GetById(id primitive.ObjectID) (res interface{}, err error) {
 	// declare
 	m := NewModelMap()
 
@@ -187,7 +187,7 @@ func (svc *Service) GetById(id primitive.ObjectID) (res interface{}, err error) 
 	return NewBasicBinder(svc.id, m, fr).Bind()
 }
 
-func (svc *Service) Get(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
+func (svc *CommonService) Get(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
 	// declare
 	m := NewModelMap()
 
@@ -198,7 +198,7 @@ func (svc *Service) Get(query bson.M, opts *mongo.FindOptions) (res interface{},
 	return NewBasicBinder(svc.id, m, fr).Bind()
 }
 
-func (svc *Service) GetList(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
+func (svc *CommonService) GetList(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
 	// declare
 	m := NewModelListMap()
 
@@ -209,26 +209,26 @@ func (svc *Service) GetList(query bson.M, opts *mongo.FindOptions) (res interfac
 	return NewListBinder(svc.id, m, fr).Bind()
 }
 
-func (svc *Service) DeleteById(id primitive.ObjectID) (err error) {
+func (svc *CommonService) DeleteById(id primitive.ObjectID) (err error) {
 	return svc.deleteId(id)
 }
 
-func (svc *Service) Delete(query bson.M) (err error) {
+func (svc *CommonService) Delete(query bson.M) (err error) {
 	return svc.delete(query)
 }
 
-func (svc *Service) DeleteList(query bson.M) (err error) {
+func (svc *CommonService) DeleteList(query bson.M) (err error) {
 	return svc.delete(query)
 }
 
-func (svc *Service) UpdateById(id primitive.ObjectID, update interface{}) (err error) {
+func (svc *CommonService) UpdateById(id primitive.ObjectID, update interface{}) (err error) {
 	return svc.updateId(id, update)
 }
 
-func (svc *Service) Update(query bson.M, update interface{}) (err error) {
+func (svc *CommonService) Update(query bson.M, update interface{}) (err error) {
 	return svc.update(query, update)
 }
 
-func (svc *Service) Count(query bson.M) (total int, err error) {
+func (svc *CommonService) Count(query bson.M) (total int, err error) {
 	return svc.count(query)
 }
