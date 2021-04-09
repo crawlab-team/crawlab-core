@@ -36,4 +36,4 @@ func (svc *tokenService) GetModelList(query bson.M, opts *mongo.FindOptions) (re
 	return res, err
 }
 
-var TokenService = NewTokenService()
+var TokenService *tokenService

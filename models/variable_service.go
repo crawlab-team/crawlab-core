@@ -36,4 +36,4 @@ func (svc *variableService) GetModelList(query bson.M, opts *mongo.FindOptions) 
 	return res, err
 }
 
-var VariableService = NewVariableService()
+var VariableService *variableService

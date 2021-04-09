@@ -36,4 +36,4 @@ func (svc *jobService) GetModelList(query bson.M, opts *mongo.FindOptions) (res 
 	return res, err
 }
 
-var JobService = NewJobService()
+var JobService *jobService

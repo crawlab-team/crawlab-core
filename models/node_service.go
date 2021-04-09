@@ -35,4 +35,4 @@ func NewNodeService() (svc *nodeService) {
 	return &nodeService{NewCommonService(ModelIdNode)}
 }
 
-var NodeService = NewNodeService()
+var NodeService *nodeService

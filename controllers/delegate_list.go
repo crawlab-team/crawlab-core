@@ -14,6 +14,10 @@ import (
 )
 
 func NewListControllerDelegate(id ControllerId, svc models.PublicServiceInterface) (d *ListControllerDelegate) {
+	if svc == nil {
+		panic(errors.ErrorControllerNoModelService)
+	}
+
 	return &ListControllerDelegate{
 		id:  id,
 		svc: svc,

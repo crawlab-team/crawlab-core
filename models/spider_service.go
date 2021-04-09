@@ -35,4 +35,4 @@ func NewSpiderService() (svc *spiderService) {
 	return &spiderService{NewCommonService(ModelIdSpider)}
 }
 
-var SpiderService = NewSpiderService()
+var SpiderService *spiderService

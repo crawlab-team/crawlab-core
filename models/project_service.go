@@ -35,4 +35,4 @@ func NewProjectService() (svc *projectService) {
 	return &projectService{NewCommonService(ModelIdProject)}
 }
 
-var ProjectService = NewProjectService()
+var ProjectService *projectService

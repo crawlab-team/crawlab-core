@@ -36,4 +36,4 @@ func (svc *userService) GetModelList(query bson.M, opts *mongo.FindOptions) (res
 	return res, err
 }
 
-var UserService = NewUserService()
+var UserService *userService

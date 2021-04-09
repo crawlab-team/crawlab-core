@@ -86,10 +86,13 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc.RegisterPostActionControllerToGroup(groups.AnonymousGroup, "/auth", controllers.AuthController)
 
 	// project
-	svc.RegisterControllerToGroup(groups.AuthGroup, "/projects", controllers.ProjectController)
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/projects", controllers.ProjectController)
 
 	// user
-	svc.RegisterControllerToGroup(groups.AuthGroup, "/users", controllers.UserController)
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/users", controllers.UserController)
+
+	// spider
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/spiders", controllers.SpiderController)
 
 	return nil
 }
