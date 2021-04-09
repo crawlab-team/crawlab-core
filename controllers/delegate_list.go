@@ -81,7 +81,7 @@ func (d *ListControllerDelegate) PostList(c *gin.Context) {
 			"$in": payload.Ids,
 		},
 	}
-	if err := d.svc.Update(query, doc); err != nil {
+	if err := d.svc.Update(query, doc, payload.Fields); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

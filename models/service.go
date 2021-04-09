@@ -18,8 +18,8 @@ type ServiceInterface interface {
 	deleteId(id primitive.ObjectID) (err error)
 	delete(query bson.M) (err error)
 	count(query bson.M) (total int, err error)
-	update(query bson.M, update interface{}) (err error)
 	updateId(id primitive.ObjectID, update interface{}) (err error)
+	update(query bson.M, update interface{}, fields []string) (err error)
 	//insert(docs ...interface{}) (err error) // TODO: implement
 }
 
@@ -31,7 +31,7 @@ type PublicServiceInterface interface {
 	Delete(query bson.M) (err error)
 	DeleteList(query bson.M) (err error)
 	UpdateById(id primitive.ObjectID, update interface{}) (err error)
-	Update(query bson.M, update interface{}) (err error)
+	Update(query bson.M, update interface{}, fields []string) (err error)
 	Count(query bson.M) (total int, err error)
 }
 
@@ -107,7 +107,7 @@ func (svc *CommonService) count(query bson.M) (total int, err error) {
 	return svc.col.Count(query)
 }
 
-func (svc *CommonService) update(query bson.M, update interface{}) (err error) {
+func (svc *CommonService) update(query bson.M, update interface{}, fields []string) (err error) {
 	v := reflect.ValueOf(update)
 	switch reflect.TypeOf(update).Kind() {
 	case reflect.Struct:
@@ -139,10 +139,17 @@ func (svc *CommonService) update(query bson.M, update interface{}) (err error) {
 			return err
 		}
 
-		// remove _id
-		_, ok := updateBsonM["_id"]
-		if ok {
-			delete(updateBsonM, "_id")
+		// fields map
+		fieldsMap := map[string]bool{}
+		for _, f := range fields {
+			fieldsMap[f] = true
+		}
+
+		// remove unselected fields
+		for k := range updateBsonM {
+			if _, ok := fieldsMap[k]; !ok {
+				delete(updateBsonM, k)
+			}
 		}
 
 		// update model objects
@@ -163,7 +170,7 @@ func (svc *CommonService) update(query bson.M, update interface{}) (err error) {
 
 		return nil
 	case reflect.Ptr:
-		return svc.update(query, v.Elem().Interface())
+		return svc.update(query, v.Elem().Interface(), fields)
 	default:
 		return errors.ErrorModelInvalidType
 	}
@@ -225,8 +232,8 @@ func (svc *CommonService) UpdateById(id primitive.ObjectID, update interface{}) 
 	return svc.updateId(id, update)
 }
 
-func (svc *CommonService) Update(query bson.M, update interface{}) (err error) {
-	return svc.update(query, update)
+func (svc *CommonService) Update(query bson.M, update interface{}, fields []string) (err error) {
+	return svc.update(query, update, fields)
 }
 
 func (svc *CommonService) Count(query bson.M) (total int, err error) {

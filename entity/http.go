@@ -30,6 +30,7 @@ type BatchRequestPayload struct {
 }
 
 type BatchRequestPayloadWithStringData struct {
-	Ids  []primitive.ObjectID `json:"ids"`
-	Data string               `json:"data"`
+	Ids    []primitive.ObjectID `json:"ids"`
+	Data   string               `json:"data"`
+	Fields []string             `json:"fields"`
 }
