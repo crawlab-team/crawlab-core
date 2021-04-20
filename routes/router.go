@@ -85,6 +85,9 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// login/logout
 	svc.RegisterPostActionControllerToGroup(groups.AnonymousGroup, "/auth", controllers.AuthController)
 
+	// node
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/nodes", controllers.NodeController)
+
 	// project
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/projects", controllers.ProjectController)
 

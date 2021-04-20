@@ -7,11 +7,12 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"strings"
 )
 
-// Get entity.Filter from gin.Context
+// GetFilter Get entity.Filter from gin.Context
 func GetFilter(c *gin.Context) (f *entity.Filter, err error) {
-	condStr := c.Query("conditions")
+	condStr := c.Query(constants.FilterQueryFieldConditions)
 	var conditions []entity.Condition
 	if err := json.Unmarshal([]byte(condStr), &conditions); err != nil {
 		return nil, err
@@ -22,7 +23,7 @@ func GetFilter(c *gin.Context) (f *entity.Filter, err error) {
 	}, nil
 }
 
-// Get bson.M from gin.Context
+// GetFilterQuery Get bson.M from gin.Context
 func GetFilterQuery(c *gin.Context) (q bson.M, err error) {
 	f, err := GetFilter(c)
 	if err != nil {
@@ -46,7 +47,7 @@ func MustGetFilterQuery(c *gin.Context) (q bson.M) {
 	return q
 }
 
-// Translate entity.Filter to bson.M
+// FilterToQuery Translate entity.Filter to bson.M
 func FilterToQuery(f *entity.Filter) (q bson.M, err error) {
 	q = bson.M{}
 	for _, cond := range f.Conditions {
@@ -70,4 +71,37 @@ func FilterToQuery(f *entity.Filter) (q bson.M, err error) {
 		}
 	}
 	return q, nil
+}
+
+// GetFilterAll Get all from gin.Context
+func GetFilterAll(c *gin.Context) (res bool, err error) {
+	resStr := c.Query(constants.FilterQueryFieldAll)
+	switch strings.ToUpper(resStr) {
+	case "1":
+		return true, nil
+	case "0":
+		return false, nil
+	case "Y":
+		return true, nil
+	case "N":
+		return false, nil
+	case "T":
+		return true, nil
+	case "F":
+		return false, nil
+	case "TRUE":
+		return true, nil
+	case "FALSE":
+		return false, nil
+	default:
+		return false, errors.ErrorFilterInvalidOperation
+	}
+}
+
+func MustGetFilterAll(c *gin.Context) (res bool) {
+	res, err := GetFilterAll(c)
+	if err != nil {
+		return false
+	}
+	return res
 }

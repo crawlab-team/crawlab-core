@@ -48,8 +48,18 @@ func (d *ListControllerDelegate) Delete(c *gin.Context) {
 }
 
 func (d *ListControllerDelegate) GetList(c *gin.Context) {
+	// get all if query field "all" is set true
+	all := MustGetFilterAll(c)
+	if all {
+		d.getAll(c)
+		return
+	}
+
+	// params
 	pagination := MustGetPagination(c)
 	query := MustGetFilterQuery(c)
+
+	// get list
 	data, err := d.svc.GetList(query, &mongo.FindOptions{
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
@@ -62,11 +72,38 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 		}
 		return
 	}
+
+	// total count
 	total, err := d.svc.Count(query)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
+
+	// response
+	HandleSuccessListData(c, data, total)
+}
+
+func (d *ListControllerDelegate) getAll(c *gin.Context) {
+	// get list
+	data, err := d.svc.GetList(nil, nil)
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			HandleErrorNotFound(c, err)
+		} else {
+			HandleErrorInternalServerError(c, err)
+		}
+		return
+	}
+
+	// total count
+	total, err := d.svc.Count(nil)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// response
 	HandleSuccessListData(c, data, total)
 }
 

@@ -115,6 +115,12 @@ func (b *JsonBinder) BindBatchRequestPayloadWithStringData(c *gin.Context) (payl
 		return payload, nil, err
 	}
 
+	// validate
+	if len(payload.Ids) == 0 ||
+		len(payload.Fields) == 0 {
+		return payload, nil, errors.ErrorControllerRequestPayloadInvalid
+	}
+
 	// unmarshall
 	switch b.id {
 	case ControllerIdNode:

@@ -175,7 +175,8 @@ func TestProjectController_GetList(t *testing.T) {
 	e := httpexpect.New(t, s.URL)
 	defer s.Close()
 
-	n := 10
+	n := 100 // total
+	bn := 10 // batch
 
 	for i := 0; i < n; i++ {
 		p := models.Project{
@@ -197,22 +198,30 @@ func TestProjectController_GetList(t *testing.T) {
 
 	pagination := entity.Pagination{
 		Page: 1,
-		Size: 100,
+		Size: bn,
 	}
 
+	// get list with pagination
 	res := e.GET("/projects").
 		WithQuery("conditions", string(condBytes)).
 		WithQueryObject(pagination).
 		Expect().Status(http.StatusOK).JSON().Object()
-	res.Path("$.data").Array().Length().Equal(n)
+	res.Path("$.data").Array().Length().Equal(bn)
 	res.Path("$.total").Number().Equal(n)
 
 	data := res.Path("$.data").Array()
-	for i := 0; i < n; i++ {
+	for i := 0; i < bn; i++ {
 		obj := data.Element(i)
 		obj.Path("$.name").Equal(fmt.Sprintf("test name %d", i+1))
 		obj.Path("$.tags").Array().First().Equal("test tag")
 	}
+
+	// get all
+	res = e.GET("/projects").
+		WithQuery("all", "1").
+		Expect().Status(http.StatusOK).JSON().Object()
+	res.Path("$.data").Array().Length().Equal(n)
+	res.Path("$.total").Number().Equal(n)
 
 }
 
@@ -367,6 +376,11 @@ func TestProjectController_PostList(t *testing.T) {
 	payload := entity.BatchRequestPayloadWithStringData{
 		Ids:  ids,
 		Data: string(dataBytes),
+		Fields: []string{
+			"name",
+			"description",
+			"tags",
+		},
 	}
 	e.POST("/projects").
 		WithJSON(payload).
