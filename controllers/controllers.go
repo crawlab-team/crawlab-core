@@ -6,7 +6,8 @@ func InitControllers() (err error) {
 	NodeController = NewListControllerDelegate(ControllerIdNode, models.NodeService)
 	ProjectController = NewListControllerDelegate(ControllerIdProject, models.ProjectService)
 	UserController = NewListControllerDelegate(ControllerIdUser, models.UserService)
-	SpiderController = NewListControllerDelegate(ControllerIdSpider, models.SpiderService)
+	SpiderController = NewListPostActionControllerDelegate(ControllerIdSpider, models.SpiderService, SpiderPostActions)
+	TaskController = NewListPostActionControllerDelegate(ControllerIdTask, models.TaskService, TaskPostActions)
 
 	return nil
 }

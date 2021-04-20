@@ -43,7 +43,7 @@ func (svc *RouterService) RegisterListControllerToGroup(group *gin.RouterGroup, 
 }
 
 func (svc *RouterService) RegisterPostActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.PostActionController) {
-	group.POST(basePath+"/:action", func(c *gin.Context) {
+	group.POST(basePath+"/:id/:action", func(c *gin.Context) {
 		param := c.Param("action")
 		for _, action := range ctr.Actions() {
 			if action.Name == param {
@@ -56,7 +56,7 @@ func (svc *RouterService) RegisterPostActionControllerToGroup(group *gin.RouterG
 }
 
 func (svc *RouterService) RegisterListPostActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ListPostActionController) {
-	svc.RegisterControllerToGroup(group, basePath, ctr)
+	svc.RegisterListControllerToGroup(group, basePath, ctr)
 	svc.RegisterPostActionControllerToGroup(group, basePath, ctr)
 }
 
@@ -96,6 +96,9 @@ func InitRoutes(app *gin.Engine) (err error) {
 
 	// spider
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/spiders", controllers.SpiderController)
+
+	// task
+	svc.RegisterListPostActionControllerToGroup(groups.AuthGroup, "/tasks", controllers.TaskController)
 
 	return nil
 }
