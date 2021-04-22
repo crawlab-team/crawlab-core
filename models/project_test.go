@@ -12,7 +12,7 @@ func setupProjectTest() (err error) {
 
 func cleanupProjectTest() {
 	_ = mongo.GetMongoCol(ModelColNameProject).Delete(nil)
-	_ = mongo.GetMongoCol(ArtifactColName).Delete(nil)
+	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
 }
 
 func TestProject_Add(t *testing.T) {
@@ -73,7 +73,7 @@ func TestProject_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ArtifactColName)
+	col := mongo.GetMongoCol(ModelColNameArtifact)
 	err = col.FindId(p.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

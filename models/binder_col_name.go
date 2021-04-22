@@ -12,6 +12,13 @@ type ColNameBinder struct {
 
 func (b *ColNameBinder) Bind() (res interface{}, err error) {
 	switch b.id {
+	// system models
+	case ModelIdArtifact:
+		return ModelColNameArtifact, nil
+	case ModelIdTag:
+		return ModelColNameTag, nil
+
+	// operation models
 	case ModelIdNode:
 		return ModelColNameNode, nil
 	case ModelIdProject:
@@ -32,13 +39,18 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return ModelColNameToken, nil
 	case ModelIdVariable:
 		return ModelColNameVariable, nil
+
+	// invalid
 	default:
-		panic(errors.ErrorModelNotImplemented)
+		return res, errors.ErrorModelNotImplemented
 	}
 }
 
 func (b *ColNameBinder) MustBind() (res interface{}) {
-	res, _ = b.Bind()
+	res, err := b.Bind()
+	if err != nil {
+		panic(err)
+	}
 	return res
 }
 

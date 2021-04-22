@@ -1,6 +1,12 @@
 package models
 
 func InitModelServices() (err error) {
+	// system model services
+	ArtifactService = NewArtifactService()
+	TagService = NewTagService()
+	ColorService = NewColorService()
+
+	// operation model services
 	JobService = NewJobService()
 	NodeService = NewNodeService()
 	ProjectService = NewProjectService()

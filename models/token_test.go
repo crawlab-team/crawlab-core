@@ -12,7 +12,7 @@ func setupTokenTest() (err error) {
 
 func cleanupTokenTest() {
 	_ = mongo.GetMongoCol(ModelColNameToken).Delete(nil)
-	_ = mongo.GetMongoCol(ArtifactColName).Delete(nil)
+	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
 }
 
 func TestToken_Add(t *testing.T) {
@@ -73,7 +73,7 @@ func TestToken_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ArtifactColName)
+	col := mongo.GetMongoCol(ModelColNameArtifact)
 	err = col.FindId(s.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

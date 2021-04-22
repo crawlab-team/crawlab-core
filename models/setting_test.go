@@ -12,7 +12,7 @@ func setupSettingTest() (err error) {
 
 func cleanupSettingTest() {
 	_ = mongo.GetMongoCol(ModelColNameSetting).Delete(nil)
-	_ = mongo.GetMongoCol(ArtifactColName).Delete(nil)
+	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
 }
 
 func TestSetting_Add(t *testing.T) {
@@ -73,7 +73,7 @@ func TestSetting_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ArtifactColName)
+	col := mongo.GetMongoCol(ModelColNameArtifact)
 	err = col.FindId(s.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

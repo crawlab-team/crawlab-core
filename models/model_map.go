@@ -11,6 +11,7 @@ type ModelMap struct {
 	Setting  Setting
 	Token    Token
 	Variable Variable
+	Tag      Tag
 }
 
 type ModelListMap struct {
@@ -24,6 +25,7 @@ type ModelListMap struct {
 	Settings  []Setting
 	Tokens    []Token
 	Variables []Variable
+	Tags      []Tag
 }
 
 func NewModelMap() (m *ModelMap) {

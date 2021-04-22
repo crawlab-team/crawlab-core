@@ -51,6 +51,10 @@ func getModelColName(id ModelId) (colName string) {
 	return NewColNameBinder(id).MustBindString()
 }
 
+func getModelService(id ModelId) (svc PublicServiceInterface) {
+	return NewServiceBinder(id).MustBind()
+}
+
 type CommonService struct {
 	id  ModelId
 	col *mongo.Col
@@ -158,7 +162,7 @@ func (svc *CommonService) update(query bson.M, update interface{}, fields []stri
 		}
 
 		// update artifacts
-		colA := mongo.GetMongoCol(ArtifactColName)
+		colA := mongo.GetMongoCol(ModelColNameArtifact)
 		if err := colA.Update(query, bson.M{
 			"$set": bson.M{
 				"_sys.update_ts": time.Now(),

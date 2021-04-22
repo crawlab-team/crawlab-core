@@ -51,6 +51,9 @@ func (b *ListBinder) Bind() (res interface{}, err error) {
 	case ModelIdVariable:
 		err = fr.All(&m.Variables)
 		return m.Variables, err
+	case ModelIdTag:
+		err = fr.All(&m.Tags)
+		return m.Tags, err
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

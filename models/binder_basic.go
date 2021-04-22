@@ -54,6 +54,9 @@ func (b *BasicBinder) Bind() (res interface{}, err error) {
 	case ModelIdVariable:
 		err = fr.One(&m.Variable)
 		return m.Variable, err
+	case ModelIdTag:
+		err = fr.One(&m.Tag)
+		return m.Tag, err
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

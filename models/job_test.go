@@ -13,7 +13,7 @@ func setupJobTest() (err error) {
 
 func cleanupJobTest() {
 	_ = mongo.GetMongoCol(ModelColNameJob).Delete(nil)
-	_ = mongo.GetMongoCol(ArtifactColName).Delete(nil)
+	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
 }
 
 func TestJob_Add(t *testing.T) {
@@ -74,7 +74,7 @@ func TestJob_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ArtifactColName)
+	col := mongo.GetMongoCol(ModelColNameArtifact)
 	err = col.FindId(j.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

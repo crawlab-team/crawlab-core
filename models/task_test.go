@@ -14,7 +14,7 @@ func setupTaskTest() (err error) {
 
 func cleanupTaskTest() {
 	_ = mongo.GetMongoCol(ModelColNameTask).Delete(nil)
-	_ = mongo.GetMongoCol(ArtifactColName).Delete(nil)
+	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
 }
 
 func TestTask_Add(t *testing.T) {
@@ -85,7 +85,7 @@ func TestTask_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ArtifactColName)
+	col := mongo.GetMongoCol(ModelColNameArtifact)
 	err = col.FindId(task.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
