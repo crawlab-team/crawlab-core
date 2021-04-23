@@ -1,5 +1,5 @@
 package controllers
 
-var SpiderController ListPostActionController
+var SpiderController ListActionController
 
-var SpiderPostActions []PostAction
+var SpiderActions []Action

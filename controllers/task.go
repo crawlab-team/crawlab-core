@@ -1,5 +1,5 @@
 package controllers
 
-var TaskController ListPostActionController
+var TaskController ListActionController
 
-var TaskPostActions []PostAction
+var TaskActions []Action

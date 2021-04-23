@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func Login(c *gin.Context) {
@@ -13,7 +14,9 @@ func Logout(c *gin.Context) {
 	panic(errors.ErrorControllerNotImplemented)
 }
 
-var AuthController = NewPostActionControllerDelegate(ControllerIdAuth, []PostAction{
-	{"/login", Login},
-	{"/logout", Logout},
-})
+var LoginActions = []Action{
+	{Method: http.MethodPost, Path: "/login", HandlerFunc: Login},
+	{Method: http.MethodPost, Path: "/logout", HandlerFunc: Logout},
+}
+
+var LoginController ActionController

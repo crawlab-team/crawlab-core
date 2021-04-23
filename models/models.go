@@ -7,13 +7,13 @@ func InitModelServices() (err error) {
 	ColorService = NewColorService()
 
 	// operation model services
-	JobService = NewJobService()
 	NodeService = NewNodeService()
 	ProjectService = NewProjectService()
 	ScheduleService = NewScheduleService()
 	SettingService = NewSettingService()
 	SpiderService = NewSpiderService()
 	TaskService = NewTaskService()
+	JobService = NewJobService()
 	TokenService = NewTokenService()
 	UserService = NewUserService()
 	VariableService = NewVariableService()

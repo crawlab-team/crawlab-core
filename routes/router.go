@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/controllers"
-	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"path"
 )
 
 type RouterServiceInterface interface {
@@ -42,22 +42,25 @@ func (svc *RouterService) RegisterListControllerToGroup(group *gin.RouterGroup, 
 	group.DELETE(basePath, ctr.DeleteList)
 }
 
-func (svc *RouterService) RegisterPostActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.PostActionController) {
-	group.POST(basePath+"/:id/:action", func(c *gin.Context) {
-		param := c.Param("action")
-		for _, action := range ctr.Actions() {
-			if action.Name == param {
-				action.HandlerFunc(c)
-				return
-			}
+func (svc *RouterService) RegisterActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ActionController) {
+	for _, action := range ctr.Actions() {
+		routerPath := path.Join(basePath, action.Path)
+		switch action.Method {
+		case http.MethodGet:
+			group.GET(routerPath, action.HandlerFunc)
+		case http.MethodPut:
+			group.PUT(routerPath, action.HandlerFunc)
+		case http.MethodPost:
+			group.POST(routerPath, action.HandlerFunc)
+		case http.MethodDelete:
+			group.DELETE(routerPath, action.HandlerFunc)
 		}
-		controllers.HandleErrorNotFound(c, errors.ErrorHttpNotFound)
-	})
+	}
 }
 
-func (svc *RouterService) RegisterListPostActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ListPostActionController) {
+func (svc *RouterService) RegisterListActionControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ListActionController) {
 	svc.RegisterListControllerToGroup(group, basePath, ctr)
-	svc.RegisterPostActionControllerToGroup(group, basePath, ctr)
+	svc.RegisterActionControllerToGroup(group, basePath, ctr)
 }
 
 func (svc *RouterService) RegisterHandlerToGroup(group *gin.RouterGroup, path string, method string, handler gin.HandlerFunc) {
@@ -82,9 +85,6 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// router service
 	svc := NewRouterService(app)
 
-	// login/logout
-	svc.RegisterPostActionControllerToGroup(groups.AnonymousGroup, "/auth", controllers.AuthController)
-
 	// node
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/nodes", controllers.NodeController)
 
@@ -98,7 +98,16 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/spiders", controllers.SpiderController)
 
 	// task
-	svc.RegisterListPostActionControllerToGroup(groups.AuthGroup, "/tasks", controllers.TaskController)
+	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/tasks", controllers.TaskController)
+
+	// tag
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tags", controllers.TagController)
+
+	// login
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
+
+	// color
+	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/colors", controllers.ColorController)
 
 	return nil
 }

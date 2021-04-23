@@ -13,7 +13,9 @@ const (
 	ControllerIdSetting
 	ControllerIdToken
 	ControllerIdVariable
-	ControllerIdAuth
+	ControllerIdTag
+	ControllerIdLogin
+	ControllerIdColor
 )
 
 type ControllerId int
@@ -33,16 +35,17 @@ type ListController interface {
 	DeleteList(c *gin.Context)
 }
 
-type PostAction struct {
-	Name        string
+type Action struct {
+	Method      string
+	Path        string
 	HandlerFunc gin.HandlerFunc
 }
 
-type PostActionController interface {
-	Actions() (actions []PostAction)
+type ActionController interface {
+	Actions() (actions []Action)
 }
 
-type ListPostActionController interface {
+type ListActionController interface {
 	ListController
-	PostActionController
+	ActionController
 }
