@@ -4,46 +4,43 @@ import (
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
 )
 
 type TagServiceInterface interface {
-	getTagIds(tagNames []string) (tagIds []primitive.ObjectID, err error)
+	getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error)
 	GetModelById(id primitive.ObjectID) (res Tag, err error)
 	GetModel(query bson.M, opts *mongo.FindOptions) (res Tag, err error)
 	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Tag, err error)
-	UpdateTagsById(id primitive.ObjectID, tagNames []string) (err error)
-	UpdateTags(query bson.M, tagNames []string) (err error)
+	UpdateTagsById(colName string, id primitive.ObjectID, tags []Tag) (tagIds []primitive.ObjectID, err error)
+	UpdateTags(colName string, query bson.M, tags []Tag) (tagIds []primitive.ObjectID, err error)
 }
 
 type tagService struct {
 	*CommonService
 }
 
-func (svc *tagService) getTagIds(tagNames []string) (tagIds []primitive.ObjectID, err error) {
+func (svc *tagService) getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// iterate tag names
-	for _, tagName := range tagNames {
-		count, err := TagService.Count(bson.M{"name": tagName, "mid": svc.id})
-		if err != nil {
-			return tagIds, err
-		}
-
-		// declare tag
-		var tag Tag
-
-		// add new tag if not exists
-		if count == 0 {
-			color, _ := ColorService.GetRandom()
+	for _, tag := range tags {
+		// count of tags with the name
+		tagDb, err := TagService.GetModel(bson.M{"name": tag.Name, "col": colName}, nil)
+		if err == nil {
+			// tag exists
+			tag = tagDb
+		} else if err == mongo2.ErrNoDocuments {
+			// add new tag if not exists
+			colorHex := tag.Color
+			if colorHex == "" {
+				color, _ := ColorService.GetRandom()
+				colorHex = color.Hex
+			}
 			tag = Tag{
-				Name:  tagName,
-				Color: color.Hex,
-				Col:   getModelColName(svc.id),
+				Name:  tag.Name,
+				Color: colorHex,
+				Col:   colName,
 			}
 			if err := tag.Add(); err != nil {
-				return tagIds, err
-			}
-		} else {
-			tag, err = TagService.GetModel(bson.M{"name": tagName}, nil)
-			if err != nil {
 				return tagIds, err
 			}
 		}
@@ -70,40 +67,46 @@ func (svc *tagService) GetModelList(query bson.M, opts *mongo.FindOptions) (res 
 	return res, err
 }
 
-func (svc *tagService) UpdateTagsById(id primitive.ObjectID, tagNames []string) (err error) {
+func (svc *tagService) UpdateTagsById(colName string, id primitive.ObjectID, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// tag ids to update
-	tagIds, err := svc.getTagIds(tagNames)
+	tagIds, err = svc.getTagIds(colName, tags)
 	if err != nil {
-		return err
+		return tagIds, err
 	}
 
 	// update in db
-	if err := ArtifactService.UpdateById(id, bson.M{"_tid": tagIds}); err != nil {
-		return err
+	a, err := ArtifactService.GetModelById(id)
+	if err != nil {
+		return tagIds, err
 	}
-
-	return nil
+	a.TagIds = tagIds
+	if err := mongo.GetMongoCol(ModelColNameArtifact).ReplaceId(id, a); err != nil {
+		return tagIds, err
+	}
+	return tagIds, nil
 }
 
-func (svc *tagService) UpdateTags(query bson.M, tagNames []string) (err error) {
+func (svc *tagService) UpdateTags(colName string, query bson.M, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// tag ids to update
-	tagIds, err := svc.getTagIds(tagNames)
+	tagIds, err = svc.getTagIds(colName, tags)
 	if err != nil {
-		return err
+		return tagIds, err
 	}
 
 	// update
-	update := bson.M{"_tid": tagIds}
+	update := bson.M{
+		"_tid": tagIds,
+	}
 
 	// fields
 	fields := []string{"_tid"}
 
 	// update in db
 	if err := ArtifactService.Update(query, update, fields); err != nil {
-		return err
+		return tagIds, err
 	}
 
-	return nil
+	return tagIds, nil
 }
 
 func NewTagService() (svc *tagService) {

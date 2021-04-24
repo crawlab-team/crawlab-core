@@ -22,6 +22,7 @@ type Spider struct {
 	Mode        string               `json:"mode" bson:"mode"`                 // default Task.Mode
 	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`         // default Task.NodeIds
 	NodeTags    []string             `json:"node_tags" bson:"node_tags"`       // default Task.NodeTags
+	Tags        []Tag                `json:"tags" bson:"-"`
 
 	// 自定义爬虫
 	Cmd   string `json:"cmd" bson:"cmd"`     // 执行命令
@@ -62,25 +63,29 @@ func (s *Spider) Add() (err error) {
 	if s.Id.IsZero() {
 		s.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(ModelColNameSpider, s)
+	m := NewDelegate(ModelIdSpider, s)
 	return m.Add()
 }
 
 func (s *Spider) Save() (err error) {
-	m := NewDelegate(ModelColNameSpider, s)
+	m := NewDelegate(ModelIdSpider, s)
 	return m.Save()
 }
 
 func (s *Spider) Delete() (err error) {
-	m := NewDelegate(ModelColNameSpider, s)
+	m := NewDelegate(ModelIdSpider, s)
 	return m.Delete()
 }
 
 func (s *Spider) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(ModelColNameSpider, s)
+	d := NewDelegate(ModelIdSpider, s)
 	return d.GetArtifact()
 }
 
 func (s *Spider) GetId() (id primitive.ObjectID) {
 	return s.Id
+}
+
+func (s *Spider) SetTags(tags []Tag) {
+	s.Tags = tags
 }

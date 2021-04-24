@@ -15,22 +15,22 @@ func (p *Tag) Add() (err error) {
 	if p.Id.IsZero() {
 		p.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(ModelColNameTag, p)
+	m := NewDelegate(ModelIdTag, p)
 	return m.Add()
 }
 
 func (p *Tag) Save() (err error) {
-	m := NewDelegate(ModelColNameTag, p)
+	m := NewDelegate(ModelIdTag, p)
 	return m.Save()
 }
 
 func (p *Tag) Delete() (err error) {
-	m := NewDelegate(ModelColNameTag, p)
+	m := NewDelegate(ModelIdTag, p)
 	return m.Delete()
 }
 
 func (p *Tag) GetArtifact() (a Artifact, err error) {
-	m := NewDelegate(ModelColNameTag, p)
+	m := NewDelegate(ModelIdTag, p)
 	return m.GetArtifact()
 }
 

@@ -13,22 +13,22 @@ func (j *Job) Add() (err error) {
 	if j.Id.IsZero() {
 		j.Id = primitive.NewObjectID()
 	}
-	d := NewDelegate(ModelColNameJob, j)
+	d := NewDelegate(ModelIdJob, j)
 	return d.Add()
 }
 
 func (j *Job) Save() (err error) {
-	d := NewDelegate(ModelColNameJob, j)
+	d := NewDelegate(ModelIdJob, j)
 	return d.Save()
 }
 
 func (j *Job) Delete() (err error) {
-	d := NewDelegate(ModelColNameJob, j)
+	d := NewDelegate(ModelIdJob, j)
 	return d.Delete()
 }
 
 func (j *Job) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(ModelColNameJob, j)
+	d := NewDelegate(ModelIdJob, j)
 	return d.GetArtifact()
 }
 

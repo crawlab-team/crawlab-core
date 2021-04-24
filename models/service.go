@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
+	"github.com/emirpasic/gods/lists/arraylist"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
@@ -26,7 +27,8 @@ type ServiceInterface interface {
 type PublicServiceInterface interface {
 	GetById(id primitive.ObjectID) (res interface{}, err error)
 	Get(query bson.M, opts *mongo.FindOptions) (res interface{}, err error)
-	GetList(query bson.M, opts *mongo.FindOptions) (res interface{}, err error)
+	GetList(query bson.M, opts *mongo.FindOptions) (res arraylist.List, err error)
+	GetListSerializeTarget(query bson.M, opts *mongo.FindOptions, target interface{}) (err error)
 	DeleteById(id primitive.ObjectID) (err error)
 	Delete(query bson.M) (err error)
 	DeleteList(query bson.M) (err error)
@@ -84,7 +86,7 @@ func (svc *CommonService) deleteId(id primitive.ObjectID) (err error) {
 	if err := svc.findId(id).One(&doc); err != nil {
 		return err
 	}
-	d := NewDelegate(svc.col.GetName(), &doc)
+	d := NewDelegate(svc.id, &doc)
 	return d.Delete()
 }
 
@@ -112,25 +114,18 @@ func (svc *CommonService) count(query bson.M) (total int, err error) {
 }
 
 func (svc *CommonService) update(query bson.M, update interface{}, fields []string) (err error) {
-	v := reflect.ValueOf(update)
+	vUpdate := reflect.ValueOf(update)
 	switch reflect.TypeOf(update).Kind() {
 	case reflect.Struct:
 		// ids of query
 		var ids []primitive.ObjectID
-		docs := NewListBinder(svc.id, NewModelListMap(), svc.find(query, nil)).MustBind()
-		vDocs := reflect.ValueOf(docs)
-		for i := 0; i < vDocs.Len(); i++ {
-			item := vDocs.Index(i)
-			fId := item.FieldByName("Id")
-			if !fId.CanInterface() {
-				return errors.ErrorModelInvalidType
-			}
-			objId := fId.Interface()
-			id, ok := objId.(primitive.ObjectID)
+		list := NewListBinder(svc.id, NewModelListMap(), svc.find(query, nil)).MustBindListAsPtr()
+		for _, value := range list.Values() {
+			item, ok := value.(BaseModelInterface)
 			if !ok {
 				return errors.ErrorModelInvalidType
 			}
-			ids = append(ids, id)
+			ids = append(ids, item.GetId())
 		}
 
 		// convert to bson.M
@@ -174,7 +169,7 @@ func (svc *CommonService) update(query bson.M, update interface{}, fields []stri
 
 		return nil
 	case reflect.Ptr:
-		return svc.update(query, v.Elem().Interface(), fields)
+		return svc.update(query, vUpdate.Elem().Interface(), fields)
 	default:
 		return errors.ErrorModelInvalidType
 	}
@@ -209,7 +204,7 @@ func (svc *CommonService) Get(query bson.M, opts *mongo.FindOptions) (res interf
 	return NewBasicBinder(svc.id, m, fr).Bind()
 }
 
-func (svc *CommonService) GetList(query bson.M, opts *mongo.FindOptions) (res interface{}, err error) {
+func (svc *CommonService) GetList(query bson.M, opts *mongo.FindOptions) (res arraylist.List, err error) {
 	// declare
 	m := NewModelListMap()
 
@@ -217,7 +212,15 @@ func (svc *CommonService) GetList(query bson.M, opts *mongo.FindOptions) (res in
 	fr := svc.find(query, opts)
 
 	// bind
-	return NewListBinder(svc.id, m, fr).Bind()
+	return NewListBinder(svc.id, m, fr).BindList()
+}
+
+func (svc *CommonService) GetListSerializeTarget(query bson.M, opts *mongo.FindOptions, target interface{}) (err error) {
+	list, err := svc.GetList(query, opts)
+	if err != nil {
+		return err
+	}
+	return serializeList(list, target)
 }
 
 func (svc *CommonService) DeleteById(id primitive.ObjectID) (err error) {

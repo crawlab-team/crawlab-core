@@ -6,10 +6,10 @@ import (
 	"testing"
 )
 
-func TestSetting_Add(t *testing.T) {
+func TestTag_Add(t *testing.T) {
 	setupTest(t)
 
-	s := Setting{}
+	s := Tag{}
 
 	err := s.Add()
 	require.Nil(t, err)
@@ -21,33 +21,33 @@ func TestSetting_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(ModelColNameSetting)
+	col := mongo.GetMongoCol(ModelColNameTag)
 	col.GetContext()
 }
 
-func TestSetting_Save(t *testing.T) {
+func TestTag_Save(t *testing.T) {
 	setupTest(t)
 
-	s := Setting{}
+	s := Tag{}
 
 	err := s.Add()
 	require.Nil(t, err)
 
-	key := "test_setting"
-	s.Key = key
+	name := "test_schedule"
+	s.Name = name
 	err = s.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameSetting).FindId(s.Id).One(&s)
+	err = mongo.GetMongoCol(ModelColNameTag).FindId(s.Id).One(&s)
 	require.Nil(t, err)
-	require.Equal(t, key, s.Key)
+	require.Equal(t, name, s.Name)
 }
 
-func TestSetting_Delete(t *testing.T) {
+func TestTag_Delete(t *testing.T) {
 	setupTest(t)
 
-	s := Setting{
-		Key: "test_setting",
+	s := Tag{
+		Name: "test_schedule",
 	}
 
 	err := s.Add()
@@ -64,19 +64,19 @@ func TestSetting_Delete(t *testing.T) {
 	require.True(t, a.Del)
 }
 
-func TestSetting_DeleteList(t *testing.T) {
+func TestTag_DeleteList(t *testing.T) {
 	setupTest(t)
 
-	doc := Setting{
-		Key: "test_Setting",
+	doc := Tag{
+		Name: "test_Tag",
 	}
 
 	err := doc.Add()
 	require.Nil(t, err)
 
-	err = SettingService.DeleteList(nil)
+	err = TagService.DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := SettingService.Count(nil)
+	total, err := TagService.Count(nil)
 	require.Equal(t, 0, total)
 }

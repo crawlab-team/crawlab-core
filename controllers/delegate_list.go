@@ -60,7 +60,7 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 	query := MustGetFilterQuery(c)
 
 	// get list
-	data, err := d.svc.GetList(query, &mongo.FindOptions{
+	list, err := d.svc.GetList(query, &mongo.FindOptions{
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
 	})
@@ -72,6 +72,7 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 		}
 		return
 	}
+	data := list.Values()
 
 	// total count
 	total, err := d.svc.Count(query)
@@ -86,7 +87,7 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 
 func (d *ListControllerDelegate) getAll(c *gin.Context) {
 	// get list
-	data, err := d.svc.GetList(nil, nil)
+	list, err := d.svc.GetList(nil, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			HandleErrorNotFound(c, err)
@@ -95,6 +96,7 @@ func (d *ListControllerDelegate) getAll(c *gin.Context) {
 		}
 		return
 	}
+	data := list.Values()
 
 	// total count
 	total, err := d.svc.Count(nil)

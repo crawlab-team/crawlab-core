@@ -27,22 +27,22 @@ func (u *User) Add() (err error) {
 	if u.Id.IsZero() {
 		u.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(UserColName, u)
+	m := NewDelegate(ModelIdUser, u)
 	return m.Add()
 }
 
 func (u *User) Save() (err error) {
-	m := NewDelegate(UserColName, u)
+	m := NewDelegate(ModelIdUser, u)
 	return m.Save()
 }
 
 func (u *User) Delete() (err error) {
-	m := NewDelegate(UserColName, u)
+	m := NewDelegate(ModelIdUser, u)
 	return m.Delete()
 }
 
 func (u *User) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(UserColName, u)
+	d := NewDelegate(ModelIdUser, u)
 	return d.GetArtifact()
 }
 
@@ -50,5 +50,4 @@ func (u *User) GetId() (id primitive.ObjectID) {
 	return u.Id
 }
 
-const UserColName = "users"
 const UserContextKey = "user"

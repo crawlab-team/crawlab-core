@@ -44,6 +44,12 @@ type BaseModelInterface interface {
 	GetId() (id primitive.ObjectID)
 }
 
+type BaseModelWithTagsInterface interface {
+	BaseModelInterface
+	SetTags(tags []Tag)
+}
+
 type BaseModel struct {
-	Id primitive.ObjectID `bson:"_id" json:"_id"`
+	Id   primitive.ObjectID `json:"_id" bson:"_id"`
+	Tags []Tag              `json:"tags" bson:"-"`
 }

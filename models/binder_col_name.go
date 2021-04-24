@@ -28,7 +28,7 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 	case ModelIdTask:
 		return ModelColNameTask, nil
 	case ModelIdJob:
-		return ModelColNameTask, nil
+		return ModelColNameJob, nil
 	case ModelIdSchedule:
 		return ModelColNameSchedule, nil
 	case ModelIdUser:

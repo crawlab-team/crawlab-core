@@ -26,6 +26,7 @@ require (
 	github.com/crawlab-team/crawlab-vcs v0.0.0
 	github.com/crawlab-team/go-trace v0.0.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.6.3

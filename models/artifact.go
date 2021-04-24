@@ -1,6 +1,7 @@
 package models
 
 import (
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
@@ -21,4 +22,20 @@ type ArtifactSys struct {
 	UpdateUid primitive.ObjectID `json:"update_uid" bson:"update_uid"`
 	DeleteTs  time.Time          `json:"delete_ts" bson:"delete_ts"`
 	DeleteUid primitive.ObjectID `json:"delete_uid" bson:"delete_uid"`
+}
+
+func (a *Artifact) GetTags() (res []Tag, err error) {
+	if a.TagIds == nil || len(a.TagIds) == 0 {
+		return res, nil
+	}
+	query := bson.M{
+		"_id": bson.M{
+			"$in": a.TagIds,
+		},
+	}
+	return TagService.GetModelList(query, nil)
+}
+
+func (a *Artifact) UpdateTags(tagNames []string) (err error) {
+	return TagService.UpdateById(a.Id, tagNames)
 }

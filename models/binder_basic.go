@@ -21,42 +21,30 @@ type BasicBinder struct {
 
 func (b *BasicBinder) Bind() (res interface{}, err error) {
 	m := b.m
-	fr := b.fr
 
 	switch b.id {
 	case ModelIdNode:
-		err = fr.One(&m.Node)
-		return m.Node, err
+		return b.process(&m.Node, ModelIdTag)
 	case ModelIdProject:
-		err = fr.One(&m.Project)
-		return m.Project, err
+		return b.process(&m.Project, ModelIdTag)
 	case ModelIdSpider:
-		err = fr.One(&m.Spider)
-		return m.Spider, err
+		return b.process(&m.Spider, ModelIdTag)
 	case ModelIdTask:
-		err = fr.One(&m.Task)
-		return m.Task, err
+		return b.process(&m.Task)
 	case ModelIdJob:
-		err = fr.One(&m.Job)
-		return m.Job, err
+		return b.process(&m.Job)
 	case ModelIdSchedule:
-		err = fr.One(&m.Schedule)
-		return m.Schedule, err
+		return b.process(&m.Schedule)
 	case ModelIdUser:
-		err = fr.One(&m.User)
-		return m.User, err
+		return b.process(&m.User)
 	case ModelIdSetting:
-		err = fr.One(&m.Setting)
-		return m.Setting, err
+		return b.process(&m.Setting)
 	case ModelIdToken:
-		err = fr.One(&m.Token)
-		return m.Token, err
+		return b.process(&m.Token)
 	case ModelIdVariable:
-		err = fr.One(&m.Variable)
-		return m.Variable, err
+		return b.process(&m.Variable)
 	case ModelIdTag:
-		err = fr.One(&m.Tag)
-		return m.Tag, err
+		return b.process(&m.Tag)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}
@@ -68,4 +56,11 @@ func (b *BasicBinder) MustBind() (res interface{}) {
 		panic(err)
 	}
 	return res
+}
+
+func (b *BasicBinder) process(d interface{}, fieldIds ...ModelId) (res interface{}, err error) {
+	if err := b.fr.One(d); err != nil {
+		return nil, err
+	}
+	return assignFields(d, fieldIds...)
 }

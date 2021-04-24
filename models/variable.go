@@ -15,22 +15,22 @@ func (v *Variable) Add() (err error) {
 	if v.Id.IsZero() {
 		v.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(ModelColNameVariable, v)
+	m := NewDelegate(ModelIdVariable, v)
 	return m.Add()
 }
 
 func (v *Variable) Save() (err error) {
-	m := NewDelegate(ModelColNameVariable, v)
+	m := NewDelegate(ModelIdVariable, v)
 	return m.Save()
 }
 
 func (v *Variable) Delete() (err error) {
-	m := NewDelegate(ModelColNameVariable, v)
+	m := NewDelegate(ModelIdVariable, v)
 	return m.Delete()
 }
 
 func (v *Variable) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(ModelColNameVariable, v)
+	d := NewDelegate(ModelIdVariable, v)
 	return d.GetArtifact()
 }
 

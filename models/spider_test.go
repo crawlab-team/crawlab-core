@@ -6,22 +6,12 @@ import (
 	"testing"
 )
 
-func setupSpiderTest() (err error) {
-	return mongo.InitMongo()
-}
-
-func cleanupSpiderTest() {
-	_ = mongo.GetMongoCol(ModelColNameSpider).Delete(nil)
-	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
-}
-
 func TestSpider_Add(t *testing.T) {
-	err := setupSpiderTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	s := Spider{}
 
-	err = s.Add()
+	err := s.Add()
 	require.Nil(t, err)
 	require.NotNil(t, s.Id)
 
@@ -33,17 +23,14 @@ func TestSpider_Add(t *testing.T) {
 
 	col := mongo.GetMongoCol(ModelColNameSpider)
 	col.GetContext()
-
-	cleanupSpiderTest()
 }
 
 func TestSpider_Save(t *testing.T) {
-	err := setupSpiderTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	s := Spider{}
 
-	err = s.Add()
+	err := s.Add()
 	require.Nil(t, err)
 
 	name := "test_spider"
@@ -54,19 +41,16 @@ func TestSpider_Save(t *testing.T) {
 	err = mongo.GetMongoCol(ModelColNameSpider).FindId(s.Id).One(&s)
 	require.Nil(t, err)
 	require.Equal(t, name, s.Name)
-
-	cleanupSpiderTest()
 }
 
 func TestSpider_Delete(t *testing.T) {
-	err := setupSpiderTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	s := Spider{
 		Name: "test_spider",
 	}
 
-	err = s.Add()
+	err := s.Add()
 	require.Nil(t, err)
 
 	err = s.Delete()
@@ -78,19 +62,16 @@ func TestSpider_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
 	require.True(t, a.Del)
-
-	cleanupSpiderTest()
 }
 
 func TestSpider_DeleteList(t *testing.T) {
-	err := setupSpiderTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	doc := Spider{
 		Name: "test_Spider",
 	}
 
-	err = doc.Add()
+	err := doc.Add()
 	require.Nil(t, err)
 
 	err = SpiderService.DeleteList(nil)
@@ -98,6 +79,4 @@ func TestSpider_DeleteList(t *testing.T) {
 
 	total, err := SpiderService.Count(nil)
 	require.Equal(t, 0, total)
-
-	cleanupSpiderTest()
 }

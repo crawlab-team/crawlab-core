@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -61,7 +60,6 @@ func TestProjectController_Post(t *testing.T) {
 	p := models.Project{
 		Name:        "old name",
 		Description: "old description",
-		Tags:        []string{"old tag"},
 	}
 
 	// add
@@ -79,7 +77,6 @@ func TestProjectController_Post(t *testing.T) {
 	p.Id = oid
 	p.Name = "new name"
 	p.Description = "new description"
-	p.Tags = []string{"new tag"}
 
 	// update
 	e.POST("/projects/" + id).
@@ -91,7 +88,6 @@ func TestProjectController_Post(t *testing.T) {
 	res.Path("$.data._id").Equal(id)
 	res.Path("$.data.name").Equal("new name")
 	res.Path("$.data.description").Equal("new description")
-	res.Path("$.data.tags").Equal([]string{"new tag"})
 }
 
 func TestProjectController_Put(t *testing.T) {
@@ -106,15 +102,12 @@ func TestProjectController_Put(t *testing.T) {
 	p := models.Project{
 		Name:        "test project",
 		Description: "this is a test project",
-		Tags:        []string{"tag 1", "tag 2"},
 	}
 
 	res := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
 	res.Path("$.data._id").NotNull()
 	res.Path("$.data.name").Equal("test project")
 	res.Path("$.data.description").Equal("this is a test project")
-	res.Path("$.data.tags").Array().Element(0).Equal("tag 1")
-	res.Path("$.data.tags").Array().Element(1).Equal("tag 2")
 }
 
 func TestProjectController_Delete(t *testing.T) {
@@ -131,7 +124,6 @@ func TestProjectController_Delete(t *testing.T) {
 	p := models.Project{
 		Name:        "test project",
 		Description: "this is a test project",
-		Tags:        []string{"test tag"},
 	}
 
 	// add
@@ -181,7 +173,6 @@ func TestProjectController_GetList(t *testing.T) {
 	for i := 0; i < n; i++ {
 		p := models.Project{
 			Name: fmt.Sprintf("test name %d", i+1),
-			Tags: []string{"test tag"},
 		}
 		obj := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
 		obj.Path("$.data._id").NotNull()
@@ -190,7 +181,7 @@ func TestProjectController_GetList(t *testing.T) {
 	f := entity.Filter{
 		//IsOr: false,
 		Conditions: []entity.Condition{
-			{Key: "tags", Op: constants.FilterOpIn, Value: []string{"test tag"}},
+			{Key: "name", Op: constants.FilterOpContains, Value: "test name"},
 		},
 	}
 	condBytes, err := json.Marshal(&f.Conditions)
@@ -213,7 +204,6 @@ func TestProjectController_GetList(t *testing.T) {
 	for i := 0; i < bn; i++ {
 		obj := data.Element(i)
 		obj.Path("$.name").Equal(fmt.Sprintf("test name %d", i+1))
-		obj.Path("$.tags").Array().First().Equal("test tag")
 	}
 
 	// get all
@@ -241,7 +231,6 @@ func TestProjectController_PutList(t *testing.T) {
 		docs = append(docs, models.Project{
 			Name:        fmt.Sprintf("project %d", i+1),
 			Description: "this is a project",
-			Tags:        []string{strconv.Itoa(i % 2)},
 		})
 	}
 
@@ -252,25 +241,6 @@ func TestProjectController_PutList(t *testing.T) {
 		Expect().Status(http.StatusOK).
 		JSON().Object()
 	res.Path("$.data").Array().Length().Equal(n)
-
-	cond := []entity.Condition{
-		{Key: "tags", Op: constants.FilterOpIn, Value: []string{"0"}},
-	}
-	condBytes, err := json.Marshal(&cond)
-	require.Nil(t, err)
-
-	res = e.GET("/projects").
-		WithQueryObject(entity.Pagination{Page: 1, Size: 100}).
-		WithQuery("conditions", string(condBytes)).
-		Expect().Status(http.StatusOK).
-		JSON().Object()
-	res.Path("$.data").Array().Length().Equal(n / 2)
-	data := res.Path("$.data").Array()
-	for i := 0; i < n/2; i++ {
-		obj := data.Element(i)
-		obj.Path("$.name").Equal(fmt.Sprintf("project %d", i*2+1))
-		obj.Path("$.tags").Array().First().Equal("0")
-	}
 }
 
 func TestProjectController_DeleteList(t *testing.T) {
@@ -290,7 +260,6 @@ func TestProjectController_DeleteList(t *testing.T) {
 		docs = append(docs, models.Project{
 			Name:        fmt.Sprintf("project %d", i+1),
 			Description: "this is a project",
-			Tags:        []string{strconv.Itoa(i % 2)},
 		})
 	}
 
@@ -319,7 +288,7 @@ func TestProjectController_DeleteList(t *testing.T) {
 	// check
 	res = e.GET("/projects").
 		Expect().Status(http.StatusOK).JSON().Object()
-	res.Path("$.data").Null()
+	res.Path("$.data").Array().Empty()
 	res.Path("$.total").Number().Equal(0)
 
 }
@@ -344,7 +313,6 @@ func TestProjectController_PostList(t *testing.T) {
 		docs = append(docs, models.Project{
 			Name:        "old name",
 			Description: "old description",
-			Tags:        []string{"old tag"},
 		})
 	}
 
@@ -369,7 +337,6 @@ func TestProjectController_PostList(t *testing.T) {
 	p := models.Project{
 		Name:        "new name",
 		Description: "new description",
-		Tags:        []string{"new tag"},
 	}
 	dataBytes, err := json.Marshal(&p)
 	require.Nil(t, err)
@@ -379,7 +346,6 @@ func TestProjectController_PostList(t *testing.T) {
 		Fields: []string{
 			"name",
 			"description",
-			"tags",
 		},
 	}
 	e.POST("/projects").
@@ -398,7 +364,6 @@ func TestProjectController_PostList(t *testing.T) {
 		obj := data.Element(i)
 		obj.Path("$.name").Equal("new name")
 		obj.Path("$.description").Equal("new description")
-		obj.Path("$.tags").Equal([]string{"new tag"})
 	}
 
 	// check artifacts

@@ -17,17 +17,17 @@ type projectService struct {
 }
 
 func (svc *projectService) GetModelById(id primitive.ObjectID) (res Project, err error) {
-	err = svc.findId(id).One(&res)
-	return res, err
+	d, err := svc.GetById(id)
+	return *d.(*Project), err
 }
 
 func (svc *projectService) GetModel(query bson.M, opts *mongo.FindOptions) (res Project, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
+	d, err := svc.Get(query, opts)
+	return *d.(*Project), err
 }
 
 func (svc *projectService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Project, err error) {
-	err = svc.find(query, opts).All(&res)
+	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
 

@@ -1,24 +1,25 @@
 package models
 
 import (
+	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-db/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
-	"go.mongodb.org/mongo-driver/bson"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
-func NewDelegate(colName string, obj interface{}) Delegate {
+func NewDelegate(id ModelId, obj interface{}) Delegate {
+	colName := getModelColName(id)
 	var doc BaseModel
-	data, err := bson.Marshal(obj)
+	data, err := json.Marshal(obj)
 	if err != nil {
 		return Delegate{
 			colName: colName,
 		}
 	}
-	if err := bson.Unmarshal(data, &doc); err != nil {
+	if err := json.Unmarshal(data, &doc); err != nil {
 		return Delegate{
 			colName: colName,
 		}
@@ -27,6 +28,7 @@ func NewDelegate(colName string, obj interface{}) Delegate {
 		Col: colName,
 	}
 	return Delegate{
+		id:      id,
 		colName: colName,
 		obj:     obj,
 		doc:     &doc,
@@ -35,6 +37,7 @@ func NewDelegate(colName string, obj interface{}) Delegate {
 }
 
 type Delegate struct {
+	id      ModelId
 	colName string
 	obj     interface{}
 	doc     *BaseModel
@@ -52,6 +55,9 @@ func (d *Delegate) Add() (err error) {
 	if err := d.upsertArtifact(); err != nil {
 		return err
 	}
+	if err := d.updateTags(); err != nil {
+		return err
+	}
 	return d.refresh()
 }
 
@@ -64,6 +70,9 @@ func (d *Delegate) Save() (err error) {
 		return err
 	}
 	if err := d.upsertArtifact(); err != nil {
+		return err
+	}
+	if err := d.updateTags(); err != nil {
 		return err
 	}
 	return d.refresh()
@@ -99,7 +108,8 @@ func (d *Delegate) refresh() (err error) {
 		return constants.ErrMissingId
 	}
 	col := mongo.GetMongoCol(d.colName)
-	if err := col.FindId(d.doc.Id).One(d.obj); err != nil {
+	fr := col.FindId(d.doc.Id)
+	if err := fr.One(d.obj); err != nil {
 		return err
 	}
 	return nil
@@ -158,4 +168,19 @@ func (d *Delegate) deleteArtifact() (err error) {
 		d.a.DeleteUid = user.Id
 	}
 	return col.ReplaceId(d.doc.Id, d.a)
+}
+
+func (d *Delegate) updateTags() (err error) {
+	if d.doc.Id.IsZero() {
+		return errors.ErrMissingValue
+	}
+	if len(d.doc.Tags) == 0 {
+		return nil
+	}
+	//ctx := col.GetContext()
+	if _, err := TagService.UpdateTagsById(d.colName, d.doc.Id, d.doc.Tags); err != nil {
+		return err
+	}
+
+	return nil
 }

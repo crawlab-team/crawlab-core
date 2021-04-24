@@ -20,28 +20,29 @@ type Schedule struct {
 	UserId         primitive.ObjectID   `json:"user_id" bson:"user_id"`
 	ScrapySpider   string               `json:"scrapy_spider" bson:"scrapy_spider"`
 	ScrapyLogLevel string               `json:"scrapy_log_level" bson:"scrapy_log_level"`
+	Tags           []string             `json:"tags" bson:"-"`
 }
 
 func (s *Schedule) Add() (err error) {
 	if s.Id.IsZero() {
 		s.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(ModelColNameSchedule, s)
+	m := NewDelegate(ModelIdSchedule, s)
 	return m.Add()
 }
 
 func (s *Schedule) Save() (err error) {
-	m := NewDelegate(ModelColNameSchedule, s)
+	m := NewDelegate(ModelIdSchedule, s)
 	return m.Save()
 }
 
 func (s *Schedule) Delete() (err error) {
-	m := NewDelegate(ModelColNameSchedule, s)
+	m := NewDelegate(ModelIdSchedule, s)
 	return m.Delete()
 }
 
 func (s *Schedule) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(ModelColNameSchedule, s)
+	d := NewDelegate(ModelIdSchedule, s)
 	return d.GetArtifact()
 }
 

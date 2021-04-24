@@ -35,22 +35,22 @@ func (t *Task) Add() (err error) {
 	if t.Id.IsZero() {
 		t.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(ModelColNameTask, t)
+	m := NewDelegate(ModelIdTask, t)
 	return m.Add()
 }
 
 func (t *Task) Save() (err error) {
-	m := NewDelegate(ModelColNameTask, t)
+	m := NewDelegate(ModelIdTask, t)
 	return m.Save()
 }
 
 func (t *Task) Delete() (err error) {
-	m := NewDelegate(ModelColNameTask, t)
+	m := NewDelegate(ModelIdTask, t)
 	return m.Delete()
 }
 
 func (t *Task) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(ModelColNameTask, t)
+	d := NewDelegate(ModelIdTask, t)
 	return d.GetArtifact()
 }
 

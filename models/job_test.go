@@ -7,22 +7,12 @@ import (
 	"testing"
 )
 
-func setupJobTest() (err error) {
-	return mongo.InitMongo()
-}
-
-func cleanupJobTest() {
-	_ = mongo.GetMongoCol(ModelColNameJob).Delete(nil)
-	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
-}
-
 func TestJob_Add(t *testing.T) {
-	err := setupJobTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	j := Job{}
 
-	err = j.Add()
+	err := j.Add()
 	require.Nil(t, err)
 	require.NotNil(t, j.Id)
 
@@ -34,17 +24,14 @@ func TestJob_Add(t *testing.T) {
 
 	col := mongo.GetMongoCol(ModelColNameJob)
 	col.GetContext()
-
-	cleanupJobTest()
 }
 
 func TestJob_Save(t *testing.T) {
-	err := setupJobTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	j := Job{}
 
-	err = j.Add()
+	err := j.Add()
 	require.Nil(t, err)
 
 	id := primitive.NewObjectID()
@@ -55,19 +42,16 @@ func TestJob_Save(t *testing.T) {
 	err = mongo.GetMongoCol(ModelColNameJob).FindId(j.Id).One(&j)
 	require.Nil(t, err)
 	require.Equal(t, id, j.TaskId)
-
-	cleanupJobTest()
 }
 
 func TestJob_Delete(t *testing.T) {
-	err := setupJobTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	j := Job{
 		TaskId: primitive.NewObjectID(),
 	}
 
-	err = j.Add()
+	err := j.Add()
 	require.Nil(t, err)
 
 	err = j.Delete()
@@ -79,19 +63,16 @@ func TestJob_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
 	require.True(t, a.Del)
-
-	cleanupJobTest()
 }
 
 func TestJob_DeleteList(t *testing.T) {
-	err := setupJobTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	doc := Job{
 		TaskId: primitive.NewObjectID(),
 	}
 
-	err = doc.Add()
+	err := doc.Add()
 	require.Nil(t, err)
 
 	err = JobService.DeleteList(nil)
@@ -99,6 +80,4 @@ func TestJob_DeleteList(t *testing.T) {
 
 	total, err := JobService.Count(nil)
 	require.Equal(t, 0, total)
-
-	cleanupJobTest()
 }

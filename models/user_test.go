@@ -11,7 +11,7 @@ func setupUserTest() (err error) {
 }
 
 func cleanupUserTest() {
-	_ = mongo.GetMongoCol(UserColName).Delete(nil)
+	_ = mongo.GetMongoCol(ModelColNameUser).Delete(nil)
 	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
 }
 
@@ -31,7 +31,7 @@ func TestUser_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(UserColName)
+	col := mongo.GetMongoCol(ModelColNameUser)
 	col.GetContext()
 
 	cleanupUserTest()
@@ -51,7 +51,7 @@ func TestUser_Save(t *testing.T) {
 	err = u.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(UserColName).FindId(u.Id).One(&u)
+	err = mongo.GetMongoCol(ModelColNameUser).FindId(u.Id).One(&u)
 	require.Nil(t, err)
 	require.Equal(t, name, u.Username)
 

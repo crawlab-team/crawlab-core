@@ -6,22 +6,12 @@ import (
 	"testing"
 )
 
-func setupProjectTest() (err error) {
-	return mongo.InitMongo()
-}
-
-func cleanupProjectTest() {
-	_ = mongo.GetMongoCol(ModelColNameProject).Delete(nil)
-	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
-}
-
 func TestProject_Add(t *testing.T) {
-	err := setupProjectTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	p := Project{}
 
-	err = p.Add()
+	err := p.Add()
 	require.Nil(t, err)
 	require.NotNil(t, p.Id)
 
@@ -33,17 +23,14 @@ func TestProject_Add(t *testing.T) {
 
 	col := mongo.GetMongoCol(ModelColNameProject)
 	col.GetContext()
-
-	cleanupProjectTest()
 }
 
 func TestProject_Save(t *testing.T) {
-	err := setupProjectTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	p := Project{}
 
-	err = p.Add()
+	err := p.Add()
 	require.Nil(t, err)
 
 	name := "test_project"
@@ -54,19 +41,16 @@ func TestProject_Save(t *testing.T) {
 	err = mongo.GetMongoCol(ModelColNameProject).FindId(p.Id).One(&p)
 	require.Nil(t, err)
 	require.Equal(t, name, p.Name)
-
-	cleanupProjectTest()
 }
 
 func TestProject_Delete(t *testing.T) {
-	err := setupProjectTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	p := Project{
 		Name: "test_project",
 	}
 
-	err = p.Add()
+	err := p.Add()
 	require.Nil(t, err)
 
 	err = p.Delete()
@@ -78,19 +62,16 @@ func TestProject_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
 	require.True(t, a.Del)
-
-	cleanupProjectTest()
 }
 
 func TestProject_DeleteList(t *testing.T) {
-	err := setupProjectTest()
-	require.Nil(t, err)
+	setupTest(t)
 
 	doc := Project{
 		Name: "test_Project",
 	}
 
-	err = doc.Add()
+	err := doc.Add()
 	require.Nil(t, err)
 
 	err = ProjectService.DeleteList(nil)
@@ -98,6 +79,4 @@ func TestProject_DeleteList(t *testing.T) {
 
 	total, err := ProjectService.Count(nil)
 	require.Equal(t, 0, total)
-
-	cleanupProjectTest()
 }

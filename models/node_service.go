@@ -17,17 +17,23 @@ type nodeService struct {
 }
 
 func (svc *nodeService) GetModelById(id primitive.ObjectID) (res Node, err error) {
-	err = svc.findId(id).One(&res)
-	return res, err
+	d, err := svc.GetById(id)
+	if err != nil {
+		return res, err
+	}
+	return *d.(*Node), err
 }
 
 func (svc *nodeService) GetModel(query bson.M, opts *mongo.FindOptions) (res Node, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
+	d, err := svc.Get(query, opts)
+	if err != nil {
+		return res, err
+	}
+	return *d.(*Node), err
 }
 
 func (svc *nodeService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Node, err error) {
-	err = svc.find(query, opts).All(&res)
+	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
 
