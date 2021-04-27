@@ -68,7 +68,6 @@ func (svc *tagService) GetModelList(query bson.M, opts *mongo.FindOptions) (res 
 }
 
 func (svc *tagService) UpdateTagsById(colName string, id primitive.ObjectID, tags []Tag) (tagIds []primitive.ObjectID, err error) {
-	// TODO: save tags
 	// get tag ids to update
 	tagIds, err = svc.getTagIds(colName, tags)
 	if err != nil {

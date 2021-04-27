@@ -174,9 +174,6 @@ func (d *Delegate) updateTags() (err error) {
 	if d.doc.Id.IsZero() {
 		return errors.ErrMissingValue
 	}
-	if len(d.doc.Tags) == 0 {
-		return nil
-	}
 	//ctx := col.GetContext()
 	if _, err := TagService.UpdateTagsById(d.colName, d.doc.Id, d.doc.Tags); err != nil {
 		return err

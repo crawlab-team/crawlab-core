@@ -52,12 +52,20 @@ func FilterToQuery(f *entity.Filter) (q bson.M, err error) {
 	q = bson.M{}
 	for _, cond := range f.Conditions {
 		switch cond.Op {
+		case constants.FilterOpNotSet:
+			// do nothing
 		case constants.FilterOpEqual:
 			q[cond.Key] = cond.Value
-		case constants.FilterOpContains, constants.FilterOpRegex:
+		case constants.FilterOpNotEqual:
+			q[cond.Key] = bson.M{"$ne": cond.Value}
+		case constants.FilterOpContains, constants.FilterOpRegex, constants.FilterOpSearch:
 			q[cond.Key] = bson.M{"$regex": cond.Value}
+		case constants.FilterOpNotContains:
+			q[cond.Key] = bson.M{"$not": bson.M{"$regex": cond.Value}}
 		case constants.FilterOpIn:
 			q[cond.Key] = bson.M{"$in": cond.Value}
+		case constants.FilterOpNotIn:
+			q[cond.Key] = bson.M{"$nin": cond.Value}
 		case constants.FilterOpGreaterThan:
 			q[cond.Key] = bson.M{"$gt": cond.Value}
 		case constants.FilterOpGreaterThanEqual:

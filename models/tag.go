@@ -5,10 +5,11 @@ import (
 )
 
 type Tag struct {
-	Id    primitive.ObjectID `json:"_id" bson:"_id"`
-	Name  string             `json:"name" bson:"name"`
-	Color string             `json:"color" bson:"color"`
-	Col   string             `json:"col" bson:"col"`
+	Id          primitive.ObjectID `json:"_id" bson:"_id"`
+	Name        string             `json:"name" bson:"name"`
+	Color       string             `json:"color" bson:"color"`
+	Description string             `json:"description" bson:"description"`
+	Col         string             `json:"col" bson:"col"`
 }
 
 func (p *Tag) Add() (err error) {

@@ -53,6 +53,9 @@ func (b *JsonBinder) Bind(c *gin.Context) (res models.BaseModelInterface, err er
 	case ControllerIdVariable:
 		err = c.ShouldBindJSON(&m.Variable)
 		return &m.Variable, nil
+	case ControllerIdTag:
+		err = c.ShouldBindJSON(&m.Tag)
+		return &m.Tag, nil
 	default:
 		return nil, errors.ErrorControllerInvalidControllerId
 	}
@@ -94,6 +97,9 @@ func (b *JsonBinder) BindList(c *gin.Context) (res interface{}, err error) {
 	case ControllerIdVariable:
 		err = c.ShouldBindJSON(&m.Variables)
 		return m.Variables, nil
+	case ControllerIdTag:
+		err = c.ShouldBindJSON(&m.Tags)
+		return m.Tags, nil
 	default:
 		return nil, errors.ErrorControllerInvalidControllerId
 	}
