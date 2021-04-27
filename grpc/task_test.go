@@ -8,11 +8,12 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/utils"
-	db "github.com/crawlab-team/crawlab-db"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	pb "github.com/crawlab-team/crawlab-grpc"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
 	"testing"
 	"time"
@@ -24,11 +25,11 @@ type TaskTestObject struct {
 	s        *CrawlabGrpcService
 	c        pb.TaskServiceClient
 	conn     *grpc.ClientConn
-	spiderId bson.ObjectId
+	spiderId primitive.ObjectID
 	spider   models.Spider
-	taskId   string
+	taskId   primitive.ObjectID
 	task     models.Task
-	nodeId   bson.ObjectId
+	nodeId   primitive.ObjectID
 	node     models.Node
 }
 
@@ -49,9 +50,9 @@ func setupTask() (to *TaskTestObject, err error) {
 		host:     host,
 		port:     port,
 		s:        s,
-		spiderId: bson.NewObjectId(),
-		taskId:   uuid.New().String(),
-		nodeId:   bson.NewObjectId(),
+		spiderId: primitive.NewObjectID(),
+		taskId:   primitive.NewObjectID(),
+		nodeId:   primitive.NewObjectID(),
 	}
 
 	// set debug
@@ -76,7 +77,7 @@ func setupTask() (to *TaskTestObject, err error) {
 	viper.Set("mongo.host", "localhost")
 	viper.Set("mongo.port", "27017")
 	viper.Set("mongo.db", "test")
-	if err := db.InitMongo(); err != nil {
+	if err := mongo.InitMongo(); err != nil {
 		return nil, err
 	}
 
@@ -90,10 +91,7 @@ func setupTask() (to *TaskTestObject, err error) {
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
-		Col:       "results_test_spider",
-		FileId:    bson.ObjectIdHex(constants.ObjectIdNull),
-		ProjectId: bson.ObjectIdHex(constants.ObjectIdNull),
-		UserId:    bson.ObjectIdHex(constants.ObjectIdNull),
+		Col: "results_test_spider",
 	}
 	if err := to.spider.Add(); err != nil {
 		return nil, err
@@ -101,14 +99,12 @@ func setupTask() (to *TaskTestObject, err error) {
 
 	// task
 	to.task = models.Task{
-		Id:         to.taskId,
-		SpiderId:   to.spiderId,
-		NodeId:     to.nodeId,
-		Type:       constants.TaskTypeSpider,
-		ScheduleId: bson.ObjectIdHex(constants.ObjectIdNull),
-		UserId:     bson.ObjectIdHex(constants.ObjectIdNull),
+		Id:       to.taskId,
+		SpiderId: to.spiderId,
+		NodeId:   to.nodeId,
+		Type:     constants.TaskTypeSpider,
 	}
-	if err := models.AddTask(to.task); err != nil {
+	if err := to.task.Add(); err != nil {
 		return nil, err
 	}
 
@@ -126,14 +122,9 @@ func setupTask() (to *TaskTestObject, err error) {
 }
 
 func cleanupTask(to *TaskTestObject) {
-	_ = models.RemoveSpider(to.spiderId)
-	_ = models.RemoveTask(to.taskId)
 	_ = to.node.Delete()
 	to.s.server.Stop()
 	_ = to.conn.Close()
-	s, col := db.GetCol(to.spider.Col)
-	defer s.Close()
-	_ = col.DropCollection()
 }
 
 func TestTaskService_GetTaskInfo(t *testing.T) {
@@ -142,7 +133,7 @@ func TestTaskService_GetTaskInfo(t *testing.T) {
 
 	// test GetTaskInfo
 	req := &pb.TaskServiceRequest{
-		TaskId: to.taskId,
+		TaskId: to.taskId.Hex(),
 	}
 	res, err := to.c.GetTaskInfo(context.Background(), req)
 	require.Nil(t, err)
@@ -172,7 +163,7 @@ func TestTaskService_SaveItem(t *testing.T) {
 	data, err := json.Marshal(&item)
 	require.Nil(t, err)
 	req := &pb.TaskServiceRequest{
-		TaskId: to.taskId,
+		TaskId: to.taskId.Hex(),
 		Data:   data,
 	}
 	_, err = to.c.SaveItem(context.Background(), req)
@@ -182,10 +173,9 @@ func TestTaskService_SaveItem(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// test saved item
-	s, col := db.GetCol(to.spider.Col)
-	defer s.Close()
+	col := mongo.GetMongoCol(to.spider.Col)
 	var dbItem entity.ResultItem
-	err = col.Find(nil).One(&dbItem)
+	err = col.Find(nil, nil).One(&dbItem)
 	require.Nil(t, err)
 	require.Equal(t, item[key1], dbItem[key1])
 	require.Equal(t, item[key2], dbItem[key2])
@@ -210,7 +200,7 @@ func TestTaskService_SaveItems(t *testing.T) {
 		data, err := json.Marshal(&items)
 		require.Nil(t, err)
 		req := &pb.TaskServiceRequest{
-			TaskId: to.taskId,
+			TaskId: to.taskId.Hex(),
 			Data:   data,
 		}
 		_, err = to.c.SaveItems(context.Background(), req)
@@ -227,14 +217,15 @@ func TestTaskService_SaveItems(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// test saved item
-	s, col := db.GetCol(to.spider.Col)
-	defer s.Close()
-	count, err := col.Count()
+	col := mongo.GetMongoCol(to.spider.Col)
+	count, err := col.Count(nil)
 	utils.LogDebug(fmt.Sprintf("count: %d", count))
 	require.Nil(t, err)
 	require.Equal(t, batch*size, count)
 	var dbItems []entity.ResultItem
-	err = col.Find(nil).Sort("+num").All(&dbItems)
+	err = col.Find(nil, &mongo.FindOptions{
+		Sort: bson.M{"num": 1},
+	}).All(&dbItems)
 	require.Equal(t, batch*size, len(dbItems))
 	for i, item := range dbItems {
 		require.IsType(t, float64(i), item["num"])
