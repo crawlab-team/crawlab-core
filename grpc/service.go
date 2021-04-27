@@ -1,75 +1,70 @@
 package grpc
 
 import (
-	"fmt"
-	"github.com/apex/log"
-	pb "github.com/crawlab-team/crawlab-grpc"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"net"
+	"github.com/crawlab-team/crawlab-core/errors"
+	"sync"
 )
 
-type CrawlabGrpcServiceInterface interface {
-	Init() (err error)
-	Stop()
+type Service struct {
+	server     *Server
+	clientsMap sync.Map
 }
 
-func NewCrawlabGrpcService() (s *CrawlabGrpcService, err error) {
-	s = &CrawlabGrpcService{
-		server: grpc.NewServer(), // grpc server
-		ch:     make(chan int),   // signal channel
-	}
-	return s, nil
-}
-
-type CrawlabGrpcService struct {
-	CrawlabGrpcServiceInterface
-	server *grpc.Server
-	ch     chan int
-	rs     *TaskResultItemService
-}
-
-func (s *CrawlabGrpcService) Init() (err error) {
-	// grpc address
-	host := viper.GetString("grpc.host")
-	port := viper.GetString("grpc.port")
-	address := fmt.Sprintf("%s:%s", host, port)
-
-	// listen
-	listen, err := net.Listen("tcp", address)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+func (svc *Service) Init() (err error) {
+	if err := svc.server.Init(); err != nil {
 		return err
 	}
-
-	// register services
-	pb.RegisterTaskServiceServer(s.server, TaskService)
-
-	// wait for signal
-	go func() {
-		for {
-			sig := <-s.ch
-			if sig > 0 {
-				s.server.Stop()
-				return
-			}
-		}
-	}()
-
-	// start task result item service
-	s.rs = NewTaskResultItemService(&TaskResultItemServiceOptions{
-		FlushWaitSeconds: viper.GetInt("grpc.task.flushWaitSeconds"),
-	})
-
-	// start grpc server
-	if err := s.server.Serve(listen); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-		return err
-	}
-
 	return nil
 }
 
-func (s *CrawlabGrpcService) Stop() {
-	s.ch <- 1
+func (svc *Service) GetClient(address Address) (client *Client, err error) {
+	res, ok := svc.clientsMap.Load(address)
+	if !ok {
+		return nil, errors.ErrorGrpcClientNotExists
+	}
+	client = res.(*Client)
+	return client, nil
+}
+
+func (svc *Service) AddClient(opts *ClientOptions) (err error) {
+	_, ok := svc.clientsMap.LoadAndDelete(opts.Address)
+	if ok {
+		return errors.ErrorGrpcClientAlreadyExists
+	}
+	client, err := NewClient(opts)
+	if err != nil {
+		return err
+	}
+	svc.clientsMap.Store(client.opts.Address, client)
+	return nil
+}
+
+func (svc *Service) RemoveClient(address Address) (err error) {
+	_, ok := svc.clientsMap.LoadAndDelete(address)
+	if !ok {
+		return errors.ErrorGrpcClientNotExists
+	}
+	return nil
+}
+
+type ServiceOptions struct {
+	Local   Address
+	Remotes []Address
+}
+
+func NewService(opts *ServiceOptions) (svc *Service, err error) {
+	if opts == nil {
+		opts = &ServiceOptions{}
+	}
+	server, err := NewServer(&ServerOptions{
+		Address: opts.Local,
+	})
+	if err != nil {
+		return nil, err
+	}
+	svc = &Service{
+		server:     server,
+		clientsMap: sync.Map{},
+	}
+	return svc, nil
 }

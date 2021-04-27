@@ -10,6 +10,7 @@ const (
 	ErrorPrefixModel      = "model"
 	ErrorPrefixFilter     = "filter"
 	ErrorPrefixHttp       = "http"
+	ErrorPrefixGrpc       = "grpc"
 )
 
 type ErrorPrefix string

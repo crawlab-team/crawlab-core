@@ -22,7 +22,7 @@ import (
 type TaskTestObject struct {
 	host     string
 	port     string
-	s        *CrawlabGrpcService
+	s        *Service
 	c        pb.TaskServiceClient
 	conn     *grpc.ClientConn
 	spiderId primitive.ObjectID
@@ -40,7 +40,7 @@ func setupTask() (to *TaskTestObject, err error) {
 	address := fmt.Sprintf("%s:%s", host, port)
 
 	// grpc service
-	s, err := NewCrawlabGrpcService()
+	s, err := NewService(nil)
 	if err != nil {
 		return nil, err
 	}
