@@ -12,6 +12,7 @@ import (
 type Server struct {
 	svr  *grpc.Server
 	opts *ServerOptions
+	l    net.Listener
 }
 
 func (svc *Server) Init() (err error) {
@@ -27,19 +28,21 @@ func (svc *Server) Start() (err error) {
 	// grpc server binding address
 	address := svc.opts.Address.String()
 
-	// listen
-	listen, err := net.Listen("tcp", address)
+	// listener
+	svc.l, err = net.Listen("tcp", address)
 	if err != nil {
 		_ = trace.TraceError(err)
 		return errors.ErrorGrpcServerFailedToListen
 	}
-	log.Infof("server listens to %s", address)
+	log.Infof("grpc server listens to %s", address)
 
 	// start grpc server
 	go func() {
-		if err := svc.svr.Serve(listen); err != nil {
-			_ = trace.TraceError(err)
-			log.Error(errors.ErrorGrpcServerFailedToServe.Error())
+		if err := svc.svr.Serve(svc.l); err != nil {
+			if err != grpc.ErrServerStopped {
+				_ = trace.TraceError(err)
+				log.Error(errors.ErrorGrpcServerFailedToServe.Error())
+			}
 		}
 	}()
 
@@ -47,8 +50,9 @@ func (svc *Server) Start() (err error) {
 }
 
 func (svc *Server) Stop() (err error) {
-	log.Infof("server gracefully stopping...")
 	svc.svr.GracefulStop()
+	_ = svc.l.Close()
+	log.Infof("grpc server stopped")
 	return nil
 }
 

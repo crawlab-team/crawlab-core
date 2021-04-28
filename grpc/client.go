@@ -20,16 +20,18 @@ type Client struct {
 }
 
 func (svc *Client) Init() (err error) {
-	// register
-	if err := svc.Register(); err != nil {
-		return err
-	}
-
+	// do nothing
 	return nil
 }
 
 func (svc *Client) Start() (err error) {
+	// connect
 	if err := backoff.Retry(svc.connect, backoff.NewExponentialBackOff()); err != nil {
+		return err
+	}
+
+	// register
+	if err := svc.Register(); err != nil {
 		return err
 	}
 

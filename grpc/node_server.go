@@ -19,8 +19,10 @@ type nodeServer struct {
 func (svc nodeServer) Register(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	// unmarshall data
 	var node models.Node
-	if err := json.Unmarshal(req.Data, &node); err != nil {
-		return HandleError(err)
+	if req.Data != nil {
+		if err := json.Unmarshal(req.Data, &node); err != nil {
+			return HandleError(err)
+		}
 	}
 
 	// node key

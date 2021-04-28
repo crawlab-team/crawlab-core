@@ -6,3 +6,10 @@ type ServiceInterface interface {
 	Stop() (err error)
 	Register() (err error)
 }
+
+type ClientId = int
+
+const (
+	ClientIdNode = iota
+	ClientIdTask
+)

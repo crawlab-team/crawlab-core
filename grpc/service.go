@@ -10,6 +10,7 @@ type Service struct {
 	server     *Server
 	clientsMap sync.Map
 	opts       *ServiceOptions
+	remotes    []Address
 }
 
 func (svc *Service) Init() (err error) {
@@ -17,6 +18,23 @@ func (svc *Service) Init() (err error) {
 	if err := svc.server.Start(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (svc *Service) Stop() (err error) {
+	// stop server
+	if err := svc.server.Stop(); err != nil {
+		return err
+	}
+
+	// stop and delete all clients
+	clients, err := svc.GetAllClients()
+	for _, client := range clients {
+		if err := client.Stop(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -30,6 +48,34 @@ func (svc *Service) GetClient(address Address) (client *Client, err error) {
 		return nil, errors.ErrorGrpcInvalidType
 	}
 	return client, nil
+}
+
+func (svc *Service) GetDefaultClient() (client *Client, err error) {
+	err = errors.ErrorGrpcClientNotExists
+	svc.clientsMap.Range(func(key, value interface{}) bool {
+		var ok bool
+		client, ok = value.(*Client)
+		if !ok {
+			err = errors.ErrorGrpcInvalidType
+		} else {
+			err = nil
+		}
+		return false
+	})
+	return client, err
+}
+
+func (svc *Service) GetAllClients() (clients []*Client, err error) {
+	svc.clientsMap.Range(func(key, value interface{}) bool {
+		client, ok := value.(*Client)
+		if !ok {
+			err = errors.ErrorGrpcInvalidType
+			return false
+		}
+		clients = append(clients, client)
+		return true
+	})
+	return clients, nil
 }
 
 func (svc *Service) AddClient(opts *ClientOptions) (err error) {
@@ -68,9 +114,14 @@ type ServiceOptions struct {
 	Remotes []Address
 }
 
+var DefaultServiceOptions = &ServiceOptions{
+	Local:   NewAddress(nil),
+	Remotes: []Address{},
+}
+
 func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	if opts == nil {
-		opts = &ServiceOptions{}
+		opts = DefaultServiceOptions
 	}
 
 	// service

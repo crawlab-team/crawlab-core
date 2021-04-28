@@ -10,6 +10,8 @@ func TestNewService(t *testing.T) {
 	svc, err := NewService(nil)
 	require.Nil(t, err)
 	require.NotNil(t, svc)
+	err = svc.Stop()
+	require.Nil(t, err)
 }
 
 func TestService_AddClient(t *testing.T) {
@@ -25,6 +27,9 @@ func TestService_AddClient(t *testing.T) {
 	client, err := svc.GetClient(NewAddress(nil))
 	require.Nil(t, err)
 	require.NotNil(t, client)
+
+	err = svc.Stop()
+	require.Nil(t, err)
 }
 
 func TestService_DeleteClient(t *testing.T) {
@@ -43,4 +48,7 @@ func TestService_DeleteClient(t *testing.T) {
 	// get client
 	_, err = svc.GetClient(NewAddress(nil))
 	require.Equal(t, errors.ErrorGrpcClientNotExists, err)
+
+	err = svc.Stop()
+	require.Nil(t, err)
 }
