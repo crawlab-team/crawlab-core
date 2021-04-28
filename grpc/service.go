@@ -33,6 +33,9 @@ func (svc *Service) GetClient(address Address) (client *Client, err error) {
 }
 
 func (svc *Service) AddClient(opts *ClientOptions) (err error) {
+	if opts == nil {
+		opts = DefaultClientOptions
+	}
 	_, ok := svc.clientsMap.LoadAndDelete(opts.Address)
 	if ok {
 		return errors.ErrorGrpcClientAlreadyExists
@@ -48,7 +51,7 @@ func (svc *Service) AddClient(opts *ClientOptions) (err error) {
 	return nil
 }
 
-func (svc *Service) RemoveClient(address Address) (err error) {
+func (svc *Service) DeleteClient(address Address) (err error) {
 	client, err := svc.GetClient(address)
 	if err != nil {
 		return err

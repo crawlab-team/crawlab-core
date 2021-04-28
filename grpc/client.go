@@ -15,8 +15,8 @@ type Client struct {
 	conn *grpc.ClientConn
 	opts *ClientOptions
 
-	nodeClient grpc2.NodeServiceClient
-	taskClient grpc2.TaskServiceClient
+	NodeClient grpc2.NodeServiceClient
+	TaskClient grpc2.TaskServiceClient
 }
 
 func (svc *Client) Init() (err error) {
@@ -51,10 +51,10 @@ func (svc *Client) Stop() (err error) {
 
 func (svc *Client) Register() (err error) {
 	// node
-	svc.nodeClient = grpc2.NewNodeServiceClient(svc.conn)
+	svc.NodeClient = grpc2.NewNodeServiceClient(svc.conn)
 
 	// task
-	svc.taskClient = grpc2.NewTaskServiceClient(svc.conn)
+	svc.TaskClient = grpc2.NewTaskServiceClient(svc.conn)
 
 	return nil
 }
@@ -83,6 +83,11 @@ type ClientOptions struct {
 	TimeoutSeconds int
 }
 
+var DefaultClientOptions = &ClientOptions{
+	Address:        NewAddress(nil),
+	TimeoutSeconds: 30,
+}
+
 func NewClient(opts *ClientOptions) (client *Client, err error) {
 	if opts == nil {
 		opts = &ClientOptions{
@@ -90,7 +95,7 @@ func NewClient(opts *ClientOptions) (client *Client, err error) {
 		}
 	}
 	if opts.TimeoutSeconds == 0 {
-		opts.TimeoutSeconds = 30
+		opts.TimeoutSeconds = DefaultClientOptions.TimeoutSeconds
 	}
 	client = &Client{
 		conn: nil,

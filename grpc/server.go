@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/errors"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
@@ -26,9 +25,7 @@ func (svc *Server) Init() (err error) {
 
 func (svc *Server) Start() (err error) {
 	// grpc server binding address
-	host := svc.opts.Address.Host
-	port := svc.opts.Address.Port
-	address := fmt.Sprintf("%s:%s", host, port)
+	address := svc.opts.Address.String()
 
 	// listen
 	listen, err := net.Listen("tcp", address)
@@ -36,6 +33,7 @@ func (svc *Server) Start() (err error) {
 		_ = trace.TraceError(err)
 		return errors.ErrorGrpcServerFailedToListen
 	}
+	log.Infof("server listens to %s", address)
 
 	// start grpc server
 	go func() {
@@ -49,6 +47,7 @@ func (svc *Server) Start() (err error) {
 }
 
 func (svc *Server) Stop() (err error) {
+	log.Infof("server gracefully stopping...")
 	svc.svr.GracefulStop()
 	return nil
 }
@@ -65,6 +64,10 @@ func (svc *Server) Register() (err error) {
 
 type ServerOptions struct {
 	Address Address
+}
+
+var DefaultServerOptions = &ServerOptions{
+	Address: NewAddress(nil),
 }
 
 func NewServer(opts *ServerOptions) (server *Server, err error) {
