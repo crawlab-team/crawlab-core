@@ -2,6 +2,11 @@ package grpc
 
 import (
 	"github.com/crawlab-team/crawlab-core/models"
+	node2 "github.com/crawlab-team/crawlab-core/node"
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"os"
+	"path"
 	"testing"
 )
 
@@ -17,7 +22,15 @@ func setupTest(t *testing.T) {
 	}
 
 	var err error
+	masterNodeConfigName := "config-master.json"
+	masterNodeConfigPath := path.Join(node2.DefaultConfigDirPath, masterNodeConfigName)
+	err = ioutil.WriteFile(masterNodeConfigPath, []byte("{\"key\":\"master\",\"is_master\":true}"), os.ModePerm)
+	require.Nil(t, err)
+	masterNodeService, err := node2.NewService(&node2.ServiceOptions{
+		ConfigPath: masterNodeConfigPath,
+	})
 	if TestMasterService, err = NewService(&ServiceOptions{
+		NodeService: masterNodeService,
 		Local: NewAddress(&AddressOptions{
 			Host: "localhost",
 			Port: TestMasterPort,
@@ -26,7 +39,15 @@ func setupTest(t *testing.T) {
 		panic(err)
 	}
 
+	workerNodeConfigName := "config-worker.json"
+	workerNodeConfigPath := path.Join(node2.DefaultConfigDirPath, workerNodeConfigName)
+	err = ioutil.WriteFile(workerNodeConfigPath, []byte("{\"key\":\"worker\",\"is_worker\":false}"), os.ModePerm)
+	require.Nil(t, err)
+	workerNodeService, err := node2.NewService(&node2.ServiceOptions{
+		ConfigPath: workerNodeConfigPath,
+	})
 	if TestWorkerService, err = NewService(&ServiceOptions{
+		NodeService: workerNodeService,
 		Local: NewAddress(&AddressOptions{
 			Host: "localhost",
 			Port: TestWorkerPort,

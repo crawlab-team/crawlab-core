@@ -1,13 +1,11 @@
 package node
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/utils"
 )
 
-type Config struct {
-	Key      string `json:"key"`
-	IsMaster bool   `json:"is_master"`
-}
+type Config entity.NodeInfo
 
 type ConfigOptions struct {
 	Key      string

@@ -2,6 +2,7 @@ package node
 
 import (
 	"encoding/json"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"io/ioutil"
@@ -9,12 +10,12 @@ import (
 	"path"
 )
 
-type service struct {
+type Service struct {
 	cfg  *Config
 	opts *ServiceOptions
 }
 
-func (svc *service) Init() (err error) {
+func (svc *Service) Init() (err error) {
 	// check config directory path
 	configDirPath := path.Dir(svc.opts.ConfigPath)
 	if !utils.Exists(configDirPath) {
@@ -45,14 +46,27 @@ func (svc *service) Init() (err error) {
 		}
 	}
 
+	// register to ServiceMap
+	ServiceMap.Store(svc.GetNodeKey(), svc)
+
 	return nil
 }
 
-func (svc *service) GetNodeKey() (res string) {
+func (svc *Service) Reload() (err error) {
+	return svc.Init()
+}
+
+func (svc *Service) GetNodeInfo() (res entity.NodeInfo) {
+	res.Key = svc.GetNodeKey()
+	res.IsMaster = svc.IsMaster()
+	return res
+}
+
+func (svc *Service) GetNodeKey() (res string) {
 	return svc.cfg.Key
 }
 
-func (svc *service) IsMaster() (res bool) {
+func (svc *Service) IsMaster() (res bool) {
 	return svc.cfg.IsMaster
 }
 
@@ -61,15 +75,15 @@ type ServiceOptions struct {
 }
 
 var DefaultServiceOptions = &ServiceOptions{
-	ConfigPath: defaultConfigPath,
+	ConfigPath: DefaultConfigPath,
 }
 
-func NewService(opts *ServiceOptions) (svc *service, err error) {
+func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	if opts == nil {
 		opts = DefaultServiceOptions
 	}
 
-	svc = &service{
+	svc = &Service{
 		cfg:  &Config{},
 		opts: opts,
 	}
@@ -80,5 +94,3 @@ func NewService(opts *ServiceOptions) (svc *service, err error) {
 
 	return svc, nil
 }
-
-var Service, _ = NewService(nil)

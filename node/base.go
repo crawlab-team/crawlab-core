@@ -5,12 +5,12 @@ import (
 	"path"
 )
 
-var homeDirPath, _ = homedir.Dir()
+var HomeDirPath, _ = homedir.Dir()
 
 var configDirName = ".crawlab"
 
-var defaultConfigDirPath = path.Join(homeDirPath, configDirName)
+var DefaultConfigDirPath = path.Join(HomeDirPath, configDirName)
 
-var configName = "config.json"
+var ConfigName = "config.json"
 
-var defaultConfigPath = path.Join(homeDirPath, configDirName, configName)
+var DefaultConfigPath = path.Join(HomeDirPath, configDirName, ConfigName)

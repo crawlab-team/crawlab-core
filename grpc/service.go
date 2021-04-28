@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/go-trace"
 	"sync"
 )
@@ -10,6 +11,7 @@ type Service struct {
 	server     *Server
 	clientsMap sync.Map
 	opts       *ServiceOptions
+	nodeSvc    *node.Service
 	remotes    []Address
 }
 
@@ -109,9 +111,12 @@ func (svc *Service) DeleteClient(address Address) (err error) {
 	return nil
 }
 
+var serviceMap = sync.Map{}
+
 type ServiceOptions struct {
-	Local   Address
-	Remotes []Address
+	NodeService *node.Service
+	Local       Address
+	Remotes     []Address
 }
 
 var DefaultServiceOptions = &ServiceOptions{
@@ -123,9 +128,23 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	if opts == nil {
 		opts = DefaultServiceOptions
 	}
+	if opts.NodeService == nil {
+		opts.NodeService, _ = node.GetDefaultService()
+	}
+
+	// attempt to load existing service by node key
+	res, ok := serviceMap.Load(opts.NodeService.GetNodeKey())
+	if ok {
+		svc, ok := res.(*Service)
+		if !ok {
+			return nil, errors.ErrorGrpcInvalidType
+		}
+		return svc, nil
+	}
 
 	// service
 	svc = &Service{
+		nodeSvc:    opts.NodeService,
 		server:     nil,
 		clientsMap: sync.Map{},
 		opts:       opts,
@@ -133,7 +152,8 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 
 	// server
 	svc.server, err = NewServer(&ServerOptions{
-		Address: opts.Local,
+		NodeService: opts.NodeService,
+		Address:     opts.Local,
 	})
 	if err != nil {
 		return nil, err
@@ -151,4 +171,16 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	}
 
 	return svc, nil
+}
+
+var service *Service
+
+func GetService() (svc *Service, err error) {
+	if service == nil {
+		service, err = NewService(nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return service, nil
 }

@@ -6,22 +6,31 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/models"
+	node2 "github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/crawlab-grpc"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
 type nodeServer struct {
+	nodeSvc *node2.Service
 	grpc.UnimplementedNodeServiceServer
 }
 
 // Register from handler/worker to master
-func (svc nodeServer) Register(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+func (svr nodeServer) Register(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+	AllowMaster(svr.nodeSvc)
+
 	// unmarshall data
 	var node models.Node
 	if req.Data != nil {
 		if err := json.Unmarshal(req.Data, &node); err != nil {
 			return HandleError(err)
+		}
+
+		if node.IsMaster {
+			// error: cannot register master node
+			return HandleError(errors.ErrorGrpcNotAllowed)
 		}
 	}
 
@@ -40,8 +49,11 @@ func (svc nodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 	nodeDb, err := models.NodeService.GetModelByKey(nodeKey, nil)
 	if err == nil {
 		if nodeDb.Status != constants.NodeStatusUnregistered {
-			// already exists
+			// error: already exists
 			return HandleError(errors.ErrorModelAlreadyExists)
+		} else if nodeDb.IsMaster {
+			// error: cannot register master node
+			return HandleError(errors.ErrorGrpcNotAllowed)
 		} else {
 			// register existing
 			node = nodeDb
@@ -65,13 +77,12 @@ func (svc nodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 	return HandleSuccessWithData(node)
 }
 
-// Ping or send heartbeat from handler/worker to master
-func (svc nodeServer) Ping(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	// node key
-	nodeKey := req.NodeKey
+// SendHeartbeat from handler/worker to master
+func (svr nodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+	AllowMaster(svr.nodeSvc)
 
 	// find in db
-	node, err := models.NodeService.GetModelByKey(nodeKey, nil)
+	node, err := models.NodeService.GetModelByKey(req.NodeKey, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			return HandleError(errors.ErrorGrpcClientNotExists)
@@ -95,4 +106,13 @@ func (svc nodeServer) Ping(ctx context.Context, req *grpc.Request) (res *grpc.Re
 	return HandleSuccessWithData(node)
 }
 
-var NodeService nodeServer
+// Ping from master to worker
+func (svr nodeServer) Ping(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+	AllowWorker(svr.nodeSvc)
+
+	return HandleSuccessWithData(svr.nodeSvc.GetNodeInfo())
+}
+
+func NewNodeServer(nodeSvc *node2.Service) (svr *nodeServer) {
+	return &nodeServer{nodeSvc: nodeSvc}
+}

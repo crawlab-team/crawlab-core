@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var TestService *service
+var TestService *Service
 
 func setupTest(t *testing.T) {
 	var err error
@@ -17,5 +17,5 @@ func setupTest(t *testing.T) {
 }
 
 func cleanupTest() {
-	_ = os.RemoveAll(defaultConfigDirPath)
+	_ = os.RemoveAll(DefaultConfigDirPath)
 }

@@ -5,3 +5,5 @@ func NewNodeError(msg string) (err error) {
 }
 
 var ErrorNodeUnregistered = NewNodeError("unregistered")
+var ErrorNodeServiceNotExists = NewNodeError("service not exists")
+var ErrorNodeInvalidType = NewNodeError("invalid type")

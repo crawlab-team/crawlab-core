@@ -3,33 +3,36 @@ package grpc
 import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/errors"
+	node2 "github.com/crawlab-team/crawlab-core/node"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
 	"net"
 )
 
 type Server struct {
 	svr  *grpc.Server
-	opts *ServerOptions
 	l    net.Listener
+	opts *ServerOptions
 }
 
-func (svc *Server) Init() (err error) {
+func (svr *Server) Init() (err error) {
 	// register
-	if err := svc.Register(); err != nil {
+	if err := svr.Register(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc *Server) Start() (err error) {
+func (svr *Server) Start() (err error) {
 	// grpc server binding address
-	address := svc.opts.Address.String()
+	address := svr.opts.Address.String()
 
 	// listener
-	svc.l, err = net.Listen("tcp", address)
+	svr.l, err = net.Listen("tcp", address)
 	if err != nil {
 		_ = trace.TraceError(err)
 		return errors.ErrorGrpcServerFailedToListen
@@ -38,7 +41,7 @@ func (svc *Server) Start() (err error) {
 
 	// start grpc server
 	go func() {
-		if err := svc.svr.Serve(svc.l); err != nil {
+		if err := svr.svr.Serve(svr.l); err != nil {
 			if err != grpc.ErrServerStopped {
 				_ = trace.TraceError(err)
 				log.Error(errors.ErrorGrpcServerFailedToServe.Error())
@@ -49,25 +52,34 @@ func (svc *Server) Start() (err error) {
 	return nil
 }
 
-func (svc *Server) Stop() (err error) {
-	svc.svr.GracefulStop()
-	_ = svc.l.Close()
+func (svr *Server) Stop() (err error) {
+	svr.svr.GracefulStop()
+	_ = svr.l.Close()
 	log.Infof("grpc server stopped")
 	return nil
 }
 
-func (svc *Server) Register() (err error) {
+func (svr *Server) Register() (err error) {
+	nodeSvc := svr.opts.NodeService
+	if nodeSvc == nil {
+		nodeSvc, err = node2.GetDefaultService()
+		if err != nil {
+			return err
+		}
+	}
+
 	// node
-	grpc2.RegisterNodeServiceServer(svc.svr, NodeService)
+	grpc2.RegisterNodeServiceServer(svr.svr, NewNodeServer(nodeSvc))
 
 	// task
-	grpc2.RegisterTaskServiceServer(svc.svr, TaskService)
+	//grpc2.RegisterTaskServiceServer(svr.svr, TaskService)
 
 	return nil
 }
 
 type ServerOptions struct {
-	Address Address
+	NodeService *node2.Service
+	Address     Address
 }
 
 var DefaultServerOptions = &ServerOptions{
@@ -76,16 +88,32 @@ var DefaultServerOptions = &ServerOptions{
 
 func NewServer(opts *ServerOptions) (server *Server, err error) {
 	if opts == nil {
-		opts = &ServerOptions{
-			Address: NewAddress(nil),
-		}
+		opts = DefaultServerOptions
 	}
+
+	// recovery options
+	var recoveryFunc grpc_recovery.RecoveryHandlerFunc
+	recoveryOpts := []grpc_recovery.Option{
+		grpc_recovery.WithRecoveryHandler(recoveryFunc),
+	}
+
+	// construct server
 	server = &Server{
-		svr:  grpc.NewServer(),
+		svr: grpc.NewServer(
+			grpc_middleware.WithUnaryServerChain(
+				grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
+			),
+			grpc_middleware.WithStreamServerChain(
+				grpc_recovery.StreamServerInterceptor(recoveryOpts...),
+			),
+		),
 		opts: opts,
 	}
+
+	// initialize
 	if err := server.Init(); err != nil {
 		return nil, err
 	}
+
 	return server, nil
 }
