@@ -2,7 +2,7 @@ package grpc
 
 type ServiceInterface interface {
 	Init() (err error)
-	Start()
-	Stop()
-	Register()
+	Start() (err error)
+	Stop() (err error)
+	Register() (err error)
 }

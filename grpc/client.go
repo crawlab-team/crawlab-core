@@ -1,15 +1,18 @@
 package grpc
 
 import (
-	"fmt"
+	"context"
 	"github.com/apex/log"
+	"github.com/cenkalti/backoff/v4"
+	"github.com/crawlab-team/crawlab-core/errors"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
+	"github.com/crawlab-team/go-trace"
 	"google.golang.org/grpc"
+	"time"
 )
 
 type Client struct {
 	conn *grpc.ClientConn
-	ch   chan int
 	opts *ClientOptions
 
 	nodeClient grpc2.NodeServiceClient
@@ -18,55 +21,66 @@ type Client struct {
 
 func (svc *Client) Init() (err error) {
 	// register
-	svc.Register()
+	if err := svc.Register(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (svc *Client) Start() {
-	// grpc server address
-	host := svc.opts.Address.Host
-	port := svc.opts.Address.Port
-	address := fmt.Sprintf("%s:%s", host, port)
-
-	// connection
-	var err error
-	svc.conn, err = grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("failed to start: %v", err)
-		return
+func (svc *Client) Start() (err error) {
+	if err := backoff.Retry(svc.connect, backoff.NewExponentialBackOff()); err != nil {
+		return err
 	}
 
-	// wait for signal
-	svc.waitForStop()
+	return nil
 }
 
-func (svc *Client) Stop() {
-	svc.ch <- 1
-	<-svc.ch
+func (svc *Client) Stop() (err error) {
+	// grpc server address
+	address := svc.opts.Address.String()
+
+	// close connection
+	if err := svc.conn.Close(); err != nil {
+		return err
+	}
+	log.Infof("grpc client disconnected from %s", address)
+
+	return nil
 }
 
-func (svc *Client) Register() {
+func (svc *Client) Register() (err error) {
 	// node
 	svc.nodeClient = grpc2.NewNodeServiceClient(svc.conn)
 
 	// task
 	svc.taskClient = grpc2.NewTaskServiceClient(svc.conn)
+
+	return nil
 }
 
-func (svc *Client) waitForStop() {
-	for {
-		sig := <-svc.ch
-		if sig > 0 {
-			_ = svc.conn.Close()
-			svc.ch <- 1
-			return
-		}
+func (svc *Client) connect() (err error) {
+	// grpc server address
+	address := svc.opts.Address.String()
+
+	// timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(svc.opts.TimeoutSeconds)*time.Second)
+	defer cancel()
+
+	// connection
+	svc.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
+	if err != nil {
+		_ = trace.TraceError(err)
+		return errors.ErrorGrpcClientFailedToStart
 	}
+	log.Infof("grpc client connected to %s", address)
+
+	return nil
 }
 
 type ClientOptions struct {
-	Address Address
+	Address        Address
+	TimeoutSeconds int
 }
 
 func NewClient(opts *ClientOptions) (client *Client, err error) {
@@ -75,9 +89,11 @@ func NewClient(opts *ClientOptions) (client *Client, err error) {
 			Address: NewAddress(nil),
 		}
 	}
+	if opts.TimeoutSeconds == 0 {
+		opts.TimeoutSeconds = 30
+	}
 	client = &Client{
 		conn: nil,
-		ch:   make(chan int),
 		opts: opts,
 	}
 	if err := client.Init(); err != nil {

@@ -3,26 +3,28 @@ package grpc
 import (
 	"fmt"
 	"github.com/apex/log"
+	"github.com/crawlab-team/crawlab-core/errors"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
+	"github.com/crawlab-team/go-trace"
 	"google.golang.org/grpc"
 	"net"
 )
 
 type Server struct {
 	svr  *grpc.Server
-	ch   chan int
 	opts *ServerOptions
 }
 
 func (svc *Server) Init() (err error) {
-
 	// register
-	svc.Register()
+	if err := svc.Register(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (svc *Server) Start() {
+func (svc *Server) Start() (err error) {
 	// grpc server binding address
 	host := svc.opts.Address.Host
 	port := svc.opts.Address.Port
@@ -31,43 +33,34 @@ func (svc *Server) Start() {
 	// listen
 	listen, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-		return
+		_ = trace.TraceError(err)
+		return errors.ErrorGrpcServerFailedToListen
 	}
 
 	// start grpc server
 	go func() {
 		if err := svc.svr.Serve(listen); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			_ = trace.TraceError(err)
+			log.Error(errors.ErrorGrpcServerFailedToServe.Error())
 		}
 	}()
 
-	// wait for signal
-	svc.waitForStop()
+	return nil
 }
 
-func (svc *Server) Stop() {
-	svc.ch <- 1
-	<-svc.ch
+func (svc *Server) Stop() (err error) {
+	svc.svr.GracefulStop()
+	return nil
 }
 
-func (svc *Server) Register() {
+func (svc *Server) Register() (err error) {
 	// node
 	grpc2.RegisterNodeServiceServer(svc.svr, NodeService)
 
 	// task
 	grpc2.RegisterTaskServiceServer(svc.svr, TaskService)
-}
 
-func (svc *Server) waitForStop() {
-	for {
-		sig := <-svc.ch
-		if sig > 0 {
-			svc.svr.GracefulStop()
-			svc.ch <- 1
-			return
-		}
-	}
+	return nil
 }
 
 type ServerOptions struct {
@@ -82,7 +75,6 @@ func NewServer(opts *ServerOptions) (server *Server, err error) {
 	}
 	server = &Server{
 		svr:  grpc.NewServer(),
-		ch:   make(chan int),
 		opts: opts,
 	}
 	if err := server.Init(); err != nil {
