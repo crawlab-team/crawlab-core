@@ -40,6 +40,7 @@ require (
 	github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0 // indirect
 	github.com/matcornic/hermes v1.2.0
 	github.com/mattn/go-runewidth v0.0.3 // indirect
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic/v7 v7.0.15
 	github.com/pkg/errors v0.9.1
