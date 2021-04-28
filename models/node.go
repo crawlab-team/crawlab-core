@@ -2,6 +2,7 @@ package models
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type Node struct {
@@ -14,8 +15,10 @@ type Node struct {
 	Hostname    string             `json:"hostname" bson:"hostname"`
 	Description string             `json:"description" bson:"description"`
 	IsMaster    bool               `json:"is_master" bson:"is_master"`
+	Status      string             `json:"status" bson:"status"`
 	Enabled     bool               `json:"enabled" bson:"enabled"`
 	Active      bool               `json:"active" bson:"active"`
+	ActiveTs    time.Time          `json:"active_ts" bson:"active_ts"`
 	Settings    NodeSettings       `json:"settings" bson:"settings"`
 	Tags        []Tag              `json:"tags" bson:"-"`
 }

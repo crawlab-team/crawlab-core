@@ -37,6 +37,11 @@ func (svc *nodeService) GetModelList(query bson.M, opts *mongo.FindOptions) (res
 	return res, err
 }
 
+func (svc *nodeService) GetModelByKey(key string, opts *mongo.FindOptions) (res Node, err error) {
+	query := bson.M{"key": key}
+	return svc.GetModel(query, opts)
+}
+
 func NewNodeService() (svc *nodeService) {
 	return &nodeService{NewCommonService(ModelIdNode)}
 }

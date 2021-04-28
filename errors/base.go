@@ -11,6 +11,7 @@ const (
 	ErrorPrefixFilter     = "filter"
 	ErrorPrefixHttp       = "http"
 	ErrorPrefixGrpc       = "grpc"
+	ErrorPrefixNode       = "node"
 )
 
 type ErrorPrefix string
