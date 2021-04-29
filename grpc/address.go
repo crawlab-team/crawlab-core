@@ -24,7 +24,7 @@ func NewAddress(opts *AddressOptions) Address {
 		opts.Host = "localhost"
 	}
 	if opts.Port == "" {
-		opts.Port = "8765"
+		opts.Port = "9666"
 	}
 	return Address{
 		Host: opts.Host,

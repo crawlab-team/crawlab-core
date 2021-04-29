@@ -129,7 +129,10 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 		opts = DefaultServiceOptions
 	}
 	if opts.NodeService == nil {
-		opts.NodeService, _ = node.GetDefaultService()
+		opts.NodeService, err = node.GetDefaultService()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// attempt to load existing service by node key
@@ -173,14 +176,4 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	return svc, nil
 }
 
-var service *Service
-
-func GetService() (svc *Service, err error) {
-	if service == nil {
-		service, err = NewService(nil)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return service, nil
-}
+var GrpcService *Service
