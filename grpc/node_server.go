@@ -12,13 +12,13 @@ import (
 	"time"
 )
 
-type nodeServer struct {
+type NodeServer struct {
 	nodeSvc *node2.Service
 	grpc.UnimplementedNodeServiceServer
 }
 
 // Register from handler/worker to master
-func (svr nodeServer) Register(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	AllowMaster(svr.nodeSvc)
 
 	// unmarshall data
@@ -78,7 +78,7 @@ func (svr nodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 }
 
 // SendHeartbeat from handler/worker to master
-func (svr nodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	AllowMaster(svr.nodeSvc)
 
 	// find in db
@@ -107,12 +107,12 @@ func (svr nodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 }
 
 // Ping from master to worker
-func (svr nodeServer) Ping(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+func (svr NodeServer) Ping(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	AllowWorker(svr.nodeSvc)
 
 	return HandleSuccessWithData(svr.nodeSvc.GetNodeInfo())
 }
 
-func NewNodeServer(nodeSvc *node2.Service) (svr *nodeServer) {
-	return &nodeServer{nodeSvc: nodeSvc}
+func NewNodeServer(nodeSvc *node2.Service) (svr *NodeServer) {
+	return &NodeServer{nodeSvc: nodeSvc}
 }
