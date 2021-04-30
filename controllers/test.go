@@ -18,7 +18,7 @@ func setupTest(t *testing.T, cleanup func()) {
 	require.Nil(t, err)
 
 	// init model services
-	err = models.InitModelServices()
+	err = models.InitModels()
 	require.Nil(t, err)
 
 	// init controllers

@@ -1,13 +1,11 @@
 package models
 
-var initialized = false
+import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/utils"
+)
 
-func InitModelServices() (err error) {
-	// skip if already initialized
-	if initialized {
-		return nil
-	}
-
+func initModels() (err error) {
 	// system model services
 	ArtifactService = NewArtifactService()
 	TagService = NewTagService()
@@ -25,8 +23,9 @@ func InitModelServices() (err error) {
 	UserService = NewUserService()
 	VariableService = NewVariableService()
 
-	// mark as initialized
-	initialized = true
-
 	return nil
+}
+
+func InitModels() (err error) {
+	return utils.InitModule(interfaces.ModuleIdModels, initModels)
 }

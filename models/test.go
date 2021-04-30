@@ -7,7 +7,7 @@ import (
 
 func setupTest(t *testing.T) {
 	_ = mongo.InitMongo()
-	_ = InitModelServices()
+	_ = InitModels()
 	t.Cleanup(cleanupTest)
 }
 

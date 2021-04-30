@@ -4,18 +4,12 @@ import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
-	"github.com/google/wire"
 	"io/ioutil"
 	"os"
 	"path"
 )
-
-func init() {
-	store.NodeServiceSet = wire.NewSet(provideService)
-}
 
 type Service struct {
 	cfg  *Config

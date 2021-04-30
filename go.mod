@@ -35,7 +35,6 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/subcommands v1.2.0 // indirect
 	github.com/google/uuid v1.1.2
-	github.com/google/wire v0.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/hashicorp/go-sockaddr v1.0.0
 	github.com/huandu/xstrings v1.2.0 // indirect

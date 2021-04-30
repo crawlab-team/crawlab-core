@@ -4,7 +4,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models"
 	node2 "github.com/crawlab-team/crawlab-core/node"
-	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -19,10 +18,7 @@ var TestMasterPort = "9876"
 var TestWorkerPort = "9877"
 
 func setupTest(t *testing.T) {
-	if err := models.InitModelServices(); err != nil {
-		panic(err)
-	}
-	if err := store.InitStore(); err != nil {
+	if err := models.InitModels(); err != nil {
 		panic(err)
 	}
 

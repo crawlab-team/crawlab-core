@@ -5,16 +5,9 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node"
-	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/go-trace"
-	"github.com/google/wire"
 	"sync"
 )
-
-func init() {
-	set := wire.NewSet(provideService)
-	store.GrpcServiceSet = set
-}
 
 type Service struct {
 	server     *Server
@@ -184,8 +177,4 @@ func NewService(opts *ServiceOptions) (res2 *Service, err error) {
 	}
 
 	return svc, nil
-}
-
-func provideService() (svc *Service, err error) {
-	return NewService(nil)
 }
