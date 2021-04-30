@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +19,7 @@ type jobService struct {
 
 func NewJobService() (svc *jobService) {
 	return &jobService{
-		NewCommonService(ModelIdJob),
+		NewCommonService(interfaces.ModelIdJob),
 	}
 }
 func (svc *jobService) GetModelById(id primitive.ObjectID) (res Job, err error) {

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,7 +33,7 @@ func (svc *projectService) GetModelList(query bson.M, opts *mongo.FindOptions) (
 }
 
 func NewProjectService() (svc *projectService) {
-	return &projectService{NewCommonService(ModelIdProject)}
+	return &projectService{NewCommonService(interfaces.ModelIdProject)}
 }
 
 var ProjectService *projectService

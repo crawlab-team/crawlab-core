@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +19,7 @@ type settingService struct {
 
 func NewSettingService() (svc *settingService) {
 	return &settingService{
-		NewCommonService(ModelIdSetting),
+		NewCommonService(interfaces.ModelIdSetting),
 	}
 }
 func (svc *settingService) GetModelById(id primitive.ObjectID) (res Setting, err error) {

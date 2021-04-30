@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -21,7 +22,7 @@ func TestProject_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(ModelColNameProject)
+	col := mongo.GetMongoCol(interfaces.ModelColNameProject)
 	col.GetContext()
 }
 
@@ -38,7 +39,7 @@ func TestProject_Save(t *testing.T) {
 	err = p.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameProject).FindId(p.Id).One(&p)
+	err = mongo.GetMongoCol(interfaces.ModelColNameProject).FindId(p.Id).One(&p)
 	require.Nil(t, err)
 	require.Equal(t, name, p.Name)
 }
@@ -57,7 +58,7 @@ func TestProject_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	err = col.FindId(p.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

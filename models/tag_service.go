@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -80,7 +81,7 @@ func (svc *tagService) UpdateTagsById(colName string, id primitive.ObjectID, tag
 		return tagIds, err
 	}
 	a.TagIds = tagIds
-	if err := mongo.GetMongoCol(ModelColNameArtifact).ReplaceId(id, a); err != nil {
+	if err := mongo.GetMongoCol(interfaces.ModelColNameArtifact).ReplaceId(id, a); err != nil {
 		return tagIds, err
 	}
 	return tagIds, nil
@@ -110,7 +111,7 @@ func (svc *tagService) UpdateTags(colName string, query bson.M, tags []Tag) (tag
 }
 
 func NewTagService() (svc *tagService) {
-	return &tagService{NewCommonService(ModelIdTag)}
+	return &tagService{NewCommonService(interfaces.ModelIdTag)}
 }
 
 var TagService *tagService

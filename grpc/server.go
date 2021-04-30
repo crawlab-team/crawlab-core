@@ -4,10 +4,10 @@ import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/errors"
 	node2 "github.com/crawlab-team/crawlab-core/node"
-	grpc2 "github.com/crawlab-team/crawlab-grpc"
+	. "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	. "github.com/grpc-ecosystem/go-grpc-middleware"
+	. "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
 	"net"
 )
@@ -68,8 +68,11 @@ func (svr *Server) Register() (err error) {
 		}
 	}
 
+	// model delegate
+	RegisterModelDelegateServiceServer(svr.svr, *NewModelDelegateServer(nodeSvc))
+
 	// node
-	grpc2.RegisterNodeServiceServer(svr.svr, NewNodeServer(nodeSvc))
+	RegisterNodeServiceServer(svr.svr, *NewNodeServer(nodeSvc))
 
 	// task
 	//grpc2.RegisterTaskServiceServer(svr.svr, TaskService)
@@ -77,34 +80,26 @@ func (svr *Server) Register() (err error) {
 	return nil
 }
 
-type ServerOptions struct {
-	NodeService *node2.Service
-	Address     Address
-}
-
-var DefaultServerOptions = &ServerOptions{
-	Address: NewAddress(nil),
-}
-
 func NewServer(opts *ServerOptions) (server *Server, err error) {
 	if opts == nil {
-		opts = DefaultServerOptions
+		opts = &ServerOptions{}
 	}
+	opts = opts.FillEmpty().(*ServerOptions)
 
 	// recovery options
-	var recoveryFunc grpc_recovery.RecoveryHandlerFunc
-	recoveryOpts := []grpc_recovery.Option{
-		grpc_recovery.WithRecoveryHandler(recoveryFunc),
+	var recoveryFunc RecoveryHandlerFunc
+	recoveryOpts := []Option{
+		WithRecoveryHandler(recoveryFunc),
 	}
 
 	// construct server
 	server = &Server{
 		svr: grpc.NewServer(
-			grpc_middleware.WithUnaryServerChain(
-				grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
+			WithUnaryServerChain(
+				UnaryServerInterceptor(recoveryOpts...),
 			),
-			grpc_middleware.WithStreamServerChain(
-				grpc_recovery.StreamServerInterceptor(recoveryOpts...),
+			WithStreamServerChain(
+				StreamServerInterceptor(recoveryOpts...),
 			),
 		),
 		opts: opts,

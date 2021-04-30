@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
@@ -26,7 +27,7 @@ func TestNodeService_GetModelById(t *testing.T) {
 	require.False(t, node.Tags[0].Id.IsZero())
 	require.Equal(t, "tag 1", node.Tags[0].Name)
 	require.Equal(t, "red", node.Tags[0].Color)
-	require.Equal(t, ModelColNameNode, node.Tags[0].Col)
+	require.Equal(t, interfaces.ModelColNameNode, node.Tags[0].Col)
 }
 
 func TestNodeService_GetModel(t *testing.T) {
@@ -47,7 +48,7 @@ func TestNodeService_GetModel(t *testing.T) {
 	require.False(t, node.Id.IsZero())
 	require.Equal(t, "tag 1", node.Tags[0].Name)
 	require.Equal(t, "red", node.Tags[0].Color)
-	require.Equal(t, ModelColNameNode, node.Tags[0].Col)
+	require.Equal(t, interfaces.ModelColNameNode, node.Tags[0].Col)
 }
 
 func TestNodeService_GetModelList(t *testing.T) {
@@ -74,6 +75,6 @@ func TestNodeService_GetModelList(t *testing.T) {
 		require.False(t, node.Id.IsZero())
 		require.False(t, node.Tags[0].Id.IsZero())
 		require.Equal(t, fmt.Sprintf("tag %d", i), node.Tags[0].Name)
-		require.Equal(t, ModelColNameNode, node.Tags[0].Col)
+		require.Equal(t, interfaces.ModelColNameNode, node.Tags[0].Col)
 	}
 }

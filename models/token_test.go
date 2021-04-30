@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -11,8 +12,8 @@ func setupTokenTest() (err error) {
 }
 
 func cleanupTokenTest() {
-	_ = mongo.GetMongoCol(ModelColNameToken).Delete(nil)
-	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
+	_ = mongo.GetMongoCol(interfaces.ModelColNameToken).Delete(nil)
+	_ = mongo.GetMongoCol(interfaces.ModelColNameArtifact).Delete(nil)
 }
 
 func TestToken_Add(t *testing.T) {
@@ -31,7 +32,7 @@ func TestToken_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(ModelColNameToken)
+	col := mongo.GetMongoCol(interfaces.ModelColNameToken)
 	col.GetContext()
 
 	cleanupTokenTest()
@@ -51,7 +52,7 @@ func TestToken_Save(t *testing.T) {
 	err = token.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameToken).FindId(token.Id).One(&token)
+	err = mongo.GetMongoCol(interfaces.ModelColNameToken).FindId(token.Id).One(&token)
 	require.Nil(t, err)
 	require.Equal(t, tokenValue, token.Token)
 
@@ -73,7 +74,7 @@ func TestToken_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	err = col.FindId(s.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

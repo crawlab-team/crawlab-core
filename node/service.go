@@ -3,12 +3,19 @@ package node
 import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/entity"
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"github.com/google/wire"
 	"io/ioutil"
 	"os"
 	"path"
 )
+
+func init() {
+	store.NodeServiceSet = wire.NewSet(provideService)
+}
 
 type Service struct {
 	cfg  *Config
@@ -56,10 +63,11 @@ func (svc *Service) Reload() (err error) {
 	return svc.Init()
 }
 
-func (svc *Service) GetNodeInfo() (res entity.NodeInfo) {
-	res.Key = svc.GetNodeKey()
-	res.IsMaster = svc.IsMaster()
-	return res
+func (svc *Service) GetNodeInfo() (res interfaces.Entity) {
+	return &entity.NodeInfo{
+		Key:      svc.GetNodeKey(),
+		IsMaster: svc.IsMaster(),
+	}
 }
 
 func (svc *Service) GetNodeKey() (res string) {
@@ -70,18 +78,11 @@ func (svc *Service) IsMaster() (res bool) {
 	return svc.cfg.IsMaster
 }
 
-type ServiceOptions struct {
-	ConfigPath string
-}
-
-var DefaultServiceOptions = &ServiceOptions{
-	ConfigPath: DefaultConfigPath,
-}
-
 func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	if opts == nil {
-		opts = DefaultServiceOptions
+		opts = &ServiceOptions{}
 	}
+	opts = opts.FillEmpty().(*ServiceOptions)
 
 	svc = &Service{
 		cfg:  &Config{},
@@ -93,4 +94,8 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	}
 
 	return svc, nil
+}
+
+func provideService() (svc *Service, err error) {
+	return NewService(nil)
 }

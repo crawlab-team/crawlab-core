@@ -27,3 +27,35 @@ func GetServiceByKey(key string) (svc *Service, err error) {
 func GetDefaultService() (svc *Service, err error) {
 	return NewService(nil)
 }
+
+func IsMaster() (res bool, err error) {
+	svc, err := GetDefaultService()
+	if err != nil {
+		return res, err
+	}
+	return svc.IsMaster(), nil
+}
+
+func MustIsMaster() (res bool) {
+	res, err := IsMaster()
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func GetNodeKey() (res string, err error) {
+	svc, err := GetDefaultService()
+	if err != nil {
+		return res, err
+	}
+	return svc.GetNodeKey(), nil
+}
+
+func MustGetNodeKey() (res string) {
+	res, err := GetNodeKey()
+	if err != nil {
+		panic(err)
+	}
+	return res
+}

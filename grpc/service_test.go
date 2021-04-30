@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -24,7 +25,7 @@ func TestService_AddClient(t *testing.T) {
 	require.Nil(t, err)
 
 	// get client
-	client, err := svc.GetClient(NewAddress(nil))
+	client, err := svc.GetClient(entity.NewAddress(nil))
 	require.Nil(t, err)
 	require.NotNil(t, client)
 
@@ -41,12 +42,13 @@ func TestService_DeleteClient(t *testing.T) {
 	err = svc.AddClient(nil)
 	require.Nil(t, err)
 
-	// remove client
-	err = svc.DeleteClient(NewAddress(nil))
+	// delete client
+	err = svc.DeleteClient(entity.NewAddress(nil))
 	require.Nil(t, err)
 
 	// get client
-	_, err = svc.GetClient(NewAddress(nil))
+	c, err := svc.GetClient(entity.NewAddress(nil))
+	require.Nil(t, c)
 	require.Equal(t, errors.ErrorGrpcClientNotExists, err)
 
 	err = svc.Stop()

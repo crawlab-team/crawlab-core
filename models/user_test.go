@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -11,8 +12,8 @@ func setupUserTest() (err error) {
 }
 
 func cleanupUserTest() {
-	_ = mongo.GetMongoCol(ModelColNameUser).Delete(nil)
-	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
+	_ = mongo.GetMongoCol(interfaces.ModelColNameUser).Delete(nil)
+	_ = mongo.GetMongoCol(interfaces.ModelColNameArtifact).Delete(nil)
 }
 
 func TestUser_Add(t *testing.T) {
@@ -31,7 +32,7 @@ func TestUser_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(ModelColNameUser)
+	col := mongo.GetMongoCol(interfaces.ModelColNameUser)
 	col.GetContext()
 
 	cleanupUserTest()
@@ -51,7 +52,7 @@ func TestUser_Save(t *testing.T) {
 	err = u.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameUser).FindId(u.Id).One(&u)
+	err = mongo.GetMongoCol(interfaces.ModelColNameUser).FindId(u.Id).One(&u)
 	require.Nil(t, err)
 	require.Equal(t, name, u.Username)
 
@@ -73,7 +74,7 @@ func TestUser_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	err = col.FindId(s.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

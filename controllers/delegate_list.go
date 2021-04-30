@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
@@ -149,7 +150,7 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 				return
 			}
 			ptr := item.Addr()
-			doc, ok := ptr.Interface().(models.BaseModelInterface)
+			doc, ok := ptr.Interface().(interfaces.BaseModelInterface)
 			if !ok {
 				HandleErrorInternalServerError(c, errors.ErrorModelInvalidType)
 				return

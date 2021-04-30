@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -27,22 +28,22 @@ func (s *Schedule) Add() (err error) {
 	if s.Id.IsZero() {
 		s.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(ModelIdSchedule, s)
+	m := NewDelegate(interfaces.ModelIdSchedule, s)
 	return m.Add()
 }
 
 func (s *Schedule) Save() (err error) {
-	m := NewDelegate(ModelIdSchedule, s)
+	m := NewDelegate(interfaces.ModelIdSchedule, s)
 	return m.Save()
 }
 
 func (s *Schedule) Delete() (err error) {
-	m := NewDelegate(ModelIdSchedule, s)
+	m := NewDelegate(interfaces.ModelIdSchedule, s)
 	return m.Delete()
 }
 
-func (s *Schedule) GetArtifact() (a Artifact, err error) {
-	d := NewDelegate(ModelIdSchedule, s)
+func (s *Schedule) GetArtifact() (a interfaces.ModelArtifact, err error) {
+	d := NewDelegate(interfaces.ModelIdSchedule, s)
 	return d.GetArtifact()
 }
 

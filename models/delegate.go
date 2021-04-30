@@ -1,16 +1,23 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
+	errors2 "github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/crawlab-db/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
-func NewDelegate(id ModelId, obj interface{}) Delegate {
+func NewDelegate(id interfaces.ModelId, obj interface{}) Delegate {
 	colName := getModelColName(id)
 	var doc BaseModel
 	data, err := json.Marshal(obj)
@@ -37,14 +44,88 @@ func NewDelegate(id ModelId, obj interface{}) Delegate {
 }
 
 type Delegate struct {
-	id      ModelId
+	id      interfaces.ModelId
 	colName string
 	obj     interface{}
 	doc     *BaseModel
 	a       *Artifact
 }
 
+func (d *Delegate) do(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {
+	if store.NodeService.IsMaster() {
+		return d.doLocal(method)
+	} else {
+		return d.doRemote(method)
+	}
+}
+
+func (d *Delegate) doLocal(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {
+	switch method {
+	case interfaces.ModelDelegateMethodAdd:
+		return a, d.add()
+	case interfaces.ModelDelegateMethodSave:
+		return a, d.save()
+	case interfaces.ModelDelegateMethodDelete:
+		return a, d.delete()
+	case interfaces.ModelDelegateMethodGetArtifact:
+		return d.getArtifact()
+	default:
+		return a, trace.TraceError(errors2.ErrorModelInvalidType)
+	}
+}
+
+func (d *Delegate) doRemote(method interfaces.ModelDelegateMethod) (res interfaces.ModelArtifact, err error) {
+	var a Artifact
+	data, err := json.Marshal(d.obj)
+	if err != nil {
+		return nil, err
+	}
+	msg := entity.DelegateMessage{
+		ModelId: d.id,
+		Method:  method,
+		Data:    data,
+	}
+	client, err := store.GrpcService.GetDefaultClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // TODO: configure timeout
+	defer cancel()
+	nodeKey, err := node.GetNodeKey()
+	if err != nil {
+		return nil, err
+	}
+	req := &grpc2.Request{
+		NodeKey: nodeKey,
+		Data:    msg.ToBytes(),
+	}
+	_, err = client.GetModelDelegateClient().Do(ctx, req)
+	if err != nil {
+		return res, err
+	}
+	return &a, nil
+}
+
 func (d *Delegate) Add() (err error) {
+	_, err = d.do(interfaces.ModelDelegateMethodAdd)
+	return err
+}
+
+func (d *Delegate) Save() (err error) {
+	_, err = d.do(interfaces.ModelDelegateMethodSave)
+	return err
+}
+
+func (d *Delegate) Delete() (err error) {
+	_, err = d.do(interfaces.ModelDelegateMethodDelete)
+	return err
+}
+
+func (d *Delegate) GetArtifact() (res interfaces.ModelArtifact, err error) {
+	return d.do(interfaces.ModelDelegateMethodGetArtifact)
+}
+
+func (d *Delegate) add() (err error) {
 	if d.doc == nil || d.doc.Id.IsZero() {
 		return errors.ErrMissingValue
 	}
@@ -61,7 +142,7 @@ func (d *Delegate) Add() (err error) {
 	return d.refresh()
 }
 
-func (d *Delegate) Save() (err error) {
+func (d *Delegate) save() (err error) {
 	if d.doc == nil || d.doc.Id.IsZero() {
 		return errors.ErrMissingValue
 	}
@@ -78,7 +159,7 @@ func (d *Delegate) Save() (err error) {
 	return d.refresh()
 }
 
-func (d *Delegate) Delete() (err error) {
+func (d *Delegate) delete() (err error) {
 	if d.doc.Id.IsZero() {
 		return trace.TraceError(constants.ErrMissingId)
 	}
@@ -92,15 +173,16 @@ func (d *Delegate) Delete() (err error) {
 	return d.deleteArtifact()
 }
 
-func (d *Delegate) GetArtifact() (a Artifact, err error) {
+func (d *Delegate) getArtifact() (res interfaces.ModelArtifact, err error) {
+	var a Artifact
 	if d.doc.Id.IsZero() {
-		return a, constants.ErrMissingId
+		return &a, constants.ErrMissingId
 	}
-	col := mongo.GetMongoCol(ModelColNameArtifact)
-	if err := col.FindId(d.doc.Id).One(&a); err != nil {
-		return a, err
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
+	if err := col.FindId(d.doc.Id).One(a); err != nil {
+		return &a, err
 	}
-	return a, nil
+	return &a, nil
 }
 
 func (d *Delegate) refresh() (err error) {
@@ -119,7 +201,7 @@ func (d *Delegate) upsertArtifact() (err error) {
 	if d.doc.Id.IsZero() {
 		return errors.ErrMissingValue
 	}
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	ctx := col.GetContext()
 	// TODO: implement user
 	user, ok := ctx.Value(UserContextKey).(*User)
@@ -156,7 +238,7 @@ func (d *Delegate) deleteArtifact() (err error) {
 	if d.doc.Id.IsZero() {
 		return errors.ErrMissingValue
 	}
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	ctx := col.GetContext()
 	d.a.Id = d.doc.Id
 	d.a.Obj = d.obj

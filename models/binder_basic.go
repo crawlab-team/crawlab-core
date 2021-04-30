@@ -2,10 +2,11 @@ package models
 
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 )
 
-func NewBasicBinder(id ModelId, m *ModelMap, fr *mongo.FindResult) (b *BasicBinder) {
+func NewBasicBinder(id interfaces.ModelId, m *ModelMap, fr *mongo.FindResult) (b *BasicBinder) {
 	return &BasicBinder{
 		id: id,
 		m:  m,
@@ -14,7 +15,7 @@ func NewBasicBinder(id ModelId, m *ModelMap, fr *mongo.FindResult) (b *BasicBind
 }
 
 type BasicBinder struct {
-	id ModelId
+	id interfaces.ModelId
 	m  *ModelMap
 	fr *mongo.FindResult
 }
@@ -23,27 +24,27 @@ func (b *BasicBinder) Bind() (res interface{}, err error) {
 	m := b.m
 
 	switch b.id {
-	case ModelIdNode:
-		return b.process(&m.Node, ModelIdTag)
-	case ModelIdProject:
-		return b.process(&m.Project, ModelIdTag)
-	case ModelIdSpider:
-		return b.process(&m.Spider, ModelIdTag)
-	case ModelIdTask:
+	case interfaces.ModelIdNode:
+		return b.process(&m.Node, interfaces.ModelIdTag)
+	case interfaces.ModelIdProject:
+		return b.process(&m.Project, interfaces.ModelIdTag)
+	case interfaces.ModelIdSpider:
+		return b.process(&m.Spider, interfaces.ModelIdTag)
+	case interfaces.ModelIdTask:
 		return b.process(&m.Task)
-	case ModelIdJob:
+	case interfaces.ModelIdJob:
 		return b.process(&m.Job)
-	case ModelIdSchedule:
+	case interfaces.ModelIdSchedule:
 		return b.process(&m.Schedule)
-	case ModelIdUser:
+	case interfaces.ModelIdUser:
 		return b.process(&m.User)
-	case ModelIdSetting:
+	case interfaces.ModelIdSetting:
 		return b.process(&m.Setting)
-	case ModelIdToken:
+	case interfaces.ModelIdToken:
 		return b.process(&m.Token)
-	case ModelIdVariable:
+	case interfaces.ModelIdVariable:
 		return b.process(&m.Variable)
-	case ModelIdTag:
+	case interfaces.ModelIdTag:
 		return b.process(&m.Tag)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
@@ -58,9 +59,9 @@ func (b *BasicBinder) MustBind() (res interface{}) {
 	return res
 }
 
-func (b *BasicBinder) process(d interface{}, fieldIds ...ModelId) (res interface{}, err error) {
+func (b *BasicBinder) process(d interface{}, fieldIds ...interfaces.ModelId) (res interface{}, err error) {
 	if err := b.fr.One(d); err != nil {
 		return nil, err
 	}
-	return assignFields(d, fieldIds...)
+	return AssignFields(d, fieldIds...)
 }

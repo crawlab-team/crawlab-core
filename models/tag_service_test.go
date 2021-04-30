@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -23,7 +24,7 @@ func TestTagService_GetModel(t *testing.T) {
 	require.False(t, tag.Id.IsZero())
 	require.Equal(t, "tag 1", tag.Name)
 	require.Equal(t, "red", tag.Color)
-	require.Equal(t, ModelColNameNode, tag.Col)
+	require.Equal(t, interfaces.ModelColNameNode, tag.Col)
 }
 
 func TestTagService_GetModelById(t *testing.T) {
@@ -44,5 +45,5 @@ func TestTagService_GetModelById(t *testing.T) {
 	require.False(t, tag.Id.IsZero())
 	require.Equal(t, "tag 1", tag.Name)
 	require.Equal(t, "red", tag.Color)
-	require.Equal(t, ModelColNameNode, tag.Col)
+	require.Equal(t, interfaces.ModelColNameNode, tag.Col)
 }

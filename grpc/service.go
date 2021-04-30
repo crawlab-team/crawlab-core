@@ -1,18 +1,27 @@
 package grpc
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/go-trace"
+	"github.com/google/wire"
 	"sync"
 )
+
+func init() {
+	set := wire.NewSet(provideService)
+	store.GrpcServiceSet = set
+}
 
 type Service struct {
 	server     *Server
 	clientsMap sync.Map
 	opts       *ServiceOptions
 	nodeSvc    *node.Service
-	remotes    []Address
+	remotes    []entity.Address
 }
 
 func (svc *Service) Init() (err error) {
@@ -40,23 +49,31 @@ func (svc *Service) Stop() (err error) {
 	return nil
 }
 
-func (svc *Service) GetClient(address Address) (client *Client, err error) {
-	res, ok := svc.clientsMap.Load(address)
+func (svc *Service) GetServer() (svr interfaces.GrpcServer) {
+	return svc.server
+}
+
+func (svc *Service) GetClient(address interfaces.Address) (c interfaces.GrpcClient, err error) {
+	addr, ok := address.(*entity.Address)
+	if !ok {
+		return c, errors.ErrorGrpcInvalidType
+	}
+	res, ok := svc.clientsMap.Load(addr.String())
 	if !ok {
 		return nil, errors.ErrorGrpcClientNotExists
 	}
-	client, ok = res.(*Client)
+	c, ok = res.(interfaces.GrpcClient)
 	if !ok {
 		return nil, errors.ErrorGrpcInvalidType
 	}
-	return client, nil
+	return c, nil
 }
 
-func (svc *Service) GetDefaultClient() (client *Client, err error) {
+func (svc *Service) GetDefaultClient() (client interfaces.GrpcClient, err error) {
 	err = errors.ErrorGrpcClientNotExists
 	svc.clientsMap.Range(func(key, value interface{}) bool {
 		var ok bool
-		client, ok = value.(*Client)
+		client, ok = value.(interfaces.GrpcClient)
 		if !ok {
 			err = errors.ErrorGrpcInvalidType
 		} else {
@@ -67,9 +84,17 @@ func (svc *Service) GetDefaultClient() (client *Client, err error) {
 	return client, err
 }
 
-func (svc *Service) GetAllClients() (clients []*Client, err error) {
+func (svc *Service) MustGetDefaultClient() (client interfaces.GrpcClient) {
+	client, err := svc.GetDefaultClient()
+	if err != nil {
+		panic(err)
+	}
+	return client
+}
+
+func (svc *Service) GetAllClients() (clients []interfaces.GrpcClient, err error) {
 	svc.clientsMap.Range(func(key, value interface{}) bool {
-		client, ok := value.(*Client)
+		client, ok := value.(interfaces.GrpcClient)
 		if !ok {
 			err = errors.ErrorGrpcInvalidType
 			return false
@@ -80,26 +105,27 @@ func (svc *Service) GetAllClients() (clients []*Client, err error) {
 	return clients, nil
 }
 
-func (svc *Service) AddClient(opts *ClientOptions) (err error) {
-	if opts == nil {
-		opts = DefaultClientOptions
+func (svc *Service) AddClient(opts interfaces.Options) (err error) {
+	opts_ := &ClientOptions{}
+	if opts != nil {
+		opts_ = opts.FillEmpty().(*ClientOptions)
 	}
-	_, ok := svc.clientsMap.LoadAndDelete(opts.Address)
+	_, ok := svc.clientsMap.LoadAndDelete(opts_.Address)
 	if ok {
 		return errors.ErrorGrpcClientAlreadyExists
 	}
-	client, err := NewClient(opts)
+	client, err := NewClient(opts_)
 	if err != nil {
 		return err
 	}
 	if err := client.Start(); err != nil {
 		return err
 	}
-	svc.clientsMap.Store(client.opts.Address, client)
+	svc.clientsMap.Store(client.opts.Address.String(), client)
 	return nil
 }
 
-func (svc *Service) DeleteClient(address Address) (err error) {
+func (svc *Service) DeleteClient(address interfaces.Address) (err error) {
 	client, err := svc.GetClient(address)
 	if err != nil {
 		return err
@@ -107,33 +133,17 @@ func (svc *Service) DeleteClient(address Address) (err error) {
 	if err := client.Stop(); err != nil {
 		_ = trace.TraceError(err)
 	}
-	svc.clientsMap.Delete(address)
+	svc.clientsMap.Delete(address.String())
 	return nil
 }
 
 var serviceMap = sync.Map{}
 
-type ServiceOptions struct {
-	NodeService *node.Service
-	Local       Address
-	Remotes     []Address
-}
-
-var DefaultServiceOptions = &ServiceOptions{
-	Local:   NewAddress(nil),
-	Remotes: []Address{},
-}
-
-func NewService(opts *ServiceOptions) (svc *Service, err error) {
+func NewService(opts *ServiceOptions) (res2 *Service, err error) {
 	if opts == nil {
-		opts = DefaultServiceOptions
+		opts = &ServiceOptions{}
 	}
-	if opts.NodeService == nil {
-		opts.NodeService, err = node.GetDefaultService()
-		if err != nil {
-			return nil, err
-		}
-	}
+	opts = opts.FillEmpty().(*ServiceOptions)
 
 	// attempt to load existing service by node key
 	res, ok := serviceMap.Load(opts.NodeService.GetNodeKey())
@@ -146,7 +156,7 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	}
 
 	// service
-	svc = &Service{
+	svc := &Service{
 		nodeSvc:    opts.NodeService,
 		server:     nil,
 		clientsMap: sync.Map{},
@@ -176,4 +186,6 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	return svc, nil
 }
 
-var GrpcService *Service
+func provideService() (svc *Service, err error) {
+	return NewService(nil)
+}

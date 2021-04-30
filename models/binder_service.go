@@ -1,36 +1,39 @@
 package models
 
-import "github.com/crawlab-team/crawlab-core/errors"
+import (
+	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
+)
 
-func NewServiceBinder(id ModelId) (b *ServiceBinder) {
+func NewServiceBinder(id interfaces.ModelId) (b *ServiceBinder) {
 	return &ServiceBinder{id: id}
 }
 
 type ServiceBinder struct {
-	id ModelId
+	id interfaces.ModelId
 }
 
 func (b *ServiceBinder) Bind() (res PublicServiceInterface, err error) {
 	switch b.id {
-	case ModelIdNode:
+	case interfaces.ModelIdNode:
 		return NodeService, nil
-	case ModelIdProject:
+	case interfaces.ModelIdProject:
 		return ProjectService, nil
-	case ModelIdSpider:
+	case interfaces.ModelIdSpider:
 		return SpiderService, nil
-	case ModelIdTask:
+	case interfaces.ModelIdTask:
 		return TaskService, nil
-	case ModelIdJob:
+	case interfaces.ModelIdJob:
 		return TaskService, nil
-	case ModelIdSchedule:
+	case interfaces.ModelIdSchedule:
 		return ScheduleService, nil
-	case ModelIdUser:
+	case interfaces.ModelIdUser:
 		return UserService, nil
-	case ModelIdSetting:
+	case interfaces.ModelIdSetting:
 		return SettingService, nil
-	case ModelIdToken:
+	case interfaces.ModelIdToken:
 		return TokenService, nil
-	case ModelIdVariable:
+	case interfaces.ModelIdVariable:
 		return VariableService, nil
 
 	// invalid

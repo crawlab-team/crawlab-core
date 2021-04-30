@@ -3,12 +3,25 @@ package models
 import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/emirpasic/gods/lists/arraylist"
 	"reflect"
 )
 
-func assignFields(d interface{}, fieldIds ...ModelId) (res interface{}, err error) {
-	doc, ok := d.(BaseModelInterface)
+func AssignFields(d interface{}, fieldIds ...interfaces.ModelId) (res interface{}, err error) {
+	return assignFields(d, fieldIds...)
+}
+
+func AssignListFields(list interface{}, fieldIds ...interfaces.ModelId) (res arraylist.List, err error) {
+	return assignListFields(list, fieldIds...)
+}
+
+func AssignListFieldsAsPtr(list interface{}, fieldIds ...interfaces.ModelId) (res arraylist.List, err error) {
+	return assignListFieldsAsPtr(list, fieldIds...)
+}
+
+func assignFields(d interface{}, fieldIds ...interfaces.ModelId) (res interface{}, err error) {
+	doc, ok := d.(interfaces.BaseModelInterface)
 	if !ok {
 		return nil, errors.ErrorModelInvalidType
 	}
@@ -21,8 +34,8 @@ func assignFields(d interface{}, fieldIds ...ModelId) (res interface{}, err erro
 	}
 	for _, fid := range fieldIds {
 		switch fid {
-		case ModelIdTag:
-			d, ok := doc.(BaseModelWithTagsInterface)
+		case interfaces.ModelIdTag:
+			d, ok := doc.(interfaces.BaseModelWithTagsInterface)
 			if !ok {
 				return nil, errors.ErrorModelInvalidType
 			}
@@ -37,7 +50,7 @@ func assignFields(d interface{}, fieldIds ...ModelId) (res interface{}, err erro
 	return doc, nil
 }
 
-func _assignListFields(asPtr bool, list interface{}, fieldIds ...ModelId) (res arraylist.List, err error) {
+func _assignListFields(asPtr bool, list interface{}, fieldIds ...interfaces.ModelId) (res arraylist.List, err error) {
 	vList := reflect.ValueOf(list)
 	if vList.Kind() != reflect.Array &&
 		vList.Kind() != reflect.Slice {
@@ -51,7 +64,7 @@ func _assignListFields(asPtr bool, list interface{}, fieldIds ...ModelId) (res a
 		} else {
 			item = vItem.Interface()
 		}
-		doc, ok := item.(BaseModelInterface)
+		doc, ok := item.(interfaces.BaseModelInterface)
 		if !ok {
 			return res, errors.ErrorModelInvalidType
 		}
@@ -71,11 +84,11 @@ func _assignListFields(asPtr bool, list interface{}, fieldIds ...ModelId) (res a
 	return res, nil
 }
 
-func assignListFields(list interface{}, fieldIds ...ModelId) (res arraylist.List, err error) {
+func assignListFields(list interface{}, fieldIds ...interfaces.ModelId) (res arraylist.List, err error) {
 	return _assignListFields(false, list, fieldIds...)
 }
 
-func assignListFieldsAsPtr(list interface{}, fieldIds ...ModelId) (res arraylist.List, err error) {
+func assignListFieldsAsPtr(list interface{}, fieldIds ...interfaces.ModelId) (res arraylist.List, err error) {
 	return _assignListFields(true, list, fieldIds...)
 }
 

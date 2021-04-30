@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -21,7 +22,7 @@ func TestSpider_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(ModelColNameSpider)
+	col := mongo.GetMongoCol(interfaces.ModelColNameSpider)
 	col.GetContext()
 }
 
@@ -38,7 +39,7 @@ func TestSpider_Save(t *testing.T) {
 	err = s.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameSpider).FindId(s.Id).One(&s)
+	err = mongo.GetMongoCol(interfaces.ModelColNameSpider).FindId(s.Id).One(&s)
 	require.Nil(t, err)
 	require.Equal(t, name, s.Name)
 }
@@ -57,7 +58,7 @@ func TestSpider_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	err = col.FindId(s.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

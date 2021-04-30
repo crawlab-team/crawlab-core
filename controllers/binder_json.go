@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ type JsonBinder struct {
 	id ControllerId
 }
 
-func (b *JsonBinder) Bind(c *gin.Context) (res models.BaseModelInterface, err error) {
+func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.BaseModelInterface, err error) {
 	// declare
 	m := models.NewModelMap()
 
@@ -112,7 +113,7 @@ func (b *JsonBinder) BindBatchRequestPayload(c *gin.Context) (payload entity.Bat
 	return payload, nil
 }
 
-func (b *JsonBinder) BindBatchRequestPayloadWithStringData(c *gin.Context) (payload entity.BatchRequestPayloadWithStringData, res models.BaseModelInterface, err error) {
+func (b *JsonBinder) BindBatchRequestPayloadWithStringData(c *gin.Context) (payload entity.BatchRequestPayloadWithStringData, res interfaces.BaseModelInterface, err error) {
 	// declare
 	m := models.NewModelMap()
 

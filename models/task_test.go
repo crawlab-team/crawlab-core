@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,8 +14,8 @@ func setupTaskTest() (err error) {
 }
 
 func cleanupTaskTest() {
-	_ = mongo.GetMongoCol(ModelColNameTask).Delete(nil)
-	_ = mongo.GetMongoCol(ModelColNameArtifact).Delete(nil)
+	_ = mongo.GetMongoCol(interfaces.ModelColNameTask).Delete(nil)
+	_ = mongo.GetMongoCol(interfaces.ModelColNameArtifact).Delete(nil)
 }
 
 func TestTask_Add(t *testing.T) {
@@ -33,7 +34,7 @@ func TestTask_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(ModelColNameTask)
+	col := mongo.GetMongoCol(interfaces.ModelColNameTask)
 	col.GetContext()
 
 	cleanupTaskTest()
@@ -57,11 +58,11 @@ func TestTask_Save(t *testing.T) {
 	err = task.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameTask).FindId(task.Id).One(&task)
+	err = mongo.GetMongoCol(interfaces.ModelColNameTask).FindId(task.Id).One(&task)
 	require.Nil(t, err)
 	require.Equal(t, spider.Id, task.SpiderId)
 
-	err = mongo.GetMongoCol(ModelColNameSpider).FindId(task.SpiderId).One(&spider)
+	err = mongo.GetMongoCol(interfaces.ModelColNameSpider).FindId(task.SpiderId).One(&spider)
 	require.Nil(t, err)
 	require.Equal(t, spider.Id, task.SpiderId)
 	require.Equal(t, "test_task", spider.Name)
@@ -85,7 +86,7 @@ func TestTask_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	err = col.FindId(task.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

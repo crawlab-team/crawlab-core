@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,7 +23,7 @@ func TestJob_Add(t *testing.T) {
 	require.NotNil(t, a.CreateTs)
 	require.NotNil(t, a.UpdateTs)
 
-	col := mongo.GetMongoCol(ModelColNameJob)
+	col := mongo.GetMongoCol(interfaces.ModelColNameJob)
 	col.GetContext()
 }
 
@@ -39,7 +40,7 @@ func TestJob_Save(t *testing.T) {
 	err = j.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameJob).FindId(j.Id).One(&j)
+	err = mongo.GetMongoCol(interfaces.ModelColNameJob).FindId(j.Id).One(&j)
 	require.Nil(t, err)
 	require.Equal(t, id, j.TaskId)
 }
@@ -58,7 +59,7 @@ func TestJob_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	err = col.FindId(j.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

@@ -33,7 +33,9 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-playground/validator/v10 v10.3.0
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/google/subcommands v1.2.0 // indirect
 	github.com/google/uuid v1.1.2
+	github.com/google/wire v0.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/hashicorp/go-sockaddr v1.0.0
 	github.com/huandu/xstrings v1.2.0 // indirect
@@ -56,9 +58,11 @@ require (
 	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.4.5
 	go.uber.org/atomic v1.6.0
+	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
-	golang.org/x/sys v0.0.0-20201231184435-2d18734c6014 // indirect
+	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
 	golang.org/x/text v0.3.4 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 	google.golang.org/grpc v1.34.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect

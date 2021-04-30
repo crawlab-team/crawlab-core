@@ -20,7 +20,7 @@ func TestNodeServer_Register(t *testing.T) {
 	require.Nil(t, err)
 
 	nodeKey := "test-node-key"
-	res, err := client.NodeClient.Register(context.Background(), &grpc2.Request{
+	res, err := client.GetNodeClient().Register(context.Background(), &grpc2.Request{
 		NodeKey: nodeKey,
 	})
 	require.Nil(t, err)
@@ -44,14 +44,14 @@ func TestNodeServer_SendHeartbeat(t *testing.T) {
 	require.Nil(t, err)
 
 	workerNodeKey := "worker-node-key"
-	res, err := workerClient.NodeClient.Register(context.Background(), &grpc2.Request{
+	res, err := workerClient.GetNodeClient().Register(context.Background(), &grpc2.Request{
 		NodeKey: workerNodeKey,
 	})
 	require.Nil(t, err)
 	require.Equal(t, grpc2.ResponseCode_OK, res.Code)
 
 	tic := time.Now()
-	res, err = workerClient.NodeClient.SendHeartbeat(context.Background(), &grpc2.Request{
+	res, err = workerClient.GetNodeClient().SendHeartbeat(context.Background(), &grpc2.Request{
 		NodeKey: workerNodeKey,
 	})
 	require.Nil(t, err)
@@ -68,7 +68,7 @@ func TestNodeServer_SendHeartbeat(t *testing.T) {
 	masterNodeKey := "master-node-key"
 	masterClient, err := TestMasterService.GetDefaultClient()
 	require.Nil(t, err)
-	res, err = masterClient.NodeClient.SendHeartbeat(context.Background(), &grpc2.Request{
+	res, err = masterClient.GetNodeClient().SendHeartbeat(context.Background(), &grpc2.Request{
 		NodeKey: masterNodeKey,
 	})
 	require.NotNil(t, err)
@@ -81,7 +81,7 @@ func TestNodeServer_Ping(t *testing.T) {
 	masterClient, err := TestMasterService.GetDefaultClient()
 	require.Nil(t, err)
 
-	res, err := masterClient.NodeClient.Ping(context.Background(), EmptyRequest)
+	res, err := masterClient.GetNodeClient().Ping(context.Background(), EmptyRequest)
 	require.Nil(t, err)
 	var nodeInfo entity.NodeInfo
 	err = json.Unmarshal(res.Data, &nodeInfo)
@@ -91,7 +91,7 @@ func TestNodeServer_Ping(t *testing.T) {
 	workerClient, err := TestWorkerService.GetDefaultClient()
 	require.Nil(t, err)
 
-	res, err = workerClient.NodeClient.Ping(context.Background(), EmptyRequest)
+	res, err = workerClient.GetNodeClient().Ping(context.Background(), EmptyRequest)
 	require.NotNil(t, err)
 	require.Contains(t, err.Error(), errors.ErrorGrpcNotAllowed.Error())
 }

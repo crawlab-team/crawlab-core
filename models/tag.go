@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -16,22 +17,22 @@ func (p *Tag) Add() (err error) {
 	if p.Id.IsZero() {
 		p.Id = primitive.NewObjectID()
 	}
-	m := NewDelegate(ModelIdTag, p)
+	m := NewDelegate(interfaces.ModelIdTag, p)
 	return m.Add()
 }
 
 func (p *Tag) Save() (err error) {
-	m := NewDelegate(ModelIdTag, p)
+	m := NewDelegate(interfaces.ModelIdTag, p)
 	return m.Save()
 }
 
 func (p *Tag) Delete() (err error) {
-	m := NewDelegate(ModelIdTag, p)
+	m := NewDelegate(interfaces.ModelIdTag, p)
 	return m.Delete()
 }
 
-func (p *Tag) GetArtifact() (a Artifact, err error) {
-	m := NewDelegate(ModelIdTag, p)
+func (p *Tag) GetArtifact() (a interfaces.ModelArtifact, err error) {
+	m := NewDelegate(interfaces.ModelIdTag, p)
 	return m.GetArtifact()
 }
 

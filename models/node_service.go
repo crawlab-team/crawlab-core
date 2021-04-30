@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,7 +44,7 @@ func (svc *nodeService) GetModelByKey(key string, opts *mongo.FindOptions) (res 
 }
 
 func NewNodeService() (svc *nodeService) {
-	return &nodeService{NewCommonService(ModelIdNode)}
+	return &nodeService{NewCommonService(interfaces.ModelIdNode)}
 }
 
 var NodeService *nodeService

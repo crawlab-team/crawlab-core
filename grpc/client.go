@@ -15,35 +15,36 @@ type Client struct {
 	conn *grpc.ClientConn
 	opts *ClientOptions
 
-	NodeClient grpc2.NodeServiceClient
-	TaskClient grpc2.TaskServiceClient
+	ModelDelegateClient grpc2.ModelDelegateServiceClient
+	NodeClient          grpc2.NodeServiceClient
+	TaskClient          grpc2.TaskServiceClient
 }
 
-func (svc *Client) Init() (err error) {
+func (c *Client) Init() (err error) {
 	// do nothing
 	return nil
 }
 
-func (svc *Client) Start() (err error) {
+func (c *Client) Start() (err error) {
 	// connect
-	if err := backoff.Retry(svc.connect, backoff.NewExponentialBackOff()); err != nil {
+	if err := backoff.Retry(c.connect, backoff.NewExponentialBackOff()); err != nil {
 		return err
 	}
 
 	// register
-	if err := svc.Register(); err != nil {
+	if err := c.Register(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc *Client) Stop() (err error) {
+func (c *Client) Stop() (err error) {
 	// grpc server address
-	address := svc.opts.Address.String()
+	address := c.opts.Address.String()
 
 	// close connection
-	if err := svc.conn.Close(); err != nil {
+	if err := c.conn.Close(); err != nil {
 		return err
 	}
 	log.Infof("grpc client disconnected from %s", address)
@@ -51,26 +52,41 @@ func (svc *Client) Stop() (err error) {
 	return nil
 }
 
-func (svc *Client) Register() (err error) {
+func (c *Client) Register() (err error) {
+	// model delegate
+	c.ModelDelegateClient = grpc2.NewModelDelegateServiceClient(c.conn)
+
 	// node
-	svc.NodeClient = grpc2.NewNodeServiceClient(svc.conn)
+	c.NodeClient = grpc2.NewNodeServiceClient(c.conn)
 
 	// task
-	svc.TaskClient = grpc2.NewTaskServiceClient(svc.conn)
+	c.TaskClient = grpc2.NewTaskServiceClient(c.conn)
 
 	return nil
 }
 
-func (svc *Client) connect() (err error) {
+func (c *Client) GetModelDelegateClient() (res grpc2.ModelDelegateServiceClient) {
+	return c.ModelDelegateClient
+}
+
+func (c *Client) GetNodeClient() grpc2.NodeServiceClient {
+	return c.NodeClient
+}
+
+func (c *Client) GetTaskClient() grpc2.TaskServiceClient {
+	return c.TaskClient
+}
+
+func (c *Client) connect() (err error) {
 	// grpc server address
-	address := svc.opts.Address.String()
+	address := c.opts.Address.String()
 
 	// timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(svc.opts.TimeoutSeconds)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.opts.TimeoutSeconds)*time.Second)
 	defer cancel()
 
 	// connection
-	svc.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
+	c.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
 	if err != nil {
 		_ = trace.TraceError(err)
 		return errors.ErrorGrpcClientFailedToStart
@@ -80,28 +96,13 @@ func (svc *Client) connect() (err error) {
 	return nil
 }
 
-type ClientOptions struct {
-	Address        Address
-	TimeoutSeconds int
-}
-
-var DefaultClientOptions = &ClientOptions{
-	Address:        NewAddress(nil),
-	TimeoutSeconds: 30,
-}
-
 func NewClient(opts *ClientOptions) (client *Client, err error) {
 	if opts == nil {
-		opts = &ClientOptions{
-			Address: NewAddress(nil),
-		}
-	}
-	if opts.TimeoutSeconds == 0 {
-		opts.TimeoutSeconds = DefaultClientOptions.TimeoutSeconds
+		opts = &ClientOptions{}
 	}
 	client = &Client{
 		conn: nil,
-		opts: opts,
+		opts: opts.FillEmpty().(*ClientOptions),
 	}
 	if err := client.Init(); err != nil {
 		return nil, err

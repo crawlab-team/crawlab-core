@@ -1,8 +1,10 @@
 package grpc
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models"
 	node2 "github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -20,6 +22,9 @@ func setupTest(t *testing.T) {
 	if err := models.InitModelServices(); err != nil {
 		panic(err)
 	}
+	if err := store.InitStore(); err != nil {
+		panic(err)
+	}
 
 	var err error
 	masterNodeConfigName := "config-master.json"
@@ -31,7 +36,7 @@ func setupTest(t *testing.T) {
 	})
 	if TestMasterService, err = NewService(&ServiceOptions{
 		NodeService: masterNodeService,
-		Local: NewAddress(&AddressOptions{
+		Local: entity.NewAddress(&entity.AddressOptions{
 			Host: "localhost",
 			Port: TestMasterPort,
 		}),
@@ -48,12 +53,12 @@ func setupTest(t *testing.T) {
 	})
 	if TestWorkerService, err = NewService(&ServiceOptions{
 		NodeService: workerNodeService,
-		Local: NewAddress(&AddressOptions{
+		Local: entity.NewAddress(&entity.AddressOptions{
 			Host: "localhost",
 			Port: TestWorkerPort,
 		}),
-		Remotes: []Address{
-			NewAddress(&AddressOptions{
+		Remotes: []*entity.Address{
+			entity.NewAddress(&entity.AddressOptions{
 				Host: "localhost",
 				Port: TestMasterPort,
 			}),
@@ -63,7 +68,7 @@ func setupTest(t *testing.T) {
 	}
 
 	if err = TestMasterService.AddClient(&ClientOptions{
-		Address: NewAddress(&AddressOptions{
+		Address: entity.NewAddress(&entity.AddressOptions{
 			Host: "localhost",
 			Port: TestWorkerPort,
 		}),

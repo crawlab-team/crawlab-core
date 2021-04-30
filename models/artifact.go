@@ -24,7 +24,7 @@ type ArtifactSys struct {
 	DeleteUid primitive.ObjectID `json:"delete_uid" bson:"delete_uid"`
 }
 
-func (a *Artifact) GetTags() (res []Tag, err error) {
+func (a *Artifact) GetTags() (res interface{}, err error) {
 	if a.TagIds == nil || len(a.TagIds) == 0 {
 		return res, nil
 	}

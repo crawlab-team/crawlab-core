@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -38,7 +39,7 @@ func TestNode_Save(t *testing.T) {
 	err = n.Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(ModelColNameNode).FindId(n.Id).One(&n)
+	err = mongo.GetMongoCol(interfaces.ModelColNameNode).FindId(n.Id).One(&n)
 	require.Nil(t, err)
 	require.Equal(t, name, n.Name)
 }
@@ -57,7 +58,7 @@ func TestNode_Delete(t *testing.T) {
 	require.Nil(t, err)
 
 	var a Artifact
-	col := mongo.GetMongoCol(ModelColNameArtifact)
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	err = col.FindId(n.Id).One(&a)
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)

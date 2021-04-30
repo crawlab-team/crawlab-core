@@ -2,11 +2,12 @@ package models
 
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/emirpasic/gods/lists/arraylist"
 )
 
-func NewListBinder(id ModelId, m *ModelListMap, fr *mongo.FindResult) (b *ListBinder) {
+func NewListBinder(id interfaces.ModelId, m *ModelListMap, fr *mongo.FindResult) (b *ListBinder) {
 	return &ListBinder{
 		id: id,
 		m:  m,
@@ -15,7 +16,7 @@ func NewListBinder(id ModelId, m *ModelListMap, fr *mongo.FindResult) (b *ListBi
 }
 
 type ListBinder struct {
-	id    ModelId
+	id    interfaces.ModelId
 	m     *ModelListMap
 	fr    *mongo.FindResult
 	asPtr bool
@@ -25,25 +26,25 @@ func (b *ListBinder) Bind() (res interface{}, err error) {
 	m := b.m
 
 	switch b.id {
-	case ModelIdNode:
-		return b.process(m.Nodes, ModelIdTag)
-	case ModelIdProject:
-		return b.process(m.Projects, ModelIdTag)
-	case ModelIdSpider:
-		return b.process(m.Spiders, ModelIdTag)
-	case ModelIdTask:
+	case interfaces.ModelIdNode:
+		return b.process(m.Nodes, interfaces.ModelIdTag)
+	case interfaces.ModelIdProject:
+		return b.process(m.Projects, interfaces.ModelIdTag)
+	case interfaces.ModelIdSpider:
+		return b.process(m.Spiders, interfaces.ModelIdTag)
+	case interfaces.ModelIdTask:
 		return b.process(m.Tasks)
-	case ModelIdSchedule:
+	case interfaces.ModelIdSchedule:
 		return b.process(m.Schedules)
-	case ModelIdUser:
+	case interfaces.ModelIdUser:
 		return b.process(m.Users)
-	case ModelIdSetting:
+	case interfaces.ModelIdSetting:
 		return b.process(m.Settings)
-	case ModelIdToken:
+	case interfaces.ModelIdToken:
 		return b.process(m.Tokens)
-	case ModelIdVariable:
+	case interfaces.ModelIdVariable:
 		return b.process(m.Variables)
-	case ModelIdTag:
+	case interfaces.ModelIdTag:
 		return b.process(m.Tags)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
@@ -100,13 +101,13 @@ func (b *ListBinder) BindListAsPtr() (res arraylist.List, err error) {
 	return res, nil
 }
 
-func (b *ListBinder) process(d interface{}, fieldIds ...ModelId) (res interface{}, err error) {
+func (b *ListBinder) process(d interface{}, fieldIds ...interfaces.ModelId) (res interface{}, err error) {
 	if err := b.fr.All(&d); err != nil {
 		return nil, err
 	}
 	if b.asPtr {
-		return assignListFieldsAsPtr(d, fieldIds...)
+		return AssignListFieldsAsPtr(d, fieldIds...)
 	} else {
-		return assignListFields(d, fieldIds...)
+		return AssignListFields(d, fieldIds...)
 	}
 }

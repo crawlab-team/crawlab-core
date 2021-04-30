@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/utils/binders"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
 	"github.com/emirpasic/gods/lists/arraylist"
@@ -37,7 +39,7 @@ type PublicServiceInterface interface {
 	Count(query bson.M) (total int, err error)
 }
 
-func NewCommonService(id ModelId) (svc *CommonService) {
+func NewCommonService(id interfaces.ModelId) (svc *CommonService) {
 	if mongo.Client == nil {
 		_ = mongo.InitMongo()
 	}
@@ -49,16 +51,16 @@ func NewCommonService(id ModelId) (svc *CommonService) {
 	}
 }
 
-func getModelColName(id ModelId) (colName string) {
-	return NewColNameBinder(id).MustBindString()
+func getModelColName(id interfaces.ModelId) (colName string) {
+	return binders.NewColNameBinder(id).MustBindString()
 }
 
-func getModelService(id ModelId) (svc PublicServiceInterface) {
+func getModelService(id interfaces.ModelId) (svc PublicServiceInterface) {
 	return NewServiceBinder(id).MustBind()
 }
 
 type CommonService struct {
-	id  ModelId
+	id  interfaces.ModelId
 	col *mongo.Col
 	ServiceInterface
 	PublicServiceInterface
@@ -121,7 +123,7 @@ func (svc *CommonService) update(query bson.M, update interface{}, fields []stri
 		var ids []primitive.ObjectID
 		list := NewListBinder(svc.id, NewModelListMap(), svc.find(query, nil)).MustBindListAsPtr()
 		for _, value := range list.Values() {
-			item, ok := value.(BaseModelInterface)
+			item, ok := value.(interfaces.BaseModelInterface)
 			if !ok {
 				return errors.ErrorModelInvalidType
 			}
@@ -157,7 +159,7 @@ func (svc *CommonService) update(query bson.M, update interface{}, fields []stri
 		}
 
 		// update artifacts
-		colA := mongo.GetMongoCol(ModelColNameArtifact)
+		colA := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 		if err := colA.Update(query, bson.M{
 			"$set": bson.M{
 				"_sys.update_ts": time.Now(),

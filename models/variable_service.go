@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +19,7 @@ type variableService struct {
 
 func NewVariableService() (svc *variableService) {
 	return &variableService{
-		NewCommonService(ModelIdVariable),
+		NewCommonService(interfaces.ModelIdVariable),
 	}
 }
 func (svc *variableService) GetModelById(id primitive.ObjectID) (res Variable, err error) {
