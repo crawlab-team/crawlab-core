@@ -1,41 +1,35 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ArtifactServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Artifact, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Artifact, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Artifact, err error)
-}
-
-type artifactService struct {
-	*CommonService
-}
-
-func NewArtifactService() (svc *artifactService) {
-	return &artifactService{
-		NewCommonService(interfaces.ModelIdArtifact),
+func convertTypeArtifact(d interface{}, err error) (res *Artifact, err2 error) {
+	if err != nil {
+		return nil, err
 	}
+	res, ok := d.(*Artifact)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
 
-func (svc *artifactService) GetModelById(id primitive.ObjectID) (res Artifact, err error) {
-	err = svc.findId(id).One(&res)
+func (svc *Service) GetArtifactById(id primitive.ObjectID) (res *Artifact, err error) {
+	d, err := NewBaseService(interfaces.ModelIdArtifact).GetById(id)
+	return convertTypeArtifact(d, err)
+}
+
+func (svc *Service) GetArtifact(query bson.M, opts *mongo.FindOptions) (res *Artifact, err error) {
+	d, err := NewBaseService(interfaces.ModelIdArtifact).Get(query, opts)
+	return convertTypeArtifact(d, err)
+}
+
+func (svc *Service) GetArtifactList(query bson.M, opts *mongo.FindOptions) (res []Artifact, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
-
-func (svc *artifactService) GetModel(query bson.M, opts *mongo.FindOptions) (res Artifact, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
-}
-
-func (svc *artifactService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Artifact, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
-}
-
-var ArtifactService *artifactService

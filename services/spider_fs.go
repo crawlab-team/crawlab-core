@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,7 +15,7 @@ type SpiderFsServiceOptions struct {
 func NewSpiderFsService(opts *SpiderFsServiceOptions) (svc *spiderFsService, err error) {
 	// validate options
 	if opts.Id.IsZero() {
-		return nil, constants.ErrMissingId
+		return nil, errors.ErrorModelMissingId
 	}
 
 	// spider

@@ -1,39 +1,35 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type SpiderServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Spider, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Spider, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Spider, err error)
+func convertTypeSpider(d interface{}, err error) (res *Spider, err2 error) {
+	if err != nil {
+		return nil, err
+	}
+	res, ok := d.(*Spider)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
 
-type spiderService struct {
-	*CommonService
+func (svc *Service) GetSpiderById(id primitive.ObjectID) (res *Spider, err error) {
+	d, err := NewBaseService(interfaces.ModelIdSpider).GetById(id)
+	return convertTypeSpider(d, err)
 }
 
-func (svc *spiderService) GetModelById(id primitive.ObjectID) (res Spider, err error) {
-	err = svc.findId(id).One(&res)
+func (svc *Service) GetSpider(query bson.M, opts *mongo.FindOptions) (res *Spider, err error) {
+	d, err := NewBaseService(interfaces.ModelIdSpider).Get(query, opts)
+	return convertTypeSpider(d, err)
+}
+
+func (svc *Service) GetSpiderList(query bson.M, opts *mongo.FindOptions) (res []Spider, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
-
-func (svc *spiderService) GetModel(query bson.M, opts *mongo.FindOptions) (res Spider, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
-}
-
-func (svc *spiderService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Spider, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
-}
-
-func NewSpiderService() (svc *spiderService) {
-	return &spiderService{NewCommonService(interfaces.ModelIdSpider)}
-}
-
-var SpiderService *spiderService

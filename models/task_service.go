@@ -1,39 +1,35 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type TaskServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Task, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Task, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Task, err error)
+func convertTypeTask(d interface{}, err error) (res *Task, err2 error) {
+	if err != nil {
+		return nil, err
+	}
+	res, ok := d.(*Task)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
 
-type taskService struct {
-	*CommonService
+func (svc *Service) GetTaskById(id primitive.ObjectID) (res *Task, err error) {
+	d, err := NewBaseService(interfaces.ModelIdTask).GetById(id)
+	return convertTypeTask(d, err)
 }
 
-func (svc *taskService) GetModelById(id primitive.ObjectID) (res Task, err error) {
-	err = svc.findId(id).One(&res)
+func (svc *Service) GetTask(query bson.M, opts *mongo.FindOptions) (res *Task, err error) {
+	d, err := NewBaseService(interfaces.ModelIdTask).Get(query, opts)
+	return convertTypeTask(d, err)
+}
+
+func (svc *Service) GetTaskList(query bson.M, opts *mongo.FindOptions) (res []Task, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
-
-func (svc *taskService) GetModel(query bson.M, opts *mongo.FindOptions) (res Task, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
-}
-
-func (svc *taskService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Task, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
-}
-
-func NewTaskService() (svc *taskService) {
-	return &taskService{NewCommonService(interfaces.ModelIdTask)}
-}
-
-var TaskService *taskService

@@ -10,13 +10,17 @@ var moduleInitializedMap = sync.Map{}
 func InitModule(id interfaces.ModuleId, fn func() error) (err error) {
 	res, ok := moduleInitializedMap.Load(id)
 	if ok {
-		return nil
-	}
-	initialized, ok := res.(bool)
-	if !ok || initialized {
-		moduleInitializedMap.Store(id, true)
-		return nil
+		initialized, _ := res.(bool)
+		if initialized {
+			return nil
+		}
 	}
 
-	return fn()
+	if err := fn(); err != nil {
+		return err
+	}
+
+	moduleInitializedMap.Store(id, true)
+
+	return nil
 }

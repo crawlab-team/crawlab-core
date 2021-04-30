@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/go-trace"
 	"github.com/robfig/cron/v3"
@@ -107,7 +108,7 @@ func (svc *scheduleService) Add(s *models.Schedule) (err error) {
 func (svc *scheduleService) Update(s *models.Schedule) (err error) {
 	// validate
 	if s.Id.IsZero() {
-		return trace.TraceError(constants.ErrMissingId)
+		return trace.TraceError(errors.ErrorModelMissingId)
 	}
 
 	// delete old from cron

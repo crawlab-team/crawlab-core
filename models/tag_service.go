@@ -18,7 +18,7 @@ type TagServiceInterface interface {
 }
 
 type tagService struct {
-	*CommonService
+	*BaseService
 }
 
 func (svc *tagService) getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error) {
@@ -111,7 +111,7 @@ func (svc *tagService) UpdateTags(colName string, query bson.M, tags []Tag) (tag
 }
 
 func NewTagService() (svc *tagService) {
-	return &tagService{NewCommonService(interfaces.ModelIdTag)}
+	return &tagService{NewBaseService(interfaces.ModelIdTag)}
 }
 
 var TagService *tagService

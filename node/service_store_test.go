@@ -48,7 +48,7 @@ func TestServiceStore_GetDefault(t *testing.T) {
 
 	setupTest(t)
 
-	err = TestServiceStore.Set("default", TestService)
+	err = TestServiceStore.Set("default", TestServiceDefault)
 	require.Nil(t, err)
 
 	res, err := TestServiceStore.GetDefault()

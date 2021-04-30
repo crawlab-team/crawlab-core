@@ -7,10 +7,19 @@ import (
 )
 
 func initNode() (err error) {
+	// default node service
 	if store.NodeService, err = NewService(nil); err != nil {
 		return err
 	}
-	store.NodeServiceStore = NewServiceStore()
+
+	// node service store
+	store.NodeServiceStore = store.NewServiceStore()
+
+	// set default node service into the store
+	if err = store.NodeServiceStore.Set("", store.NodeService); err != nil {
+		return err
+	}
+
 	return nil
 }
 

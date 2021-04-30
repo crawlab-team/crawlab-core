@@ -13,7 +13,7 @@ type ServiceBinder struct {
 	id interfaces.ModelId
 }
 
-func (b *ServiceBinder) Bind() (res PublicServiceInterface, err error) {
+func (b *ServiceBinder) Bind() (res interfaces.ModelService, err error) {
 	switch b.id {
 	case interfaces.ModelIdNode:
 		return NodeService, nil
@@ -42,7 +42,7 @@ func (b *ServiceBinder) Bind() (res PublicServiceInterface, err error) {
 	}
 }
 
-func (b *ServiceBinder) MustBind() (res PublicServiceInterface) {
+func (b *ServiceBinder) MustBind() (res interfaces.ModelService) {
 	res, err := b.Bind()
 	if err != nil {
 		panic(err)

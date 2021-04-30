@@ -1,40 +1,35 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type JobServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Job, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Job, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Job, err error)
-}
-
-type jobService struct {
-	*CommonService
-}
-
-func NewJobService() (svc *jobService) {
-	return &jobService{
-		NewCommonService(interfaces.ModelIdJob),
+func convertTypeJob(d interface{}, err error) (res *Job, err2 error) {
+	if err != nil {
+		return nil, err
 	}
-}
-func (svc *jobService) GetModelById(id primitive.ObjectID) (res Job, err error) {
-	err = svc.findId(id).One(&res)
-	return res, err
-}
-
-func (svc *jobService) GetModel(query bson.M, opts *mongo.FindOptions) (res Job, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
+	res, ok := d.(*Job)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
 
-func (svc *jobService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Job, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
+func (svc *Service) GetJobById(id primitive.ObjectID) (res *Job, err error) {
+	d, err := NewBaseService(interfaces.ModelIdJob).GetById(id)
+	return convertTypeJob(d, err)
 }
 
-var JobService *jobService
+func (svc *Service) GetJob(query bson.M, opts *mongo.FindOptions) (res *Job, err error) {
+	d, err := NewBaseService(interfaces.ModelIdJob).Get(query, opts)
+	return convertTypeJob(d, err)
+}
+
+func (svc *Service) GetJobList(query bson.M, opts *mongo.FindOptions) (res []Job, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
+	return res, err
+}

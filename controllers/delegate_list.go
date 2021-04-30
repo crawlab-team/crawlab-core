@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
@@ -14,7 +13,7 @@ import (
 	"reflect"
 )
 
-func NewListControllerDelegate(id ControllerId, svc models.PublicServiceInterface) (d *ListControllerDelegate) {
+func NewListControllerDelegate(id ControllerId, svc interfaces.ModelService) (d *ListControllerDelegate) {
 	if svc == nil {
 		panic(errors.ErrorControllerNoModelService)
 	}
@@ -28,7 +27,7 @@ func NewListControllerDelegate(id ControllerId, svc models.PublicServiceInterfac
 
 type ListControllerDelegate struct {
 	id  ControllerId
-	svc models.PublicServiceInterface
+	svc interfaces.ModelService
 	bc  BasicController
 }
 

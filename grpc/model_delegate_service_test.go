@@ -28,7 +28,7 @@ func TestModelDelegateServer_Do_Add(t *testing.T) {
 		Data:    data,
 	}
 
-	client := TestWorkerService.MustGetDefaultClient()
+	client := TestServiceWorker.MustGetDefaultClient()
 	_, err = client.GetModelDelegateClient().Do(context.Background(), &grpc.Request{
 		NodeKey: node2.MustGetNodeKey(),
 		Data:    msg.ToBytes(),

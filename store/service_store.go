@@ -1,4 +1,4 @@
-package node
+package store
 
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -24,6 +24,9 @@ func (s *ServiceStore) MustSet(key string, value interface{}) {
 }
 
 func (s *ServiceStore) Get(key string) (res interface{}, err error) {
+	if key == "" {
+		return s.GetDefault()
+	}
 	res, ok := s.m.Load(key)
 	if !ok {
 		return nil, errors.ErrorStoreNotExists

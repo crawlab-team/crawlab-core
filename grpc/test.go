@@ -3,72 +3,59 @@ package grpc
 import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models"
-	node2 "github.com/crawlab-team/crawlab-core/node"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"path"
+	"github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/store"
 	"testing"
 )
 
-var TestMasterService *Service
-var TestWorkerService *Service
+var TestServiceMaster *Service
+var TestServiceWorker *Service
 
-var TestMasterPort = "9876"
-var TestWorkerPort = "9877"
+var TestPortMaster = "9876"
+var TestPortWorker = "9877"
 
 func setupTest(t *testing.T) {
+	var err error
+
+	if err := node.InitNode(); err != nil {
+		panic(err)
+	}
+
+	if err := InitGrpc(); err != nil {
+		panic(err)
+	}
+
 	if err := models.InitModels(); err != nil {
 		panic(err)
 	}
 
-	var err error
-	masterNodeConfigName := "config-master.json"
-	masterNodeConfigPath := path.Join(node2.DefaultConfigDirPath, masterNodeConfigName)
-	err = ioutil.WriteFile(masterNodeConfigPath, []byte("{\"key\":\"master\",\"is_master\":true}"), os.ModePerm)
-	require.Nil(t, err)
-	masterNodeService, err := node2.NewService(&node2.ServiceOptions{
-		ConfigPath: masterNodeConfigPath,
+	node.SetupTest()
+	store.NodeServiceStore = node.TestServiceStore
+
+	if err := node.TestServiceStore.Set("master", node.TestServiceMaster); err != nil {
+		panic(err)
+	}
+	TestServiceMaster, err = NewService(&ServiceOptions{
+		NodeServiceKey: "master",
+		Local:          entity.NewAddress(&entity.AddressOptions{Port: TestPortMaster}),
 	})
-	if TestMasterService, err = NewService(&ServiceOptions{
-		NodeService: masterNodeService,
-		Local: entity.NewAddress(&entity.AddressOptions{
-			Host: "localhost",
-			Port: TestMasterPort,
-		}),
-	}); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
-	workerNodeConfigName := "config-worker.json"
-	workerNodeConfigPath := path.Join(node2.DefaultConfigDirPath, workerNodeConfigName)
-	err = ioutil.WriteFile(workerNodeConfigPath, []byte("{\"key\":\"worker\",\"is_worker\":false}"), os.ModePerm)
-	require.Nil(t, err)
-	workerNodeService, err := node2.NewService(&node2.ServiceOptions{
-		ConfigPath: workerNodeConfigPath,
+	if err := node.TestServiceStore.Set("worker", node.TestServiceWorker); err != nil {
+		panic(err)
+	}
+	TestServiceWorker, err = NewService(&ServiceOptions{
+		NodeServiceKey: "worker",
+		Local:          entity.NewAddress(&entity.AddressOptions{Port: TestPortWorker}),
+		Remotes:        []*entity.Address{entity.NewAddress(&entity.AddressOptions{Port: TestPortMaster})},
 	})
-	if TestWorkerService, err = NewService(&ServiceOptions{
-		NodeService: workerNodeService,
-		Local: entity.NewAddress(&entity.AddressOptions{
-			Host: "localhost",
-			Port: TestWorkerPort,
-		}),
-		Remotes: []*entity.Address{
-			entity.NewAddress(&entity.AddressOptions{
-				Host: "localhost",
-				Port: TestMasterPort,
-			}),
-		},
-	}); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
-	if err = TestMasterService.AddClient(&ClientOptions{
-		Address: entity.NewAddress(&entity.AddressOptions{
-			Host: "localhost",
-			Port: TestWorkerPort,
-		}),
-	}); err != nil {
+	if err = TestServiceMaster.AddClient(&ClientOptions{Address: entity.NewAddress(&entity.AddressOptions{Port: TestPortWorker})}); err != nil {
 		panic(err)
 	}
 
@@ -77,6 +64,6 @@ func setupTest(t *testing.T) {
 
 func cleanupTest() {
 	_ = models.NodeService.Delete(nil)
-	_ = TestMasterService.Stop()
-	_ = TestWorkerService.Stop()
+	_ = TestServiceMaster.Stop()
+	_ = TestServiceWorker.Stop()
 }

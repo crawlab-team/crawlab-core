@@ -1,40 +1,35 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type TokenServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Token, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Token, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Token, err error)
-}
-
-type tokenService struct {
-	*CommonService
-}
-
-func NewTokenService() (svc *tokenService) {
-	return &tokenService{
-		NewCommonService(interfaces.ModelIdToken),
+func convertTypeToken(d interface{}, err error) (res *Token, err2 error) {
+	if err != nil {
+		return nil, err
 	}
-}
-func (svc *tokenService) GetModelById(id primitive.ObjectID) (res Token, err error) {
-	err = svc.findId(id).One(&res)
-	return res, err
-}
-
-func (svc *tokenService) GetModel(query bson.M, opts *mongo.FindOptions) (res Token, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
+	res, ok := d.(*Token)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
 
-func (svc *tokenService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Token, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
+func (svc *Service) GetTokenById(id primitive.ObjectID) (res *Token, err error) {
+	d, err := NewBaseService(interfaces.ModelIdToken).GetById(id)
+	return convertTypeToken(d, err)
 }
 
-var TokenService *tokenService
+func (svc *Service) GetToken(query bson.M, opts *mongo.FindOptions) (res *Token, err error) {
+	d, err := NewBaseService(interfaces.ModelIdToken).Get(query, opts)
+	return convertTypeToken(d, err)
+}
+
+func (svc *Service) GetTokenList(query bson.M, opts *mongo.FindOptions) (res []Token, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
+	return res, err
+}

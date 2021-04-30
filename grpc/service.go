@@ -5,6 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/go-trace"
 	"sync"
 )
@@ -62,11 +63,11 @@ func (svc *Service) GetClient(address interfaces.Address) (c interfaces.GrpcClie
 	return c, nil
 }
 
-func (svc *Service) GetDefaultClient() (client interfaces.GrpcClient, err error) {
+func (svc *Service) GetDefaultClient() (c interfaces.GrpcClient, err error) {
 	err = errors.ErrorGrpcClientNotExists
 	svc.clientsMap.Range(func(key, value interface{}) bool {
 		var ok bool
-		client, ok = value.(interfaces.GrpcClient)
+		c, ok = value.(interfaces.GrpcClient)
 		if !ok {
 			err = errors.ErrorGrpcInvalidType
 		} else {
@@ -74,7 +75,10 @@ func (svc *Service) GetDefaultClient() (client interfaces.GrpcClient, err error)
 		}
 		return false
 	})
-	return client, err
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (svc *Service) MustGetDefaultClient() (client interfaces.GrpcClient) {
@@ -130,8 +134,6 @@ func (svc *Service) DeleteClient(address interfaces.Address) (err error) {
 	return nil
 }
 
-var serviceMap = sync.Map{}
-
 func NewService(opts *ServiceOptions) (res2 *Service, err error) {
 	if opts == nil {
 		opts = &ServiceOptions{}
@@ -139,18 +141,18 @@ func NewService(opts *ServiceOptions) (res2 *Service, err error) {
 	opts = opts.FillEmpty().(*ServiceOptions)
 
 	// attempt to load existing service by node key
-	res, ok := serviceMap.Load(opts.NodeService.GetNodeKey())
-	if ok {
-		svc, ok := res.(*Service)
-		if !ok {
-			return nil, errors.ErrorGrpcInvalidType
-		}
-		return svc, nil
+	res, err := store.NodeServiceStore.Get(opts.NodeServiceKey)
+	if err != nil {
+		return nil, err
+	}
+	nodeSvc, ok := res.(*node.Service)
+	if !ok {
+		return nil, errors.ErrorGrpcInvalidType
 	}
 
 	// service
 	svc := &Service{
-		nodeSvc:    opts.NodeService,
+		nodeSvc:    nodeSvc,
 		server:     nil,
 		clientsMap: sync.Map{},
 		opts:       opts,
@@ -158,7 +160,7 @@ func NewService(opts *ServiceOptions) (res2 *Service, err error) {
 
 	// server
 	svc.server, err = NewServer(&ServerOptions{
-		NodeService: opts.NodeService,
+		NodeService: nodeSvc,
 		Address:     opts.Local,
 	})
 	if err != nil {

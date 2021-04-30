@@ -1,40 +1,35 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ScheduleServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Schedule, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Schedule, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Schedule, err error)
-}
-
-type scheduleService struct {
-	*CommonService
-}
-
-func NewScheduleService() (svc *scheduleService) {
-	return &scheduleService{
-		NewCommonService(interfaces.ModelIdSchedule),
+func convertTypeSchedule(d interface{}, err error) (res *Schedule, err2 error) {
+	if err != nil {
+		return nil, err
 	}
-}
-func (svc *scheduleService) GetModelById(id primitive.ObjectID) (res Schedule, err error) {
-	err = svc.findId(id).One(&res)
-	return res, err
-}
-
-func (svc *scheduleService) GetModel(query bson.M, opts *mongo.FindOptions) (res Schedule, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
+	res, ok := d.(*Schedule)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
 
-func (svc *scheduleService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Schedule, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
+func (svc *Service) GetScheduleById(id primitive.ObjectID) (res *Schedule, err error) {
+	d, err := NewBaseService(interfaces.ModelIdSchedule).GetById(id)
+	return convertTypeSchedule(d, err)
 }
 
-var ScheduleService *scheduleService
+func (svc *Service) GetSchedule(query bson.M, opts *mongo.FindOptions) (res *Schedule, err error) {
+	d, err := NewBaseService(interfaces.ModelIdSchedule).Get(query, opts)
+	return convertTypeSchedule(d, err)
+}
+
+func (svc *Service) GetScheduleList(query bson.M, opts *mongo.FindOptions) (res []Schedule, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
+	return res, err
+}

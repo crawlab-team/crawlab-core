@@ -2,13 +2,13 @@ package controllers
 
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
-	"github.com/crawlab-team/crawlab-core/models"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewBasicControllerDelegate(id ControllerId, svc models.PublicServiceInterface) (d *BasicControllerDelegate) {
+func NewBasicControllerDelegate(id ControllerId, svc interfaces.ModelService) (d *BasicControllerDelegate) {
 	return &BasicControllerDelegate{
 		id:  id,
 		svc: svc,
@@ -17,7 +17,7 @@ func NewBasicControllerDelegate(id ControllerId, svc models.PublicServiceInterfa
 
 type BasicControllerDelegate struct {
 	id  ControllerId
-	svc models.PublicServiceInterface
+	svc interfaces.ModelService
 }
 
 func (d *BasicControllerDelegate) Get(c *gin.Context) {

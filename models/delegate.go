@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"encoding/json"
-	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -78,7 +77,7 @@ func (d *Delegate) doRemote(method interfaces.ModelDelegateMethod) (res interfac
 	var a Artifact
 	data, err := json.Marshal(d.obj)
 	if err != nil {
-		return nil, err
+		return nil, trace.TraceError(err)
 	}
 	msg := entity.DelegateMessage{
 		ModelId: d.id,
@@ -87,13 +86,13 @@ func (d *Delegate) doRemote(method interfaces.ModelDelegateMethod) (res interfac
 	}
 	client, err := store.GrpcService.GetDefaultClient()
 	if err != nil {
-		return nil, err
+		return nil, trace.TraceError(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // TODO: configure timeout
 	defer cancel()
 	nodeKey, err := node.GetNodeKey()
 	if err != nil {
-		return nil, err
+		return nil, trace.TraceError(err)
 	}
 	req := &grpc2.Request{
 		NodeKey: nodeKey,
@@ -101,24 +100,24 @@ func (d *Delegate) doRemote(method interfaces.ModelDelegateMethod) (res interfac
 	}
 	_, err = client.GetModelDelegateClient().Do(ctx, req)
 	if err != nil {
-		return res, err
+		return res, trace.TraceError(err)
 	}
 	return &a, nil
 }
 
 func (d *Delegate) Add() (err error) {
 	_, err = d.do(interfaces.ModelDelegateMethodAdd)
-	return err
+	return trace.TraceError(err)
 }
 
 func (d *Delegate) Save() (err error) {
 	_, err = d.do(interfaces.ModelDelegateMethodSave)
-	return err
+	return trace.TraceError(err)
 }
 
 func (d *Delegate) Delete() (err error) {
 	_, err = d.do(interfaces.ModelDelegateMethodDelete)
-	return err
+	return trace.TraceError(err)
 }
 
 func (d *Delegate) GetArtifact() (res interfaces.ModelArtifact, err error) {
@@ -127,48 +126,48 @@ func (d *Delegate) GetArtifact() (res interfaces.ModelArtifact, err error) {
 
 func (d *Delegate) add() (err error) {
 	if d.doc == nil || d.doc.Id.IsZero() {
-		return errors.ErrMissingValue
+		return trace.TraceError(errors.ErrMissingValue)
 	}
 	col := mongo.GetMongoCol(d.colName)
 	if _, err = col.Insert(d.obj); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.upsertArtifact(); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.updateTags(); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	return d.refresh()
 }
 
 func (d *Delegate) save() (err error) {
 	if d.doc == nil || d.doc.Id.IsZero() {
-		return errors.ErrMissingValue
+		return trace.TraceError(errors.ErrMissingValue)
 	}
 	col := mongo.GetMongoCol(d.colName)
 	if err := col.ReplaceId(d.doc.Id, d.obj); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.upsertArtifact(); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.updateTags(); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	return d.refresh()
 }
 
 func (d *Delegate) delete() (err error) {
 	if d.doc.Id.IsZero() {
-		return trace.TraceError(constants.ErrMissingId)
+		return trace.TraceError(errors2.ErrorModelMissingId)
 	}
 	col := mongo.GetMongoCol(d.colName)
 	if err := col.FindId(d.doc.Id).One(d.obj); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := col.DeleteId(d.doc.Id); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	return d.deleteArtifact()
 }
@@ -176,7 +175,7 @@ func (d *Delegate) delete() (err error) {
 func (d *Delegate) getArtifact() (res interfaces.ModelArtifact, err error) {
 	var a Artifact
 	if d.doc.Id.IsZero() {
-		return &a, constants.ErrMissingId
+		return &a, trace.TraceError(errors2.ErrorModelMissingId)
 	}
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	if err := col.FindId(d.doc.Id).One(a); err != nil {
@@ -187,19 +186,19 @@ func (d *Delegate) getArtifact() (res interfaces.ModelArtifact, err error) {
 
 func (d *Delegate) refresh() (err error) {
 	if d.doc.Id.IsZero() {
-		return constants.ErrMissingId
+		return trace.TraceError(errors2.ErrorModelMissingId)
 	}
 	col := mongo.GetMongoCol(d.colName)
 	fr := col.FindId(d.doc.Id)
 	if err := fr.One(d.obj); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	return nil
 }
 
 func (d *Delegate) upsertArtifact() (err error) {
 	if d.doc.Id.IsZero() {
-		return errors.ErrMissingValue
+		return trace.TraceError(errors.ErrMissingValue)
 	}
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	ctx := col.GetContext()
@@ -217,12 +216,12 @@ func (d *Delegate) upsertArtifact() (err error) {
 			}
 			_, err = col.Insert(d.a)
 			if err != nil {
-				return err
+				return trace.TraceError(err)
 			}
 			return nil
 		} else {
 			// error
-			return err
+			return trace.TraceError(err)
 		}
 	}
 
@@ -236,7 +235,7 @@ func (d *Delegate) upsertArtifact() (err error) {
 
 func (d *Delegate) deleteArtifact() (err error) {
 	if d.doc.Id.IsZero() {
-		return errors.ErrMissingValue
+		return trace.TraceError(errors.ErrMissingValue)
 	}
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	ctx := col.GetContext()
@@ -254,11 +253,11 @@ func (d *Delegate) deleteArtifact() (err error) {
 
 func (d *Delegate) updateTags() (err error) {
 	if d.doc.Id.IsZero() {
-		return errors.ErrMissingValue
+		return trace.TraceError(errors.ErrMissingValue)
 	}
 	//ctx := col.GetContext()
 	if _, err := TagService.UpdateTagsById(d.colName, d.doc.Id, d.doc.Tags); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 
 	return nil

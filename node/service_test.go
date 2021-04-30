@@ -12,7 +12,7 @@ import (
 func TestNewService(t *testing.T) {
 	setupTest(t)
 
-	svc := TestService
+	svc := TestServiceDefault
 	require.NotNil(t, svc.cfg)
 	require.NotEmpty(t, svc.cfg.Key)
 	require.False(t, svc.cfg.IsMaster)
@@ -38,13 +38,13 @@ func TestNewService(t *testing.T) {
 func TestService_GetNodeKey(t *testing.T) {
 	setupTest(t)
 
-	key := TestService.GetNodeKey()
+	key := TestServiceDefault.GetNodeKey()
 	require.NotEmpty(t, key)
 }
 
 func TestService_IsMaster(t *testing.T) {
 	setupTest(t)
 
-	isMaster := TestService.IsMaster()
+	isMaster := TestServiceDefault.IsMaster()
 	require.False(t, isMaster)
 }

@@ -1,40 +1,40 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type VariableServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Variable, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Variable, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Variable, err error)
-}
-
-type variableService struct {
-	*CommonService
-}
-
-func NewVariableService() (svc *variableService) {
-	return &variableService{
-		NewCommonService(interfaces.ModelIdVariable),
+func convertTypeVariable(d interface{}, err error) (res *Variable, err2 error) {
+	if err != nil {
+		return nil, err
 	}
+	res, ok := d.(*Variable)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
-func (svc *variableService) GetModelById(id primitive.ObjectID) (res Variable, err error) {
-	err = svc.findId(id).One(&res)
+
+func (svc *Service) GetVariableById(id primitive.ObjectID) (res *Variable, err error) {
+	d, err := NewBaseService(interfaces.ModelIdVariable).GetById(id)
+	return convertTypeVariable(d, err)
+}
+
+func (svc *Service) GetVariable(query bson.M, opts *mongo.FindOptions) (res *Variable, err error) {
+	d, err := NewBaseService(interfaces.ModelIdVariable).Get(query, opts)
+	return convertTypeVariable(d, err)
+}
+
+func (svc *Service) GetVariableList(query bson.M, opts *mongo.FindOptions) (res []Variable, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
 
-func (svc *variableService) GetModel(query bson.M, opts *mongo.FindOptions) (res Variable, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
+func (svc *Service) GetVariableByKey(key string, opts *mongo.FindOptions) (res *Variable, err error) {
+	query := bson.M{"key": key}
+	return svc.GetVariable(query, opts)
 }
-
-func (svc *variableService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Variable, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
-}
-
-var VariableService *variableService

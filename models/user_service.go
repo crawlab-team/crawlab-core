@@ -14,12 +14,12 @@ type UserServiceInterface interface {
 }
 
 type userService struct {
-	*CommonService
+	*BaseService
 }
 
 func NewUserService() (svc *userService) {
 	return &userService{
-		NewCommonService(interfaces.ModelIdUser),
+		NewBaseService(interfaces.ModelIdUser),
 	}
 }
 func (svc *userService) GetModelById(id primitive.ObjectID) (res User, err error) {

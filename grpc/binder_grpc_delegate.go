@@ -79,7 +79,8 @@ func (b *DelegateBinder) process(d interface{}, fieldIds ...interfaces.ModelId) 
 	if err := json.Unmarshal(b.msg.GetData(), d); err != nil {
 		return nil, err
 	}
-	return models.AssignFields(d, fieldIds...)
+	//return models.AssignFields(d, fieldIds...) // TODO: do we need to assign fields?
+	return d, nil
 }
 
 func (b *DelegateBinder) bindDelegateMessage() (err error) {

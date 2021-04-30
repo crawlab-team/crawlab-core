@@ -1,50 +1,40 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type NodeServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res Node, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Node, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Node, err error)
-}
-
-type nodeService struct {
-	*CommonService
-}
-
-func (svc *nodeService) GetModelById(id primitive.ObjectID) (res Node, err error) {
-	d, err := svc.GetById(id)
+func convertTypeNode(d interface{}, err error) (res *Node, err2 error) {
 	if err != nil {
-		return res, err
+		return nil, err
 	}
-	return *d.(*Node), err
+	res, ok := d.(*Node)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
 
-func (svc *nodeService) GetModel(query bson.M, opts *mongo.FindOptions) (res Node, err error) {
-	d, err := svc.Get(query, opts)
-	if err != nil {
-		return res, err
-	}
-	return *d.(*Node), err
+func (svc *Service) GetNodeById(id primitive.ObjectID) (res *Node, err error) {
+	d, err := NewBaseService(interfaces.ModelIdNode).GetById(id)
+	return convertTypeNode(d, err)
 }
 
-func (svc *nodeService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Node, err error) {
+func (svc *Service) GetNode(query bson.M, opts *mongo.FindOptions) (res *Node, err error) {
+	d, err := NewBaseService(interfaces.ModelIdNode).Get(query, opts)
+	return convertTypeNode(d, err)
+}
+
+func (svc *Service) GetNodeList(query bson.M, opts *mongo.FindOptions) (res []Node, err error) {
 	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
 
-func (svc *nodeService) GetModelByKey(key string, opts *mongo.FindOptions) (res Node, err error) {
+func (svc *Service) GetNodeByKey(key string, opts *mongo.FindOptions) (res *Node, err error) {
 	query := bson.M{"key": key}
-	return svc.GetModel(query, opts)
+	return svc.GetNode(query, opts)
 }
-
-func NewNodeService() (svc *nodeService) {
-	return &nodeService{NewCommonService(interfaces.ModelIdNode)}
-}
-
-var NodeService *nodeService
