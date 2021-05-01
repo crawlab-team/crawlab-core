@@ -30,7 +30,7 @@ func (svc *Service) GetVariable(query bson.M, opts *mongo.FindOptions) (res *Var
 }
 
 func (svc *Service) GetVariableList(query bson.M, opts *mongo.FindOptions) (res []Variable, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdVariable, query, opts, &res)
 	return res, err
 }
 

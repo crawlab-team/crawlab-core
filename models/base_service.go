@@ -54,14 +54,6 @@ func (svc *BaseService) GetList(query bson.M, opts *mongo.FindOptions) (res arra
 	return NewListBinder(svc.id, m, fr).BindList()
 }
 
-func (svc *BaseService) GetListSerializeTarget(query bson.M, opts *mongo.FindOptions, target interface{}) (err error) {
-	list, err := svc.GetList(query, opts)
-	if err != nil {
-		return err
-	}
-	return serializeList(list, target)
-}
-
 func (svc *BaseService) DeleteById(id primitive.ObjectID) (err error) {
 	return svc.deleteId(id)
 }

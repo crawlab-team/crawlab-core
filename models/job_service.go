@@ -30,6 +30,6 @@ func (svc *Service) GetJob(query bson.M, opts *mongo.FindOptions) (res *Job, err
 }
 
 func (svc *Service) GetJobList(query bson.M, opts *mongo.FindOptions) (res []Job, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdJob, query, opts, &res)
 	return res, err
 }

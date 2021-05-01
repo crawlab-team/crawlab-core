@@ -30,7 +30,7 @@ func (svc *Service) GetNode(query bson.M, opts *mongo.FindOptions) (res *Node, e
 }
 
 func (svc *Service) GetNodeList(query bson.M, opts *mongo.FindOptions) (res []Node, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdNode, query, opts, &res)
 	return res, err
 }
 

@@ -30,6 +30,6 @@ func (svc *Service) GetSpider(query bson.M, opts *mongo.FindOptions) (res *Spide
 }
 
 func (svc *Service) GetSpiderList(query bson.M, opts *mongo.FindOptions) (res []Spider, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdSpider, query, opts, &res)
 	return res, err
 }

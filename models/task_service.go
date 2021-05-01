@@ -30,6 +30,6 @@ func (svc *Service) GetTask(query bson.M, opts *mongo.FindOptions) (res *Task, e
 }
 
 func (svc *Service) GetTaskList(query bson.M, opts *mongo.FindOptions) (res []Task, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdTask, query, opts, &res)
 	return res, err
 }

@@ -74,5 +74,8 @@ func (a *Artifact) UpdateTags(tagNames []string) (err error) {
 }
 
 func (a *Artifact) GetSys() (sys interfaces.ModelArtifactSys) {
+	if a.Sys == nil {
+		a.Sys = &ArtifactSys{}
+	}
 	return a.Sys
 }

@@ -183,7 +183,7 @@ func (d *Delegate) getArtifact() (res interfaces.ModelArtifact, err error) {
 	if err := col.FindId(d.doc.Id).One(&a); err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return &a, nil
 }
 
 func (d *Delegate) refresh() (err error) {
@@ -224,11 +224,11 @@ func (d *Delegate) upsertArtifact() (err error) {
 	if err := col.FindId(d.doc.Id).One(d.a); err != nil {
 		if err == mongo2.ErrNoDocuments {
 			// new artifact
-			d.a.CreateTs = time.Now()
-			d.a.UpdateTs = time.Now()
+			d.a.GetSys().SetCreateTs(time.Now())
+			d.a.GetSys().SetUpdateTs(time.Now())
 			if ok {
-				d.a.CreateUid = user.Id
-				d.a.UpdateUid = user.Id
+				d.a.GetSys().SetCreateUid(user.Id)
+				d.a.GetSys().SetUpdateUid(user.Id)
 			}
 			_, err = col.Insert(d.a)
 			if err != nil {
@@ -242,9 +242,9 @@ func (d *Delegate) upsertArtifact() (err error) {
 	}
 
 	// existing artifact
-	d.a.UpdateTs = time.Now()
+	d.a.GetSys().SetUpdateTs(time.Now())
 	if ok {
-		d.a.UpdateUid = user.Id
+		d.a.GetSys().SetUpdateUid(user.Id)
 	}
 
 	// save new artifact
@@ -260,11 +260,11 @@ func (d *Delegate) deleteArtifact() (err error) {
 	d.a.Id = d.doc.Id
 	d.a.Obj = d.obj
 	d.a.Del = true
-	d.a.DeleteTs = time.Now()
+	d.a.GetSys().SetDeleteTs(time.Now())
 	// TODO: implement user
 	user, ok := ctx.Value(UserContextKey).(*User)
 	if ok {
-		d.a.DeleteUid = user.Id
+		d.a.GetSys().SetDeleteUid(user.Id)
 	}
 	return col.ReplaceId(d.doc.Id, d.a)
 }

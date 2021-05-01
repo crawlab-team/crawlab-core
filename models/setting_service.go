@@ -30,7 +30,7 @@ func (svc *Service) GetSetting(query bson.M, opts *mongo.FindOptions) (res *Sett
 }
 
 func (svc *Service) GetSettingList(query bson.M, opts *mongo.FindOptions) (res []Setting, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdSetting, query, opts, &res)
 	return res, err
 }
 

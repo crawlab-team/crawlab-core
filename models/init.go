@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/crawlab-team/crawlab-core/color"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/crawlab-core/utils"
 )
@@ -17,6 +18,11 @@ func initModelService(id interfaces.ModelId) (err error) {
 func initModels() (err error) {
 	// color service
 	if err := color.InitColor(); err != nil {
+		return err
+	}
+
+	// node service
+	if err := node.InitNode(); err != nil {
 		return err
 	}
 

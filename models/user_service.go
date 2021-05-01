@@ -30,7 +30,7 @@ func (svc *Service) GetUser(query bson.M, opts *mongo.FindOptions) (res *User, e
 }
 
 func (svc *Service) GetUserList(query bson.M, opts *mongo.FindOptions) (res []User, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdUser, query, opts, &res)
 	return res, err
 }
 

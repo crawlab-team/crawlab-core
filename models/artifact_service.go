@@ -30,6 +30,6 @@ func (svc *Service) GetArtifact(query bson.M, opts *mongo.FindOptions) (res *Art
 }
 
 func (svc *Service) GetArtifactList(query bson.M, opts *mongo.FindOptions) (res []Artifact, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdArtifact, query, opts, &res)
 	return res, err
 }

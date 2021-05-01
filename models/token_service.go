@@ -30,6 +30,6 @@ func (svc *Service) GetToken(query bson.M, opts *mongo.FindOptions) (res *Token,
 }
 
 func (svc *Service) GetTokenList(query bson.M, opts *mongo.FindOptions) (res []Token, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdToken, query, opts, &res)
 	return res, err
 }

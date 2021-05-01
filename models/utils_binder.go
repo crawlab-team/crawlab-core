@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/emirpasic/gods/lists/arraylist"
+	"go.mongodb.org/mongo-driver/bson"
 	"reflect"
 )
 
@@ -104,12 +106,24 @@ func assignListFieldsAsPtr(list interface{}, fieldIds ...interfaces.ModelId) (re
 }
 
 func serializeList(list arraylist.List, target interface{}) (err error) {
+	// bytes
 	bytes, err := list.ToJSON()
 	if err != nil {
 		return err
 	}
+
+	// unmarshal
 	if err := json.Unmarshal(bytes, target); err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func getListSerializeTarget(id interfaces.ModelId, query bson.M, opts *mongo.FindOptions, target interface{}) (err error) {
+	list, err := MustGetService(id).GetList(query, opts)
+	if err != nil {
+		return err
+	}
+	return serializeList(list, target)
 }

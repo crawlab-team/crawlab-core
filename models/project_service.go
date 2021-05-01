@@ -30,6 +30,6 @@ func (svc *Service) GetProject(query bson.M, opts *mongo.FindOptions) (res *Proj
 }
 
 func (svc *Service) GetProjectList(query bson.M, opts *mongo.FindOptions) (res []Project, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdTag, query, opts, &res)
 	return res, err
 }

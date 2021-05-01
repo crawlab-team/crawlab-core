@@ -22,9 +22,6 @@ func TestJob_Add(t *testing.T) {
 	require.Equal(t, j.Id, a.GetId())
 	require.NotNil(t, a.GetSys().GetCreateTs())
 	require.NotNil(t, a.GetSys().GetUpdateTs())
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameJob)
-	col.GetContext()
 }
 
 func TestJob_Save(t *testing.T) {

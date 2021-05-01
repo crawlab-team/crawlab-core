@@ -33,7 +33,7 @@ func (svc *Service) GetTag(query bson.M, opts *mongo.FindOptions) (res *Tag, err
 }
 
 func (svc *Service) GetTagList(query bson.M, opts *mongo.FindOptions) (res []Tag, err error) {
-	err = svc.GetListSerializeTarget(query, opts, &res)
+	err = getListSerializeTarget(interfaces.ModelIdTag, query, opts, &res)
 	return res, trace.TraceError(err)
 }
 
