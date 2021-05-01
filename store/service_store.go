@@ -9,6 +9,10 @@ type ServiceStore struct {
 	m sync.Map
 }
 
+func (s *ServiceStore) GetMap() (m *sync.Map) {
+	return &s.m
+}
+
 func (s *ServiceStore) Set(key interface{}, value interface{}) (err error) {
 	if value == nil {
 		return errors.ErrorStoreEmptyValue

@@ -16,6 +16,10 @@ var TestServiceStore *store.NodeServiceStoreType
 func initTest() {
 	var err error
 
+	if err = ForceInitNode(); err != nil {
+		panic(err)
+	}
+
 	// default service
 	if err = ioutil.WriteFile(DefaultConfigPath, []byte("{\"key\":\"default\",\"is_master\":true}"), os.ModePerm); err != nil {
 		panic(err)
@@ -62,10 +66,8 @@ func initTest() {
 }
 
 func setupTest(t *testing.T) {
-	initTest()
-
-	// cleanup
 	t.Cleanup(cleanupTest)
+	initTest()
 }
 
 func cleanupTest() {

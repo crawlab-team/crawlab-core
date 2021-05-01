@@ -15,7 +15,7 @@ func TestNewService(t *testing.T) {
 	svc := TestServiceDefault
 	require.NotNil(t, svc.cfg)
 	require.NotEmpty(t, svc.cfg.Key)
-	require.False(t, svc.cfg.IsMaster)
+	require.True(t, svc.cfg.IsMaster)
 	require.DirExists(t, path.Dir(svc.opts.ConfigPath))
 	require.FileExists(t, svc.opts.ConfigPath)
 
@@ -46,5 +46,5 @@ func TestService_IsMaster(t *testing.T) {
 	setupTest(t)
 
 	isMaster := TestServiceDefault.IsMaster()
-	require.False(t, isMaster)
+	require.True(t, isMaster)
 }

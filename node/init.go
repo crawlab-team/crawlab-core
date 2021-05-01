@@ -26,3 +26,7 @@ func initNode() (err error) {
 func InitNode() (err error) {
 	return utils.InitModule(interfaces.ModuleIdNode, initNode)
 }
+
+func ForceInitNode() (err error) {
+	return utils.ForceInitModule(initNode)
+}

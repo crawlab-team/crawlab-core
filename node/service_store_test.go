@@ -14,7 +14,7 @@ func TestServiceStore_Set(t *testing.T) {
 	err = TestServiceStore.Set("master", TestServiceMaster)
 	require.Nil(t, err)
 
-	_, ok := TestServiceStore.m.Load("master")
+	_, ok := TestServiceStore.GetMap().Load("master")
 	require.True(t, ok)
 }
 

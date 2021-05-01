@@ -46,5 +46,5 @@ const (
 
 type BaseModelWithTagsInterface interface {
 	BaseModelInterface
-	SetTags(tags interface{})
+	SetTags(tags []Tag)
 }

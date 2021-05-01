@@ -31,19 +31,30 @@ func assignFields(d interface{}, fieldIds ...interfaces.ModelId) (res interface{
 	for _, fid := range fieldIds {
 		switch fid {
 		case interfaces.ModelIdTag:
-			a, err := doc.GetArtifact()
-			if err != nil {
-				return nil, err
-			}
+			// convert interface
 			d, ok := doc.(interfaces.BaseModelWithTagsInterface)
 			if !ok {
 				return nil, errors.ErrorModelInvalidType
 			}
+
+			// attempt to get artifact
+			a, err := doc.GetArtifact()
+			if err != nil {
+				return nil, err
+			}
+
+			// skip if no artifact found
+			if a == nil {
+				return d, nil
+			}
+
+			// assign tags
 			tags, err := a.GetTags()
 			if err != nil {
 				return nil, err
 			}
 			d.SetTags(tags)
+
 			return d, nil
 		}
 	}

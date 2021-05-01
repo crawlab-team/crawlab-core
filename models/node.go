@@ -21,7 +21,7 @@ type Node struct {
 	Active      bool               `json:"active" bson:"active"`
 	ActiveTs    time.Time          `json:"active_ts" bson:"active_ts"`
 	Settings    NodeSettings       `json:"settings" bson:"settings"`
-	Tags        []Tag              `json:"tags" bson:"-"`
+	Tags        []interfaces.Tag   `json:"tags" bson:"-"`
 }
 
 type NodeSettings struct {
@@ -55,6 +55,6 @@ func (n *Node) GetId() (id primitive.ObjectID) {
 	return n.Id
 }
 
-func (n *Node) SetTags(tags []Tag) {
+func (n *Node) SetTags(tags []interfaces.Tag) {
 	n.Tags = tags
 }

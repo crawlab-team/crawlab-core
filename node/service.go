@@ -20,7 +20,7 @@ func (svc *Service) Init() (err error) {
 	// check config directory path
 	configDirPath := path.Dir(svc.opts.ConfigPath)
 	if !utils.Exists(configDirPath) {
-		if err := os.MkdirAll(configDirPath, 0763); err != nil {
+		if err := os.MkdirAll(configDirPath, os.FileMode(0766)); err != nil {
 			return trace.TraceError(err)
 		}
 	}
@@ -33,7 +33,7 @@ func (svc *Service) Init() (err error) {
 		if err != nil {
 			return err
 		}
-		if err := ioutil.WriteFile(svc.opts.ConfigPath, data, 0763); err != nil {
+		if err := ioutil.WriteFile(svc.opts.ConfigPath, data, os.FileMode(0766)); err != nil {
 			return err
 		}
 	} else {
@@ -88,8 +88,4 @@ func NewService(opts *ServiceOptions) (svc *Service, err error) {
 	}
 
 	return svc, nil
-}
-
-func provideService() (svc *Service, err error) {
-	return NewService(nil)
 }

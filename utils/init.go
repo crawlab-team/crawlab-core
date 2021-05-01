@@ -24,3 +24,7 @@ func InitModule(id interfaces.ModuleId, fn func() error) (err error) {
 
 	return nil
 }
+
+func ForceInitModule(fn func() error) (err error) {
+	return fn()
+}

@@ -177,13 +177,13 @@ func (d *Delegate) delete() (err error) {
 func (d *Delegate) getArtifact() (res interfaces.ModelArtifact, err error) {
 	var a Artifact
 	if d.doc.Id.IsZero() {
-		return &a, trace.TraceError(errors2.ErrorModelMissingId)
+		return nil, trace.TraceError(errors2.ErrorModelMissingId)
 	}
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
-	if err := col.FindId(d.doc.Id).One(a); err != nil {
-		return &a, err
+	if err := col.FindId(d.doc.Id).One(&a); err != nil {
+		return nil, err
 	}
-	return &a, nil
+	return nil, nil
 }
 
 func (d *Delegate) refresh() (err error) {

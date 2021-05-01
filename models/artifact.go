@@ -42,7 +42,7 @@ func (a *Artifact) GetId() (id primitive.ObjectID) {
 	return a.Id
 }
 
-func (a *Artifact) GetTags() (res interface{}, err error) {
+func (a *Artifact) GetTags() (res []interfaces.Tag, err error) {
 	if a.TagIds == nil || len(a.TagIds) == 0 {
 		return res, nil
 	}
@@ -55,7 +55,14 @@ func (a *Artifact) GetTags() (res interface{}, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return svc.GetTagList(query, nil)
+	tags, err := svc.GetTagList(query, nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, tag := range tags {
+		res = append(res, &tag)
+	}
+	return res, nil
 }
 
 func (a *Artifact) UpdateTags(tagNames []string) (err error) {
