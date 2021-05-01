@@ -20,12 +20,12 @@ func convertTypeArtifact(d interface{}, err error) (res *Artifact, err2 error) {
 }
 
 func (svc *Service) GetArtifactById(id primitive.ObjectID) (res *Artifact, err error) {
-	d, err := NewBaseService(interfaces.ModelIdArtifact).GetById(id)
+	d, err := MustGetService(interfaces.ModelIdArtifact).GetById(id)
 	return convertTypeArtifact(d, err)
 }
 
 func (svc *Service) GetArtifact(query bson.M, opts *mongo.FindOptions) (res *Artifact, err error) {
-	d, err := NewBaseService(interfaces.ModelIdArtifact).Get(query, opts)
+	d, err := MustGetService(interfaces.ModelIdArtifact).Get(query, opts)
 	return convertTypeArtifact(d, err)
 }
 

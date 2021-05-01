@@ -19,6 +19,8 @@ type BaseService struct {
 	col *mongo.Col
 }
 
+// TODO: implement remote
+
 func (svc *BaseService) GetById(id primitive.ObjectID) (res interface{}, err error) {
 	// declare
 	m := NewModelMap()

@@ -20,12 +20,12 @@ func convertTypeJob(d interface{}, err error) (res *Job, err2 error) {
 }
 
 func (svc *Service) GetJobById(id primitive.ObjectID) (res *Job, err error) {
-	d, err := NewBaseService(interfaces.ModelIdJob).GetById(id)
+	d, err := MustGetService(interfaces.ModelIdJob).GetById(id)
 	return convertTypeJob(d, err)
 }
 
 func (svc *Service) GetJob(query bson.M, opts *mongo.FindOptions) (res *Job, err error) {
-	d, err := NewBaseService(interfaces.ModelIdJob).Get(query, opts)
+	d, err := MustGetService(interfaces.ModelIdJob).Get(query, opts)
 	return convertTypeJob(d, err)
 }
 

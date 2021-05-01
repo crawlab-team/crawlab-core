@@ -46,7 +46,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 	}
 
 	// find in db
-	nodeDb, err := models.NodeService.GetModelByKey(nodeKey, nil)
+	nodeDb, err := models.MustGetRootService().GetNodeByKey(nodeKey, nil)
 	if err == nil {
 		if nodeDb.Status != constants.NodeStatusUnregistered {
 			// error: already exists
@@ -56,7 +56,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 			return HandleError(errors.ErrorGrpcNotAllowed)
 		} else {
 			// register existing
-			node = nodeDb
+			node = *nodeDb
 			node.Status = constants.NodeStatusRegistered
 			if err := node.Save(); err != nil {
 				return HandleError(err)
@@ -82,7 +82,7 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 	AllowMaster(svr.nodeSvc)
 
 	// find in db
-	node, err := models.NodeService.GetModelByKey(req.NodeKey, nil)
+	node, err := models.MustGetRootService().GetNodeByKey(req.NodeKey, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			return HandleError(errors.ErrorGrpcClientNotExists)

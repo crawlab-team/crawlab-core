@@ -20,12 +20,12 @@ func convertTypeTask(d interface{}, err error) (res *Task, err2 error) {
 }
 
 func (svc *Service) GetTaskById(id primitive.ObjectID) (res *Task, err error) {
-	d, err := NewBaseService(interfaces.ModelIdTask).GetById(id)
+	d, err := MustGetService(interfaces.ModelIdTask).GetById(id)
 	return convertTypeTask(d, err)
 }
 
 func (svc *Service) GetTask(query bson.M, opts *mongo.FindOptions) (res *Task, err error) {
-	d, err := NewBaseService(interfaces.ModelIdTask).Get(query, opts)
+	d, err := MustGetService(interfaces.ModelIdTask).Get(query, opts)
 	return convertTypeTask(d, err)
 }
 

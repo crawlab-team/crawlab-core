@@ -1,24 +1,21 @@
-package models
+package color
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/data"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/go-trace"
 	"math/rand"
 	"strconv"
 	"strings"
 )
 
-type ColorServiceInterface interface {
-	GetByName(name string) (res Color, err error)
-	GetRandom() (res Color, err error)
-}
-
 func NewColorService() (svc *colorService) {
-	var cl []Color
-	cm := map[string]Color{}
+	var cl []*entity.Color
+	cm := map[string]*entity.Color{}
 
 	if err := json.Unmarshal([]byte(data.ColorsDataText), &cl); err != nil {
 		_ = trace.TraceError(err)
@@ -35,11 +32,11 @@ func NewColorService() (svc *colorService) {
 }
 
 type colorService struct {
-	cl []Color
-	cm map[string]Color
+	cl []*entity.Color
+	cm map[string]*entity.Color
 }
 
-func (svc *colorService) GetByName(name string) (res Color, err error) {
+func (svc *colorService) GetByName(name string) (res interfaces.Color, err error) {
 	res, ok := svc.cm[name]
 	if !ok {
 		return res, errors.ErrorModelNotFound
@@ -47,13 +44,13 @@ func (svc *colorService) GetByName(name string) (res Color, err error) {
 	return res, err
 }
 
-func (svc *colorService) GetRandom() (res Color, err error) {
+func (svc *colorService) GetRandom() (res interfaces.Color, err error) {
 	if len(svc.cl) == 0 {
 		hexStr, err := svc.getRandomColorHex()
 		if err != nil {
 			return res, err
 		}
-		return Color{Hex: hexStr}, nil
+		return &entity.Color{Hex: hexStr}, nil
 	}
 
 	idx := rand.Intn(len(svc.cl))
@@ -79,5 +76,3 @@ func (svc *colorService) getRandomHexChar() (res string, err error) {
 	hex.Encode(h, b)
 	return string(h), nil
 }
-
-var ColorService *colorService

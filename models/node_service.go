@@ -20,12 +20,12 @@ func convertTypeNode(d interface{}, err error) (res *Node, err2 error) {
 }
 
 func (svc *Service) GetNodeById(id primitive.ObjectID) (res *Node, err error) {
-	d, err := NewBaseService(interfaces.ModelIdNode).GetById(id)
+	d, err := MustGetService(interfaces.ModelIdNode).GetById(id)
 	return convertTypeNode(d, err)
 }
 
 func (svc *Service) GetNode(query bson.M, opts *mongo.FindOptions) (res *Node, err error) {
-	d, err := NewBaseService(interfaces.ModelIdNode).Get(query, opts)
+	d, err := MustGetService(interfaces.ModelIdNode).Get(query, opts)
 	return convertTypeNode(d, err)
 }
 

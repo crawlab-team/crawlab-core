@@ -13,7 +13,7 @@ func initNode() (err error) {
 	}
 
 	// node service store
-	store.NodeServiceStore = store.NewServiceStore()
+	store.NodeServiceStore = store.NewNodeServiceStore()
 
 	// set default node service into the store
 	if err = store.NodeServiceStore.Set("", store.NodeService); err != nil {

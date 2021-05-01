@@ -1,40 +1,56 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 )
 
-type TagServiceInterface interface {
-	getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error)
-	GetModelById(id primitive.ObjectID) (res Tag, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res Tag, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []Tag, err error)
-	UpdateTagsById(colName string, id primitive.ObjectID, tags []Tag) (tagIds []primitive.ObjectID, err error)
-	UpdateTags(colName string, query bson.M, tags []Tag) (tagIds []primitive.ObjectID, err error)
+func convertTypeTag(d interface{}, err error) (res *Tag, err2 error) {
+	if err != nil {
+		return nil, err
+	}
+	res, ok := d.(*Tag)
+	if !ok {
+		return nil, trace.TraceError(errors.ErrorModelInvalidType)
+	}
+	return res, nil
 }
 
-type tagService struct {
-	*BaseService
+func (svc *Service) GetTagById(id primitive.ObjectID) (res *Tag, err error) {
+	d, err := MustGetService(interfaces.ModelIdTag).GetById(id)
+	return convertTypeTag(d, err)
 }
 
-func (svc *tagService) getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error) {
+func (svc *Service) GetTag(query bson.M, opts *mongo.FindOptions) (res *Tag, err error) {
+	d, err := MustGetService(interfaces.ModelIdTag).Get(query, opts)
+	return convertTypeTag(d, err)
+}
+
+func (svc *Service) GetTagList(query bson.M, opts *mongo.FindOptions) (res []Tag, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
+	return res, trace.TraceError(err)
+}
+
+func (svc *Service) getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// iterate tag names
 	for _, tag := range tags {
 		// count of tags with the name
-		tagDb, err := TagService.GetModel(bson.M{"name": tag.Name, "col": colName}, nil)
+		tagDb, err := svc.GetTag(bson.M{"name": tag.Name, "col": colName}, nil)
 		if err == nil {
 			// tag exists
-			tag = tagDb
+			tag = *tagDb
 		} else if err == mongo2.ErrNoDocuments {
 			// add new tag if not exists
 			colorHex := tag.Color
 			if colorHex == "" {
-				color, _ := ColorService.GetRandom()
-				colorHex = color.Hex
+				color, _ := store.ColorService.GetRandom()
+				colorHex = color.GetHex()
 			}
 			tag = Tag{
 				Name:  tag.Name,
@@ -42,7 +58,7 @@ func (svc *tagService) getTagIds(colName string, tags []Tag) (tagIds []primitive
 				Col:   colName,
 			}
 			if err := tag.Add(); err != nil {
-				return tagIds, err
+				return tagIds, trace.TraceError(err)
 			}
 		}
 
@@ -53,32 +69,17 @@ func (svc *tagService) getTagIds(colName string, tags []Tag) (tagIds []primitive
 	return tagIds, nil
 }
 
-func (svc *tagService) GetModelById(id primitive.ObjectID) (res Tag, err error) {
-	err = svc.findId(id).One(&res)
-	return res, err
-}
-
-func (svc *tagService) GetModel(query bson.M, opts *mongo.FindOptions) (res Tag, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
-}
-
-func (svc *tagService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []Tag, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
-}
-
-func (svc *tagService) UpdateTagsById(colName string, id primitive.ObjectID, tags []Tag) (tagIds []primitive.ObjectID, err error) {
+func (svc *Service) UpdateTagsById(colName string, id primitive.ObjectID, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// get tag ids to update
 	tagIds, err = svc.getTagIds(colName, tags)
 	if err != nil {
-		return tagIds, err
+		return tagIds, trace.TraceError(err)
 	}
 
 	// update in db
-	a, err := ArtifactService.GetModelById(id)
+	a, err := svc.GetArtifactById(id)
 	if err != nil {
-		return tagIds, err
+		return tagIds, trace.TraceError(err)
 	}
 	a.TagIds = tagIds
 	if err := mongo.GetMongoCol(interfaces.ModelColNameArtifact).ReplaceId(id, a); err != nil {
@@ -87,11 +88,11 @@ func (svc *tagService) UpdateTagsById(colName string, id primitive.ObjectID, tag
 	return tagIds, nil
 }
 
-func (svc *tagService) UpdateTags(colName string, query bson.M, tags []Tag) (tagIds []primitive.ObjectID, err error) {
+func (svc *Service) UpdateTags(colName string, query bson.M, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// tag ids to update
 	tagIds, err = svc.getTagIds(colName, tags)
 	if err != nil {
-		return tagIds, err
+		return tagIds, trace.TraceError(err)
 	}
 
 	// update
@@ -103,15 +104,9 @@ func (svc *tagService) UpdateTags(colName string, query bson.M, tags []Tag) (tag
 	fields := []string{"_tid"}
 
 	// update in db
-	if err := ArtifactService.Update(query, update, fields); err != nil {
-		return tagIds, err
+	if err := svc.Update(query, update, fields); err != nil {
+		return tagIds, trace.TraceError(err)
 	}
 
 	return tagIds, nil
 }
-
-func NewTagService() (svc *tagService) {
-	return &tagService{NewBaseService(interfaces.ModelIdTag)}
-}
-
-var TagService *tagService

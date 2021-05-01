@@ -1,9 +1,10 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 type Artifact struct {
@@ -15,13 +16,30 @@ type Artifact struct {
 	Obj         interface{} `bson:"_obj" json:"_obj"`
 }
 
-type ArtifactSys struct {
-	CreateTs  time.Time          `json:"create_ts" bson:"create_ts"`
-	CreateUid primitive.ObjectID `json:"create_uid" bson:"create_uid"`
-	UpdateTs  time.Time          `json:"update_ts" bson:"update_ts"`
-	UpdateUid primitive.ObjectID `json:"update_uid" bson:"update_uid"`
-	DeleteTs  time.Time          `json:"delete_ts" bson:"delete_ts"`
-	DeleteUid primitive.ObjectID `json:"delete_uid" bson:"delete_uid"`
+func (a *Artifact) Add() (err error) {
+	if a.Id.IsZero() {
+		a.Id = primitive.NewObjectID()
+	}
+	m := NewDelegate(interfaces.ModelIdArtifact, a)
+	return m.Add()
+}
+
+func (a *Artifact) Save() (err error) {
+	m := NewDelegate(interfaces.ModelIdArtifact, a)
+	return m.Save()
+}
+
+func (a *Artifact) Delete() (err error) {
+	m := NewDelegate(interfaces.ModelIdArtifact, a)
+	return m.Delete()
+}
+
+func (a *Artifact) GetArtifact() (res interfaces.ModelArtifact, err error) {
+	return nil, errors.ErrorModelNotAllowed
+}
+
+func (a *Artifact) GetId() (id primitive.ObjectID) {
+	return a.Id
 }
 
 func (a *Artifact) GetTags() (res interface{}, err error) {
@@ -33,9 +51,17 @@ func (a *Artifact) GetTags() (res interface{}, err error) {
 			"$in": a.TagIds,
 		},
 	}
-	return TagService.GetModelList(query, nil)
+	svc, err := GetRootService()
+	if err != nil {
+		return nil, err
+	}
+	return svc.GetTagList(query, nil)
 }
 
 func (a *Artifact) UpdateTags(tagNames []string) (err error) {
-	return TagService.UpdateById(a.Id, tagNames)
+	svc, err := GetRootService()
+	if err != nil {
+		return err
+	}
+	return svc.UpdateById(a.Id, tagNames)
 }

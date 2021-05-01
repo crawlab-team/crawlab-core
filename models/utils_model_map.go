@@ -1,6 +1,8 @@
 package models
 
 type ModelMap struct {
+	Artifact Artifact
+	Tag      Tag
 	Node     Node
 	Project  Project
 	Spider   Spider
@@ -11,10 +13,11 @@ type ModelMap struct {
 	Setting  Setting
 	Token    Token
 	Variable Variable
-	Tag      Tag
 }
 
 type ModelListMap struct {
+	Artifacts []Artifact
+	Tags      []Tag
 	Nodes     []Node
 	Projects  []Project
 	Spiders   []Spider
@@ -25,7 +28,6 @@ type ModelListMap struct {
 	Settings  []Setting
 	Tokens    []Token
 	Variables []Variable
-	Tags      []Tag
 }
 
 func NewModelMap() (m *ModelMap) {

@@ -20,12 +20,12 @@ func convertTypeSetting(d interface{}, err error) (res *Setting, err2 error) {
 }
 
 func (svc *Service) GetSettingById(id primitive.ObjectID) (res *Setting, err error) {
-	d, err := NewBaseService(interfaces.ModelIdSetting).GetById(id)
+	d, err := MustGetService(interfaces.ModelIdSetting).GetById(id)
 	return convertTypeSetting(d, err)
 }
 
 func (svc *Service) GetSetting(query bson.M, opts *mongo.FindOptions) (res *Setting, err error) {
-	d, err := NewBaseService(interfaces.ModelIdSetting).Get(query, opts)
+	d, err := MustGetService(interfaces.ModelIdSetting).Get(query, opts)
 	return convertTypeSetting(d, err)
 }
 

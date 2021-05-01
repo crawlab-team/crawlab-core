@@ -17,7 +17,7 @@ func TestModelDelegateServer_Do_Add(t *testing.T) {
 	setupTest(t)
 
 	name := "test-project"
-	p := models.Project{
+	p := &models.Project{
 		Name: name,
 	}
 	data, err := json.Marshal(p)
@@ -35,7 +35,7 @@ func TestModelDelegateServer_Do_Add(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	p, err = models.ProjectService.GetModel(bson.M{"name": name}, nil)
+	p, err = models.MustGetRootService().GetProject(bson.M{"name": name}, nil)
 	require.Nil(t, err)
 	require.False(t, p.Id.IsZero())
 	require.Equal(t, name, p.Name)

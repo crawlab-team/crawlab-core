@@ -26,14 +26,14 @@ func TestNodeServer_Register(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, grpc2.ResponseCode_OK, res.Code)
 
-	var node models.Node
+	var node *models.Node
 	err = json.Unmarshal(res.Data, &node)
 	require.Nil(t, err)
 	require.Equal(t, nodeKey, node.Key)
 	require.Equal(t, constants.NodeStatusRegistered, node.Status)
 	require.False(t, node.Id.IsZero())
 
-	node, err = models.NodeService.GetModelByKey(nodeKey, nil)
+	node, err = models.MustGetRootService().GetNodeByKey(nodeKey, nil)
 	require.Nil(t, err)
 }
 

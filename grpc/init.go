@@ -13,7 +13,7 @@ func initGrpc() (err error) {
 	}
 
 	// grpc service store
-	store.GrpcServiceStore = store.NewServiceStore()
+	store.GrpcServiceStore = store.NewGrpcServiceStore()
 
 	// set default grpc service into the store
 	if err = store.GrpcServiceStore.Set("", store.GrpcService); err != nil {

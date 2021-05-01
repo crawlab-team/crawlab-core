@@ -28,13 +28,13 @@ func assignFields(d interface{}, fieldIds ...interfaces.ModelId) (res interface{
 	if len(fieldIds) == 0 {
 		return doc, nil
 	}
-	a, err := doc.GetArtifact()
-	if err != nil {
-		return nil, err
-	}
 	for _, fid := range fieldIds {
 		switch fid {
 		case interfaces.ModelIdTag:
+			a, err := doc.GetArtifact()
+			if err != nil {
+				return nil, err
+			}
 			d, ok := doc.(interfaces.BaseModelWithTagsInterface)
 			if !ok {
 				return nil, errors.ErrorModelInvalidType

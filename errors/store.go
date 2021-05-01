@@ -6,3 +6,4 @@ func NewStoreError(msg string) (err error) {
 
 var ErrorStoreEmptyValue = NewStoreError("empty value")
 var ErrorStoreNotExists = NewStoreError("not exists")
+var ErrorStoreInvalidType = NewStoreError("invalid type")

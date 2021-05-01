@@ -1,40 +1,40 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type UserServiceInterface interface {
-	GetModelById(id primitive.ObjectID) (res User, err error)
-	GetModel(query bson.M, opts *mongo.FindOptions) (res User, err error)
-	GetModelList(query bson.M, opts *mongo.FindOptions) (res []User, err error)
-}
-
-type userService struct {
-	*BaseService
-}
-
-func NewUserService() (svc *userService) {
-	return &userService{
-		NewBaseService(interfaces.ModelIdUser),
+func convertTypeUser(d interface{}, err error) (res *User, err2 error) {
+	if err != nil {
+		return nil, err
 	}
+	res, ok := d.(*User)
+	if !ok {
+		return nil, errors.ErrorModelInvalidType
+	}
+	return res, nil
 }
-func (svc *userService) GetModelById(id primitive.ObjectID) (res User, err error) {
-	err = svc.findId(id).One(&res)
+
+func (svc *Service) GetUserById(id primitive.ObjectID) (res *User, err error) {
+	d, err := MustGetService(interfaces.ModelIdUser).GetById(id)
+	return convertTypeUser(d, err)
+}
+
+func (svc *Service) GetUser(query bson.M, opts *mongo.FindOptions) (res *User, err error) {
+	d, err := MustGetService(interfaces.ModelIdUser).Get(query, opts)
+	return convertTypeUser(d, err)
+}
+
+func (svc *Service) GetUserList(query bson.M, opts *mongo.FindOptions) (res []User, err error) {
+	err = svc.GetListSerializeTarget(query, opts, &res)
 	return res, err
 }
 
-func (svc *userService) GetModel(query bson.M, opts *mongo.FindOptions) (res User, err error) {
-	err = svc.find(query, opts).One(&res)
-	return res, err
+func (svc *Service) GetUserByUsername(username string, opts *mongo.FindOptions) (res *User, err error) {
+	query := bson.M{"username": username}
+	return svc.GetUser(query, opts)
 }
-
-func (svc *userService) GetModelList(query bson.M, opts *mongo.FindOptions) (res []User, err error) {
-	err = svc.find(query, opts).All(&res)
-	return res, err
-}
-
-var UserService *userService

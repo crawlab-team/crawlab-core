@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"github.com/crawlab-team/crawlab-core/entity"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/crawlab-core/store"
@@ -63,7 +64,7 @@ func setupTest(t *testing.T) {
 }
 
 func cleanupTest() {
-	_ = models.NodeService.Delete(nil)
+	_ = models.MustGetService(interfaces.ModelIdNode).Delete(nil)
 	_ = TestServiceMaster.Stop()
 	_ = TestServiceWorker.Stop()
 }

@@ -39,6 +39,7 @@ func NewDelegate(id interfaces.ModelId, obj interface{}) Delegate {
 		obj:     obj,
 		doc:     &doc,
 		a:       &a,
+		svc:     MustGetRootService(),
 	}
 }
 
@@ -48,6 +49,7 @@ type Delegate struct {
 	obj     interface{}
 	doc     *BaseModel
 	a       *Artifact
+	svc     *Service
 }
 
 func (d *Delegate) do(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {
@@ -197,14 +199,28 @@ func (d *Delegate) refresh() (err error) {
 }
 
 func (d *Delegate) upsertArtifact() (err error) {
+	// skip artifact
+	if d.id == interfaces.ModelIdArtifact {
+		return nil
+	}
+
+	// validate id
 	if d.doc.Id.IsZero() {
 		return trace.TraceError(errors.ErrMissingValue)
 	}
+
+	// mongo collection
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
-	ctx := col.GetContext()
+
+	// context
 	// TODO: implement user
+	ctx := col.GetContext()
 	user, ok := ctx.Value(UserContextKey).(*User)
+
+	// assign id to artifact
 	d.a.Id = d.doc.Id
+
+	// attempt to find artifact
 	if err := col.FindId(d.doc.Id).One(d.a); err != nil {
 		if err == mongo2.ErrNoDocuments {
 			// new artifact
@@ -230,6 +246,8 @@ func (d *Delegate) upsertArtifact() (err error) {
 	if ok {
 		d.a.UpdateUid = user.Id
 	}
+
+	// save new artifact
 	return col.ReplaceId(d.a.Id, d.a)
 }
 
@@ -256,7 +274,7 @@ func (d *Delegate) updateTags() (err error) {
 		return trace.TraceError(errors.ErrMissingValue)
 	}
 	//ctx := col.GetContext()
-	if _, err := TagService.UpdateTagsById(d.colName, d.doc.Id, d.doc.Tags); err != nil {
+	if _, err := d.svc.UpdateTagsById(d.colName, d.doc.Id, d.doc.Tags); err != nil {
 		return trace.TraceError(err)
 	}
 

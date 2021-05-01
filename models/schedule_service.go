@@ -20,12 +20,12 @@ func convertTypeSchedule(d interface{}, err error) (res *Schedule, err2 error) {
 }
 
 func (svc *Service) GetScheduleById(id primitive.ObjectID) (res *Schedule, err error) {
-	d, err := NewBaseService(interfaces.ModelIdSchedule).GetById(id)
+	d, err := MustGetService(interfaces.ModelIdSchedule).GetById(id)
 	return convertTypeSchedule(d, err)
 }
 
 func (svc *Service) GetSchedule(query bson.M, opts *mongo.FindOptions) (res *Schedule, err error) {
-	d, err := NewBaseService(interfaces.ModelIdSchedule).Get(query, opts)
+	d, err := MustGetService(interfaces.ModelIdSchedule).Get(query, opts)
 	return convertTypeSchedule(d, err)
 }
 

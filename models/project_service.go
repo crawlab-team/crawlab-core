@@ -20,12 +20,12 @@ func convertTypeProject(d interface{}, err error) (res *Project, err2 error) {
 }
 
 func (svc *Service) GetProjectById(id primitive.ObjectID) (res *Project, err error) {
-	d, err := NewBaseService(interfaces.ModelIdProject).GetById(id)
+	d, err := MustGetService(interfaces.ModelIdProject).GetById(id)
 	return convertTypeProject(d, err)
 }
 
 func (svc *Service) GetProject(query bson.M, opts *mongo.FindOptions) (res *Project, err error) {
-	d, err := NewBaseService(interfaces.ModelIdProject).Get(query, opts)
+	d, err := MustGetService(interfaces.ModelIdProject).Get(query, opts)
 	return convertTypeProject(d, err)
 }
 

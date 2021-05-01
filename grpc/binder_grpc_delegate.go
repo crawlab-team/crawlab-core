@@ -29,6 +29,10 @@ func (b *DelegateBinder) Bind() (res interface{}, err error) {
 	m := models.NewModelMap()
 
 	switch b.msg.GetModelId() {
+	case interfaces.ModelIdArtifact:
+		return b.process(&m.Artifact, interfaces.ModelIdTag)
+	case interfaces.ModelIdTag:
+		return b.process(&m.Tag, interfaces.ModelIdTag)
 	case interfaces.ModelIdNode:
 		return b.process(&m.Node, interfaces.ModelIdTag)
 	case interfaces.ModelIdProject:
@@ -49,8 +53,6 @@ func (b *DelegateBinder) Bind() (res interface{}, err error) {
 		return b.process(&m.Token)
 	case interfaces.ModelIdVariable:
 		return b.process(&m.Variable)
-	case interfaces.ModelIdTag:
-		return b.process(&m.Tag)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

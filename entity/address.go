@@ -17,6 +17,10 @@ func (a *Address) IsEmpty() (res bool) {
 	return a.Host == "" || a.Port == ""
 }
 
+func (a *Address) Value() (res interface{}) {
+	return a
+}
+
 type AddressOptions struct {
 	Host string
 	Port string

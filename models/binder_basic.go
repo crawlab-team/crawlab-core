@@ -24,6 +24,10 @@ func (b *BasicBinder) Bind() (res interface{}, err error) {
 	m := b.m
 
 	switch b.id {
+	case interfaces.ModelIdArtifact:
+		return b.process(&m.Artifact)
+	case interfaces.ModelIdTag:
+		return b.process(&m.Tag)
 	case interfaces.ModelIdNode:
 		return b.process(&m.Node, interfaces.ModelIdTag)
 	case interfaces.ModelIdProject:
@@ -44,8 +48,6 @@ func (b *BasicBinder) Bind() (res interface{}, err error) {
 		return b.process(&m.Token)
 	case interfaces.ModelIdVariable:
 		return b.process(&m.Variable)
-	case interfaces.ModelIdTag:
-		return b.process(&m.Tag)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

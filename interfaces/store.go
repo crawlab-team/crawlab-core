@@ -1,10 +1,10 @@
 package interfaces
 
 type Store interface {
-	Set(string, interface{}) error
-	MustSet(string, interface{})
-	Get(string) (interface{}, error)
-	MustGet(string) interface{}
+	Set(interface{}, interface{}) error
+	MustSet(interface{}, interface{})
+	Get(interface{}) (interface{}, error)
+	MustGet(interface{}) interface{}
 	GetDefault() (interface{}, error)
 	MustGetDefault() interface{}
 }

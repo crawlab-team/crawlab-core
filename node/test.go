@@ -11,7 +11,7 @@ import (
 var TestServiceDefault *Service
 var TestServiceMaster *Service
 var TestServiceWorker *Service
-var TestServiceStore *store.ServiceStore
+var TestServiceStore *store.NodeServiceStoreType
 
 func initTest() {
 	var err error
@@ -57,7 +57,7 @@ func initTest() {
 
 	// service store
 	if TestServiceStore == nil {
-		TestServiceStore = store.NewServiceStore()
+		TestServiceStore = store.NewNodeServiceStore()
 	}
 }
 
