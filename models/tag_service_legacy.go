@@ -26,7 +26,7 @@ package models
 //	// iterate tag names
 //	for _, tag := range tags {
 //		// count of tags with the name
-//		tagDb, err := TagService.GetModel(bson.M{"name": tag.Name, "col": colName}, nil)
+//		tagDb, err := MustGetRootService().GetTag(bson.M{"name": tag.Name, "col": colName}, nil)
 //		if err == nil {
 //			// tag exists
 //			tag = tagDb
@@ -77,7 +77,7 @@ package models
 //	}
 //
 //	// update in db
-//	a, err := ArtifactService.GetModelById(id)
+//	a, err := MustGetRootService().GetArtifactById(id)
 //	if err != nil {
 //		return tagIds, err
 //	}

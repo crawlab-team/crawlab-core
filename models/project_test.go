@@ -18,9 +18,9 @@ func TestProject_Add(t *testing.T) {
 
 	a, err := p.GetArtifact()
 	require.Nil(t, err)
-	require.Equal(t, p.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
+	require.Equal(t, p.Id, a.GetId())
+	require.NotNil(t, a.GetSys().GetCreateTs())
+	require.NotNil(t, a.GetSys().GetUpdateTs())
 
 	col := mongo.GetMongoCol(interfaces.ModelColNameProject)
 	col.GetContext()
@@ -75,9 +75,9 @@ func TestProject_DeleteList(t *testing.T) {
 	err := doc.Add()
 	require.Nil(t, err)
 
-	err = ProjectService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdProject).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := ProjectService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdProject).Count(nil)
 	require.Equal(t, 0, total)
 }

@@ -17,30 +17,19 @@ func cleanupTokenTest() {
 }
 
 func TestToken_Add(t *testing.T) {
-	err := setupTokenTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	token := Token{}
 
 	err = token.Add()
 	require.Nil(t, err)
 	require.NotNil(t, token.Id)
-
-	a, err := token.GetArtifact()
-	require.Nil(t, err)
-	require.Equal(t, token.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameToken)
-	col.GetContext()
-
-	cleanupTokenTest()
 }
 
 func TestToken_Save(t *testing.T) {
-	err := setupTokenTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	token := Token{}
 
@@ -55,13 +44,11 @@ func TestToken_Save(t *testing.T) {
 	err = mongo.GetMongoCol(interfaces.ModelColNameToken).FindId(token.Id).One(&token)
 	require.Nil(t, err)
 	require.Equal(t, tokenValue, token.Token)
-
-	cleanupTokenTest()
 }
 
 func TestToken_Delete(t *testing.T) {
-	err := setupTokenTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	s := Token{
 		Token: "test_token",
@@ -79,13 +66,11 @@ func TestToken_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
 	require.True(t, a.Del)
-
-	cleanupTokenTest()
 }
 
 func TestToken_DeleteList(t *testing.T) {
-	err := setupTokenTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	doc := Token{
 		Token: "test_Token",
@@ -94,11 +79,9 @@ func TestToken_DeleteList(t *testing.T) {
 	err = doc.Add()
 	require.Nil(t, err)
 
-	err = TokenService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdToken).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := TokenService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdToken).Count(nil)
 	require.Equal(t, 0, total)
-
-	cleanupTokenTest()
 }

@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	cfs "github.com/crawlab-team/crawlab-fs"
@@ -107,8 +108,8 @@ func cleanupTaskRunner(to *TaskRunnerTestObject) {
 		_ = m.DeleteDir("/logs")
 		_ = m.DeleteDir("/spiders")
 	}
-	_ = models.SpiderService.DeleteById(to.spiderId)
-	_ = models.TaskService.DeleteById(to.taskId)
+	_ = models.MustGetService(interfaces.ModelIdSpider).DeleteById(to.spiderId)
+	_ = models.MustGetService(interfaces.ModelIdTask).DeleteById(to.spiderId)
 	_ = os.RemoveAll("./tmp/repo")
 }
 

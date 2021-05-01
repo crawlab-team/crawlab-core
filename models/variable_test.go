@@ -17,30 +17,19 @@ func cleanupVariableTest() {
 }
 
 func TestVariable_Add(t *testing.T) {
-	err := setupVariableTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	s := Variable{}
 
 	err = s.Add()
 	require.Nil(t, err)
 	require.NotNil(t, s.Id)
-
-	a, err := s.GetArtifact()
-	require.Nil(t, err)
-	require.Equal(t, s.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameVariable)
-	col.GetContext()
-
-	cleanupVariableTest()
 }
 
 func TestVariable_Save(t *testing.T) {
-	err := setupVariableTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	s := Variable{}
 
@@ -60,8 +49,8 @@ func TestVariable_Save(t *testing.T) {
 }
 
 func TestVariable_Delete(t *testing.T) {
-	err := setupVariableTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	s := Variable{
 		Key: "test_variable",
@@ -79,13 +68,11 @@ func TestVariable_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
 	require.True(t, a.Del)
-
-	cleanupVariableTest()
 }
 
 func TestVariable_DeleteList(t *testing.T) {
-	err := setupVariableTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	doc := Variable{
 		Key: "test_Variable",
@@ -94,11 +81,9 @@ func TestVariable_DeleteList(t *testing.T) {
 	err = doc.Add()
 	require.Nil(t, err)
 
-	err = VariableService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdVariable).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := VariableService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdVariable).Count(nil)
 	require.Equal(t, 0, total)
-
-	cleanupVariableTest()
 }

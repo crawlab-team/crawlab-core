@@ -19,7 +19,7 @@ func TestTagService_GetModel(t *testing.T) {
 	err := node.Add()
 	require.Nil(t, err)
 
-	tag, err := TagService.GetModel(nil, nil)
+	tag, err := MustGetRootService().GetTag(nil, nil)
 	require.Nil(t, err)
 	require.False(t, tag.Id.IsZero())
 	require.Equal(t, "tag 1", tag.Name)
@@ -40,7 +40,7 @@ func TestTagService_GetModelById(t *testing.T) {
 	err := node.Add()
 	require.Nil(t, err)
 
-	tag, err := TagService.GetModel(nil, nil)
+	tag, err := MustGetRootService().GetTag(nil, nil)
 	require.Nil(t, err)
 	require.False(t, tag.Id.IsZero())
 	require.Equal(t, "tag 1", tag.Name)

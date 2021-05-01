@@ -17,30 +17,19 @@ func cleanupUserTest() {
 }
 
 func TestUser_Add(t *testing.T) {
-	err := setupUserTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	u := User{}
 
 	err = u.Add()
 	require.Nil(t, err)
 	require.NotNil(t, u.Id)
-
-	a, err := u.GetArtifact()
-	require.Nil(t, err)
-	require.Equal(t, u.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameUser)
-	col.GetContext()
-
-	cleanupUserTest()
 }
 
 func TestUser_Save(t *testing.T) {
-	err := setupUserTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	u := User{}
 
@@ -55,13 +44,11 @@ func TestUser_Save(t *testing.T) {
 	err = mongo.GetMongoCol(interfaces.ModelColNameUser).FindId(u.Id).One(&u)
 	require.Nil(t, err)
 	require.Equal(t, name, u.Username)
-
-	cleanupUserTest()
 }
 
 func TestUser_Delete(t *testing.T) {
-	err := setupUserTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	s := User{
 		Username: "test_user",
@@ -79,13 +66,11 @@ func TestUser_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
 	require.True(t, a.Del)
-
-	cleanupUserTest()
 }
 
 func TestUser_DeleteList(t *testing.T) {
-	err := setupUserTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	doc := User{
 		Username: "test_User",
@@ -94,11 +79,9 @@ func TestUser_DeleteList(t *testing.T) {
 	err = doc.Add()
 	require.Nil(t, err)
 
-	err = UserService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdUser).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := UserService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdUser).Count(nil)
 	require.Equal(t, 0, total)
-
-	cleanupUserTest()
 }

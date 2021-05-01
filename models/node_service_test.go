@@ -11,7 +11,7 @@ import (
 func TestNodeService_GetModelById(t *testing.T) {
 	setupTest(t)
 
-	node := Node{
+	node := &Node{
 		Name:     "test node",
 		IsMaster: true,
 		Tags: []Tag{
@@ -21,7 +21,7 @@ func TestNodeService_GetModelById(t *testing.T) {
 	err := node.Add()
 	require.Nil(t, err)
 
-	node, err = NodeService.GetModelById(node.Id)
+	node, err = MustGetRootService().GetNodeById(node.Id)
 	require.Nil(t, err)
 	require.False(t, node.Id.IsZero())
 	require.False(t, node.Tags[0].Id.IsZero())
@@ -33,7 +33,7 @@ func TestNodeService_GetModelById(t *testing.T) {
 func TestNodeService_GetModel(t *testing.T) {
 	setupTest(t)
 
-	node := Node{
+	node := &Node{
 		Name:     "test node",
 		IsMaster: true,
 		Tags: []Tag{
@@ -43,7 +43,7 @@ func TestNodeService_GetModel(t *testing.T) {
 	err := node.Add()
 	require.Nil(t, err)
 
-	node, err = NodeService.GetModel(bson.M{"name": "test node"}, nil)
+	node, err = MustGetRootService().GetNode(bson.M{"name": "test node"}, nil)
 	require.Nil(t, err)
 	require.False(t, node.Id.IsZero())
 	require.Equal(t, "tag 1", node.Tags[0].Name)
@@ -67,7 +67,7 @@ func TestNodeService_GetModelList(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	nodes, err := NodeService.GetModelList(nil, nil)
+	nodes, err := MustGetRootService().GetNodeList(nil, nil)
 	require.Nil(t, err)
 
 	for i := 0; i < n; i++ {

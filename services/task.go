@@ -19,7 +19,7 @@ type TaskServiceInterface interface {
 	Init() (err error)
 	Close()
 	Assign(t *models.Task) (err error)
-	Fetch() (t models.Task, err error)
+	Fetch() (t *models.Task, err error)
 	Run(taskId primitive.ObjectID) (err error)
 	Cancel(taskId primitive.ObjectID) (err error)
 	FindLogs(id primitive.ObjectID, pattern string, skip, size int) (lines []string, err error)
@@ -167,7 +167,7 @@ func (s *taskService) Assign(t *models.Task) (err error) {
 	return nil
 }
 
-func (s *taskService) Fetch() (t models.Task, err error) {
+func (s *taskService) Fetch() (t *models.Task, err error) {
 	// message
 	var msg string
 
@@ -203,7 +203,7 @@ func (s *taskService) Fetch() (t models.Task, err error) {
 	}
 
 	// fetch task
-	t, err = models.TaskService.GetModelById(tMsg.Id)
+	t, err = models.MustGetRootService().GetTaskById(tMsg.Id)
 	if err != nil {
 		return t, err
 	}
@@ -297,7 +297,7 @@ func (s *taskService) saveTask(t *models.Task, status string) (err error) {
 	t.Status = status
 
 	// attempt to get task from database
-	_, err = models.TaskService.GetById(t.Id)
+	_, err = models.MustGetRootService().GetTaskById(t.Id)
 	if err != nil {
 		// if task does not exist, add to database
 		if err == mongo2.ErrNoDocuments {

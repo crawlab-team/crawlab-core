@@ -23,7 +23,7 @@ type Spider struct {
 	Mode        string               `json:"mode" bson:"mode"`                 // default Task.Mode
 	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`         // default Task.NodeIds
 	NodeTags    []string             `json:"node_tags" bson:"node_tags"`       // default Task.NodeTags
-	Tags        []interfaces.Tag     `json:"tags" bson:"-"`
+	Tags        []Tag                `json:"tags" bson:"-"`
 
 	// 自定义爬虫
 	Cmd   string `json:"cmd" bson:"cmd"`     // 执行命令
@@ -88,5 +88,5 @@ func (s *Spider) GetId() (id primitive.ObjectID) {
 }
 
 func (s *Spider) SetTags(tags []interfaces.Tag) {
-	s.Tags = tags
+	s.Tags = convertInterfacesToTags(tags)
 }

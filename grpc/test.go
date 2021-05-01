@@ -18,7 +18,7 @@ var TestPortWorker = "9877"
 func setupTest(t *testing.T) {
 	var err error
 
-	if err := node.InitNode(); err != nil {
+	if err := node.ForceInitNode(); err != nil {
 		panic(err)
 	}
 
@@ -65,6 +65,7 @@ func setupTest(t *testing.T) {
 
 func cleanupTest() {
 	_ = models.MustGetService(interfaces.ModelIdNode).Delete(nil)
+	_ = store.GrpcService.Stop()
 	_ = TestServiceMaster.Stop()
 	_ = TestServiceWorker.Stop()
 }

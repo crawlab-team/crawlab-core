@@ -15,15 +15,6 @@ func TestSpider_Add(t *testing.T) {
 	err := s.Add()
 	require.Nil(t, err)
 	require.NotNil(t, s.Id)
-
-	a, err := s.GetArtifact()
-	require.Nil(t, err)
-	require.Equal(t, s.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameSpider)
-	col.GetContext()
 }
 
 func TestSpider_Save(t *testing.T) {
@@ -75,9 +66,9 @@ func TestSpider_DeleteList(t *testing.T) {
 	err := doc.Add()
 	require.Nil(t, err)
 
-	err = SpiderService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdSpider).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := SpiderService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdSpider).Count(nil)
 	require.Equal(t, 0, total)
 }

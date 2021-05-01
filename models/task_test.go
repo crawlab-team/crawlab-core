@@ -19,30 +19,19 @@ func cleanupTaskTest() {
 }
 
 func TestTask_Add(t *testing.T) {
-	err := setupTaskTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	task := Task{}
 
 	err = task.Add()
 	require.Nil(t, err)
 	require.NotNil(t, task.Id)
-
-	a, err := task.GetArtifact()
-	require.Nil(t, err)
-	require.Equal(t, task.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameTask)
-	col.GetContext()
-
-	cleanupTaskTest()
 }
 
 func TestTask_Save(t *testing.T) {
-	err := setupTaskTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	task := Task{}
 	spider := Spider{
@@ -66,13 +55,11 @@ func TestTask_Save(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, spider.Id, task.SpiderId)
 	require.Equal(t, "test_task", spider.Name)
-
-	cleanupTaskTest()
 }
 
 func TestTask_Delete(t *testing.T) {
-	err := setupTaskTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	id := primitive.NewObjectID()
 	task := Task{
@@ -97,24 +84,20 @@ func TestTask_Delete(t *testing.T) {
 	err = bson.Unmarshal(data, &task)
 	require.Nil(t, err)
 	require.Equal(t, id, task.SpiderId)
-
-	cleanupTaskTest()
 }
 
 func TestTask_DeleteList(t *testing.T) {
-	err := setupTaskTest()
-	require.Nil(t, err)
+	var err error
+	setupTest(t)
 
 	doc := Task{}
 
 	err = doc.Add()
 	require.Nil(t, err)
 
-	err = TaskService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdTask).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := TaskService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdTask).Count(nil)
 	require.Equal(t, 0, total)
-
-	cleanupTaskTest()
 }

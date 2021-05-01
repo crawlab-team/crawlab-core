@@ -15,15 +15,6 @@ func TestTag_Add(t *testing.T) {
 	err := s.Add()
 	require.Nil(t, err)
 	require.NotNil(t, s.Id)
-
-	a, err := s.GetArtifact()
-	require.Nil(t, err)
-	require.Equal(t, s.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameTag)
-	col.GetContext()
 }
 
 func TestTag_Save(t *testing.T) {
@@ -75,9 +66,9 @@ func TestTag_DeleteList(t *testing.T) {
 	err := doc.Add()
 	require.Nil(t, err)
 
-	err = TagService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdTag).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := TagService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdTag).Count(nil)
 	require.Equal(t, 0, total)
 }

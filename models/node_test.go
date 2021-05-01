@@ -22,9 +22,9 @@ func TestNode_Add(t *testing.T) {
 
 	a, err := n.GetArtifact()
 	require.Nil(t, err)
-	require.Equal(t, n.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
+	require.Equal(t, n.Id, a.GetId())
+	require.NotNil(t, a.GetSys().GetCreateTs())
+	require.NotNil(t, a.GetSys().GetUpdateTs())
 }
 
 func TestNode_Save(t *testing.T) {
@@ -75,9 +75,9 @@ func TestNode_DeleteList(t *testing.T) {
 	err := doc.Add()
 	require.Nil(t, err)
 
-	err = NodeService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdNode).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := NodeService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdNode).Count(nil)
 	require.Equal(t, 0, total)
 }

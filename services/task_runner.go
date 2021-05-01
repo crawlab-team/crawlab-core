@@ -89,11 +89,11 @@ func (r *TaskRunner) Init() (err error) {
 	}
 
 	// spider
-	s, err := models.SpiderService.GetModelById(r.t.SpiderId)
+	s, err := models.MustGetRootService().GetSpiderById(r.t.SpiderId)
 	if err != nil {
 		return err
 	}
-	r.s = &s
+	r.s = s
 
 	// worker file system service using a temp directory
 	fsPath := fmt.Sprintf("%s/%s", viper.GetString("spider.path"), r.s.Id.Hex())
@@ -425,7 +425,7 @@ func (r *TaskRunner) configureEnv() (err error) {
 	}
 
 	// global environment variables
-	variables, err := models.VariableService.GetModelList(nil, nil)
+	variables, err := models.MustGetRootService().GetVariableList(nil, nil)
 	if err != nil {
 		return err
 	}
@@ -472,13 +472,13 @@ func (r *TaskRunner) updateTask(status string) (err error) {
 	}
 
 	// get task
-	t, err := models.TaskService.GetModelById(r.tid)
+	t, err := models.MustGetRootService().GetTaskById(r.tid)
 	if err != nil {
 		return err
 	}
 
 	// set task
-	r.t = &t
+	r.t = t
 
 	return nil
 }

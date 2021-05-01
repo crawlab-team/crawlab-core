@@ -15,15 +15,6 @@ func TestSetting_Add(t *testing.T) {
 	err := s.Add()
 	require.Nil(t, err)
 	require.NotNil(t, s.Id)
-
-	a, err := s.GetArtifact()
-	require.Nil(t, err)
-	require.Equal(t, s.Id, a.Id)
-	require.NotNil(t, a.CreateTs)
-	require.NotNil(t, a.UpdateTs)
-
-	col := mongo.GetMongoCol(interfaces.ModelColNameSetting)
-	col.GetContext()
 }
 
 func TestSetting_Save(t *testing.T) {
@@ -75,9 +66,9 @@ func TestSetting_DeleteList(t *testing.T) {
 	err := doc.Add()
 	require.Nil(t, err)
 
-	err = SettingService.DeleteList(nil)
+	err = MustGetService(interfaces.ModelIdSetting).DeleteList(nil)
 	require.Nil(t, err)
 
-	total, err := SettingService.Count(nil)
+	total, err := MustGetService(interfaces.ModelIdSetting).Count(nil)
 	require.Equal(t, 0, total)
 }

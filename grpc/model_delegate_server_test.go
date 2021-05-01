@@ -39,4 +39,47 @@ func TestModelDelegateServer_Do_Add(t *testing.T) {
 	require.Nil(t, err)
 	require.False(t, p.Id.IsZero())
 	require.Equal(t, name, p.Name)
+
+	a, err := models.MustGetRootService().GetArtifactById(p.Id)
+	require.Nil(t, err)
+	require.Equal(t, p.Id, a.Id)
+}
+
+func TestModelDelegateServer_Do_Save(t *testing.T) {
+	var err error
+	setupTest(t)
+
+	oldName := "old-name"
+	p := &models.Project{
+		Name: oldName,
+	}
+	err = p.Add()
+	require.Nil(t, err)
+
+	newName := "new-name"
+	newTags := []models.Tag{
+		{Name: "new-tag", Color: "red"},
+	}
+	p.Name = newName
+	p.Tags = newTags
+	data, err := json.Marshal(p)
+	require.Nil(t, err)
+	msg := entity.DelegateMessage{
+		ModelId: interfaces.ModelIdProject,
+		Method:  interfaces.ModelDelegateMethodSave,
+		Data:    data,
+	}
+
+	client := TestServiceWorker.MustGetDefaultClient()
+	_, err = client.GetModelDelegateClient().Do(context.Background(), &grpc.Request{
+		NodeKey: node2.MustGetNodeKey(),
+		Data:    msg.ToBytes(),
+	})
+	require.Nil(t, err)
+
+	p, err = models.MustGetRootService().GetProjectById(p.Id)
+	require.Nil(t, err)
+	require.False(t, p.Id.IsZero())
+	require.NotEmpty(t, p.Tags)
+	require.False(t, p.Tags[0].GetId().IsZero())
 }

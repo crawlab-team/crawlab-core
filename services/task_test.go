@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/crawlab-db/redis"
@@ -192,11 +193,11 @@ func cleanupTask(to *TaskTestObject) {
 		_ = m.DeleteDir("/spiders")
 	}
 	for _, s := range to.spiders {
-		_ = models.SpiderService.DeleteById(s.Id)
+		_ = models.MustGetService(interfaces.ModelIdSpider).DeleteById(s.Id)
 	}
 	to.spiders = []*models.Spider{}
 	for _, t := range to.tasks {
-		_ = models.TaskService.DeleteById(t.Id)
+		_ = models.MustGetService(interfaces.ModelIdTask).DeleteById(t.Id)
 	}
 	to.tasks = []*models.Task{}
 	_ = os.RemoveAll("./tmp/repo")
@@ -241,15 +242,15 @@ func TestTaskService_Init(t *testing.T) {
 	require.Nil(t, err)
 	err = s.Assign(task)
 	require.Nil(t, err)
-	*task, err = models.TaskService.GetModelById(task.Id)
+	task, err = models.MustGetRootService().GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusPending, task.Status)
 	time.Sleep(2 * time.Second)
-	*task, err = models.TaskService.GetModelById(task.Id)
+	task, err = models.MustGetRootService().GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	*task, err = models.TaskService.GetModelById(task.Id)
+	task, err = models.MustGetRootService().GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 
@@ -331,7 +332,7 @@ func TestTaskService_Run(t *testing.T) {
 	require.Nil(t, err)
 	err = s.Assign(task)
 	require.Nil(t, err)
-	*task, err = s.Fetch()
+	task, err = s.Fetch()
 	require.Nil(t, err)
 	err = s.Run(task.Id)
 	require.Nil(t, err)
@@ -339,11 +340,11 @@ func TestTaskService_Run(t *testing.T) {
 	require.Equal(t, constants.ErrAlreadyExists, err)
 	require.Equal(t, 1, s.runnersCount)
 	time.Sleep(1 * time.Second)
-	*task, err = models.TaskService.GetModelById(task.Id)
+	task, err = models.MustGetRootService().GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	*task, err = models.TaskService.GetModelById(task.Id)
+	task, err = models.MustGetRootService().GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 

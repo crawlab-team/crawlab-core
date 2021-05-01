@@ -57,7 +57,7 @@ func SecretFunc() jwt.Keyfunc {
 	}
 }
 
-func CheckToken(tokenStr string) (user models.User, err error) {
+func CheckToken(tokenStr string) (user *models.User, err error) {
 	token, err := jwt.Parse(tokenStr, SecretFunc())
 	if err != nil {
 		return
@@ -80,7 +80,7 @@ func CheckToken(tokenStr string) (user models.User, err error) {
 		return user, err
 	}
 	username := claim["username"].(string)
-	user, err = models.UserService.GetModelById(id)
+	user, err = models.MustGetRootService().GetUserById(id)
 	if err != nil {
 		err = errors.New("cannot get user")
 		return
@@ -128,9 +128,9 @@ func GetCurrentUserId(c *gin.Context) primitive.ObjectID {
 }
 
 func GetAdminUser() (user *models.User, err error) {
-	u, err := models.UserService.GetModel(bson.M{"username": "admin"}, nil)
+	u, err := models.MustGetRootService().GetUser(bson.M{"username": "admin"}, nil)
 	if err != nil {
 		return user, err
 	}
-	return &u, nil
+	return u, nil
 }

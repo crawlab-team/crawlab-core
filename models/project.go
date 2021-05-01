@@ -9,7 +9,7 @@ type Project struct {
 	Id          primitive.ObjectID `json:"_id" bson:"_id"`
 	Name        string             `json:"name" bson:"name"`
 	Description string             `json:"description" bson:"description"`
-	Tags        []interfaces.Tag   `json:"tags" bson:"-"`
+	Tags        []Tag              `json:"tags" bson:"-"`
 }
 
 func (p *Project) Add() (err error) {
@@ -40,5 +40,5 @@ func (p *Project) GetId() (id primitive.ObjectID) {
 }
 
 func (p *Project) SetTags(tags []interfaces.Tag) {
-	p.Tags = tags
+	p.Tags = convertInterfacesToTags(tags)
 }

@@ -8,12 +8,12 @@ import (
 )
 
 type Artifact struct {
-	Id          primitive.ObjectID   `bson:"_id" json:"_id"`
-	Col         string               `bson:"_col" json:"_col"`
-	Del         bool                 `bson:"_del" json:"_del"`
-	TagIds      []primitive.ObjectID `bson:"_tid" json:"_tid"`
-	ArtifactSys `bson:"_sys" json:"_sys"`
-	Obj         interface{} `bson:"_obj" json:"_obj"`
+	Id     primitive.ObjectID   `bson:"_id" json:"_id"`
+	Col    string               `bson:"_col" json:"_col"`
+	Del    bool                 `bson:"_del" json:"_del"`
+	TagIds []primitive.ObjectID `bson:"_tid" json:"_tid"`
+	Sys    *ArtifactSys         `bson:"_sys" json:"_sys"`
+	Obj    interface{}          `bson:"_obj" json:"_obj"`
 }
 
 func (a *Artifact) Add() (err error) {
@@ -71,4 +71,8 @@ func (a *Artifact) UpdateTags(tagNames []string) (err error) {
 		return err
 	}
 	return svc.UpdateById(a.Id, tagNames)
+}
+
+func (a *Artifact) GetSys() (sys interfaces.ModelArtifactSys) {
+	return a.Sys
 }

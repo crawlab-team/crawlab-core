@@ -26,10 +26,6 @@ func setupTestSchedule() (err error) {
 
 func cleanupTestSchedule() {
 	_ = redis.RedisClient.Del("tasks:public")
-	_ = models.NodeService.DeleteList(nil)
-	_ = models.SpiderService.DeleteList(nil)
-	_ = models.TaskService.DeleteList(nil)
-	_ = models.ScheduleService.DeleteList(nil)
 }
 
 func TestScheduleService_AddSchedule(t *testing.T) {
@@ -63,10 +59,10 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// wait until it triggers
-	var task models.Task
+	var task *models.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
-		task, err = models.TaskService.GetModel(bson.M{"schedule_id": sch.Id}, nil)
+		task, err = models.MustGetRootService().GetTask(bson.M{"schedule_id": sch.Id}, nil)
 		if err == mongo2.ErrNoDocuments {
 			time.Sleep(1 * time.Second)
 			continue
@@ -118,10 +114,10 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// wait until it triggers
-	var task models.Task
+	var task *models.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
-		task, err = models.TaskService.GetModel(bson.M{"schedule_id": sch.Id}, nil)
+		task, err = models.MustGetRootService().GetTask(bson.M{"schedule_id": sch.Id}, nil)
 		if err == mongo2.ErrNoDocuments {
 			time.Sleep(1 * time.Second)
 			continue
@@ -175,7 +171,7 @@ func TestScheduleService_DeleteSchedule(t *testing.T) {
 	// validate
 	entry := ScheduleService.c.Entry(sch.EntryId)
 	require.False(t, entry.Valid())
-	_, err = models.ScheduleService.GetById(sch.Id)
+	_, err = models.MustGetRootService().GetScheduleById(sch.Id)
 	require.NotNil(t, err)
 	require.Equal(t, mongo2.ErrNoDocuments.Error(), err.Error())
 
