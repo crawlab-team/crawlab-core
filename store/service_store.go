@@ -21,12 +21,6 @@ func (s *ServiceStore) Set(key interface{}, value interface{}) (err error) {
 	return nil
 }
 
-func (s *ServiceStore) MustSet(key interface{}, value interface{}) {
-	if err := s.Set(key, value); err != nil {
-		panic(err)
-	}
-}
-
 func (s *ServiceStore) Get(key interface{}) (res interface{}, err error) {
 	if key == "" {
 		return s.GetDefault()
@@ -38,12 +32,20 @@ func (s *ServiceStore) Get(key interface{}) (res interface{}, err error) {
 	return res, nil
 }
 
-func (s *ServiceStore) MustGet(key interface{}) (res interface{}) {
-	res, err := s.Get(key)
-	if err != nil {
-		panic(err)
-	}
-	return res
+func (s *ServiceStore) SetByString(key string, value interface{}) (err error) {
+	return s.Set(key, value)
+}
+
+func (s *ServiceStore) GetByString(key string) (res interface{}, err error) {
+	return s.Get(key)
+}
+
+func (s *ServiceStore) SetByInt(key int, value interface{}) (err error) {
+	return s.Set(key, value)
+}
+
+func (s *ServiceStore) GetByInt(key int) (res interface{}, err error) {
+	return s.Get(key)
 }
 
 func (s *ServiceStore) GetDefault() (res interface{}, err error) {
@@ -57,14 +59,6 @@ func (s *ServiceStore) GetDefault() (res interface{}, err error) {
 		return nil, errors.ErrorStoreNotExists
 	}
 	return res, nil
-}
-
-func (s *ServiceStore) MustGetDefault() (res interface{}) {
-	res, err := s.GetDefault()
-	if err != nil {
-		panic(err)
-	}
-	return res
 }
 
 func NewServiceStore() (s *ServiceStore) {

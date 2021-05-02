@@ -6,10 +6,10 @@ import (
 )
 
 type ModelServiceStoreType struct {
-	ServiceStore
+	*ServiceStore
 }
 
-func (s *ModelServiceStoreType) GetModelService(key interface{}) (svc interfaces.ModelService, err error) {
+func (s *ModelServiceStoreType) GetModelService(key interfaces.ModelId) (svc interfaces.ModelService, err error) {
 	res, err := s.Get(key)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (s *ModelServiceStoreType) GetModelService(key interface{}) (svc interfaces
 	return svc, nil
 }
 
-func (s *ModelServiceStoreType) MustGetModelService(key interface{}) (svc interfaces.ModelService) {
+func (s *ModelServiceStoreType) MustGetModelService(key interfaces.ModelId) (svc interfaces.ModelService) {
 	svc, err := s.GetModelService(key)
 	if err != nil {
 		panic(err)
@@ -30,7 +30,7 @@ func (s *ModelServiceStoreType) MustGetModelService(key interface{}) (svc interf
 }
 
 func NewModelServiceStore() (s *ModelServiceStoreType) {
-	return &ModelServiceStoreType{}
+	return &ModelServiceStoreType{NewServiceStore()}
 }
 
 var ModelServiceStore *ModelServiceStoreType

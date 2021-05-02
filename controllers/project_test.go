@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ import (
 )
 
 func cleanupProjectController() {
-	_ = models.ProjectService.DeleteList(nil)
+	_ = models.MustGetService(interfaces.ModelIdProject).DeleteList(nil)
 }
 
 func TestProjectController_Get(t *testing.T) {
@@ -367,12 +368,12 @@ func TestProjectController_PostList(t *testing.T) {
 	}
 
 	// check artifacts
-	pl, err := models.ProjectService.GetModelList(bson.M{"_id": bson.M{"$in": ids}}, nil)
+	pl, err := models.MustGetRootService().GetProjectList(bson.M{"_id": bson.M{"$in": ids}}, nil)
 	require.Nil(t, err)
 	for _, p := range pl {
 		a, err := p.GetArtifact()
 		require.Nil(t, err)
-		require.True(t, a.UpdateTs.After(now))
-		require.True(t, a.UpdateTs.After(a.CreateTs))
+		require.True(t, a.GetSys().GetUpdateTs().After(now))
+		require.True(t, a.GetSys().GetUpdateTs().After(a.GetSys().GetCreateTs()))
 	}
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type NodeServiceStoreType struct {
-	ServiceStore
+	*ServiceStore
 }
 
 func (s *NodeServiceStoreType) GetNodeService(key interface{}) (svc interfaces.NodeService, err error) {
@@ -30,7 +30,7 @@ func (s *NodeServiceStoreType) MustGetNodeService(key interface{}) (svc interfac
 }
 
 func NewNodeServiceStore() (s *NodeServiceStoreType) {
-	return &NodeServiceStoreType{}
+	return &NodeServiceStoreType{NewServiceStore()}
 }
 
 var NodeServiceStore *NodeServiceStoreType

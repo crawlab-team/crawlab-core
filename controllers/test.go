@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/grpc"
 	"github.com/crawlab-team/crawlab-core/models"
+	"github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/stretchr/testify/require"
@@ -17,8 +19,16 @@ func setupTest(t *testing.T, cleanup func()) {
 	err = redis.InitRedis()
 	require.Nil(t, err)
 
-	// init model services
+	// init node
+	err = node.ForceInitNode()
+	require.Nil(t, err)
+
+	// init models
 	err = models.InitModels()
+	require.Nil(t, err)
+
+	// init grpc
+	err = grpc.InitGrpc()
 	require.Nil(t, err)
 
 	// init controllers

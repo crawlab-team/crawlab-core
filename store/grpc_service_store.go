@@ -6,7 +6,7 @@ import (
 )
 
 type GrpcServiceStoreType struct {
-	ServiceStore
+	*ServiceStore
 }
 
 func (s *GrpcServiceStoreType) GetGrpcService(key interface{}) (svc interfaces.GrpcService, err error) {
@@ -30,7 +30,7 @@ func (s *GrpcServiceStoreType) MustGetGrpcService(key interface{}) (svc interfac
 }
 
 func NewGrpcServiceStore() (s *GrpcServiceStoreType) {
-	return &GrpcServiceStoreType{}
+	return &GrpcServiceStoreType{NewServiceStore()}
 }
 
 var GrpcServiceStore *GrpcServiceStoreType
