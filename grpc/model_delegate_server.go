@@ -4,12 +4,11 @@ import (
 	"context"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	node2 "github.com/crawlab-team/crawlab-core/node"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 )
 
 type ModelDelegateServer struct {
-	nodeSvc *node2.Service
+	nodeSvc interfaces.NodeMasterService
 	grpc.UnimplementedModelDelegateServiceServer
 }
 
@@ -39,6 +38,6 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 	return HandleSuccess()
 }
 
-func NewModelDelegateServer(nodeSvc *node2.Service) (svr *ModelDelegateServer) {
+func NewModelDelegateServer(nodeSvc interfaces.NodeMasterService) (svr *ModelDelegateServer) {
 	return &ModelDelegateServer{nodeSvc: nodeSvc}
 }

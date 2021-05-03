@@ -8,9 +8,9 @@ import (
 	"testing"
 )
 
-var TestServiceDefault *Service
-var TestServiceMaster *Service
-var TestServiceWorker *Service
+var TestServiceDefault *ConfigService
+var TestServiceMaster *ConfigService
+var TestServiceWorker *ConfigService
 var TestServiceStore *store.NodeServiceStoreType
 
 func initTest() {
@@ -25,7 +25,7 @@ func initTest() {
 		panic(err)
 	}
 	if TestServiceDefault == nil {
-		TestServiceDefault, err = NewService(nil)
+		TestServiceDefault, err = NewConfigService(nil)
 		if err != nil {
 			panic(err)
 		}
@@ -38,7 +38,7 @@ func initTest() {
 		if err = ioutil.WriteFile(masterNodeConfigPath, []byte("{\"key\":\"master\",\"is_master\":true}"), os.ModePerm); err != nil {
 			panic(err)
 		}
-		if TestServiceMaster, err = NewService(&ServiceOptions{
+		if TestServiceMaster, err = NewConfigService(&ServiceOptions{
 			ConfigPath: masterNodeConfigPath,
 		}); err != nil {
 			panic(err)
@@ -52,7 +52,7 @@ func initTest() {
 		if err = ioutil.WriteFile(workerNodeConfigPath, []byte("{\"key\":\"worker\",\"is_worker\":false}"), os.ModePerm); err != nil {
 			panic(err)
 		}
-		if TestServiceWorker, err = NewService(&ServiceOptions{
+		if TestServiceWorker, err = NewConfigService(&ServiceOptions{
 			ConfigPath: workerNodeConfigPath,
 		}); err != nil {
 			panic(err)

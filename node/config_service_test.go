@@ -29,7 +29,7 @@ func TestNewService(t *testing.T) {
 	err = ioutil.WriteFile(svc.opts.ConfigPath, data, os.ModePerm)
 	require.Nil(t, err)
 
-	svc2, err := NewService(nil)
+	svc2, err := NewConfigService(nil)
 	require.Nil(t, err)
 	require.Equal(t, nodeKey, svc2.cfg.Key)
 	require.True(t, svc2.cfg.IsMaster)

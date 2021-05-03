@@ -6,7 +6,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
-	node2 "github.com/crawlab-team/crawlab-core/node"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,9 +27,9 @@ func TestModelDelegateServer_Do_Add(t *testing.T) {
 		Data:    data,
 	}
 
-	client := TestServiceWorker.MustGetDefaultClient()
+	client := TestServiceWorker.GetClient()
 	_, err = client.GetModelDelegateClient().Do(context.Background(), &grpc.Request{
-		NodeKey: node2.MustGetNodeKey(),
+		NodeKey: TestServiceWorker.nodeSvc.GetNodeKey(),
 		Data:    msg.ToBytes(),
 	})
 	require.Nil(t, err)
@@ -70,9 +69,9 @@ func TestModelDelegateServer_Do_Save(t *testing.T) {
 		Data:    data,
 	}
 
-	client := TestServiceWorker.MustGetDefaultClient()
+	client := TestServiceWorker.GetClient()
 	_, err = client.GetModelDelegateClient().Do(context.Background(), &grpc.Request{
-		NodeKey: node2.MustGetNodeKey(),
+		NodeKey: TestServiceWorker.nodeSvc.GetNodeKey(),
 		Data:    msg.ToBytes(),
 	})
 	require.Nil(t, err)

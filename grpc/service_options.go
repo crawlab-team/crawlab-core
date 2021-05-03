@@ -8,7 +8,7 @@ import (
 type ServiceOptions struct {
 	NodeServiceKey string
 	Local          *entity.Address
-	Remotes        []*entity.Address
+	Remote         *entity.Address
 }
 
 func (opts *ServiceOptions) FillEmpty() interfaces.Options {

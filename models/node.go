@@ -58,3 +58,14 @@ func (n *Node) GetId() (id primitive.ObjectID) {
 func (n *Node) SetTags(tags []interfaces.Tag) {
 	n.Tags = convertInterfacesToTags(tags)
 }
+
+func (n *Node) GetKey() (key string) {
+	return n.Key
+}
+
+func (n *Node) UpdateStatus(active bool, activeTs time.Time, status string) (err error) {
+	n.Active = active
+	n.ActiveTs = activeTs
+	n.Status = status
+	return n.Save()
+}

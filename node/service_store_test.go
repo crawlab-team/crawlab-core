@@ -30,14 +30,14 @@ func TestServiceStore_Get(t *testing.T) {
 
 	res, err := TestServiceStore.Get("master")
 	require.Nil(t, err)
-	svcMaster, ok := res.(interfaces.NodeService)
+	svcMaster, ok := res.(interfaces.NodeConfigService)
 	require.True(t, ok)
 	require.True(t, svcMaster.IsMaster())
 	require.Equal(t, "master", svcMaster.GetNodeKey())
 
 	res, err = TestServiceStore.Get("worker")
 	require.Nil(t, err)
-	svcWorker, ok := res.(interfaces.NodeService)
+	svcWorker, ok := res.(interfaces.NodeConfigService)
 	require.True(t, ok)
 	require.False(t, svcWorker.IsMaster())
 	require.Equal(t, "worker", svcWorker.GetNodeKey())
@@ -53,7 +53,7 @@ func TestServiceStore_GetDefault(t *testing.T) {
 
 	res, err := TestServiceStore.GetDefault()
 	require.Nil(t, err)
-	svcDefault, ok := res.(interfaces.NodeService)
+	svcDefault, ok := res.(interfaces.NodeConfigService)
 	require.True(t, ok)
 	require.NotEmpty(t, svcDefault.GetNodeKey())
 }

@@ -16,9 +16,7 @@ import (
 func TestNodeServer_Register(t *testing.T) {
 	setupTest(t)
 
-	client, err := TestServiceWorker.GetDefaultClient()
-	require.Nil(t, err)
-
+	client := TestServiceWorker.GetClient()
 	nodeKey := "test-node-key"
 	res, err := client.GetNodeClient().Register(context.Background(), &grpc2.Request{
 		NodeKey: nodeKey,
@@ -40,9 +38,7 @@ func TestNodeServer_Register(t *testing.T) {
 func TestNodeServer_SendHeartbeat(t *testing.T) {
 	setupTest(t)
 
-	workerClient, err := TestServiceWorker.GetDefaultClient()
-	require.Nil(t, err)
-
+	workerClient := TestServiceWorker.GetClient()
 	workerNodeKey := "worker-node-key"
 	res, err := workerClient.GetNodeClient().Register(context.Background(), &grpc2.Request{
 		NodeKey: workerNodeKey,
@@ -66,8 +62,7 @@ func TestNodeServer_SendHeartbeat(t *testing.T) {
 	require.True(t, toc.Sub(tic) < 1*time.Second)
 
 	masterNodeKey := "master-node-key"
-	masterClient, err := TestServiceMaster.GetDefaultClient()
-	require.Nil(t, err)
+	masterClient := TestServiceMaster.GetClient()
 	res, err = masterClient.GetNodeClient().SendHeartbeat(context.Background(), &grpc2.Request{
 		NodeKey: masterNodeKey,
 	})
@@ -78,8 +73,7 @@ func TestNodeServer_SendHeartbeat(t *testing.T) {
 func TestNodeServer_Ping(t *testing.T) {
 	setupTest(t)
 
-	masterClient, err := TestServiceMaster.GetDefaultClient()
-	require.Nil(t, err)
+	masterClient := TestServiceMaster.GetClient()
 
 	res, err := masterClient.GetNodeClient().Ping(context.Background(), EmptyRequest)
 	require.Nil(t, err)
@@ -88,8 +82,7 @@ func TestNodeServer_Ping(t *testing.T) {
 	require.Nil(t, err)
 	require.NotEmpty(t, nodeInfo.Key)
 
-	workerClient, err := TestServiceWorker.GetDefaultClient()
-	require.Nil(t, err)
+	workerClient := TestServiceWorker.GetClient()
 
 	res, err = workerClient.GetNodeClient().Ping(context.Background(), EmptyRequest)
 	require.NotNil(t, err)

@@ -3,11 +3,10 @@ package grpc
 import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	node2 "github.com/crawlab-team/crawlab-core/node"
 )
 
 type ServerOptions struct {
-	NodeService *node2.Service
+	NodeService interfaces.NodeService
 	Address     *entity.Address
 }
 

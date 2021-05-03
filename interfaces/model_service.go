@@ -11,7 +11,6 @@ type ModelService interface {
 	GetById(id primitive.ObjectID) (res interface{}, err error)
 	Get(query bson.M, opts *mongo.FindOptions) (res interface{}, err error)
 	GetList(query bson.M, opts *mongo.FindOptions) (res arraylist.List, err error)
-	//GetListSerializeTarget(query bson.M, opts *mongo.FindOptions, target interface{}) (err error)
 	DeleteById(id primitive.ObjectID) (err error)
 	Delete(query bson.M) (err error)
 	DeleteList(query bson.M) (err error)

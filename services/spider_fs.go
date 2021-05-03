@@ -19,14 +19,14 @@ func NewSpiderFsService(opts *SpiderFsServiceOptions) (svc *spiderFsService, err
 	}
 
 	// spider
-	s, err := models.SpiderService.GetModelById(opts.Id)
+	s, err := models.MustGetRootService().GetSpiderById(opts.Id)
 	if err != nil {
 		return nil, err
 	}
 
 	// spider fs service
 	svc = &spiderFsService{
-		s:    &s,
+		s:    s,
 		opts: opts,
 	}
 

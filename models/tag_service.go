@@ -37,7 +37,7 @@ func (svc *Service) GetTagList(query bson.M, opts *mongo.FindOptions) (res []Tag
 	return res, trace.TraceError(err)
 }
 
-func (svc *Service) getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error) {
+func (svc *Service) GetTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// iterate tag names
 	for _, tag := range tags {
 		// count of tags with the name
@@ -71,7 +71,7 @@ func (svc *Service) getTagIds(colName string, tags []Tag) (tagIds []primitive.Ob
 
 func (svc *Service) UpdateTagsById(colName string, id primitive.ObjectID, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// get tag ids to update
-	tagIds, err = svc.getTagIds(colName, tags)
+	tagIds, err = svc.GetTagIds(colName, tags)
 	if err != nil {
 		return tagIds, trace.TraceError(err)
 	}
@@ -90,7 +90,7 @@ func (svc *Service) UpdateTagsById(colName string, id primitive.ObjectID, tags [
 
 func (svc *Service) UpdateTags(colName string, query bson.M, tags []Tag) (tagIds []primitive.ObjectID, err error) {
 	// tag ids to update
-	tagIds, err = svc.getTagIds(colName, tags)
+	tagIds, err = svc.GetTagIds(colName, tags)
 	if err != nil {
 		return tagIds, trace.TraceError(err)
 	}
@@ -104,7 +104,7 @@ func (svc *Service) UpdateTags(colName string, query bson.M, tags []Tag) (tagIds
 	fields := []string{"_tid"}
 
 	// update in db
-	if err := svc.Update(query, update, fields); err != nil {
+	if err := MustGetService(interfaces.ModelIdTag).Update(query, update, fields); err != nil {
 		return tagIds, trace.TraceError(err)
 	}
 

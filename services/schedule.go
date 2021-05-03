@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
 	"github.com/crawlab-team/go-trace"
 	"github.com/robfig/cron/v3"
@@ -89,7 +90,7 @@ func (svc *scheduleService) Add(s *models.Schedule) (err error) {
 			return err
 		}
 	} else {
-		_, err = models.ScheduleService.GetById(s.Id)
+		_, err = models.MustGetService(interfaces.ModelIdSchedule).GetById(s.Id)
 		if err == nil {
 			return constants.ErrAlreadyExists
 		}
@@ -129,7 +130,7 @@ func (svc *scheduleService) Update(s *models.Schedule) (err error) {
 
 func (svc *scheduleService) Delete(id primitive.ObjectID) (err error) {
 	// schedule
-	s, err := models.ScheduleService.GetModelById(id)
+	s, err := models.MustGetRootService().GetScheduleById(id)
 	if err != nil {
 		return err
 	}
@@ -168,7 +169,7 @@ func (svc *scheduleService) monitorAndUpdateCron() {
 	for {
 		// all schedules
 		schedulesMap := map[cron.EntryID]*models.Schedule{}
-		schedules, err := models.ScheduleService.GetModelList(nil, nil)
+		schedules, err := models.MustGetRootService().GetScheduleList(nil, nil)
 		if err != nil {
 			if err != mongo2.ErrNoDocuments {
 				trace.PrintError(err)

@@ -18,15 +18,15 @@ var TestPortWorker = "9877"
 func setupTest(t *testing.T) {
 	var err error
 
+	if err := models.InitModels(); err != nil {
+		panic(err)
+	}
+
 	if err := node.ForceInitNode(); err != nil {
 		panic(err)
 	}
 
 	if err := InitGrpc(); err != nil {
-		panic(err)
-	}
-
-	if err := models.InitModels(); err != nil {
 		panic(err)
 	}
 
@@ -50,13 +50,9 @@ func setupTest(t *testing.T) {
 	TestServiceWorker, err = NewService(&ServiceOptions{
 		NodeServiceKey: "worker",
 		Local:          entity.NewAddress(&entity.AddressOptions{Port: TestPortWorker}),
-		Remotes:        []*entity.Address{entity.NewAddress(&entity.AddressOptions{Port: TestPortMaster})},
+		Remote:         entity.NewAddress(&entity.AddressOptions{Port: TestPortMaster}),
 	})
 	if err != nil {
-		panic(err)
-	}
-
-	if err = TestServiceMaster.AddClient(&ClientOptions{Address: entity.NewAddress(&entity.AddressOptions{Port: TestPortWorker})}); err != nil {
 		panic(err)
 	}
 

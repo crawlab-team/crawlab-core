@@ -2,12 +2,16 @@ package models
 
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"testing"
 )
 
 func setupTest(t *testing.T) {
 	if err := mongo.InitMongo(); err != nil {
+		panic(err)
+	}
+	if err := node.InitNode(); err != nil {
 		panic(err)
 	}
 	if err := InitModels(); err != nil {

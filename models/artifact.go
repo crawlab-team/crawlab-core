@@ -65,14 +65,6 @@ func (a *Artifact) GetTags() (res []interfaces.Tag, err error) {
 	return res, nil
 }
 
-func (a *Artifact) UpdateTags(tagNames []string) (err error) {
-	svc, err := GetRootService()
-	if err != nil {
-		return err
-	}
-	return svc.UpdateById(a.Id, tagNames)
-}
-
 func (a *Artifact) GetSys() (sys interfaces.ModelArtifactSys) {
 	if a.Sys == nil {
 		a.Sys = &ArtifactSys{}

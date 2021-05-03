@@ -3,7 +3,7 @@ package grpc
 import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/errors"
-	node2 "github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	. "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	. "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -61,18 +61,20 @@ func (svr *Server) Stop() (err error) {
 
 func (svr *Server) Register() (err error) {
 	nodeSvc := svr.opts.NodeService
-	if nodeSvc == nil {
-		nodeSvc, err = node2.GetDefaultService()
-		if err != nil {
-			return err
-		}
+	if !nodeSvc.IsMaster() {
+		return
+	}
+
+	masterNodeSvc, ok := nodeSvc.(interfaces.NodeMasterService)
+	if !ok {
+		return errors.ErrorGrpcInvalidType
 	}
 
 	// model delegate
-	RegisterModelDelegateServiceServer(svr.svr, *NewModelDelegateServer(nodeSvc))
+	RegisterModelDelegateServiceServer(svr.svr, *NewModelDelegateServer(masterNodeSvc))
 
 	// node
-	RegisterNodeServiceServer(svr.svr, *NewNodeServer(nodeSvc))
+	RegisterNodeServiceServer(svr.svr, *NewNodeServer(masterNodeSvc))
 
 	// task
 	//grpc2.RegisterTaskServiceServer(svr.svr, TaskService)

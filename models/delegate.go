@@ -6,7 +6,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/crawlab-db/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
@@ -75,36 +74,59 @@ func (d *Delegate) doLocal(method interfaces.ModelDelegateMethod) (a interfaces.
 	}
 }
 
-func (d *Delegate) doRemote(method interfaces.ModelDelegateMethod) (res interfaces.ModelArtifact, err error) {
-	var a Artifact
+func (d *Delegate) doRemote(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {
+	// marshal to json
 	data, err := json.Marshal(d.obj)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
+
+	// delegate message
 	msg := entity.DelegateMessage{
 		ModelId: d.id,
 		Method:  method,
 		Data:    data,
 	}
-	client, err := store.GrpcService.GetDefaultClient()
-	if err != nil {
-		return nil, trace.TraceError(err)
-	}
+
+	// grpc client
+	client := store.GrpcService.GetClient()
+
+	// context
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second) // TODO: configure timeout
 	defer cancel()
-	nodeKey, err := node.GetNodeKey()
-	if err != nil {
-		return nil, trace.TraceError(err)
+
+	// validate node service
+	if store.NodeService == nil {
+		return nil, errors2.ErrorNodeServiceNotExists
 	}
+
+	// node key
+	nodeKey := store.NodeService.GetNodeKey()
+
+	// grpc request
 	req := &grpc2.Request{
 		NodeKey: nodeKey,
 		Data:    msg.ToBytes(),
 	}
-	_, err = client.GetModelDelegateClient().Do(ctx, req)
+
+	// commit grpc request
+	res, err := client.GetModelDelegateClient().Do(ctx, req)
 	if err != nil {
-		return res, trace.TraceError(err)
+		return nil, trace.TraceError(err)
 	}
-	return &a, nil
+
+	// skip method of GetArtifact
+	if method != interfaces.ModelDelegateMethodGetArtifact {
+		return nil, nil
+	}
+
+	// unmarshal response data
+	var _a Artifact
+	if err := json.Unmarshal(res.Data, &_a); err != nil {
+		return nil, err
+	}
+
+	return &_a, nil
 }
 
 func (d *Delegate) Add() (err error) {

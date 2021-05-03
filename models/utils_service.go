@@ -8,11 +8,10 @@ import (
 )
 
 func GetRootService() (svc *Service, err error) {
-	svc, ok := store.RootModelService.(*Service)
-	if !ok {
-		return nil, trace.TraceError(errors.ErrorModelInvalidType)
+	if RootModelService == nil {
+		return nil, trace.TraceError(errors.ErrorModelNotFound)
 	}
-	return svc, nil
+	return RootModelService, nil
 }
 
 func MustGetRootService() (svc *Service) {

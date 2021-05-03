@@ -108,15 +108,15 @@ func (svc *nodeService) Init() (err error) {
 }
 
 func (svc *nodeService) GetCurrentNode() (n *models.Node, err error) {
-	node, err := models.NodeService.GetModel(bson.M{"key": svc.data.Key}, nil)
+	node, err := models.MustGetRootService().GetNode(bson.M{"key": svc.data.Key}, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &node, nil
+	return node, nil
 }
 
 func (svc *nodeService) GetAllNodeIds() (ids []primitive.ObjectID, err error) {
-	nodes, err := models.NodeService.GetModelList(bson.M{"enabled": true, "active": true}, nil)
+	nodes, err := models.MustGetRootService().GetNodeList(bson.M{"enabled": true, "active": true}, nil)
 	if err != nil {
 		return nil, err
 	}

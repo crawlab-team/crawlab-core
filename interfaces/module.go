@@ -7,3 +7,10 @@ const (
 	ModuleIdModels
 	ModuleIdGrpc
 )
+
+type Module interface {
+	Init() error
+	Start()
+	Wait()
+	Stop()
+}

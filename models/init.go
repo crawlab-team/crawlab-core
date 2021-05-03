@@ -3,7 +3,6 @@ package models
 import (
 	"github.com/crawlab-team/crawlab-core/color"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/node"
 	"github.com/crawlab-team/crawlab-core/store"
 	"github.com/crawlab-team/crawlab-core/utils"
 )
@@ -21,19 +20,14 @@ func initModels() (err error) {
 		return err
 	}
 
-	// node service
-	if err := node.InitNode(); err != nil {
-		return err
-	}
-
 	// default model service
-	store.RootModelService = NewService()
+	RootModelService = NewService()
 
 	// model service store
 	store.ModelServiceStore = store.NewModelServiceStore()
 
 	// set root model service into the store
-	if err = store.ModelServiceStore.Set("", store.RootModelService); err != nil {
+	if err = store.ModelServiceStore.Set("", RootModelService); err != nil {
 		return err
 	}
 	for _, item := range ModelInfoList {
