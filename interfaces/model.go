@@ -4,12 +4,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type BaseModelInterface interface {
-	Add() (err error)
-	Save() (err error)
-	Delete() (err error)
-	GetArtifact() (a ModelArtifact, err error)
+type Model interface {
 	GetId() (id primitive.ObjectID)
+	SetId(id primitive.ObjectID)
 }
 
 type ModelId int
@@ -44,7 +41,8 @@ const (
 	ModelColNameVariable = "variables"
 )
 
-type BaseModelWithTagsInterface interface {
-	BaseModelInterface
+type ModelWithTags interface {
+	Model
 	SetTags(tags []Tag)
+	GetTags() (tags []Tag)
 }

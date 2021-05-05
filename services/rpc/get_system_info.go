@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 )
 
 type GetSystemInfoService struct {
@@ -42,7 +42,7 @@ func (s *GetSystemInfoService) ClientHandle() (o interface{}, err error) {
 
 func GetSystemInfoServiceLocal() (sysInfo entity.SystemInfo, err error) {
 	// 获取环境信息
-	sysInfo, err = models.GetLocalSystemInfo()
+	sysInfo, err = models2.GetLocalSystemInfo()
 	if err != nil {
 		return sysInfo, err
 	}

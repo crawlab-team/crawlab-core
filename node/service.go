@@ -4,28 +4,26 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 )
 
-func NewService(opts *ServiceOptions) (svc interfaces.NodeService, err error) {
-	// validate options
-	if opts == nil {
-		opts = &ServiceOptions{}
-	}
-	opts = opts.FillEmpty().(*ServiceOptions)
-
-	// config service
-	cfgSvc, err := NewConfigService(opts)
-	if err != nil {
-		return nil, err
+func NewService(opts ...ServiceOption) (svc interfaces.NodeService, err error) {
+	// default config service
+	cfgSvc := &ConfigService{
+		path: DefaultConfigPath,
 	}
 
 	// construct service given the node type
 	if cfgSvc.IsMaster() {
-		svc = NewMasterService(cfgSvc)
+		svc, err = NewMasterService(cfgSvc)
 	} else {
 		svc = NewWorkerService(cfgSvc)
 	}
 
+	// apply option
+	for _, opt := range opts {
+		opt(svc)
+	}
+
 	// start service
-	svc.Start()
+	go svc.Start()
 
 	return svc, nil
 }

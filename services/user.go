@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,7 @@ func InitUserService() error {
 	return nil
 }
 
-func MakeToken(user *models.User) (tokenStr string, err error) {
+func MakeToken(user *models2.User) (tokenStr string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       user.Id,
 		"username": user.Username,
@@ -57,7 +58,7 @@ func SecretFunc() jwt.Keyfunc {
 	}
 }
 
-func CheckToken(tokenStr string) (user *models.User, err error) {
+func CheckToken(tokenStr string) (user *models2.User, err error) {
 	token, err := jwt.Parse(tokenStr, SecretFunc())
 	if err != nil {
 		return
@@ -95,12 +96,12 @@ func CheckToken(tokenStr string) (user *models.User, err error) {
 }
 
 func CreateNewUser(username string, password string, role string, email string) error {
-	user := models.User{
+	user := models2.User{
 		Username: strings.ToLower(username),
 		Password: utils.EncryptPassword(password),
 		Role:     role,
 		Email:    email,
-		Setting: models.UserSetting{
+		Setting: models2.UserSetting{
 			NotificationTrigger: constants.NotificationTriggerNever,
 			EnabledNotifications: []string{
 				constants.NotificationTypeMail,
@@ -115,19 +116,19 @@ func CreateNewUser(username string, password string, role string, email string) 
 	return nil
 }
 
-func GetCurrentUser(c *gin.Context) *models.User {
+func GetCurrentUser(c *gin.Context) *models2.User {
 	data, _ := c.Get(constants.ContextUser)
 	if data == nil {
-		return &models.User{}
+		return &models2.User{}
 	}
-	return data.(*models.User)
+	return data.(*models2.User)
 }
 
 func GetCurrentUserId(c *gin.Context) primitive.ObjectID {
 	return GetCurrentUser(c).Id
 }
 
-func GetAdminUser() (user *models.User, err error) {
+func GetAdminUser() (user *models2.User, err error) {
 	u, err := models.MustGetRootService().GetUser(bson.M{"username": "admin"}, nil)
 	if err != nil {
 		return user, err

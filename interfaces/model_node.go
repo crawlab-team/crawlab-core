@@ -3,7 +3,9 @@ package interfaces
 import "time"
 
 type Node interface {
-	BaseModelWithTagsInterface
+	ModelWithTags
 	GetKey() (key string)
-	UpdateStatus(active bool, activeTs time.Time, status string) (err error)
+	SetActive(active bool)
+	SetActiveTs(activeTs time.Time)
+	SetStatus(status string)
 }

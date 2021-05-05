@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ import (
 )
 
 func cleanupProjectController() {
-	_ = models.MustGetService(interfaces.ModelIdProject).DeleteList(nil)
+	_ = models.svc.NewBaseService(interfaces.ModelIdProject).DeleteList(nil)
 }
 
 func TestProjectController_Get(t *testing.T) {
@@ -32,7 +33,7 @@ func TestProjectController_Get(t *testing.T) {
 	e := httpexpect.New(t, s.URL)
 	defer s.Close()
 
-	p := models.Project{
+	p := models2.Project{
 		Name: "test project",
 	}
 	res := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
@@ -58,7 +59,7 @@ func TestProjectController_Post(t *testing.T) {
 	e := httpexpect.New(t, s.URL)
 	defer s.Close()
 
-	p := models.Project{
+	p := models2.Project{
 		Name:        "old name",
 		Description: "old description",
 	}
@@ -100,7 +101,7 @@ func TestProjectController_Put(t *testing.T) {
 	e := httpexpect.New(t, s.URL)
 	defer s.Close()
 
-	p := models.Project{
+	p := models2.Project{
 		Name:        "test project",
 		Description: "this is a test project",
 	}
@@ -122,7 +123,7 @@ func TestProjectController_Delete(t *testing.T) {
 	e := httpexpect.New(t, s.URL)
 	defer s.Close()
 
-	p := models.Project{
+	p := models2.Project{
 		Name:        "test project",
 		Description: "this is a test project",
 	}
@@ -172,7 +173,7 @@ func TestProjectController_GetList(t *testing.T) {
 	bn := 10 // batch
 
 	for i := 0; i < n; i++ {
-		p := models.Project{
+		p := models2.Project{
 			Name: fmt.Sprintf("test name %d", i+1),
 		}
 		obj := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
@@ -227,9 +228,9 @@ func TestProjectController_PutList(t *testing.T) {
 	defer s.Close()
 
 	n := 10
-	var docs []models.Project
+	var docs []models2.Project
 	for i := 0; i < n; i++ {
-		docs = append(docs, models.Project{
+		docs = append(docs, models2.Project{
 			Name:        fmt.Sprintf("project %d", i+1),
 			Description: "this is a project",
 		})
@@ -256,9 +257,9 @@ func TestProjectController_DeleteList(t *testing.T) {
 	defer s.Close()
 
 	n := 10
-	var docs []models.Project
+	var docs []models2.Project
 	for i := 0; i < n; i++ {
-		docs = append(docs, models.Project{
+		docs = append(docs, models2.Project{
 			Name:        fmt.Sprintf("project %d", i+1),
 			Description: "this is a project",
 		})
@@ -309,9 +310,9 @@ func TestProjectController_PostList(t *testing.T) {
 	now := time.Now()
 
 	n := 10
-	var docs []models.Project
+	var docs []models2.Project
 	for i := 0; i < n; i++ {
-		docs = append(docs, models.Project{
+		docs = append(docs, models2.Project{
 			Name:        "old name",
 			Description: "old description",
 		})
@@ -335,7 +336,7 @@ func TestProjectController_PostList(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// update
-	p := models.Project{
+	p := models2.Project{
 		Name:        "new name",
 		Description: "new description",
 	}

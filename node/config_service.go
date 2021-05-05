@@ -13,19 +13,19 @@ import (
 
 type ConfigService struct {
 	cfg  *Config
-	opts *ServiceOptions
+	path string
 }
 
 func (svc *ConfigService) Init() (err error) {
 	// check config directory path
-	configDirPath := path.Dir(svc.opts.ConfigPath)
+	configDirPath := path.Dir(svc.path)
 	if !utils.Exists(configDirPath) {
 		if err := os.MkdirAll(configDirPath, os.FileMode(0766)); err != nil {
 			return trace.TraceError(err)
 		}
 	}
 
-	if !utils.Exists(svc.opts.ConfigPath) {
+	if !utils.Exists(svc.path) {
 		// not exists, set to default config
 		// and create a config file for persistence
 		svc.cfg = NewConfig(nil)
@@ -33,12 +33,12 @@ func (svc *ConfigService) Init() (err error) {
 		if err != nil {
 			return err
 		}
-		if err := ioutil.WriteFile(svc.opts.ConfigPath, data, os.FileMode(0766)); err != nil {
+		if err := ioutil.WriteFile(svc.path, data, os.FileMode(0766)); err != nil {
 			return err
 		}
 	} else {
 		// exists, read and set to config
-		data, err := ioutil.ReadFile(svc.opts.ConfigPath)
+		data, err := ioutil.ReadFile(svc.path)
 		if err != nil {
 			return trace.TraceError(err)
 		}
@@ -69,15 +69,14 @@ func (svc *ConfigService) IsMaster() (res bool) {
 	return svc.cfg.IsMaster
 }
 
-func NewConfigService(opts *ServiceOptions) (svc *ConfigService, err error) {
-	if opts == nil {
-		opts = &ServiceOptions{}
-	}
-	opts = opts.FillEmpty().(*ServiceOptions)
+func (svc *ConfigService) SetConfigPath(path string) {
+	svc.path = path
+}
 
+func NewConfigService(path string) (svc *ConfigService, err error) {
 	svc = &ConfigService{
 		cfg:  &Config{},
-		opts: opts,
+		path: path,
 	}
 
 	if err := svc.Init(); err != nil {

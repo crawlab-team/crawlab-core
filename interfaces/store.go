@@ -1,13 +1,12 @@
 package interfaces
 
-import "sync"
+import (
+	"github.com/goava/di"
+	"sync"
+)
 
 type Store interface {
-	GetMap() sync.Map
-	Set(interface{}, interface{}) error
-	MustSet(interface{}, interface{})
-	Get(interface{}) (interface{}, error)
-	MustGet(interface{}) interface{}
-	GetDefault() (interface{}, error)
-	MustGetDefault() interface{}
+	GetMap() *sync.Map
+	Set(key string, c *di.Container) (err error)
+	Get(key string) (c *di.Container, err error)
 }

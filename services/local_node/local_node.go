@@ -1,14 +1,14 @@
 package local_node
 
 import (
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/spf13/viper"
 )
 
 func GetLocalNode() *LocalNode {
 	return localNode
 }
-func CurrentNode() *models.Node {
+func CurrentNode() *models2.Node {
 	return GetLocalNode().Current()
 }
 

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/crawlab-db/redis"
 	cfs "github.com/crawlab-team/crawlab-fs"
@@ -17,24 +19,24 @@ import (
 )
 
 type TaskTestObject struct {
-	nodes    []*models.Node
-	spiders  []*models.Spider
-	tasks    []*models.Task
+	nodes    []*models2.Node
+	spiders  []*models2.Spider
+	tasks    []*models2.Task
 	fs       *fileSystemService
 	fsPath   string
 	repoPath string
 }
 
-func (to *TaskTestObject) GetFsPath(s models.Spider) (fsPath string) {
+func (to *TaskTestObject) GetFsPath(s models2.Spider) (fsPath string) {
 	return fmt.Sprintf("%s/%s", "/spiders", s.Id.Hex())
 }
 
-func (to *TaskTestObject) GetRepoPath(s models.Spider) (fsPath string) {
+func (to *TaskTestObject) GetRepoPath(s models2.Spider) (fsPath string) {
 	return fmt.Sprintf("./tmp/repo/%s", s.Id.Hex())
 }
 
-func (to *TaskTestObject) CreateNode(name string, isMaster bool, key string) (n *models.Node, err error) {
-	n = &models.Node{
+func (to *TaskTestObject) CreateNode(name string, isMaster bool, key string) (n *models2.Node, err error) {
+	n = &models2.Node{
 		Id:       primitive.NewObjectID(),
 		Name:     name,
 		IsMaster: isMaster,
@@ -47,13 +49,13 @@ func (to *TaskTestObject) CreateNode(name string, isMaster bool, key string) (n 
 	return n, nil
 }
 
-func (to *TaskTestObject) CreateSpider(name string) (s *models.Spider, err error) {
-	s = &models.Spider{
+func (to *TaskTestObject) CreateSpider(name string) (s *models2.Spider, err error) {
+	s = &models2.Spider{
 		Id:   primitive.NewObjectID(),
 		Name: name,
 		Type: constants.Customized,
 		Cmd:  "python main.py",
-		Envs: []models.Env{
+		Envs: []models2.Env{
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
@@ -65,8 +67,8 @@ func (to *TaskTestObject) CreateSpider(name string) (s *models.Spider, err error
 	return s, nil
 }
 
-func (to *TaskTestObject) CreateTask(s *models.Spider) (t *models.Task, err error) {
-	t = &models.Task{
+func (to *TaskTestObject) CreateTask(s *models2.Spider) (t *models2.Task, err error) {
+	t = &models2.Task{
 		Id:       primitive.NewObjectID(),
 		SpiderId: s.Id,
 		Type:     constants.TaskTypeSpider,
@@ -188,18 +190,21 @@ for i in range(3):
 }
 
 func cleanupTask(to *TaskTestObject) {
+	var modelSvc service.ModelService
+	utils.MustResolveModule("", modelSvc)
+
 	if m, err := cfs.NewSeaweedFSManager(); err == nil {
 		_ = m.DeleteDir("/logs")
 		_ = m.DeleteDir("/spiders")
 	}
 	for _, s := range to.spiders {
-		_ = models.MustGetService(interfaces.ModelIdSpider).DeleteById(s.Id)
+		_ = modelSvc.NewBaseService(interfaces.ModelIdSpider).DeleteById(s.Id)
 	}
-	to.spiders = []*models.Spider{}
+	to.spiders = []*models2.Spider{}
 	for _, t := range to.tasks {
-		_ = models.MustGetService(interfaces.ModelIdTask).DeleteById(t.Id)
+		_ = modelSvc.NewBaseService(interfaces.ModelIdTask).DeleteById(t.Id)
 	}
-	to.tasks = []*models.Task{}
+	to.tasks = []*models2.Task{}
 	_ = os.RemoveAll("./tmp/repo")
 	_ = redis.RedisClient.Del("tasks:public")
 	CloseTaskService()
@@ -223,6 +228,9 @@ func TestNewTaskService(t *testing.T) {
 }
 
 func TestTaskService_Init(t *testing.T) {
+	var modelSvc service.ModelService
+	utils.MustResolveModule("", modelSvc)
+
 	to, err := setupTask()
 	require.Nil(t, err)
 
@@ -242,15 +250,15 @@ func TestTaskService_Init(t *testing.T) {
 	require.Nil(t, err)
 	err = s.Assign(task)
 	require.Nil(t, err)
-	task, err = models.MustGetRootService().GetTaskById(task.Id)
+	task, err = modelSvc.GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusPending, task.Status)
 	time.Sleep(2 * time.Second)
-	task, err = models.MustGetRootService().GetTaskById(task.Id)
+	task, err = modelSvc.GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	task, err = models.MustGetRootService().GetTaskById(task.Id)
+	task, err = modelSvc.GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 
@@ -317,6 +325,9 @@ func TestTaskService_Fetch(t *testing.T) {
 }
 
 func TestTaskService_Run(t *testing.T) {
+	var modelSvc service.ModelService
+	utils.MustResolveModule("", modelSvc)
+
 	to, err := setupTask()
 	require.Nil(t, err)
 
@@ -340,11 +351,11 @@ func TestTaskService_Run(t *testing.T) {
 	require.Equal(t, constants.ErrAlreadyExists, err)
 	require.Equal(t, 1, s.runnersCount)
 	time.Sleep(1 * time.Second)
-	task, err = models.MustGetRootService().GetTaskById(task.Id)
+	task, err = modelSvc.GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusRunning, task.Status)
 	time.Sleep(3 * time.Second)
-	task, err = models.MustGetRootService().GetTaskById(task.Id)
+	task, err = modelSvc.GetTaskById(task.Id)
 	require.Nil(t, err)
 	require.Equal(t, constants.StatusFinished, task.Status)
 

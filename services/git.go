@@ -3,12 +3,12 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-vcs"
 	"github.com/spf13/viper"
 )
 
-func NewGitService(spider models.Spider) (s *GitService, err error) {
+func NewGitService(spider models2.Spider) (s *GitService, err error) {
 	// base paths
 	remoteBasePath := viper.GetString("git.basePath.remote")
 	localBasePath := viper.GetString("git.basePath.local")

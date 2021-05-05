@@ -8,7 +8,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/services/local_node"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/redis"
@@ -83,7 +83,7 @@ func GetService(msg entity.RpcMessage) Service {
 }
 
 // 处理RPC消息
-func handleMsg(msgStr string, node *models.Node) {
+func handleMsg(msgStr string, node *models2.Node) {
 	// 反序列化消息
 	var msg entity.RpcMessage
 	if err := json.Unmarshal([]byte(msgStr), &msg); err != nil {

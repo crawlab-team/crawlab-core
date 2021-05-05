@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -85,9 +86,9 @@ func (svc *spiderService) GetFs(id primitive.ObjectID) (fsSvc *spiderFsService, 
 	return fsSvc, nil
 }
 
-func (svc *spiderService) assignTasks(s *models.Spider, opts *SpiderRunOptions) (err error) {
+func (svc *spiderService) assignTasks(s *models2.Spider, opts *SpiderRunOptions) (err error) {
 	// main task
-	mainTask := models.Task{
+	mainTask := models2.Task{
 		SpiderId:   s.Id,
 		Mode:       opts.Mode,
 		Cmd:        s.Cmd,
@@ -106,7 +107,7 @@ func (svc *spiderService) assignTasks(s *models.Spider, opts *SpiderRunOptions) 
 			return err
 		}
 		for _, nodeId := range nodeIds {
-			t := models.Task{
+			t := models2.Task{
 				SpiderId: s.Id,
 				ParentId: mainTask.Id,
 				Mode:     opts.Mode,

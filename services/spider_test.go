@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,7 @@ func TestSpiderService_Run(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	s := models.Spider{
+	s := models2.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}

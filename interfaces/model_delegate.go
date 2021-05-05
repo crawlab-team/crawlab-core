@@ -7,6 +7,7 @@ type ModelDelegate interface {
 	Save() error
 	Delete() error
 	GetArtifact() (ModelArtifact, error)
+	GetModel() Model
 }
 
 type ModelDelegateMessage interface {

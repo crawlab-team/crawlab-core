@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,7 +19,7 @@ import (
 
 type NodeServiceInterface interface {
 	Init() (err error)
-	GetCurrentNode() (n *models.Node, err error)
+	GetCurrentNode() (n *models2.Node, err error)
 	GetAllNodeIds() (ids []primitive.ObjectID, err error)
 }
 
@@ -107,7 +108,7 @@ func (svc *nodeService) Init() (err error) {
 	return nil
 }
 
-func (svc *nodeService) GetCurrentNode() (n *models.Node, err error) {
+func (svc *nodeService) GetCurrentNode() (n *models2.Node, err error) {
 	node, err := models.MustGetRootService().GetNode(bson.M{"key": svc.data.Key}, nil)
 	if err != nil {
 		return nil, err

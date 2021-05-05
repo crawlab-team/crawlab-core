@@ -4,6 +4,7 @@ import (
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"go.uber.org/atomic"
 	"sync"
 	"time"
@@ -12,14 +13,14 @@ import (
 var locker atomic.Int32
 
 type mongo struct {
-	node *models.Node
+	node *models2.Node
 	sync.RWMutex
 }
 
 func (n *mongo) load(retry bool) (err error) {
 	n.Lock()
 	defer n.Unlock()
-	var node models.Node
+	var node models2.Node
 	if retry {
 		b := backoff.NewConstantBackOff(1 * time.Second)
 		err = backoff.Retry(func() error {
@@ -55,7 +56,7 @@ func (n *mongo) watch() {
 	}
 }
 
-func (n *mongo) Current() *models.Node {
+func (n *mongo) Current() *models2.Node {
 	n.RLock()
 	defer n.RUnlock()
 	return n.node

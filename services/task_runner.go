@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/services/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
 	clog "github.com/crawlab-team/crawlab-log"
@@ -70,10 +71,10 @@ type TaskRunner struct {
 	fs   *fileSystemService        // file system service fileSystemService
 	l    clog.Driver               // log service log.Driver
 	tid  primitive.ObjectID        // id of t (model.Task)
-	t    *models.Task              // task model.Task
-	s    *models.Spider            // spider model.Spider
+	t    *models2.Task             // task model.Task
+	s    *models2.Spider           // spider model.Spider
 	ch   chan constants.TaskSignal // channel to communicate between taskService and TaskRunner
-	envs []models.Env              // environment variables
+	envs []models2.Env             // environment variables
 	opts *TaskRunnerOptions        // options
 	cwd  string                    // working directory
 

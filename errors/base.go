@@ -12,7 +12,7 @@ const (
 	ErrorPrefixHttp       = "http"
 	ErrorPrefixGrpc       = "grpc"
 	ErrorPrefixNode       = "node"
-	ErrorPrefixStore      = "store"
+	ErrorPrefixInject     = "inject"
 )
 
 type ErrorPrefix string

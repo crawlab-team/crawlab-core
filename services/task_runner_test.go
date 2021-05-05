@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	cfs "github.com/crawlab-team/crawlab-fs"
 	clog "github.com/crawlab-team/crawlab-log"
@@ -19,9 +21,9 @@ import (
 
 type TaskRunnerTestObject struct {
 	spiderId primitive.ObjectID
-	spider   models.Spider
+	spider   models2.Spider
 	taskId   primitive.ObjectID
-	task     models.Task
+	task     models2.Task
 	fs       *fileSystemService
 	fsPath   string
 	repoPath string
@@ -65,12 +67,12 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 	}
 
 	// spider
-	to.spider = models.Spider{
+	to.spider = models2.Spider{
 		Id:   to.spiderId,
 		Name: "test_spider",
 		Type: constants.Customized,
 		Cmd:  "python main.py",
-		Envs: []models.Env{
+		Envs: []models2.Env{
 			{Name: "Env1", Value: "Value1"},
 			{Name: "Env2", Value: "Value2"},
 		},
@@ -80,7 +82,7 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 	}
 
 	// task
-	to.task = models.Task{
+	to.task = models2.Task{
 		Id:       to.taskId,
 		SpiderId: to.spiderId,
 		Type:     constants.TaskTypeSpider,
@@ -104,12 +106,15 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 }
 
 func cleanupTaskRunner(to *TaskRunnerTestObject) {
+	var modelSvc service.ModelService
+	utils.MustResolveModule("", modelSvc)
+
 	if m, err := cfs.NewSeaweedFSManager(); err == nil {
 		_ = m.DeleteDir("/logs")
 		_ = m.DeleteDir("/spiders")
 	}
-	_ = models.MustGetService(interfaces.ModelIdSpider).DeleteById(to.spiderId)
-	_ = models.MustGetService(interfaces.ModelIdTask).DeleteById(to.spiderId)
+	_ = modelSvc.NewBaseService(interfaces.ModelIdSpider).DeleteById(to.spiderId)
+	_ = modelSvc.NewBaseService(interfaces.ModelIdTask).DeleteById(to.spiderId)
 	_ = os.RemoveAll("./tmp/repo")
 }
 

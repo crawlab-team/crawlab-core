@@ -1,16 +1,11 @@
 package config
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestInitConfig(t *testing.T) {
-	Convey("Test InitConfig func", t, func() {
-		x := InitConfig("../conf/config.yml")
-
-		Convey("The value should be nil", func() {
-			So(x, ShouldEqual, nil)
-		})
-	})
+	err := InitConfig()
+	require.Nil(t, err)
 }

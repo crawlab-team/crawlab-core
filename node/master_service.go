@@ -7,12 +7,12 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
-	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/store"
+	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.uber.org/dig"
 	"sync"
 	"time"
 )
@@ -20,8 +20,16 @@ import (
 type MasterService struct {
 	*ConfigService
 
+	env      string
+	modelSvc service.ModelService
+
 	chMsgMap  sync.Map
 	streamMap sync.Map
+}
+
+func (svc *MasterService) Inject() (err error) {
+	utils.MustResolveModule(svc.env, svc.modelSvc)
+	return nil
 }
 
 func (svc *MasterService) Start() {
@@ -63,40 +71,23 @@ func (svc *MasterService) GetOutboundStreamMessageChannel(key string) (chMsg cha
 }
 
 func (svc *MasterService) monitor() (err error) {
-	// model service
-	var modelSvc interfaces.ModelService
-	if err := backoff.RetryNotify(func() error {
-		var err error
-		modelSvc, err = store.ModelServiceStore.GetModelService(interfaces.ModelIdNode)
-		if err != nil {
-			return err
-		}
-		return nil
-	}, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify); err != nil {
-		return trace.TraceError(err)
-	}
-
 	// all nodes
-	res, err := modelSvc.GetList(nil, nil)
+	nodes, err := svc.modelSvc.GetNodeList(nil, nil)
 	if err != nil {
 		return trace.TraceError(err)
 	}
 
-	ok := res.All(func(index int, value interface{}) bool {
-		// node
-		n, ok := value.(interfaces.Node)
-		if !ok {
-			_ = trace.TraceError(errors.ErrorModelInvalidType)
-			return false
-		}
+	// error flag
+	isErr := false
 
-		// skip unavailable nodes
-
+	// iterate all nodes
+	for _, n := range nodes {
 		// message stream
 		stream, err := svc.GetStream(n.GetKey())
 		if err != nil {
 			_ = trace.TraceError(err)
-			return false
+			isErr = true
+			continue
 		}
 
 		// send stream message
@@ -105,42 +96,46 @@ func (svc *MasterService) monitor() (err error) {
 			NodeKey: n.GetKey(),
 		}); err != nil {
 			_ = trace.TraceError(err)
-			return false
+			isErr = true
+			continue
 		}
 
 		// get message from inbound stream message channel
 		inChMsg, err := svc.GetInboundStreamMessageChannel(n.GetKey())
 		if err != nil {
 			_ = trace.TraceError(err)
-			return false
+			isErr = true
+			continue
 		}
 		msg := <-inChMsg
 
 		// validate
 		if msg.Code != grpc.StreamMessageCode_PING {
 			_ = trace.TraceError(errors.ErrorNodeInvalidCode)
-			return false
+			isErr = true
+			continue
 		}
 		var nodeInfo entity.NodeInfo
 		if err := bson.Unmarshal(msg.Data, &nodeInfo); err != nil {
 			_ = trace.TraceError(err)
-			return false
+			isErr = true
+			continue
 		}
 		if nodeInfo.Key != n.GetKey() {
 			_ = trace.TraceError(errors.ErrorNodeInvalidNodeKey)
-			return false
+			isErr = true
+			continue
 		}
 
 		// update status
 		if err := n.UpdateStatus(true, time.Now(), constants.NodeStatusOnline); err != nil {
 			_ = trace.TraceError(err)
-			return false
+			isErr = true
+			continue
 		}
+	}
 
-		return true
-	})
-
-	if !ok {
+	if !isErr {
 		return trace.TraceError(errors.ErrorNodeMonitorError)
 	}
 
@@ -180,10 +175,20 @@ func (svc *MasterService) DeleteStream(key string) {
 	svc.streamMap.Delete(key)
 }
 
-func NewMasterService(cfgSvs *ConfigService) (svc *MasterService) {
-	return &MasterService{
+func NewMasterService(cfgSvs *ConfigService) (svc *MasterService, err error) {
+	svc = &MasterService{
 		ConfigService: cfgSvs,
 		chMsgMap:      sync.Map{},
 		streamMap:     sync.Map{},
 	}
+	c := dig.New()
+	if err := c.Provide(service.NewService); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(modelSvc service.ModelService) {
+		svc.modelSvc = modelSvc
+	}); err != nil {
+		return nil, err
+	}
+	return svc, nil
 }

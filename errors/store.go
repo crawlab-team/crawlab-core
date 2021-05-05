@@ -1,9 +1,9 @@
 package errors
 
-func NewStoreError(msg string) (err error) {
-	return NewError(ErrorPrefixStore, msg)
+func NewInjectError(msg string) (err error) {
+	return NewError(ErrorPrefixInject, msg)
 }
 
-var ErrorStoreEmptyValue = NewStoreError("empty value")
-var ErrorStoreNotExists = NewStoreError("not exists")
-var ErrorStoreInvalidType = NewStoreError("invalid type")
+var ErrorInjectEmptyValue = NewInjectError("empty value")
+var ErrorInjectNotExists = NewInjectError("not exists")
+var ErrorInjectInvalidType = NewInjectError("invalid type")

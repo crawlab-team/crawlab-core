@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,8 +19,8 @@ import (
 type TaskServiceInterface interface {
 	Init() (err error)
 	Close()
-	Assign(t *models.Task) (err error)
-	Fetch() (t *models.Task, err error)
+	Assign(t *models2.Task) (err error)
+	Fetch() (t *models2.Task, err error)
 	Run(taskId primitive.ObjectID) (err error)
 	Cancel(taskId primitive.ObjectID) (err error)
 	FindLogs(id primitive.ObjectID, pattern string, skip, size int) (lines []string, err error)
@@ -129,7 +130,7 @@ func (s *taskService) Close() {
 	s.active = false
 }
 
-func (s *taskService) Assign(t *models.Task) (err error) {
+func (s *taskService) Assign(t *models2.Task) (err error) {
 	// validate options
 	if !s.opts.IsMaster {
 		return constants.ErrForbidden
@@ -167,7 +168,7 @@ func (s *taskService) Assign(t *models.Task) (err error) {
 	return nil
 }
 
-func (s *taskService) Fetch() (t *models.Task, err error) {
+func (s *taskService) Fetch() (t *models2.Task, err error) {
 	// message
 	var msg string
 
@@ -287,7 +288,7 @@ func (s *taskService) getTaskRunner(taskId primitive.ObjectID) (r *TaskRunner, e
 	return r, nil
 }
 
-func (s *taskService) saveTask(t *models.Task, status string) (err error) {
+func (s *taskService) saveTask(t *models2.Task, status string) (err error) {
 	// normalize status
 	if status == "" {
 		status = constants.StatusPending

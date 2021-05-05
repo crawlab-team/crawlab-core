@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/crawlab-team/crawlab-core/store"
+	"github.com/crawlab-team/crawlab-core/inject"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -15,7 +16,15 @@ import (
 type WorkerService struct {
 	*ConfigService
 
+	env     string
+	grpcSvc interfaces.GrpcService
+
 	stream grpc.NodeService_StreamClient
+}
+
+func (svc *WorkerService) Inject() (err error) {
+	utils.MustResolveModule(svc.env, svc.grpcSvc)
+	return nil
 }
 
 func (svc *WorkerService) Start() {
@@ -37,7 +46,7 @@ func (svc *WorkerService) Stop() {
 
 func (svc *WorkerService) Subscribe() {
 	// client
-	c := store.GrpcService.GetClient()
+	c := inject.GrpcService.GetClient()
 
 	// register
 	if err := backoff.Retry(func() error {
@@ -124,7 +133,7 @@ func (svc *WorkerService) Recv() {
 }
 
 func (svc *WorkerService) ReportStatus() {
-	c := store.GrpcService.GetClient()
+	c := inject.GrpcService.GetClient()
 	for {
 		// TODO: parameterize
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)

@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	spider := models.Spider{
+	spider := models2.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}
@@ -49,7 +50,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// test method
-	sch := models.Schedule{
+	sch := models2.Schedule{
 		Name:     "test_schedule",
 		SpiderId: spider.Id,
 		Cron:     "* * * * *",
@@ -59,7 +60,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// wait until it triggers
-	var task *models.Task
+	var task *models2.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
 		task, err = models.MustGetRootService().GetTask(bson.M{"schedule_id": sch.Id}, nil)
@@ -83,7 +84,7 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	spider := models.Spider{
+	spider := models2.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}
@@ -99,7 +100,7 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// add schedule
-	sch := models.Schedule{
+	sch := models2.Schedule{
 		Name:     "test_schedule",
 		SpiderId: spider.Id,
 		Cron:     "* * * * *",
@@ -114,7 +115,7 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// wait until it triggers
-	var task *models.Task
+	var task *models2.Task
 	timeout := 60
 	for i := 0; i < timeout; i++ {
 		task, err = models.MustGetRootService().GetTask(bson.M{"schedule_id": sch.Id}, nil)
@@ -138,7 +139,7 @@ func TestScheduleService_DeleteSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// spider
-	spider := models.Spider{
+	spider := models2.Spider{
 		Name: "test_spider",
 		Cmd:  "python main.py",
 	}
@@ -154,7 +155,7 @@ func TestScheduleService_DeleteSchedule(t *testing.T) {
 	require.Nil(t, err)
 
 	// add schedule
-	sch := models.Schedule{
+	sch := models2.Schedule{
 		Name:     "test_schedule",
 		SpiderId: spider.Id,
 		Cron:     "* * * * *",

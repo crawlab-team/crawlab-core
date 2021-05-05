@@ -13,7 +13,7 @@ import (
 	"reflect"
 )
 
-func NewListControllerDelegate(id ControllerId, svc interfaces.ModelService) (d *ListControllerDelegate) {
+func NewListControllerDelegate(id ControllerId, svc interfaces.ModelBaseService) (d *ListControllerDelegate) {
 	if svc == nil {
 		panic(errors.ErrorControllerNoModelService)
 	}
@@ -27,7 +27,7 @@ func NewListControllerDelegate(id ControllerId, svc interfaces.ModelService) (d 
 
 type ListControllerDelegate struct {
 	id  ControllerId
-	svc interfaces.ModelService
+	svc interfaces.ModelBaseService
 	bc  BasicController
 }
 
@@ -149,7 +149,7 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 				return
 			}
 			ptr := item.Addr()
-			doc, ok := ptr.Interface().(interfaces.BaseModelInterface)
+			doc, ok := ptr.Interface().(interfaces.Model)
 			if !ok {
 				HandleErrorInternalServerError(c, errors.ErrorModelInvalidType)
 				return

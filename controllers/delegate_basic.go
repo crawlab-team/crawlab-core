@@ -3,12 +3,13 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewBasicControllerDelegate(id ControllerId, svc interfaces.ModelService) (d *BasicControllerDelegate) {
+func NewBasicControllerDelegate(id ControllerId, svc interfaces.ModelBaseService) (d *BasicControllerDelegate) {
 	return &BasicControllerDelegate{
 		id:  id,
 		svc: svc,
@@ -17,7 +18,7 @@ func NewBasicControllerDelegate(id ControllerId, svc interfaces.ModelService) (d
 
 type BasicControllerDelegate struct {
 	id  ControllerId
-	svc interfaces.ModelService
+	svc interfaces.ModelBaseService
 }
 
 func (d *BasicControllerDelegate) Get(c *gin.Context) {
@@ -58,7 +59,7 @@ func (d *BasicControllerDelegate) Post(c *gin.Context) {
 		HandleErrorNotFound(c, err)
 		return
 	}
-	if err := doc.Save(); err != nil {
+	if err := delegate2.NewModelDelegate(doc).Save(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -71,7 +72,7 @@ func (d *BasicControllerDelegate) Put(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	if err := doc.Add(); err != nil {
+	if err := delegate2.NewModelDelegate(doc).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -85,7 +86,12 @@ func (d *BasicControllerDelegate) Delete(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	if err := d.svc.DeleteById(oid); err != nil {
+	doc, err := d.svc.GetById(oid)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	if err := delegate2.NewModelDelegate(doc).Delete(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

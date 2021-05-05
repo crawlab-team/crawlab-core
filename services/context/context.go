@@ -5,7 +5,7 @@ import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	errors2 "github.com/pkg/errors"
@@ -17,12 +17,12 @@ type Context struct {
 	*gin.Context
 }
 
-func (c *Context) User() *models.User {
+func (c *Context) User() *models2.User {
 	userIfe, exists := c.Get(constants.ContextUser)
 	if !exists {
 		return nil
 	}
-	user, ok := userIfe.(*models.User)
+	user, ok := userIfe.(*models2.User)
 	if !ok {
 		return nil
 	}

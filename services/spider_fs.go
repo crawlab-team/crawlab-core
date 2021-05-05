@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -48,7 +49,7 @@ func NewSpiderFsService(opts *SpiderFsServiceOptions) (svc *spiderFsService, err
 }
 
 type spiderFsService struct {
-	s    *models.Spider
+	s    *models2.Spider
 	opts *SpiderFsServiceOptions
 	*fileSystemService
 }

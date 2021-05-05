@@ -5,7 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models"
+	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,9 +19,9 @@ type JsonBinder struct {
 	id ControllerId
 }
 
-func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.BaseModelInterface, err error) {
+func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.Model, err error) {
 	// declare
-	m := models.NewModelMap()
+	m := models2.NewModelMap()
 
 	switch b.id {
 	case ControllerIdNode:
@@ -64,7 +64,7 @@ func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.BaseModelInterface, er
 
 func (b *JsonBinder) BindList(c *gin.Context) (res interface{}, err error) {
 	// declare
-	m := models.NewModelListMap()
+	m := models2.NewModelListMap()
 
 	// bind
 	switch b.id {
@@ -113,9 +113,9 @@ func (b *JsonBinder) BindBatchRequestPayload(c *gin.Context) (payload entity.Bat
 	return payload, nil
 }
 
-func (b *JsonBinder) BindBatchRequestPayloadWithStringData(c *gin.Context) (payload entity.BatchRequestPayloadWithStringData, res interfaces.BaseModelInterface, err error) {
+func (b *JsonBinder) BindBatchRequestPayloadWithStringData(c *gin.Context) (payload entity.BatchRequestPayloadWithStringData, res interfaces.Model, err error) {
 	// declare
-	m := models.NewModelMap()
+	m := models2.NewModelMap()
 
 	// bind
 	if err := c.ShouldBindJSON(&payload); err != nil {
