@@ -1,0 +1,3 @@
+package interfaces
+
+type GrpcClientModelDelegate ModelDelegate

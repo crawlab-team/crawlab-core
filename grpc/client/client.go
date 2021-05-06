@@ -2,18 +2,23 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/node"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
+	"go.uber.org/dig"
 	"google.golang.org/grpc"
 	"time"
 )
 
 type Client struct {
+	nodeSvc interfaces.NodeService
+
 	conn    *grpc.ClientConn
 	address interfaces.Address
 	timeout time.Duration
@@ -107,17 +112,52 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }
 
-func NewClient(opts ...Option) (c interfaces.GrpcClient, err error) {
-	c = &Client{
+func (c *Client) Context() (ctx context.Context, cancel context.CancelFunc) {
+	return context.WithTimeout(context.Background(), c.timeout)
+}
+
+func (c *Client) NewRequest(d interface{}) (req *grpc2.Request) {
+	var data []byte
+	switch d.(type) {
+	case []byte:
+		data = d.([]byte)
+	default:
+		var err error
+		data, err = json.Marshal(d)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &grpc2.Request{
+		NodeKey: c.nodeSvc.GetNodeKey(),
+		Data:    data,
+	}
+}
+
+func NewClient(opts ...Option) (client2 interfaces.GrpcClient, err error) {
+	// client
+	client := &Client{
 		address: entity.NewAddress(&entity.AddressOptions{
 			Host: "localhost",
 			Port: "9666",
 		}),
 	}
 
-	for _, opt := range opts {
-		opt(c)
+	// dependency injection
+	c := dig.New()
+	if err := c.Provide(node.NewService); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(nodeSvc interfaces.NodeService) {
+		client.nodeSvc = nodeSvc
+	}); err != nil {
+		return nil, err
 	}
 
-	return c, nil
+	// apply options
+	for _, opt := range opts {
+		opt(client)
+	}
+
+	return client, nil
 }

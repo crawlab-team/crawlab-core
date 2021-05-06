@@ -31,6 +31,9 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 	// model delegate
 	d := delegate.NewModelDelegate(doc)
 
+	// declare artifact
+	var a interfaces.ModelArtifact
+
 	// apply method
 	switch msg.GetMethod() {
 	case interfaces.ModelDelegateMethodAdd:
@@ -40,13 +43,14 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 	case interfaces.ModelDelegateMethodDelete:
 		err = d.Delete()
 	case interfaces.ModelDelegateMethodGetArtifact:
-		err = errors.ErrorGrpcNotAllowed
+		a, err = d.GetArtifact()
+	case interfaces.ModelDelegateMethodRefresh:
 	}
 	if err != nil {
 		return grpc2.HandleError(err)
 	}
 
-	return grpc2.HandleSuccess()
+	return grpc2.HandleSuccessWithData(a)
 }
 
 func NewModelDelegateServer(nodeSvc interfaces.NodeMasterService) (svr *ModelDelegateServer) {

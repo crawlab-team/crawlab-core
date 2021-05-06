@@ -39,6 +39,7 @@ func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 	case *models2.Variable:
 		return newModelDelegate(interfaces.ModelIdVariable, doc)
 	default:
+		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
 	}
 }
@@ -67,44 +68,56 @@ type ModelDelegate struct {
 	a       interfaces.ModelArtifact
 }
 
+// Add model
 func (d *ModelDelegate) Add() (err error) {
-	_, err = d.do(interfaces.ModelDelegateMethodAdd)
-	return trace.TraceError(err)
+	return d.do(interfaces.ModelDelegateMethodAdd)
 }
 
+// Save model
 func (d *ModelDelegate) Save() (err error) {
-	_, err = d.do(interfaces.ModelDelegateMethodSave)
-	return trace.TraceError(err)
+	return d.do(interfaces.ModelDelegateMethodSave)
 }
 
+// Delete model
 func (d *ModelDelegate) Delete() (err error) {
-	_, err = d.do(interfaces.ModelDelegateMethodDelete)
-	return trace.TraceError(err)
+	return d.do(interfaces.ModelDelegateMethodDelete)
 }
 
+// GetArtifact refresh artifact and return it
 func (d *ModelDelegate) GetArtifact() (res interfaces.ModelArtifact, err error) {
-	return d.do(interfaces.ModelDelegateMethodGetArtifact)
+	if err := d.do(interfaces.ModelDelegateMethodGetArtifact); err != nil {
+		return nil, err
+	}
+	return d.a, nil
 }
 
+// Refresh model
+func (d *ModelDelegate) Refresh() (err error) {
+	return d.refresh()
+}
+
+// GetModel return model
 func (d *ModelDelegate) GetModel() (res interfaces.Model) {
 	return d.doc
 }
 
-func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {
+// do action given the model delegate method
+func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (err error) {
 	switch method {
 	case interfaces.ModelDelegateMethodAdd:
-		return a, d.add()
+		return d.add()
 	case interfaces.ModelDelegateMethodSave:
-		return a, d.save()
+		return d.save()
 	case interfaces.ModelDelegateMethodDelete:
-		return a, d.delete()
-	case interfaces.ModelDelegateMethodGetArtifact:
-		return d.getArtifact()
+		return d.delete()
+	case interfaces.ModelDelegateMethodGetArtifact, interfaces.ModelDelegateMethodRefresh:
+		return d.refresh()
 	default:
-		return a, trace.TraceError(errors2.ErrorModelInvalidType)
+		return trace.TraceError(errors2.ErrorModelInvalidType)
 	}
 }
 
+// add model
 func (d *ModelDelegate) add() (err error) {
 	if d.doc == nil {
 		return trace.TraceError(errors.ErrMissingValue)
@@ -126,6 +139,7 @@ func (d *ModelDelegate) add() (err error) {
 	return d.refresh()
 }
 
+// save model
 func (d *ModelDelegate) save() (err error) {
 	if d.doc == nil || d.doc.GetId().IsZero() {
 		return trace.TraceError(errors.ErrMissingValue)
@@ -144,6 +158,7 @@ func (d *ModelDelegate) save() (err error) {
 	return d.refresh()
 }
 
+// delete model
 func (d *ModelDelegate) delete() (err error) {
 	if d.doc.GetId().IsZero() {
 		return trace.TraceError(errors2.ErrorModelMissingId)
@@ -158,18 +173,7 @@ func (d *ModelDelegate) delete() (err error) {
 	return d.deleteArtifact()
 }
 
-func (d *ModelDelegate) getArtifact() (res interfaces.ModelArtifact, err error) {
-	var a models2.Artifact
-	if d.doc.GetId().IsZero() {
-		return nil, trace.TraceError(errors2.ErrorModelMissingId)
-	}
-	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
-	if err := col.FindId(d.doc.GetId()).One(&a); err != nil {
-		return nil, err
-	}
-	return &a, nil
-}
-
+// refresh model and artifact
 func (d *ModelDelegate) refresh() (err error) {
 	if d.doc.GetId().IsZero() {
 		return trace.TraceError(errors2.ErrorModelMissingId)
@@ -179,9 +183,22 @@ func (d *ModelDelegate) refresh() (err error) {
 	if err := fr.One(d.doc); err != nil {
 		return trace.TraceError(err)
 	}
+	return d.refreshArtifact()
+}
+
+// refresh artifact
+func (d *ModelDelegate) refreshArtifact() (err error) {
+	if d.doc.GetId().IsZero() {
+		return trace.TraceError(errors2.ErrorModelMissingId)
+	}
+	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
+	if err := col.FindId(d.doc.GetId()).One(d.a); err != nil {
+		return err
+	}
 	return nil
 }
 
+// upsertArtifact
 func (d *ModelDelegate) upsertArtifact() (err error) {
 	// skip artifact
 	if d.id == interfaces.ModelIdArtifact {
@@ -235,6 +252,7 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 	return col.ReplaceId(d.a.GetId(), d.a)
 }
 
+// deleteArtifact
 func (d *ModelDelegate) deleteArtifact() (err error) {
 	if d.doc.GetId().IsZero() {
 		return trace.TraceError(errors.ErrMissingValue)
@@ -253,7 +271,7 @@ func (d *ModelDelegate) deleteArtifact() (err error) {
 	return col.ReplaceId(d.doc.GetId(), d.a)
 }
 
-// TODO: implement with alternative
+// updateTags
 func (d *ModelDelegate) updateTags() (err error) {
 	// validate id
 	if d.doc.GetId().IsZero() {

@@ -8,6 +8,7 @@ type ModelDelegate interface {
 	Delete() error
 	GetArtifact() (ModelArtifact, error)
 	GetModel() Model
+	Refresh() error
 }
 
 type ModelDelegateMessage interface {
@@ -22,4 +23,5 @@ const (
 	ModelDelegateMethodSave
 	ModelDelegateMethodDelete
 	ModelDelegateMethodGetArtifact
+	ModelDelegateMethodRefresh
 )
