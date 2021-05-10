@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/entity"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/go-trace"
-	"github.com/go-kit/kit/transport/grpc"
 	"go.uber.org/dig"
 )
 
@@ -52,7 +52,7 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...Model
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(grpc.NewClient); err != nil {
+	if err := c.Provide(client.NewClient); err != nil {
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
 	}
@@ -98,6 +98,10 @@ func (d *ModelDelegate) GetArtifact() (res interfaces.ModelArtifact, err error) 
 
 func (d *ModelDelegate) GetModel() (res interfaces.Model) {
 	return d.doc
+}
+
+func (d *ModelDelegate) Refresh() (err error) {
+	return d.refresh()
 }
 
 func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {

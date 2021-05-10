@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/crawlab-db/redis"
 )
@@ -22,7 +23,7 @@ func InitAll() (err error) {
 	if err := InitSpiderService(); err != nil {
 		return err
 	}
-	if err := InitTaskService(); err != nil {
+	if err := task.InitTaskService(); err != nil {
 		return err
 	}
 	if err := InitScheduleService(); err != nil {

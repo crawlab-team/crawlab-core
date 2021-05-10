@@ -15,4 +15,5 @@ type GrpcClient interface {
 	SetTimeout(time.Duration)
 	Context() (context.Context, context.CancelFunc)
 	NewRequest(interface{}) *grpc.Request
+	GetMessageChannel() chan *grpc.StreamMessage
 }

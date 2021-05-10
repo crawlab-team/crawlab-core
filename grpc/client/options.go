@@ -7,9 +7,9 @@ import (
 
 type Option func(client interfaces.GrpcClient)
 
-func WithAddress(address interfaces.Address) Option {
+func WithConfigPath(path string) Option {
 	return func(c interfaces.GrpcClient) {
-		c.SetAddress(address)
+		c.SetConfigPath(path)
 	}
 }
 

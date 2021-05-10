@@ -1,7 +1,7 @@
 package interfaces
 
 type NodeService interface {
-	Injectable
 	Module
-	NodeConfigService
+	WithConfigPath
+	GetConfigService() NodeConfigService
 }

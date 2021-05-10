@@ -53,4 +53,5 @@ type ModelService interface {
 	GetVariable(query bson.M, opts *mongo.FindOptions) (res *models2.Variable, err error)
 	GetVariableList(query bson.M, opts *mongo.FindOptions) (res []models2.Variable, err error)
 	GetVariableByKey(key string, opts *mongo.FindOptions) (res *models2.Variable, err error)
+	DropAll() (err error)
 }

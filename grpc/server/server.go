@@ -1,10 +1,13 @@
 package server
 
 import (
+	"fmt"
 	"github.com/apex/log"
+	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/node/config"
 	. "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
@@ -12,14 +15,24 @@ import (
 	"go.uber.org/dig"
 	"google.golang.org/grpc"
 	"net"
+	"sync"
 )
 
 type Server struct {
-	nodeSvc interfaces.NodeService
+	// dependencies
+	nodeCfgSvc       interfaces.NodeConfigService
+	nodeSvr          *NodeServer
+	modelDelegateSvr *ModelDelegateServer
 
-	svr     *grpc.Server
-	l       net.Listener
+	// settings variables
+	cfgPath string
 	address interfaces.Address
+
+	// internals
+	svr       *grpc.Server
+	l         net.Listener
+	chMsgMap  sync.Map
+	streamMap sync.Map
 }
 
 func (svr *Server) Init() (err error) {
@@ -64,21 +77,11 @@ func (svr *Server) Stop() (err error) {
 }
 
 func (svr *Server) Register() (err error) {
-	nodeSvc := svr.nodeSvc
-	if !nodeSvc.IsMaster() {
-		return
-	}
-
-	masterNodeSvc, ok := nodeSvc.(interfaces.NodeMasterService)
-	if !ok {
-		return errors.ErrorGrpcInvalidType
-	}
-
 	// model delegate
-	RegisterModelDelegateServiceServer(svr.svr, *NewModelDelegateServer(masterNodeSvc))
+	RegisterModelDelegateServiceServer(svr.svr, *svr.modelDelegateSvr)
 
 	// node
-	RegisterNodeServiceServer(svr.svr, *NewNodeServer(masterNodeSvc))
+	RegisterNodeServiceServer(svr.svr, *svr.nodeSvr)
 
 	// task
 	//grpc2.RegisterTaskServiceServer(svr.svr, TaskService)
@@ -90,15 +93,72 @@ func (svr *Server) SetAddress(address interfaces.Address) {
 	svr.address = address
 }
 
-func NewServer(nodeSvc interfaces.NodeService, opts ...Option) (svr *Server, err error) {
+func (svr *Server) GetConfigPath() (path string) {
+	return svr.cfgPath
+}
+
+func (svr *Server) SetConfigPath(path string) {
+	svr.cfgPath = path
+}
+
+func (svr *Server) GetInboundStreamMessageChannel(key string) (chMsg chan *StreamMessage, err error) {
+	return svr.getStreamMessageChannel("in", key)
+}
+
+func (svr *Server) GetOutboundStreamMessageChannel(key string) (chMsg chan *StreamMessage, err error) {
+	return svr.getStreamMessageChannel("out", key)
+}
+
+func (svr *Server) GetSubscribe(key string) (sub *entity.GrpcSubscribe, err error) {
+	res, ok := svr.streamMap.Load(key)
+	if !ok {
+		return nil, errors.ErrorNodeStreamNotFound
+	}
+	sub, ok = res.(*entity.GrpcSubscribe)
+	if !ok {
+		return nil, errors.ErrorNodeInvalidType
+	}
+	return sub, nil
+}
+
+func (svr *Server) SetSubscribe(key string, sub *entity.GrpcSubscribe) {
+	svr.streamMap.Store(key, sub)
+}
+
+func (svr *Server) DeleteSubscribe(key string) {
+	svr.streamMap.Delete(key)
+}
+
+func (svr *Server) getStreamMessageChannel(prefix string, key string) (chMsg chan *StreamMessage, err error) {
+	_key := fmt.Sprintf("%s:%s", prefix, key)
+	res, ok := svr.chMsgMap.Load(_key)
+	if !ok {
+		chMsg := make(chan *StreamMessage)
+		svr.chMsgMap.Store(_key, chMsg)
+		return chMsg, nil
+	}
+
+	chMsg, ok = res.(chan *StreamMessage)
+	if !ok {
+		return nil, errors.ErrorNodeInvalidType
+	}
+	return chMsg, nil
+}
+
+func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	// recovery options
 	var recoveryFunc grpc_recovery.RecoveryHandlerFunc
 	recoveryOpts := []grpc_recovery.Option{
 		grpc_recovery.WithRecoveryHandler(recoveryFunc),
 	}
 
-	// construct server
-	svr = &Server{
+	// server
+	svr := &Server{
+		cfgPath: config.DefaultConfigPath,
+		address: entity.NewAddress(&entity.AddressOptions{
+			Host: constants.DefaultGrpcServerHost,
+			Port: constants.DefaultGrpcServerPort,
+		}),
 		svr: grpc.NewServer(
 			grpc_middleware.WithUnaryServerChain(
 				grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
@@ -107,6 +167,8 @@ func NewServer(nodeSvc interfaces.NodeService, opts ...Option) (svr *Server, err
 				grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 			),
 		),
+		chMsgMap:  sync.Map{},
+		streamMap: sync.Map{},
 	}
 
 	// options
@@ -116,11 +178,19 @@ func NewServer(nodeSvc interfaces.NodeService, opts ...Option) (svr *Server, err
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(node.NewService); err != nil {
+	if err := c.Provide(config.ProvideConfigService(svr.GetConfigPath())); err != nil {
 		return nil, err
 	}
-	if err := c.Invoke(func(nodeSvc interfaces.NodeService) {
-		svr.nodeSvc = nodeSvc
+	if err := c.Provide(NewModelDelegateServer); err != nil {
+		return nil, err
+	}
+	if err := c.Provide(ProvideNodeServer(svr)); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, modelDelegateSvr *ModelDelegateServer, nodeSvr *NodeServer) {
+		svr.nodeCfgSvc = nodeCfgSvc
+		svr.modelDelegateSvr = modelDelegateSvr
+		svr.nodeSvr = nodeSvr
 	}); err != nil {
 		return nil, err
 	}
@@ -131,4 +201,10 @@ func NewServer(nodeSvc interfaces.NodeService, opts ...Option) (svr *Server, err
 	}
 
 	return svr, nil
+}
+
+func ProvideServer(path string) func() (res interfaces.GrpcServer, err error) {
+	return func() (res interfaces.GrpcServer, err error) {
+		return NewServer(WithConfigPath(path))
+	}
 }

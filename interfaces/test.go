@@ -1,9 +1,8 @@
 package interfaces
 
+import "testing"
+
 type Test interface {
-	Injectable
-	Setup()
+	Setup(*testing.T)
 	Cleanup()
 }
-
-type NodeServiceTest Test

@@ -4,6 +4,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/models"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/task"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -116,7 +117,7 @@ func (svc *spiderService) assignTasks(s *models2.Spider, opts *SpiderRunOptions)
 				NodeId:   nodeId,
 				Status:   constants.StatusPending,
 			}
-			if err := TaskService.Assign(&t); err != nil {
+			if err := task.TaskService.Assign(&t); err != nil {
 				return err
 			}
 		}
@@ -129,7 +130,7 @@ func (svc *spiderService) assignTasks(s *models2.Spider, opts *SpiderRunOptions)
 		if len(nodeIds) > 0 {
 			mainTask.NodeId = nodeIds[0]
 		}
-		if err := TaskService.Assign(&mainTask); err != nil {
+		if err := task.TaskService.Assign(&mainTask); err != nil {
 			return err
 		}
 	}

@@ -1,256 +1,161 @@
 package services
 
-//
 //import (
+//	"crypto/md5"
+//	"encoding/base64"
 //	"encoding/json"
-//	"github.com/apex/log"
 //	"github.com/crawlab-team/crawlab-core/constants"
-//	"github.com/crawlab-team/crawlab-core/models"
-//	"github.com/crawlab-team/crawlab-core/services/local_node"
-//	"github.com/crawlab-team/crawlab-core/utils"
-//	database "github.com/crawlab-team/crawlab-db"
-//	"github.com/globalsign/mgo/bson"
-//	"runtime/debug"
-//	"time"
+//	"github.com/crawlab-team/crawlab-core/entity"
+//	models2 "github.com/crawlab-team/crawlab-core/models/models"
+//	"github.com/crawlab-team/crawlab-core/models/service"
+//	"github.com/google/uuid"
+//	"github.com/spf13/viper"
+//	"go.mongodb.org/mongo-driver/bson"
+//	"go.mongodb.org/mongo-driver/bson/primitive"
+//	"io/ioutil"
+//	"os"
+//	"path"
 //)
 //
-//type Data struct {
-//	Key      string `json:"key"`
-//	Mac      string `json:"mac"`
-//	Ip       string `json:"ip"`
-//	Hostname string `json:"hostname"`
-//	Name     string `json:"name"`
-//	NameType string `json:"name_type"`
-//
-//	Master       bool      `json:"master"`
-//	UpdateTs     time.Time `json:"update_ts"`
-//	UpdateTsUnix int64     `json:"update_ts_unix"`
+//type NodeServiceInterface interface {
+//	Init() (err error)
+//	GetCurrentNode() (n *models2.Node, err error)
+//	GetAllNodeIds() (ids []primitive.ObjectID, err error)
 //}
 //
-//// 所有调用IsMasterNode的方法，都永远会在master节点执行，所以GetCurrentNode方法返回永远是master节点
-//// 该ID的节点是否为主节点
-//func IsMasterNode(id string) bool {
-//	curNode := local_node.CurrentNode()
-//	//curNode, _ := model.GetCurrentNode()
-//	node, _ := model.GetNode(bson.ObjectIdHex(id))
-//	return curNode.Id == node.Id
+//type NodeServiceOptions struct {
+//	Master       bool
+//	RegisterType string
+//	DataPath     string
+//	Ip           string
+//	Hostname     string
+//	MacAddress   string
 //}
 //
-//// 获取节点数据
-//func GetNodeData() (Data, error) {
-//	localNode := local_node.GetLocalNode()
-//	key := localNode.Identify
-//	if key == "" {
-//		return Data{}, nil
+//func NewNodeService(opts *NodeServiceOptions) (svc *nodeService, err error) {
+//	svc = &nodeService{
+//		opts: opts,
 //	}
-//
-//	value, err := database.RedisClient.HGet("nodes", key)
-//	data := Data{}
-//	if err := json.Unmarshal([]byte(value), &data); err != nil {
-//		return data, err
+//	if opts.DataPath == "" {
+//		homePath := os.Getenv("HOME")
+//		if homePath == "" {
+//			homePath = "/"
+//		}
+//		svc.dataPath = path.Join(homePath, ".crawlab")
 //	}
-//	return data, err
-//}
-//func GetRedisNode(key string) (*Data, error) {
-//	// 获取节点数据
-//	value, err := database.RedisClient.HGet("nodes", key)
-//	if err != nil {
-//		log.Errorf(err.Error())
+//	if err := svc.Init(); err != nil {
 //		return nil, err
 //	}
-//
-//	// 解析节点列表数据
-//	var data Data
-//	if err := json.Unmarshal([]byte(value), &data); err != nil {
-//		log.Errorf(err.Error())
-//		return nil, err
-//	}
-//	return &data, nil
+//	return svc, nil
 //}
 //
-//// 更新所有节点状态
-//func UpdateNodeStatus() {
-//	// 从Redis获取节点keys
-//	list, err := database.RedisClient.HScan("nodes")
-//	if err != nil {
-//		log.Errorf("get redis node keys error: %s", err.Error())
-//		return
-//	}
-//	var offlineKeys []string
-//	// 遍历节点keys
-//	for _, dataStr := range list {
-//		var data Data
-//		if err := json.Unmarshal([]byte(dataStr), &data); err != nil {
-//			log.Errorf(err.Error())
-//			continue
-//		}
-//		// 如果记录的更新时间超过60秒，该节点被认为离线
-//		if time.Now().Unix()-data.UpdateTsUnix > 60 {
-//			offlineKeys = append(offlineKeys, data.Key)
-//			// 在Redis中删除该节点
-//			if err := database.RedisClient.HDel("nodes", data.Key); err != nil {
-//				log.Errorf("delete redis node key error:%s, key:%s", err.Error(), data.Key)
-//			}
-//			continue
-//		}
-//
-//		// 处理node信息
-//		if err = UpdateNodeInfo(&data); err != nil {
-//			log.Errorf(err.Error())
-//			continue
-//		}
-//	}
-//	if len(offlineKeys) > 0 {
-//		s, c := database.GetCol("nodes")
-//		defer s.Close()
-//		_, err = c.UpdateAll(bson.M{
-//			"key": bson.M{
-//				"$in": offlineKeys,
-//			},
-//		}, bson.M{
-//			"$set": bson.M{
-//				"status":         constants.StatusOffline,
-//				"update_ts":      time.Now(),
-//				"update_ts_unix": time.Now().Unix(),
-//			},
-//		})
-//		if err != nil {
-//			log.Errorf(err.Error())
-//		}
-//	}
-//}
-//
-//// 处理节点信息
-//func UpdateNodeInfo(data *Data) (err error) {
-//	// 更新节点信息到数据库
-//	s, c := database.GetCol("nodes")
-//	defer s.Close()
-//
-//	_, err = c.Upsert(bson.M{"key": data.Key}, bson.M{
-//		"$set": bson.M{
-//			"status":         constants.StatusOnline,
-//			"key":            data.Key,
-//			"name_type":      data.NameType,
-//			"ip":             data.Ip,
-//			"port":           "8000",
-//			"mac":            data.Mac,
-//			"is_master":      data.Master,
-//			"update_ts":      time.Now(),
-//			"update_ts_unix": time.Now().Unix(),
-//		},
-//		"$setOnInsert": bson.M{
-//			"name": data.Name,
-//			"_id":  bson.NewObjectId(),
-//		},
+//func InitNodeService() (err error) {
+//	NodeService, err = NewNodeService(&NodeServiceOptions{
+//		Master:       viper.GetBool("server.master"),
+//		DataPath:     viper.GetString("server.register.dataPath"),
+//		RegisterType: viper.GetString("server.register.type"),
+//		Ip:           viper.GetString("server.register.ip"),
+//		Hostname:     viper.GetString("server.register.hostname"),
+//		MacAddress:   viper.GetString("server.register.mac"),
 //	})
 //	return err
 //}
 //
-//// 更新节点数据
-//func UpdateNodeData() {
-//	localNode := local_node.GetLocalNode()
-//	key := localNode.Identify
-//	// 构造节点数据
-//	data := Data{
-//		Key:          key,
-//		Mac:          localNode.Mac,
-//		Ip:           localNode.Ip,
-//		Hostname:     localNode.Hostname,
-//		Name:         localNode.Identify,
-//		NameType:     string(localNode.IdentifyType),
-//		Master:       model.IsMaster(),
-//		UpdateTs:     time.Now(),
-//		UpdateTsUnix: time.Now().Unix(),
-//	}
-//
-//	// 注册节点到Redis
-//	dataBytes, err := json.Marshal(&data)
-//	if err != nil {
-//		log.Errorf(err.Error())
-//		debug.PrintStack()
-//		return
-//	}
-//
-//	if err := database.RedisClient.HSet("nodes", key, utils.BytesToString(dataBytes)); err != nil {
-//		log.Errorf(err.Error())
-//		return
-//	}
+//type nodeService struct {
+//	opts     *NodeServiceOptions
+//	dataPath string
+//	data     entity.NodeData
 //}
 //
-//// 发送心跳信息到Redis，每5秒发送一次
-//func SendHeartBeat() {
-//	for {
-//		UpdateNodeData()
-//		time.Sleep(5 * time.Second)
-//	}
-//}
-//
-//// 每10秒刷新一次节点信息
-//func UpdateNodeStatusPeriodically() {
-//	for {
-//		UpdateNodeStatus()
-//		time.Sleep(10 * time.Second)
-//	}
-//}
-//
-//// 每60秒更新异常节点信息
-//func UpdateOfflineNodeTaskToAbnormalPeriodically() {
-//	for {
-//		nodes, err := model.GetNodeList(bson.M{"status": constants.StatusOffline})
-//		if err != nil {
-//			log.Errorf("get nodes error: " + err.Error())
-//			debug.PrintStack()
-//			continue
-//		}
-//		for _, n := range nodes {
-//			if err := model.UpdateTaskToAbnormal(n.Id); err != nil {
-//				log.Errorf("update task to abnormal error: " + err.Error())
-//				debug.PrintStack()
-//				continue
-//			}
-//		}
-//		time.Sleep(60 * time.Second)
-//	}
-//}
-//
-//// 初始化节点服务
-//func InitNodeService() error {
-//	node, err := local_node.InitLocalNode()
-//	if err != nil {
-//		return err
-//	}
-//
-//	// 每5秒更新一次本节点信息
-//	go SendHeartBeat()
-//
-//	// 首次更新节点数据（注册到Redis）
-//	UpdateNodeData()
-//	if model.IsMaster() {
-//		err = model.UpdateMasterNodeInfo(node.Identify, node.Ip, node.Mac, node.Hostname)
-//		if err != nil {
+//func (svc *nodeService) Init() (err error) {
+//	// create data directory if not exists
+//	if _, err := os.Stat(svc.dataPath); err != nil {
+//		if err := os.MkdirAll(svc.dataPath, os.ModePerm); err != nil {
 //			return err
 //		}
 //	}
 //
-//	// 节点准备完毕
-//	if err = node.Ready(); err != nil {
-//		return err
+//	// create node data file if not exists
+//	var nodeData entity.NodeData
+//	nodeFilePath := path.Join(svc.dataPath, "node.json")
+//	if _, err := os.Stat(nodeFilePath); err != nil {
+//		nodeData = entity.NodeData{
+//			Ip:         svc.opts.Ip,
+//			Hostname:   svc.opts.Hostname,
+//			MacAddress: svc.opts.MacAddress,
+//			UUID:       uuid.New().String(),
+//		}
+//		nodeData.Hash = svc.getHash(nodeData.UUID)
+//		nodeData.Key = svc.getKey(nodeData)
+//		data, err := json.Marshal(&nodeData)
+//		if err != nil {
+//			return err
+//		}
+//		if err := ioutil.WriteFile(nodeFilePath, data, os.ModePerm); err != nil {
+//			return err
+//		}
+//	} else {
+//		data, err := ioutil.ReadFile(nodeFilePath)
+//		if err != nil {
+//			return err
+//		}
+//		if err := json.Unmarshal(data, &nodeData); err != nil {
+//			return err
+//		}
 //	}
-//
-//	// 如果为主节点
-//	if model.IsMaster() {
-//		// 每10秒刷新所有节点信息
-//		go UpdateNodeStatusPeriodically()
-//
-//		// 每60秒更新离线节点任务为异常
-//		go UpdateOfflineNodeTaskToAbnormalPeriodically()
-//	}
-//
-//	// 更新在当前节点执行中的任务状态为：abnormal
-//	if err := model.UpdateTaskToAbnormal(node.Current().Id); err != nil {
-//		debug.PrintStack()
-//		return err
-//	}
+//	svc.data = nodeData
 //
 //	return nil
 //}
+//
+//func (svc *nodeService) GetCurrentNode() (n *models2.Node, err error) {
+//	node, err := service.GetNode(bson.M{"key": svc.data.Key}, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return node, nil
+//}
+//
+//func (svc *nodeService) GetAllNodeIds() (ids []primitive.ObjectID, err error) {
+//	nodes, err := models.MustGetRootService().GetNodeList(bson.M{"enabled": true, "active": true}, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//	for _, n := range nodes {
+//		ids = append(ids, n.Id)
+//	}
+//	return ids, nil
+//}
+//
+//func (svc *nodeService) getHash(sum string) (md5sum string) {
+//	h := md5.New()
+//	if svc.opts.Ip != "" {
+//		h.Write([]byte(svc.opts.Ip))
+//	}
+//	if svc.opts.Hostname != "" {
+//		h.Write([]byte(svc.opts.Hostname))
+//	}
+//	if svc.opts.MacAddress != "" {
+//		h.Write([]byte(svc.opts.MacAddress))
+//	}
+//	if sum != "" {
+//		h.Write([]byte(sum))
+//	}
+//	md5sum = base64.StdEncoding.EncodeToString(h.Sum(nil))
+//	return md5sum
+//}
+//
+//func (svc *nodeService) getKey(nodeData entity.NodeData) (key string) {
+//	switch svc.opts.RegisterType {
+//	case constants.RegisterTypeIp:
+//		return svc.opts.Ip
+//	case constants.RegisterTypeHostname:
+//		return svc.opts.Hostname
+//	case constants.RegisterTypeMac:
+//		return svc.opts.MacAddress
+//	default:
+//		return nodeData.Hash
+//	}
+//}
+//
+//var NodeService *nodeService

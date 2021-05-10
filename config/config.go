@@ -7,6 +7,19 @@ import (
 	"strings"
 )
 
+func init() {
+	// config instance
+	c := Config{Name: ""}
+
+	// init config file
+	if err := c.Init(); err != nil {
+		panic(err)
+	}
+
+	// watch config change and load responsively
+	c.WatchConfig()
+}
+
 type Config struct {
 	Name string
 }
@@ -37,21 +50,6 @@ func (c *Config) Init() error {
 	if err := viper.ReadInConfig(); err != nil { // viper parsing config file
 		return err
 	}
-
-	return nil
-}
-
-func InitConfig() error {
-	// config instance
-	c := Config{Name: ""}
-
-	// init config file
-	if err := c.Init(); err != nil {
-		return err
-	}
-
-	// watch config change and load responsively
-	c.WatchConfig()
 
 	return nil
 }

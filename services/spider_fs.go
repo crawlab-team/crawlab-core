@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/fs"
 	"github.com/crawlab-team/crawlab-core/models"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/spf13/viper"
@@ -32,7 +33,7 @@ func NewSpiderFsService(opts *SpiderFsServiceOptions) (svc *spiderFsService, err
 	}
 
 	// fs service
-	fsSvc, err := NewFileSystemService(&FileSystemServiceOptions{
+	fsSvc, err := fs.NewFileSystemService(&fs.FileSystemServiceOptions{
 		IsMaster:      viper.GetBool("server.master"),
 		FsPath:        svc.getFsPath(opts.Id),
 		WorkspacePath: svc.getWorkspacePath(opts.Id),
@@ -51,7 +52,7 @@ func NewSpiderFsService(opts *SpiderFsServiceOptions) (svc *spiderFsService, err
 type spiderFsService struct {
 	s    *models2.Spider
 	opts *SpiderFsServiceOptions
-	*fileSystemService
+	*fs.fileSystemService
 }
 
 func (svc *spiderFsService) getFsPath(id primitive.ObjectID) (res string) {

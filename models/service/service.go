@@ -1,14 +1,36 @@
 package service
 
 import (
+	"context"
 	"github.com/crawlab-team/crawlab-core/color"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"go.mongodb.org/mongo-driver/bson"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 )
 
 type Service struct {
 	env      string
 	colorSvc interfaces.ColorService
+}
+
+func (svc *Service) DropAll() (err error) {
+	db := mongo.GetMongoDb("")
+	colNames, err := db.ListCollectionNames(context.Background(), bson.M{})
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			return nil
+		}
+		return err
+	}
+	for _, colName := range colNames {
+		col := db.Collection(colName)
+		if err := col.Drop(context.Background()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (svc *Service) NewBaseService(id interfaces.ModelId) (svc2 interfaces.ModelBaseService) {

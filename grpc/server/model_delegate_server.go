@@ -3,14 +3,12 @@ package server
 import (
 	"context"
 	"github.com/crawlab-team/crawlab-core/errors"
-	grpc2 "github.com/crawlab-team/crawlab-core/grpc"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 )
 
 type ModelDelegateServer struct {
-	nodeSvc interfaces.NodeMasterService
 	grpc.UnimplementedModelDelegateServiceServer
 }
 
@@ -19,13 +17,13 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 	// bind message
 	obj, msg, err := NewModelDelegateBinder(req).BindWithDelegateMessage()
 	if err != nil {
-		return grpc2.HandleError(err)
+		return HandleError(err)
 	}
 
 	// convert to model
 	doc, ok := obj.(interfaces.Model)
 	if !ok {
-		return grpc2.HandleError(errors.ErrorModelInvalidType)
+		return HandleError(errors.ErrorModelInvalidType)
 	}
 
 	// model delegate
@@ -47,12 +45,12 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 	case interfaces.ModelDelegateMethodRefresh:
 	}
 	if err != nil {
-		return grpc2.HandleError(err)
+		return HandleError(err)
 	}
 
-	return grpc2.HandleSuccessWithData(a)
+	return HandleSuccessWithData(a)
 }
 
-func NewModelDelegateServer(nodeSvc interfaces.NodeMasterService) (svr *ModelDelegateServer) {
-	return &ModelDelegateServer{nodeSvc: nodeSvc}
+func NewModelDelegateServer() (svr *ModelDelegateServer) {
+	return &ModelDelegateServer{}
 }

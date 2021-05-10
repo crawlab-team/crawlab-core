@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/node"
+	"github.com/crawlab-team/crawlab-core/node/config"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
@@ -17,12 +18,21 @@ import (
 )
 
 type Client struct {
-	nodeSvc interfaces.NodeService
+	// dependencies
+	nodeCfgSvc interfaces.NodeConfigService
 
-	conn    *grpc.ClientConn
+	// settings variables
+	cfgPath string
 	address interfaces.Address
 	timeout time.Duration
 
+	// internals
+	conn   *grpc.ClientConn
+	stream grpc2.NodeService_SubscribeClient
+	quit   chan int
+	msgCh  chan *grpc2.StreamMessage
+
+	// grpc clients
 	ModelDelegateClient grpc2.ModelDelegateServiceClient
 	NodeClient          grpc2.NodeServiceClient
 	TaskClient          grpc2.TaskServiceClient
@@ -39,8 +49,13 @@ func (c *Client) Start() (err error) {
 		return err
 	}
 
-	// register
+	// register rpc services
 	if err := c.Register(); err != nil {
+		return err
+	}
+
+	// subscribe
+	if err := backoff.Retry(c.subscribe, backoff.NewExponentialBackOff()); err != nil {
 		return err
 	}
 
@@ -85,25 +100,6 @@ func (c *Client) GetTaskClient() grpc2.TaskServiceClient {
 	return c.TaskClient
 }
 
-func (c *Client) connect() (err error) {
-	// grpc server address
-	address := c.address.String()
-
-	// timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-
-	// connection
-	c.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
-	if err != nil {
-		_ = trace.TraceError(err)
-		return errors.ErrorGrpcClientFailedToStart
-	}
-	log.Infof("grpc client connected to %s", address)
-
-	return nil
-}
-
 func (c *Client) SetAddress(address interfaces.Address) {
 	c.address = address
 }
@@ -129,29 +125,97 @@ func (c *Client) NewRequest(d interface{}) (req *grpc2.Request) {
 		}
 	}
 	return &grpc2.Request{
-		NodeKey: c.nodeSvc.GetNodeKey(),
+		NodeKey: c.nodeCfgSvc.GetNodeKey(),
 		Data:    data,
 	}
 }
 
-func NewClient(opts ...Option) (client2 interfaces.GrpcClient, err error) {
+func (c *Client) subscribe() (err error) {
+	req := c.NewRequest(&entity.NodeInfo{
+		Key:      c.nodeCfgSvc.GetNodeKey(),
+		IsMaster: false,
+	})
+	c.stream, err = c.GetNodeClient().Subscribe(context.Background(), req)
+	if err != nil {
+		return trace.TraceError(err)
+	}
+	return nil
+}
+
+func (c *Client) unsubscribe() (err error) {
+	req := c.NewRequest(&entity.NodeInfo{
+		Key:      c.nodeCfgSvc.GetNodeKey(),
+		IsMaster: false,
+	})
+	if _, err = c.GetNodeClient().Unsubscribe(context.Background(), req); err != nil {
+		return trace.TraceError(err)
+	}
+	return nil
+}
+
+func (c *Client) handleStreamMessage() (err error) {
+	for {
+		// resubscribe if stream is set to nil
+		if c.stream == nil {
+			if err := backoff.Retry(c.subscribe, backoff.NewExponentialBackOff()); err != nil {
+				return err
+			}
+		}
+
+		// receive stream message
+		msg, err := c.stream.Recv()
+		if err != nil {
+			// clear stream to force the client to resubscribe on next iteration
+			c.stream = nil
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		// send stream message to channel
+		c.msgCh <- msg
+	}
+}
+
+func (c *Client) GetConfigPath() (path string) {
+	return c.cfgPath
+}
+
+func (c *Client) SetConfigPath(path string) {
+	c.cfgPath = path
+}
+
+func (c *Client) GetMessageChannel() (msgCh chan *grpc2.StreamMessage) {
+	return c.msgCh
+}
+
+func (c *Client) connect() (err error) {
+	// grpc server address
+	address := c.address.String()
+
+	// timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	// connection
+	c.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
+	if err != nil {
+		_ = trace.TraceError(err)
+		return errors.ErrorGrpcClientFailedToStart
+	}
+	log.Infof("grpc client connected to %s", address)
+
+	return nil
+}
+
+func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 	// client
 	client := &Client{
+		cfgPath: config.DefaultConfigPath,
 		address: entity.NewAddress(&entity.AddressOptions{
-			Host: "localhost",
-			Port: "9666",
+			Host: constants.DefaultGrpcClientRemoteHost,
+			Port: constants.DefaultGrpcClientRemotePort,
 		}),
-	}
-
-	// dependency injection
-	c := dig.New()
-	if err := c.Provide(node.NewService); err != nil {
-		return nil, err
-	}
-	if err := c.Invoke(func(nodeSvc interfaces.NodeService) {
-		client.nodeSvc = nodeSvc
-	}); err != nil {
-		return nil, err
+		timeout: 10 * time.Second,
 	}
 
 	// apply options
@@ -159,5 +223,27 @@ func NewClient(opts ...Option) (client2 interfaces.GrpcClient, err error) {
 		opt(client)
 	}
 
+	// dependency injection
+	c := dig.New()
+	if err := c.Provide(config.ProvideConfigService(client.GetConfigPath())); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService) {
+		client.nodeCfgSvc = nodeCfgSvc
+	}); err != nil {
+		return nil, err
+	}
+
+	// init
+	if err := client.Init(); err != nil {
+		return nil, err
+	}
+
 	return client, nil
+}
+
+func ProvideClient(path string) func() (res interfaces.GrpcClient, err error) {
+	return func() (res interfaces.GrpcClient, err error) {
+		return NewClient(WithConfigPath(path))
+	}
 }

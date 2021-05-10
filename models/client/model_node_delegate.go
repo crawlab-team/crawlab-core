@@ -1,4 +1,4 @@
-package delegate
+package client
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
@@ -8,7 +8,7 @@ import (
 
 type ModelNodeDelegate struct {
 	n interfaces.Node
-	interfaces.ModelDelegate
+	interfaces.GrpcClientModelDelegate
 }
 
 func (d *ModelNodeDelegate) UpdateStatus(active bool, activeTs time.Time, status string) (err error) {
@@ -28,7 +28,7 @@ func (d *ModelNodeDelegate) UpdateStatusOffline() (err error) {
 
 func NewModelNodeDelegate(n interfaces.Node) interfaces.ModelNodeDelegate {
 	return &ModelNodeDelegate{
-		n:             n,
-		ModelDelegate: NewModelDelegate(n),
+		n:                       n,
+		GrpcClientModelDelegate: NewModelDelegate(n),
 	}
 }

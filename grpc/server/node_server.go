@@ -3,28 +3,30 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
-	grpc2 "github.com/crawlab-team/crawlab-core/grpc"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-grpc"
-	"github.com/crawlab-team/go-trace"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/dig"
 	"time"
 )
 
 type NodeServer struct {
 	grpc.UnimplementedNodeServiceServer
-	interfaces.GrpcNodeServer
 
-	nodeSvc  interfaces.NodeMasterService
+	// dependencies
 	modelSvc service.ModelService
+	cfgSvc   interfaces.NodeConfigService
+
+	// internals
+	server interfaces.GrpcServer
 }
 
 // Register from handler/worker to master
@@ -33,12 +35,12 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 	var nodeInfo entity.NodeInfo
 	if req.Data != nil {
 		if err := json.Unmarshal(req.Data, &nodeInfo); err != nil {
-			return grpc2.HandleError(err)
+			return HandleError(err)
 		}
 
 		if nodeInfo.IsMaster {
 			// error: cannot register master node
-			return grpc2.HandleError(errors.ErrorGrpcNotAllowed)
+			return HandleError(errors.ErrorGrpcNotAllowed)
 		}
 	}
 
@@ -50,7 +52,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 		nodeKey = nodeInfo.Key
 	}
 	if nodeKey == "" {
-		return grpc2.HandleError(errors.ErrorModelMissingRequiredData)
+		return HandleError(errors.ErrorModelMissingRequiredData)
 	}
 
 	// find in db
@@ -58,41 +60,55 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 	if err == nil {
 		if node.Status != constants.NodeStatusUnregistered {
 			// error: already exists
-			return grpc2.HandleError(errors.ErrorModelAlreadyExists)
+			return HandleError(errors.ErrorModelAlreadyExists)
 		} else if node.IsMaster {
 			// error: cannot register master node
-			return grpc2.HandleError(errors.ErrorGrpcNotAllowed)
+			return HandleError(errors.ErrorGrpcNotAllowed)
 		} else {
 			// register existing
 			node.Status = constants.NodeStatusRegistered
-			nodeD := delegate.NewModelDelegate(node)
+			node.Active = true
+			nodeD := delegate.NewModelNodeDelegate(node)
 			if err := nodeD.Save(); err != nil {
-				return grpc2.HandleError(err)
+				return HandleError(err)
+			}
+			var ok bool
+			node, ok = nodeD.GetModel().(*models2.Node)
+			if !ok {
+				return HandleError(errors.ErrorGrpcInvalidType)
 			}
 		}
 	} else if err == mongo2.ErrNoDocuments {
 		// register new
-		node := &models2.Node{
+		node = &models2.Node{
 			Key:         nodeKey,
 			Name:        nodeInfo.Name,
 			Ip:          nodeInfo.Ip,
 			Hostname:    nodeInfo.Hostname,
 			Description: nodeInfo.Description,
 			Status:      constants.NodeStatusRegistered,
+			Active:      true,
 		}
 		if node.Name == "" {
 			node.Name = nodeKey
 		}
 		nodeD := delegate.NewModelDelegate(node)
 		if err := nodeD.Add(); err != nil {
-			return grpc2.HandleError(err)
+			return HandleError(err)
+		}
+		var ok bool
+		node, ok = nodeD.GetModel().(*models2.Node)
+		if !ok {
+			return HandleError(errors.ErrorGrpcInvalidType)
 		}
 	} else {
 		// error
-		return grpc2.HandleError(err)
+		return HandleError(err)
 	}
 
-	return grpc2.HandleSuccessWithData(node)
+	log.Infof("master registered worker[%s]", req.GetNodeKey())
+
+	return HandleSuccessWithData(node)
 }
 
 // SendHeartbeat from handler/worker to master
@@ -101,96 +117,67 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 	node, err := svr.modelSvc.GetNodeByKey(req.NodeKey, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
-			return grpc2.HandleError(errors.ErrorGrpcClientNotExists)
+			return HandleError(errors.ErrorGrpcClientNotExists)
 		}
-		return grpc2.HandleError(err)
+		return HandleError(err)
 	}
 
 	// validate status
 	if node.Status == constants.NodeStatusUnregistered {
-		return grpc2.HandleError(errors.ErrorNodeUnregistered)
+		return HandleError(errors.ErrorNodeUnregistered)
 	}
 
 	// update status
 	nodeD := delegate.NewModelNodeDelegate(node)
 	if err := nodeD.UpdateStatus(true, time.Now(), constants.NodeStatusOnline); err != nil {
-		return grpc2.HandleError(err)
+		return HandleError(err)
 	}
 
-	return grpc2.HandleSuccessWithData(node)
+	return HandleSuccessWithData(node)
 }
 
-func (svr NodeServer) Stream(stream grpc.NodeService_StreamServer) (err error) {
-	// master server-side
+func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_SubscribeServer) (err error) {
+	log.Infof("received subscribe request from node[%d]", request.NodeKey)
+
+	// finished channel
+	finished := make(chan bool)
+
+	// set subscribe
+	svr.server.SetSubscribe(request.NodeKey, &entity.GrpcSubscribe{
+		Stream:   stream,
+		Finished: finished,
+	})
+	ctx := stream.Context()
+
+	// Keep this scope alive because once this scope exits - the stream is closed
 	for {
-		// receive stream message
-		msg, err := stream.Recv()
-		if err != nil {
-			return trace.TraceError(err)
-		}
-
-		switch msg.Code {
-		case grpc.StreamMessageCode_CONNECT:
-			err = backoff.Retry(func() error {
-				// validate node status
-				if !svr.IsValidNode(msg.NodeKey) {
-					return errors.ErrorNodeInvalidStatus
-				}
-
-				// set stream into map
-				svr.nodeSvc.SetStream(msg.NodeKey, stream)
-
-				// send ack
-				if err := stream.Send(&grpc.StreamMessage{
-					Code:    grpc.StreamMessageCode_DISCONNECT,
-					NodeKey: svr.nodeSvc.GetNodeKey(),
-				}); err != nil {
-					return trace.TraceError(err)
-				}
-
-				// start to listen and handle server-side stream msg
-				outChMsg, err := svr.nodeSvc.GetOutboundStreamMessageChannel(msg.NodeKey)
-				if err != nil {
-					return trace.TraceError(err)
-				}
-				go svr.HandleSendStreamMessage(stream, outChMsg)
-
-				return nil
-			}, backoff.NewExponentialBackOff())
-			if err != nil {
-				return trace.TraceError(err)
-			}
-
-		case grpc.StreamMessageCode_DISCONNECT:
-			// delete stream
-			svr.nodeSvc.DeleteStream(msg.NodeKey)
-
-			// send ack
-			return stream.Send(&grpc.StreamMessage{
-				Code:    grpc.StreamMessageCode_DISCONNECT,
-				NodeKey: svr.nodeSvc.GetNodeKey(),
-			})
-
-		default:
-			// send stream message to inbound channel
-			inChMsg, err := svr.nodeSvc.GetInboundStreamMessageChannel(msg.NodeKey)
-			if err != nil {
-				_ = trace.TraceError(err)
-				continue
-			}
-			inChMsg <- msg
+		select {
+		case <-finished:
+			log.Infof("closing stream for node[%s]", request.NodeKey)
+			return nil
+		case <-ctx.Done():
+			log.Infof("node[%s] has disconnected", request.NodeKey)
+			return nil
 		}
 	}
 }
 
-func (svr NodeServer) HandleSendStreamMessage(stream grpc.NodeService_StreamServer, chMsg chan *grpc.StreamMessage) {
-	for {
-		msg := <-chMsg
-		if err := stream.Send(msg); err != nil {
-			_ = trace.TraceError(err)
-			return
-		}
+func (svr NodeServer) Unsubscribe(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+	sub, err := svr.server.GetSubscribe(req.NodeKey)
+	if err != nil {
+		return nil, errors.ErrorGrpcSubscribeNotExists
 	}
+	select {
+	case sub.Finished <- true:
+		log.Infof("unsubscribed node[%s]", req.NodeKey)
+	default:
+		// Default case is to avoid blocking in case client has already unsubscribed
+	}
+	svr.server.DeleteSubscribe(req.NodeKey)
+	return &grpc.Response{
+		Code:    grpc.ResponseCode_OK,
+		Message: "unsubscribed successfully",
+	}, nil
 }
 
 func (svr NodeServer) IsValidNode(nodeKey string) (res bool) {
@@ -198,7 +185,8 @@ func (svr NodeServer) IsValidNode(nodeKey string) (res bool) {
 	if err != nil {
 		return false
 	}
-	if node.Status != constants.NodeStatusOnline {
+	if node.Status != constants.NodeStatusOffline &&
+		node.Status != constants.NodeStatusRegistered {
 		return false
 	}
 	if !node.Active {
@@ -207,12 +195,36 @@ func (svr NodeServer) IsValidNode(nodeKey string) (res bool) {
 	return true
 }
 
-func NewNodeServer(nodeSvc interfaces.NodeMasterService) (svr *NodeServer) {
-	var modelSvc service.ModelService
-	utils.MustResolveModule("", modelSvc)
+func NewNodeServer(opts ...NodeServerOption) (res *NodeServer, err error) {
+	// node server
+	svr := &NodeServer{}
 
-	return &NodeServer{
-		nodeSvc:  nodeSvc,
-		modelSvc: modelSvc,
+	// apply options
+	for _, opt := range opts {
+		opt(svr)
+	}
+
+	// dependency injection
+	c := dig.New()
+	if err := c.Provide(service.NewService); err != nil {
+		return nil, err
+	}
+	if err := c.Provide(config.ProvideConfigService(svr.server.GetConfigPath())); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(modelSvc service.ModelService, cfgSvc interfaces.NodeConfigService) {
+		svr.modelSvc = modelSvc
+		svr.cfgSvc = cfgSvc
+	}); err != nil {
+		return nil, err
+	}
+
+	return svr, nil
+}
+
+func ProvideNodeServer(server interfaces.GrpcServer, opts ...NodeServerOption) func() (res *NodeServer, err error) {
+	return func() (*NodeServer, error) {
+		opts = append(opts, WithServer(server))
+		return NewNodeServer(opts...)
 	}
 }
