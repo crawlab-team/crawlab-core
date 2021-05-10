@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
@@ -13,6 +13,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"go.uber.org/dig"
+	"go/types"
 	"google.golang.org/grpc"
 	"net"
 	"sync"
@@ -29,10 +30,9 @@ type Server struct {
 	address interfaces.Address
 
 	// internals
-	svr       *grpc.Server
-	l         net.Listener
-	chMsgMap  sync.Map
-	streamMap sync.Map
+	svr  *grpc.Server
+	l    net.Listener
+	subs sync.Map
 }
 
 func (svr *Server) Init() (err error) {
@@ -101,48 +101,50 @@ func (svr *Server) SetConfigPath(path string) {
 	svr.cfgPath = path
 }
 
-func (svr *Server) GetInboundStreamMessageChannel(key string) (chMsg chan *StreamMessage, err error) {
-	return svr.getStreamMessageChannel("in", key)
-}
-
-func (svr *Server) GetOutboundStreamMessageChannel(key string) (chMsg chan *StreamMessage, err error) {
-	return svr.getStreamMessageChannel("out", key)
-}
-
-func (svr *Server) GetSubscribe(key string) (sub *entity.GrpcSubscribe, err error) {
-	res, ok := svr.streamMap.Load(key)
+func (svr *Server) GetSubscribe(key string) (sub interfaces.GrpcSubscribe, err error) {
+	res, ok := svr.subs.Load(key)
 	if !ok {
 		return nil, errors.ErrorNodeStreamNotFound
 	}
-	sub, ok = res.(*entity.GrpcSubscribe)
+	sub, ok = res.(interfaces.GrpcSubscribe)
 	if !ok {
 		return nil, errors.ErrorNodeInvalidType
 	}
 	return sub, nil
 }
 
-func (svr *Server) SetSubscribe(key string, sub *entity.GrpcSubscribe) {
-	svr.streamMap.Store(key, sub)
+func (svr *Server) SetSubscribe(key string, sub interfaces.GrpcSubscribe) {
+	svr.subs.Store(key, sub)
 }
 
 func (svr *Server) DeleteSubscribe(key string) {
-	svr.streamMap.Delete(key)
+	svr.subs.Delete(key)
 }
 
-func (svr *Server) getStreamMessageChannel(prefix string, key string) (chMsg chan *StreamMessage, err error) {
-	_key := fmt.Sprintf("%s:%s", prefix, key)
-	res, ok := svr.chMsgMap.Load(_key)
-	if !ok {
-		chMsg := make(chan *StreamMessage)
-		svr.chMsgMap.Store(_key, chMsg)
-		return chMsg, nil
+func (svr *Server) SendStreamMessage(nodeKey string, code StreamMessageCode, d interface{}) (err error) {
+	var data []byte
+	switch d.(type) {
+	case types.Nil:
+		// do nothing
+	case []byte:
+		data = d.([]byte)
+	default:
+		var err error
+		data, err = json.Marshal(d)
+		if err != nil {
+			panic(err)
+		}
 	}
-
-	chMsg, ok = res.(chan *StreamMessage)
-	if !ok {
-		return nil, errors.ErrorNodeInvalidType
+	sub, err := svr.GetSubscribe(nodeKey)
+	if err != nil {
+		return err
 	}
-	return chMsg, nil
+	msg := &StreamMessage{
+		Code:    code,
+		NodeKey: svr.nodeCfgSvc.GetNodeKey(),
+		Data:    data,
+	}
+	return sub.GetStream().Send(msg)
 }
 
 func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
@@ -167,8 +169,7 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 				grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 			),
 		),
-		chMsgMap:  sync.Map{},
-		streamMap: sync.Map{},
+		subs: sync.Map{},
 	}
 
 	// options

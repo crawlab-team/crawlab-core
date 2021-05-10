@@ -6,7 +6,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/test"
-	grpc "github.com/crawlab-team/crawlab-grpc"
 	"testing"
 )
 
@@ -22,10 +21,8 @@ type Test struct {
 	Server interfaces.GrpcServer
 	Client interfaces.GrpcClient
 
-	MasterNodeInfo   *entity.NodeInfo
-	WorkerNodeInfo   *entity.NodeInfo
-	ServerSideStream grpc.NodeService_StreamServer
-	ClientSideStream grpc.NodeService_StreamClient
+	MasterNodeInfo *entity.NodeInfo
+	WorkerNodeInfo *entity.NodeInfo
 }
 
 func (t *Test) Setup(t2 *testing.T) {
@@ -71,14 +68,12 @@ func NewTest() (res *Test, err error) {
 	// master node info
 	t.MasterNodeInfo = &entity.NodeInfo{
 		Key:      "master",
-		Name:     "master",
 		IsMaster: true,
 	}
 
 	// worker node info
 	t.WorkerNodeInfo = &entity.NodeInfo{
 		Key:      "worker",
-		Name:     "worker",
 		IsMaster: false,
 	}
 

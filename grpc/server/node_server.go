@@ -137,7 +137,7 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 }
 
 func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_SubscribeServer) (err error) {
-	log.Infof("received subscribe request from node[%d]", request.NodeKey)
+	log.Infof("received subscribe request from node[%s]", request.NodeKey)
 
 	// finished channel
 	finished := make(chan bool)
@@ -168,7 +168,7 @@ func (svr NodeServer) Unsubscribe(ctx context.Context, req *grpc.Request) (res *
 		return nil, errors.ErrorGrpcSubscribeNotExists
 	}
 	select {
-	case sub.Finished <- true:
+	case sub.GetFinished() <- true:
 		log.Infof("unsubscribed node[%s]", req.NodeKey)
 	default:
 		// Default case is to avoid blocking in case client has already unsubscribed
@@ -178,21 +178,6 @@ func (svr NodeServer) Unsubscribe(ctx context.Context, req *grpc.Request) (res *
 		Code:    grpc.ResponseCode_OK,
 		Message: "unsubscribed successfully",
 	}, nil
-}
-
-func (svr NodeServer) IsValidNode(nodeKey string) (res bool) {
-	node, err := svr.modelSvc.GetNodeByKey(nodeKey, nil)
-	if err != nil {
-		return false
-	}
-	if node.Status != constants.NodeStatusOffline &&
-		node.Status != constants.NodeStatusRegistered {
-		return false
-	}
-	if !node.Active {
-		return false
-	}
-	return true
 }
 
 func NewNodeServer(opts ...NodeServerOption) (res *NodeServer, err error) {

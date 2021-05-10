@@ -4,7 +4,6 @@ import (
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -128,54 +127,19 @@ func (svc *MasterService) monitor() (err error) {
 
 	// iterate all nodes
 	for _, n := range nodes {
-		// message stream
-		stream, err := svc.server.GetSubscribe(n.GetKey())
+		// subscribe
+		sub, err := svc.server.GetSubscribe(n.GetKey())
 		if err != nil {
 			_ = trace.TraceError(err)
 			isErr = true
 			continue
 		}
 
-		// send stream message
-		if err := stream.Send(&grpc.StreamMessage{
+		// PING client
+		if err := sub.GetStream().Send(&grpc.StreamMessage{
 			Code:    grpc.StreamMessageCode_PING,
 			NodeKey: n.GetKey(),
 		}); err != nil {
-			_ = trace.TraceError(err)
-			isErr = true
-			continue
-		}
-
-		// get message from inbound stream message channel
-		inChMsg, err := svc.server.GetInboundStreamMessageChannel(n.GetKey())
-		if err != nil {
-			_ = trace.TraceError(err)
-			isErr = true
-			continue
-		}
-		msg := <-inChMsg
-
-		// validate
-		if msg.Code != grpc.StreamMessageCode_PING {
-			_ = trace.TraceError(errors.ErrorNodeInvalidCode)
-			isErr = true
-			continue
-		}
-		var nodeInfo entity.NodeInfo
-		if err := bson.Unmarshal(msg.Data, &nodeInfo); err != nil {
-			_ = trace.TraceError(err)
-			isErr = true
-			continue
-		}
-		if nodeInfo.Key != n.GetKey() {
-			_ = trace.TraceError(errors.ErrorNodeInvalidNodeKey)
-			isErr = true
-			continue
-		}
-
-		// update status
-		nodeD := delegate.NewModelNodeDelegate(&n)
-		if err := nodeD.UpdateStatus(true, time.Now(), constants.NodeStatusOnline); err != nil {
 			_ = trace.TraceError(err)
 			isErr = true
 			continue

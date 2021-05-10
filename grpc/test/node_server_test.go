@@ -2,8 +2,9 @@ package test
 
 import (
 	"context"
-	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/models/delegate"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/node/test"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/stretchr/testify/require"
@@ -16,6 +17,33 @@ func TestGrpcServer_Register(t *testing.T) {
 
 	T, _ = NewTest()
 	T.Setup(t)
+
+	// register
+	register(t)
+
+	// validate
+	workerNodeKey := T.WorkerNodeInfo.Key
+	workerNode, err := test.T.ModelSvc.GetNodeByKey(workerNodeKey, nil)
+	require.Nil(t, err)
+	require.Equal(t, workerNodeKey, workerNode.Key)
+	require.Equal(t, constants.NodeStatusRegistered, workerNode.Status)
+}
+
+func TestGrpcServer_Register_Existing(t *testing.T) {
+	var err error
+
+	T, _ = NewTest()
+	T.Setup(t)
+
+	// add to db
+	node := &models.Node{
+		Key:      T.WorkerNodeInfo.Key,
+		IsMaster: false,
+		Status:   constants.NodeStatusUnregistered,
+	}
+	nodeD := delegate.NewModelDelegate(node)
+	err = nodeD.Add()
+	require.Nil(t, err)
 
 	// register
 	register(t)
@@ -48,7 +76,7 @@ func TestGrpcServer_SendHeartbeat(t *testing.T) {
 	require.Equal(t, constants.NodeStatusOnline, workerNode.Status)
 }
 
-func TestGrpcServer_Stream(t *testing.T) {
+func TestGrpcServer_Subscribe(t *testing.T) {
 	var err error
 
 	T, _ = NewTest()
@@ -57,37 +85,22 @@ func TestGrpcServer_Stream(t *testing.T) {
 	// register
 	register(t)
 
-	// client-side stream
-	clientSideStream(t)
+	// handle client message
+	go handleClientMessage(t)
 
-	// CONNECT
-	err = T.ClientSideStream.Send(&grpc.StreamMessage{
-		Code:    grpc.StreamMessageCode_CONNECT,
-		NodeKey: T.WorkerNodeInfo.Key,
-	})
+	time.Sleep(1 * time.Second)
+
+	// server PING client
+	err = T.Server.SendStreamMessage(T.WorkerNodeInfo.Key, grpc.StreamMessageCode_PING, nil)
 	require.Nil(t, err)
 
+	// wait
 	time.Sleep(1 * time.Second)
 
-	// server-side stream
-	serverSideStream(t)
-
-	// handle client stream message
-	go handleClientStreamMessage(t)
-
-	time.Sleep(1 * time.Second)
-
-	// PING
-	err = T.ServerSideStream.Send(&grpc.StreamMessage{
-		Code:    grpc.StreamMessageCode_PING,
-		NodeKey: T.MasterNodeInfo.Key,
-	})
-	if err != nil {
-		log.Errorf("stream ping error: %v", err)
-	}
+	// validate
+	workerNode, err := test.T.ModelSvc.GetNodeByKey(T.WorkerNodeInfo.Key, nil)
 	require.Nil(t, err)
-
-	time.Sleep(1 * time.Second)
+	require.Equal(t, constants.NodeStatusOnline, workerNode.Status)
 }
 
 func register(t *testing.T) {
@@ -106,34 +119,16 @@ func sendHeartbeat(t *testing.T) {
 	require.Equal(t, grpc.ResponseCode_OK, res.Code)
 }
 
-func serverSideStream(t *testing.T) {
-	var err error
-	T.ServerSideStream, err = T.Server.GetSubscribe(T.WorkerNodeInfo.Key)
-	require.Nil(t, err)
-}
-
-func clientSideStream(t *testing.T) {
-	var err error
-	T.ClientSideStream, err = T.Client.GetNodeClient().Stream(context.Background())
-	require.Nil(t, err)
-}
-
-func handleClientStreamMessage(t *testing.T) {
+func handleClientMessage(t *testing.T) {
+	msgCh := T.Client.GetMessageChannel()
 	for {
-		msg, err := T.ClientSideStream.Recv()
-		require.Nil(t, err)
+		msg := <-msgCh
 		switch msg.Code {
-		case grpc.StreamMessageCode_CONNECT:
-			log.Infof("stream connect data: %v", msg.Data)
-			//require.Nil(t, msg.Data)
-		case grpc.StreamMessageCode_DISCONNECT:
-			log.Infof("stream disconnect data: %v", msg.Data)
-			//require.Nil(t, msg.Data)
 		case grpc.StreamMessageCode_PING:
-			log.Infof("stream ping data: %v", msg.Data)
-			//require.Nil(t, msg.Data)
+			require.Equal(t, T.MasterNodeInfo.Key, msg.NodeKey)
+			res, err := T.Client.GetNodeClient().SendHeartbeat(context.Background(), T.Client.NewRequest(T.WorkerNodeInfo))
+			require.Nil(t, err)
+			require.NotNil(t, res)
 		}
-
-		time.Sleep(10 * time.Millisecond)
 	}
 }

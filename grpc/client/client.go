@@ -14,6 +14,7 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
 	"google.golang.org/grpc"
+	"io"
 	"time"
 )
 
@@ -29,7 +30,6 @@ type Client struct {
 	// internals
 	conn   *grpc.ClientConn
 	stream grpc2.NodeService_SubscribeClient
-	quit   chan int
 	msgCh  chan *grpc2.StreamMessage
 
 	// grpc clients
@@ -45,7 +45,7 @@ func (c *Client) Init() (err error) {
 
 func (c *Client) Start() (err error) {
 	// connect
-	if err := backoff.Retry(c.connect, backoff.NewExponentialBackOff()); err != nil {
+	if err := c.connect(); err != nil {
 		return err
 	}
 
@@ -55,9 +55,12 @@ func (c *Client) Start() (err error) {
 	}
 
 	// subscribe
-	if err := backoff.Retry(c.subscribe, backoff.NewExponentialBackOff()); err != nil {
+	if err := c.subscribe(); err != nil {
 		return err
 	}
+
+	// handle stream message
+	go c.handleStreamMessage()
 
 	return nil
 }
@@ -65,6 +68,12 @@ func (c *Client) Start() (err error) {
 func (c *Client) Stop() (err error) {
 	// grpc server address
 	address := c.address.String()
+
+	// unsubscribe
+	if err := c.unsubscribe(); err != nil {
+		return err
+	}
+	log.Infof("grpc client unsubscribed from %s", address)
 
 	// close connection
 	if err := c.conn.Close(); err != nil {
@@ -130,7 +139,52 @@ func (c *Client) NewRequest(d interface{}) (req *grpc2.Request) {
 	}
 }
 
+func (c *Client) GetConfigPath() (path string) {
+	return c.cfgPath
+}
+
+func (c *Client) SetConfigPath(path string) {
+	c.cfgPath = path
+}
+
+func (c *Client) GetMessageChannel() (msgCh chan *grpc2.StreamMessage) {
+	return c.msgCh
+}
+
+func (c *Client) connect() (err error) {
+	return backoff.RetryNotify(c._connect, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
+		log.Errorf("grpc client connect error: %v. reattempt in %.1f seconds...", err, duration.Seconds())
+		trace.PrintError(err)
+	})
+}
+
+func (c *Client) _connect() (err error) {
+	// grpc server address
+	address := c.address.String()
+
+	// timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	// connection
+	c.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
+	if err != nil {
+		_ = trace.TraceError(err)
+		return errors.ErrorGrpcClientFailedToStart
+	}
+	log.Infof("grpc client connected to %s", address)
+
+	return nil
+}
+
 func (c *Client) subscribe() (err error) {
+	return backoff.RetryNotify(c._subscribe, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
+		log.Errorf("grpc client subscribe error: %v. reattempt in %.1f seconds...", err, duration.Seconds())
+		trace.PrintError(err)
+	})
+}
+
+func (c *Client) _subscribe() (err error) {
 	req := c.NewRequest(&entity.NodeInfo{
 		Key:      c.nodeCfgSvc.GetNodeKey(),
 		IsMaster: false,
@@ -153,19 +207,28 @@ func (c *Client) unsubscribe() (err error) {
 	return nil
 }
 
-func (c *Client) handleStreamMessage() (err error) {
+func (c *Client) handleStreamMessage() {
 	for {
 		// resubscribe if stream is set to nil
 		if c.stream == nil {
-			if err := backoff.Retry(c.subscribe, backoff.NewExponentialBackOff()); err != nil {
-				return err
+			if err := backoff.RetryNotify(c.subscribe, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
+				_ = trace.TraceError(err)
+				return
+			}); err != nil {
+				log.Errorf("subscribe")
+				return
 			}
 		}
 
 		// receive stream message
 		msg, err := c.stream.Recv()
 		if err != nil {
-			// clear stream to force the client to resubscribe on next iteration
+			// end
+			if err == io.EOF {
+				return
+			}
+
+			// error
 			c.stream = nil
 			time.Sleep(1 * time.Second)
 			continue
@@ -174,37 +237,6 @@ func (c *Client) handleStreamMessage() (err error) {
 		// send stream message to channel
 		c.msgCh <- msg
 	}
-}
-
-func (c *Client) GetConfigPath() (path string) {
-	return c.cfgPath
-}
-
-func (c *Client) SetConfigPath(path string) {
-	c.cfgPath = path
-}
-
-func (c *Client) GetMessageChannel() (msgCh chan *grpc2.StreamMessage) {
-	return c.msgCh
-}
-
-func (c *Client) connect() (err error) {
-	// grpc server address
-	address := c.address.String()
-
-	// timeout context
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-	defer cancel()
-
-	// connection
-	c.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
-	if err != nil {
-		_ = trace.TraceError(err)
-		return errors.ErrorGrpcClientFailedToStart
-	}
-	log.Infof("grpc client connected to %s", address)
-
-	return nil
 }
 
 func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
@@ -216,6 +248,7 @@ func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 			Port: constants.DefaultGrpcClientRemotePort,
 		}),
 		timeout: 10 * time.Second,
+		msgCh:   make(chan *grpc2.StreamMessage),
 	}
 
 	// apply options
