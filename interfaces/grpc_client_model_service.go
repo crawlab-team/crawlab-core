@@ -1,3 +1,6 @@
 package interfaces
 
-type GrpcClientModelService ModelService
+type GrpcClientModelService interface {
+	WithConfigPath
+	NewBaseServiceDelegate(id ModelId) (GrpcClientModelBaseService, error)
+}

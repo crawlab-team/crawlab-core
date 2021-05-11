@@ -22,9 +22,15 @@ func HandleSuccess() (res *grpc.Response, err error) {
 }
 
 func HandleSuccessWithData(data interface{}) (res *grpc.Response, err error) {
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return HandleError(err)
+	var bytes []byte
+	switch data.(type) {
+	case []byte:
+		bytes = data.([]byte)
+	default:
+		bytes, err = json.Marshal(data)
+		if err != nil {
+			return HandleError(err)
+		}
 	}
 	return &grpc.Response{
 		Code:    grpc.ResponseCode_OK,

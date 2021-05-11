@@ -9,11 +9,11 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
-	models2 "github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-grpc"
-	mongo2 "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"time"
 )
@@ -73,14 +73,14 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 				return HandleError(err)
 			}
 			var ok bool
-			node, ok = nodeD.GetModel().(*models2.Node)
+			node, ok = nodeD.GetModel().(*models.Node)
 			if !ok {
 				return HandleError(errors.ErrorGrpcInvalidType)
 			}
 		}
-	} else if err == mongo2.ErrNoDocuments {
+	} else if err == mongo.ErrNoDocuments {
 		// register new
-		node = &models2.Node{
+		node = &models.Node{
 			Key:         nodeKey,
 			Name:        nodeInfo.Name,
 			Ip:          nodeInfo.Ip,
@@ -97,7 +97,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 			return HandleError(err)
 		}
 		var ok bool
-		node, ok = nodeD.GetModel().(*models2.Node)
+		node, ok = nodeD.GetModel().(*models.Node)
 		if !ok {
 			return HandleError(errors.ErrorGrpcInvalidType)
 		}
@@ -116,7 +116,7 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 	// find in db
 	node, err := svr.modelSvc.GetNodeByKey(req.NodeKey, nil)
 	if err != nil {
-		if err == mongo2.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 			return HandleError(errors.ErrorGrpcClientNotExists)
 		}
 		return HandleError(err)

@@ -9,7 +9,7 @@ import (
 )
 
 type ModelDelegateServer struct {
-	grpc.UnimplementedModelDelegateServiceServer
+	grpc.UnimplementedModelDelegateServer
 }
 
 // Do and perform a RPC action of constants.Delegate
@@ -43,6 +43,7 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 	case interfaces.ModelDelegateMethodGetArtifact:
 		a, err = d.GetArtifact()
 	case interfaces.ModelDelegateMethodRefresh:
+		// TODO: implement
 	}
 	if err != nil {
 		return HandleError(err)

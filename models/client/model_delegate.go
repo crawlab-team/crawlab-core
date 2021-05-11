@@ -135,7 +135,7 @@ func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (a interfaces.
 func (d *ModelDelegate) add() (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.DelegateMessage{
+	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
 		Method:  interfaces.ModelDelegateMethodAdd,
 		Data:    d.mustGetData(),
@@ -146,7 +146,7 @@ func (d *ModelDelegate) add() (err error) {
 func (d *ModelDelegate) save() (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.DelegateMessage{
+	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
 		Method:  interfaces.ModelDelegateMethodSave,
 		Data:    d.mustGetData(),
@@ -157,7 +157,7 @@ func (d *ModelDelegate) save() (err error) {
 func (d *ModelDelegate) delete() (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.DelegateMessage{
+	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
 		Method:  interfaces.ModelDelegateMethodDelete,
 		Data:    d.mustGetData(),
@@ -168,7 +168,7 @@ func (d *ModelDelegate) delete() (err error) {
 func (d *ModelDelegate) getArtifact() (res2 interfaces.ModelArtifact, err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	res, err := d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.DelegateMessage{
+	res, err := d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
 		Method:  interfaces.ModelDelegateMethodGetArtifact,
 		Data:    d.mustGetData(),

@@ -8,7 +8,9 @@ import (
 
 type GrpcClient interface {
 	GrpcBase
-	GetModelDelegateClient() grpc.ModelDelegateServiceClient
+	WithConfigPath
+	GetModelDelegateClient() grpc.ModelDelegateClient
+	GetModelBaseServiceClient() grpc.ModelBaseServiceClient
 	GetNodeClient() grpc.NodeServiceClient
 	GetTaskClient() grpc.TaskServiceClient
 	SetAddress(Address)
@@ -17,4 +19,5 @@ type GrpcClient interface {
 	NewRequest(interface{}) *grpc.Request
 	GetMessageChannel() chan *grpc.StreamMessage
 	Restart() error
+	NewModelBaseServiceRequest(ModelId, GrpcBaseServiceParams) (*grpc.Request, error)
 }

@@ -37,9 +37,10 @@ type Client struct {
 	msgCh  chan *grpc2.StreamMessage
 
 	// grpc clients
-	ModelDelegateClient grpc2.ModelDelegateServiceClient
-	NodeClient          grpc2.NodeServiceClient
-	TaskClient          grpc2.TaskServiceClient
+	ModelDelegateClient    grpc2.ModelDelegateClient
+	ModelBaseServiceClient grpc2.ModelBaseServiceClient
+	NodeClient             grpc2.NodeServiceClient
+	TaskClient             grpc2.TaskServiceClient
 }
 
 func (c *Client) Init() (err error) {
@@ -90,7 +91,10 @@ func (c *Client) Stop() (err error) {
 
 func (c *Client) Register() (err error) {
 	// model delegate
-	c.ModelDelegateClient = grpc2.NewModelDelegateServiceClient(c.conn)
+	c.ModelDelegateClient = grpc2.NewModelDelegateClient(c.conn)
+
+	// model base service
+	c.ModelBaseServiceClient = grpc2.NewModelBaseServiceClient(c.conn)
 
 	// node
 	c.NodeClient = grpc2.NewNodeServiceClient(c.conn)
@@ -104,8 +108,12 @@ func (c *Client) Register() (err error) {
 	return nil
 }
 
-func (c *Client) GetModelDelegateClient() (res grpc2.ModelDelegateServiceClient) {
+func (c *Client) GetModelDelegateClient() (res grpc2.ModelDelegateClient) {
 	return c.ModelDelegateClient
+}
+
+func (c *Client) GetModelBaseServiceClient() (res grpc2.ModelBaseServiceClient) {
+	return c.ModelBaseServiceClient
 }
 
 func (c *Client) GetNodeClient() grpc2.NodeServiceClient {
@@ -152,6 +160,18 @@ func (c *Client) GetConfigPath() (path string) {
 
 func (c *Client) SetConfigPath(path string) {
 	c.cfgPath = path
+}
+
+func (c *Client) NewModelBaseServiceRequest(id interfaces.ModelId, params interfaces.GrpcBaseServiceParams) (req *grpc2.Request, err error) {
+	data, err := json.Marshal(params)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	msg := &entity.GrpcBaseServiceMessage{
+		ModelId: id,
+		Data:    data,
+	}
+	return c.NewRequest(msg), nil
 }
 
 func (c *Client) GetMessageChannel() (msgCh chan *grpc2.StreamMessage) {
@@ -351,4 +371,10 @@ func createClient(path string) (client2 interfaces.GrpcClient, err error) {
 	}
 	clientStore.Store(path, client2)
 	return client2, nil
+}
+
+func ProvideGetClient(path string) func() (res interfaces.GrpcClient, err error) {
+	return func() (res interfaces.GrpcClient, err error) {
+		return GetClient(path)
+	}
 }

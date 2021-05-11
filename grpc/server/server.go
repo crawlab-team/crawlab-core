@@ -8,7 +8,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/config"
-	. "github.com/crawlab-team/crawlab-grpc"
+	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -21,9 +21,10 @@ import (
 
 type Server struct {
 	// dependencies
-	nodeCfgSvc       interfaces.NodeConfigService
-	nodeSvr          *NodeServer
-	modelDelegateSvr *ModelDelegateServer
+	nodeCfgSvc          interfaces.NodeConfigService
+	nodeSvr             *NodeServer
+	modelDelegateSvr    *ModelDelegateServer
+	modelBaseServiceSvr *ModelBaseServiceServer
 
 	// settings variables
 	cfgPath string
@@ -77,14 +78,10 @@ func (svr *Server) Stop() (err error) {
 }
 
 func (svr *Server) Register() (err error) {
-	// model delegate
-	RegisterModelDelegateServiceServer(svr.svr, *svr.modelDelegateSvr)
-
-	// node
-	RegisterNodeServiceServer(svr.svr, *svr.nodeSvr)
-
-	// task
-	//grpc2.RegisterTaskServiceServer(svr.svr, TaskService)
+	grpc2.RegisterModelDelegateServer(svr.svr, *svr.modelDelegateSvr)       // model delegate
+	grpc2.RegisterModelBaseServiceServer(svr.svr, *svr.modelBaseServiceSvr) // model base service
+	grpc2.RegisterNodeServiceServer(svr.svr, *svr.nodeSvr)                  // node service
+	//grpc2.RegisterTaskServiceServer(svr.svr, TaskService)// task service
 
 	return nil
 }
@@ -121,7 +118,7 @@ func (svr *Server) DeleteSubscribe(key string) {
 	svr.subs.Delete(key)
 }
 
-func (svr *Server) SendStreamMessage(nodeKey string, code StreamMessageCode, d interface{}) (err error) {
+func (svr *Server) SendStreamMessage(nodeKey string, code grpc2.StreamMessageCode, d interface{}) (err error) {
 	var data []byte
 	switch d.(type) {
 	case types.Nil:
@@ -139,7 +136,7 @@ func (svr *Server) SendStreamMessage(nodeKey string, code StreamMessageCode, d i
 	if err != nil {
 		return err
 	}
-	msg := &StreamMessage{
+	msg := &grpc2.StreamMessage{
 		Code:    code,
 		NodeKey: svr.nodeCfgSvc.GetNodeKey(),
 		Data:    data,
@@ -185,12 +182,21 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	if err := c.Provide(NewModelDelegateServer); err != nil {
 		return nil, err
 	}
+	if err := c.Provide(NewModelBaseServiceServer); err != nil {
+		return nil, err
+	}
 	if err := c.Provide(ProvideNodeServer(svr)); err != nil {
 		return nil, err
 	}
-	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, modelDelegateSvr *ModelDelegateServer, nodeSvr *NodeServer) {
+	if err := c.Invoke(func(
+		nodeCfgSvc interfaces.NodeConfigService,
+		modelDelegateSvr *ModelDelegateServer,
+		modelBaseServiceSvr *ModelBaseServiceServer,
+		nodeSvr *NodeServer,
+	) {
 		svr.nodeCfgSvc = nodeCfgSvc
 		svr.modelDelegateSvr = modelDelegateSvr
+		svr.modelBaseServiceSvr = modelBaseServiceSvr
 		svr.nodeSvr = nodeSvr
 	}); err != nil {
 		return nil, err

@@ -5,20 +5,20 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	models2 "github.com/crawlab-team/crawlab-core/models/models"
-	grpc "github.com/crawlab-team/crawlab-grpc"
+	"github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-grpc"
 )
 
 func NewModelDelegateBinder(req *grpc.Request) (b *ModelDelegateBinder) {
 	return &ModelDelegateBinder{
 		req: req,
-		msg: &entity.DelegateMessage{},
+		msg: &entity.GrpcDelegateMessage{},
 	}
 }
 
 type ModelDelegateBinder struct {
 	req *grpc.Request
-	msg interfaces.ModelDelegateMessage
+	msg interfaces.GrpcModelDelegateMessage
 }
 
 func (b *ModelDelegateBinder) Bind() (res interface{}, err error) {
@@ -26,7 +26,7 @@ func (b *ModelDelegateBinder) Bind() (res interface{}, err error) {
 		return nil, err
 	}
 
-	m := models2.NewModelMap()
+	m := models.NewModelMap()
 
 	switch b.msg.GetModelId() {
 	case interfaces.ModelIdArtifact:
@@ -66,7 +66,7 @@ func (b *ModelDelegateBinder) MustBind() (res interface{}) {
 	return res
 }
 
-func (b *ModelDelegateBinder) BindWithDelegateMessage() (res interface{}, msg interfaces.ModelDelegateMessage, err error) {
+func (b *ModelDelegateBinder) BindWithDelegateMessage() (res interface{}, msg interfaces.GrpcModelDelegateMessage, err error) {
 	if err := json.Unmarshal(b.req.Data, b.msg); err != nil {
 		return nil, nil, err
 	}

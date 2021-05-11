@@ -18,17 +18,17 @@ func TestModelDelegate_Do(t *testing.T) {
 	T.Setup(t)
 
 	// add
-	add(t)
+	modelDelegateAdd(t)
 	project, err := test.T.ModelSvc.GetProject(bson.M{"name": "test-project"}, nil)
 	require.Nil(t, err)
 	require.Greater(t, len(project.Tags), 0)
 
 	// get artifact
-	a := getArtifact(t)
+	a := modelDelegateGetArtifact(t)
 	require.Equal(t, project.GetId(), a.GetId())
 
 	// save
-	save(t)
+	modelDelegateSave(t)
 	project, err = test.T.ModelSvc.GetProject(bson.M{"name": "test-new-project"}, nil)
 	require.Nil(t, err)
 	require.Greater(t, len(project.Tags), 0)
@@ -36,7 +36,7 @@ func TestModelDelegate_Do(t *testing.T) {
 	require.Equal(t, "test-new-description", project.Description)
 
 	// delete
-	delete_(t)
+	modelDelegateDelete(t)
 	_, err = test.T.ModelSvc.GetProject(bson.M{"name": "test-new-project"}, nil)
 	require.Equal(t, mongo2.ErrNoDocuments, err)
 }
@@ -46,12 +46,12 @@ func TestModelDelegate_Do_All(t *testing.T) {
 	T.Setup(t)
 
 	// add
-	addAll(t)
-	validateAddAll(t)
+	modelDelegateAddAll(t)
+	modelDelegateValidateAddAll(t)
 }
 
-func add(t *testing.T) {
-	// add
+func modelDelegateAdd(t *testing.T) {
+	// modelDelegateAdd
 	project := &models.Project{
 		Name:        "test-project",
 		Description: "test-description",
@@ -62,45 +62,45 @@ func add(t *testing.T) {
 			},
 		},
 	}
-	projectD := client.NewModelDelegate(project, client.WithConfigPath(T.Client.GetConfigPath()))
+	projectD := client.NewModelDelegate(project, client.WithDelegateConfigPath(T.Client.GetConfigPath()))
 	err := projectD.Add()
 	require.Nil(t, err)
 }
 
-func getArtifact(t *testing.T) interfaces.ModelArtifact {
+func modelDelegateGetArtifact(t *testing.T) interfaces.ModelArtifact {
 	project, err := test.T.ModelSvc.GetProject(bson.M{"name": "test-project"}, nil)
 	require.Nil(t, err)
 
-	projectD := client.NewModelDelegate(project, client.WithConfigPath(T.Client.GetConfigPath()))
+	projectD := client.NewModelDelegate(project, client.WithDelegateConfigPath(T.Client.GetConfigPath()))
 	a, err := projectD.GetArtifact()
 	require.Nil(t, err)
 	return a
 }
 
-func save(t *testing.T) {
+func modelDelegateSave(t *testing.T) {
 	project, err := test.T.ModelSvc.GetProject(bson.M{"name": "test-project"}, nil)
 	require.Nil(t, err)
 
 	project.Name = "test-new-project"
 	project.Description = "test-new-description"
 
-	projectD := client.NewModelDelegate(project, client.WithConfigPath(T.Client.GetConfigPath()))
+	projectD := client.NewModelDelegate(project, client.WithDelegateConfigPath(T.Client.GetConfigPath()))
 	err = projectD.Save()
 	require.Nil(t, err)
 }
 
-func delete_(t *testing.T) {
+func modelDelegateDelete(t *testing.T) {
 	project, err := test.T.ModelSvc.GetProject(bson.M{"name": "test-new-project"}, nil)
 	require.Nil(t, err)
 
-	projectD := client.NewModelDelegate(project, client.WithConfigPath(T.Client.GetConfigPath()))
+	projectD := client.NewModelDelegate(project, client.WithDelegateConfigPath(T.Client.GetConfigPath()))
 	err = projectD.Delete()
 	require.Nil(t, err)
 }
 
-func addAll(t *testing.T) {
+func modelDelegateAddAll(t *testing.T) {
 	var err error
-	cfgOpt := client.WithConfigPath(T.Client.GetConfigPath())
+	cfgOpt := client.WithDelegateConfigPath(T.Client.GetConfigPath())
 	m := models.NewModelMap()
 	err = client.NewModelDelegate(&m.Tag, cfgOpt).Add()
 	require.Nil(t, err)
@@ -128,7 +128,7 @@ func addAll(t *testing.T) {
 	require.Nil(t, err)
 }
 
-func validateAddAll(t *testing.T) {
+func modelDelegateValidateAddAll(t *testing.T) {
 	var err error
 	_, err = test.T.ModelSvc.NewBaseService(interfaces.ModelIdNode).Get(bson.M{}, nil)
 	require.Nil(t, err)

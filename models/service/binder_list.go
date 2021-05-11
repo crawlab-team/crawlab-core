@@ -5,6 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/go-trace"
 	"github.com/emirpasic/gods/lists/arraylist"
 	"reflect"
 )
@@ -26,7 +27,7 @@ type ListBinder struct {
 	b     interfaces.ModelBinder
 }
 
-func (b *ListBinder) Bind() (res interface{}, err error) {
+func (b *ListBinder) Bind() (list arraylist.List, err error) {
 	m := b.m
 
 	switch b.id {
@@ -35,11 +36,11 @@ func (b *ListBinder) Bind() (res interface{}, err error) {
 	case interfaces.ModelIdTag:
 		return b.Process(m.Tags)
 	case interfaces.ModelIdNode:
-		return b.Process(m.Nodes, interfaces.ModelIdTag)
+		return b.ProcessWithFieldIds(m.Nodes, interfaces.ModelIdTag)
 	case interfaces.ModelIdProject:
-		return b.Process(m.Projects, interfaces.ModelIdTag)
+		return b.ProcessWithFieldIds(m.Projects, interfaces.ModelIdTag)
 	case interfaces.ModelIdSpider:
-		return b.Process(m.Spiders, interfaces.ModelIdTag)
+		return b.ProcessWithFieldIds(m.Spiders, interfaces.ModelIdTag)
 	case interfaces.ModelIdTask:
 		return b.Process(m.Tasks)
 	case interfaces.ModelIdSchedule:
@@ -53,36 +54,8 @@ func (b *ListBinder) Bind() (res interface{}, err error) {
 	case interfaces.ModelIdVariable:
 		return b.Process(m.Variables)
 	default:
-		return nil, errors.ErrorModelInvalidModelId
+		return list, errors.ErrorModelInvalidModelId
 	}
-}
-
-func (b *ListBinder) MustBind() (res interface{}) {
-	res, err := b.Bind()
-	if err != nil {
-		panic(err)
-	}
-	return res
-}
-
-func (b *ListBinder) BindList() (res arraylist.List, err error) {
-	r, err := b.Bind()
-	if err != nil {
-		return res, err
-	}
-	res, ok := r.(arraylist.List)
-	if !ok {
-		return res, errors.ErrorModelInvalidType
-	}
-	return res, nil
-}
-
-func (b *ListBinder) MustBindList() (res arraylist.List) {
-	res, err := b.BindList()
-	if err != nil {
-		panic(err)
-	}
-	return res
 }
 
 func (b *ListBinder) MustBindListAsPtr() (res arraylist.List) {
@@ -95,23 +68,20 @@ func (b *ListBinder) MustBindListAsPtr() (res arraylist.List) {
 
 func (b *ListBinder) BindListAsPtr() (res arraylist.List, err error) {
 	b.asPtr = true
-
-	r, err := b.Bind()
-	if err != nil {
-		return res, err
-	}
-	res, ok := r.(arraylist.List)
-	if !ok {
-		return res, errors.ErrorModelInvalidType
-	}
-	return res, nil
+	return b.Bind()
 }
 
-func (b *ListBinder) Process(d interface{}, fieldIds ...interfaces.ModelId) (res interface{}, err error) {
+func (b *ListBinder) Process(d interface{}) (list arraylist.List, err error) {
 	if err := b.fr.All(&d); err != nil {
-		return nil, err
+		return list, trace.TraceError(err)
 	}
-	// TODO: implement in delegate
+	return b.AssignListFields(d)
+}
+
+func (b *ListBinder) ProcessWithFieldIds(d interface{}, fieldIds ...interfaces.ModelId) (list arraylist.List, err error) {
+	if err := b.fr.All(&d); err != nil {
+		return list, trace.TraceError(err)
+	}
 	if b.asPtr {
 		return b.AssignListFieldsAsPtr(d, fieldIds...)
 	} else {

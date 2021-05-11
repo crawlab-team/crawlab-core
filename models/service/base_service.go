@@ -42,7 +42,7 @@ func (svc *BaseService) GetList(query bson.M, opts *mongo.FindOptions) (res arra
 	fr := svc.find(query, opts)
 
 	// bind
-	return NewListBinder(svc.id, fr).BindList()
+	return NewListBinder(svc.id, fr).Bind()
 }
 
 func (svc *BaseService) DeleteById(id primitive.ObjectID) (err error) {
@@ -107,16 +107,11 @@ func (svc *BaseService) delete(query bson.M) (err error) {
 	if svc.col == nil {
 		return trace.TraceError(constants.ErrMissingCol)
 	}
-	var docs []models2.BaseModel
-	if err := svc.find(query, nil).All(&docs); err != nil {
+	var doc models2.BaseModel
+	if err := svc.find(query, nil).One(&doc); err != nil {
 		return err
 	}
-	for _, doc := range docs {
-		if err := svc.deleteId(doc.Id); err != nil {
-			return err
-		}
-	}
-	return nil
+	return svc.deleteId(doc.Id)
 }
 
 func (svc *BaseService) deleteList(query bson.M) (err error) {
@@ -124,20 +119,25 @@ func (svc *BaseService) deleteList(query bson.M) (err error) {
 		return trace.TraceError(constants.ErrMissingCol)
 	}
 	fr := svc.find(query, nil)
-	docs, err := NewListBinder(svc.id, fr).BindList()
+	docs, err := NewListBinder(svc.id, fr).Bind()
 	if err != nil {
 		return err
 	}
-	ok := docs.All(func(index int, value interface{}) bool {
-		doc, ok := value.(interfaces.Model)
-		if !ok {
-			return false
+	for _, value := range docs.Values() {
+		v := reflect.ValueOf(value)
+		var item interface{}
+		if v.CanAddr() {
+			item = v.Addr().Interface()
+		} else {
+			item = v.Interface()
 		}
-		err := delegate.NewModelDelegate(doc).Delete()
-		return err == nil
-	})
-	if !ok {
-		return errors.ErrorModelDeleteListError
+		doc, ok := item.(interfaces.Model)
+		if !ok {
+			return errors.ErrorModelInvalidType
+		}
+		if err := delegate.NewModelDelegate(doc).Delete(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

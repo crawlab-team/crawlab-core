@@ -34,11 +34,11 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 	case interfaces.ModelIdTag:
 		return b.Process(&m.Tag)
 	case interfaces.ModelIdNode:
-		return b.Process(&m.Node, interfaces.ModelIdTag)
+		return b.ProcessWithFieldIds(&m.Node, interfaces.ModelIdTag)
 	case interfaces.ModelIdProject:
-		return b.Process(&m.Project, interfaces.ModelIdTag)
+		return b.ProcessWithFieldIds(&m.Project, interfaces.ModelIdTag)
 	case interfaces.ModelIdSpider:
-		return b.Process(&m.Spider, interfaces.ModelIdTag)
+		return b.ProcessWithFieldIds(&m.Spider, interfaces.ModelIdTag)
 	case interfaces.ModelIdTask:
 		return b.Process(&m.Task)
 	case interfaces.ModelIdJob:
@@ -66,8 +66,15 @@ func (b *BasicBinder) MustBind() (res interfaces.Model) {
 	return res
 }
 
-func (b *BasicBinder) Process(d interfaces.Model, fieldIds ...interfaces.ModelId) (res interfaces.Model, err error) {
+func (b *BasicBinder) Process(d interfaces.Model) (res interfaces.Model, err error) {
 	if err := b.fr.One(d); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+func (b *BasicBinder) ProcessWithFieldIds(d interfaces.Model, fieldIds ...interfaces.ModelId) (res interfaces.Model, err error) {
+	if d, err = b.Process(d); err != nil {
 		return nil, err
 	}
 	return b.AssignFields(d, fieldIds...)

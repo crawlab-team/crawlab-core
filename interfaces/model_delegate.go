@@ -11,13 +11,6 @@ type ModelDelegate interface {
 	Refresh() error
 }
 
-type ModelDelegateMessage interface {
-	GetModelId() ModelId
-	GetMethod() ModelDelegateMethod
-	GetData() []byte
-	ToBytes() (data []byte)
-}
-
 const (
 	ModelDelegateMethodAdd = iota
 	ModelDelegateMethodSave

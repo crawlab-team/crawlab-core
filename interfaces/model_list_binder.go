@@ -2,12 +2,12 @@ package interfaces
 
 import "github.com/emirpasic/gods/lists/arraylist"
 
+type modelListBinder interface {
+	Bind() (list arraylist.List, err error)
+	Process(d interface{}) (list arraylist.List, err error)
+}
+
 type ModelListBinder interface {
-	Bind() (res interface{}, err error)
-	MustBind() (res interface{})
-	BindList() (res arraylist.List, err error)
-	MustBindList() (res arraylist.List)
+	modelListBinder
 	MustBindListAsPtr() (res arraylist.List)
-	BindListAsPtr() (res arraylist.List, err error)
-	Process(d interface{}, fieldIds ...ModelId) (res interface{}, err error)
 }

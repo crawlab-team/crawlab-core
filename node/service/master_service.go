@@ -89,7 +89,7 @@ func (svc *MasterService) SetMonitorInterval(duration time.Duration) {
 func (svc *MasterService) Register() (err error) {
 	nodeKey := svc.GetConfigService().GetNodeKey()
 	node, err := svc.modelSvc.GetNodeByKey(nodeKey, nil)
-	if err == mongo2.ErrNoDocuments {
+	if err != nil && err.Error() == mongo2.ErrNoDocuments.Error() {
 		// not exists
 		node := &models.Node{
 			Key:      nodeKey,
