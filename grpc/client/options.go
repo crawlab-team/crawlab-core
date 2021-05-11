@@ -17,3 +17,17 @@ func WithTimeout(timeout time.Duration) Option {
 	return func(c interfaces.GrpcClient) {
 	}
 }
+
+type PoolOption func(p interfaces.GrpcClientPool)
+
+func WithPoolConfigPath(path string) PoolOption {
+	return func(c interfaces.GrpcClientPool) {
+		c.SetConfigPath(path)
+	}
+}
+
+func WithPoolSize(size int) PoolOption {
+	return func(c interfaces.GrpcClientPool) {
+		c.SetSize(size)
+	}
+}

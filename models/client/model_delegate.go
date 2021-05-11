@@ -7,36 +7,36 @@ import (
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/go-trace"
-	"go.uber.org/dig"
 )
 
 func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfaces.GrpcClientModelDelegate {
 	switch doc.(type) {
 	case *models2.Artifact:
-		return newModelDelegate(interfaces.ModelIdArtifact, doc)
+		return newModelDelegate(interfaces.ModelIdArtifact, doc, opts...)
 	case *models2.Tag:
-		return newModelDelegate(interfaces.ModelIdTag, doc)
+		return newModelDelegate(interfaces.ModelIdTag, doc, opts...)
 	case *models2.Node:
-		return newModelDelegate(interfaces.ModelIdNode, doc)
+		return newModelDelegate(interfaces.ModelIdNode, doc, opts...)
 	case *models2.Project:
-		return newModelDelegate(interfaces.ModelIdProject, doc)
+		return newModelDelegate(interfaces.ModelIdProject, doc, opts...)
 	case *models2.Spider:
-		return newModelDelegate(interfaces.ModelIdSpider, doc)
+		return newModelDelegate(interfaces.ModelIdSpider, doc, opts...)
 	case *models2.Task:
-		return newModelDelegate(interfaces.ModelIdTask, doc)
+		return newModelDelegate(interfaces.ModelIdTask, doc, opts...)
 	case *models2.Job:
-		return newModelDelegate(interfaces.ModelIdJob, doc)
+		return newModelDelegate(interfaces.ModelIdJob, doc, opts...)
 	case *models2.Schedule:
-		return newModelDelegate(interfaces.ModelIdSchedule, doc)
+		return newModelDelegate(interfaces.ModelIdSchedule, doc, opts...)
 	case *models2.User:
-		return newModelDelegate(interfaces.ModelIdUser, doc)
+		return newModelDelegate(interfaces.ModelIdUser, doc, opts...)
 	case *models2.Setting:
-		return newModelDelegate(interfaces.ModelIdSetting, doc)
+		return newModelDelegate(interfaces.ModelIdSetting, doc, opts...)
 	case *models2.Token:
-		return newModelDelegate(interfaces.ModelIdToken, doc)
+		return newModelDelegate(interfaces.ModelIdToken, doc, opts...)
 	case *models2.Variable:
-		return newModelDelegate(interfaces.ModelIdVariable, doc)
+		return newModelDelegate(interfaces.ModelIdVariable, doc, opts...)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
@@ -44,23 +44,13 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 }
 
 func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...ModelDelegateOption) interfaces.GrpcClientModelDelegate {
+	var err error
+
 	// model delegate
 	d := &ModelDelegate{
-		id:  id,
-		doc: doc,
-	}
-
-	// dependency injection
-	c := dig.New()
-	if err := c.Provide(client.NewClient); err != nil {
-		_ = trace.TraceError(errors2.ErrorModelInvalidType)
-		return nil
-	}
-	if err := c.Invoke(func(c interfaces.GrpcClient) {
-		d.c = c
-	}); err != nil {
-		_ = trace.TraceError(errors2.ErrorModelInvalidType)
-		return nil
+		id:      id,
+		doc:     doc,
+		cfgPath: config.DefaultConfigPath,
 	}
 
 	// apply options
@@ -68,10 +58,21 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...Model
 		opt(d)
 	}
 
+	// grpc client
+	d.c, err = client.GetClient(d.cfgPath)
+	if err != nil {
+		trace.PrintError(errors2.ErrorModelInvalidType)
+		return nil
+	}
+
 	return d
 }
 
 type ModelDelegate struct {
+	// settings variables
+	cfgPath string
+
+	// internals
 	id  interfaces.ModelId
 	c   interfaces.GrpcClient
 	doc interfaces.Model
@@ -102,6 +103,18 @@ func (d *ModelDelegate) GetModel() (res interfaces.Model) {
 
 func (d *ModelDelegate) Refresh() (err error) {
 	return d.refresh()
+}
+
+func (d *ModelDelegate) GetConfigPath() (path string) {
+	return d.cfgPath
+}
+
+func (d *ModelDelegate) SetConfigPath(path string) {
+	d.cfgPath = path
+}
+
+func (d *ModelDelegate) Close() (err error) {
+	return d.c.Stop()
 }
 
 func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {

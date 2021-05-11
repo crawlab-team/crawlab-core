@@ -16,4 +16,5 @@ type GrpcClient interface {
 	Context() (context.Context, context.CancelFunc)
 	NewRequest(interface{}) *grpc.Request
 	GetMessageChannel() chan *grpc.StreamMessage
+	Restart() error
 }

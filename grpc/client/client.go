@@ -14,7 +14,11 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/status"
 	"io"
+	"sync"
 	"time"
 )
 
@@ -94,6 +98,9 @@ func (c *Client) Register() (err error) {
 	// task
 	c.TaskClient = grpc2.NewTaskServiceClient(c.conn)
 
+	// log
+	log.Infof("grpc client registered client services")
+
 	return nil
 }
 
@@ -151,6 +158,13 @@ func (c *Client) GetMessageChannel() (msgCh chan *grpc2.StreamMessage) {
 	return c.msgCh
 }
 
+func (c *Client) Restart() (err error) {
+	if c.needRestart() {
+		return c.Start()
+	}
+	return nil
+}
+
 func (c *Client) connect() (err error) {
 	return backoff.RetryNotify(c._connect, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
 		log.Errorf("grpc client connect error: %v. reattempt in %.1f seconds...", err, duration.Seconds())
@@ -193,6 +207,10 @@ func (c *Client) _subscribe() (err error) {
 	if err != nil {
 		return trace.TraceError(err)
 	}
+
+	// log
+	log.Infof("grpc client subscribed to remote server")
+
 	return nil
 }
 
@@ -225,6 +243,14 @@ func (c *Client) handleStreamMessage() {
 		if err != nil {
 			// end
 			if err == io.EOF {
+				log.Infof("received EOF signal, disconnecting")
+				return
+			}
+
+			// connection closing
+			s, ok := status.FromError(err)
+			if ok && s.Code() == codes.Canceled {
+				log.Infof("received Canceled signal, disconnecting")
 				return
 			}
 
@@ -236,6 +262,17 @@ func (c *Client) handleStreamMessage() {
 
 		// send stream message to channel
 		c.msgCh <- msg
+	}
+}
+
+func (c *Client) needRestart() bool {
+	switch c.conn.GetState() {
+	case connectivity.Shutdown, connectivity.TransientFailure:
+		return true
+	case connectivity.Idle, connectivity.Connecting, connectivity.Ready:
+		return false
+	default:
+		return false
 	}
 }
 
@@ -279,4 +316,39 @@ func ProvideClient(path string) func() (res interfaces.GrpcClient, err error) {
 	return func() (res interfaces.GrpcClient, err error) {
 		return NewClient(WithConfigPath(path))
 	}
+}
+
+var clientStore = sync.Map{}
+
+func GetClient(path string) (c interfaces.GrpcClient, err error) {
+	res, ok := clientStore.Load(path)
+	if !ok {
+		return createClient(path)
+	}
+	c, ok = res.(interfaces.GrpcClient)
+	if !ok {
+		return createClient(path)
+	}
+	return c, nil
+}
+
+func ForceGetClient(path string) (p interfaces.GrpcClient, err error) {
+	return createClient(path)
+}
+
+func createClient(path string) (client2 interfaces.GrpcClient, err error) {
+	c := dig.New()
+	if err := c.Provide(ProvideClient(path)); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Invoke(func(client interfaces.GrpcClient) {
+		client2 = client
+	}); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := client2.Start(); err != nil {
+		return nil, err
+	}
+	clientStore.Store(path, client2)
+	return client2, nil
 }

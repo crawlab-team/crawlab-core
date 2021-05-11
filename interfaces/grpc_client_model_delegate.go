@@ -1,3 +1,7 @@
 package interfaces
 
-type GrpcClientModelDelegate ModelDelegate
+type GrpcClientModelDelegate interface {
+	ModelDelegate
+	WithConfigPath
+	Close() error
+}

@@ -9,14 +9,6 @@ import (
 	"testing"
 )
 
-func init() {
-	var err error
-	T, err = NewTest()
-	if err != nil {
-		panic(err)
-	}
-}
-
 type Test struct {
 	Server interfaces.GrpcServer
 	Client interfaces.GrpcClient
@@ -28,22 +20,12 @@ type Test struct {
 func (t *Test) Setup(t2 *testing.T) {
 	test.T.Cleanup()
 	t2.Cleanup(t.Cleanup)
-
-	if err := t.Server.Start(); err != nil {
-		panic(err)
-	}
-	if err := t.Client.Start(); err != nil {
-		panic(err)
-	}
+	_ = T.Client.Restart()
 }
 
 func (t *Test) Cleanup() {
-	if err := t.Client.Stop(); err != nil {
-		panic(err)
-	}
-	if err := t.Server.Stop(); err != nil {
-		panic(err)
-	}
+	_ = t.Client.Stop()
+	_ = t.Server.Stop()
 	test.T.Cleanup()
 }
 
@@ -58,9 +40,12 @@ func NewTest() (res *Test, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := t.Server.Start(); err != nil {
+		return nil, err
+	}
 
 	// client
-	t.Client, err = client.NewClient(client.WithConfigPath(test.T.WorkerSvc.GetConfigPath()))
+	t.Client, err = client.GetClient(test.T.WorkerSvc.GetConfigPath())
 	if err != nil {
 		return nil, err
 	}
