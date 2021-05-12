@@ -137,7 +137,7 @@ func (d *BaseServiceDelegate) Update(query bson.M, update bson.M, fields []strin
 	return nil
 }
 
-func (d *BaseServiceDelegate) Insert(docs ...interfaces.Model) (err error) {
+func (d *BaseServiceDelegate) Insert(docs ...interface{}) (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Docs: docs})

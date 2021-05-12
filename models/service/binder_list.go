@@ -12,10 +12,12 @@ import (
 
 func NewListBinder(id interfaces.ModelId, fr *mongo.FindResult) (b interfaces.ModelListBinder) {
 	return &ListBinder{
-		id: id,
-		m:  models.NewModelListMap(),
-		fr: fr,
-		b:  NewBasicBinder(id, fr),
+		id:    id,
+		m:     models.NewModelListMap(),
+		fr:    fr,
+		asPtr: true,
+		wf:    true,
+		b:     NewBasicBinder(id, fr),
 	}
 }
 
@@ -23,7 +25,8 @@ type ListBinder struct {
 	id    interfaces.ModelId
 	m     *models.ModelListMap
 	fr    *mongo.FindResult
-	asPtr bool
+	asPtr bool // whether to process to pointer item list
+	wf    bool // whether to process with fields
 	b     interfaces.ModelBinder
 }
 
@@ -71,14 +74,34 @@ func (b *ListBinder) BindListAsPtr() (res arraylist.List, err error) {
 	return b.Bind()
 }
 
+func (b *ListBinder) MustBindListWithNoFields() (res arraylist.List) {
+	res, err := b.BindListWithNoFields()
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func (b *ListBinder) BindListWithNoFields() (res arraylist.List, err error) {
+	b.wf = false
+	return b.Bind()
+}
+
 func (b *ListBinder) Process(d interface{}) (list arraylist.List, err error) {
 	if err := b.fr.All(&d); err != nil {
 		return list, trace.TraceError(err)
 	}
-	return b.AssignListFields(d)
+	if b.asPtr {
+		return b.AssignListFieldsAsPtr(d)
+	} else {
+		return b.AssignListFields(d)
+	}
 }
 
 func (b *ListBinder) ProcessWithFieldIds(d interface{}, fieldIds ...interfaces.ModelId) (list arraylist.List, err error) {
+	if !b.wf {
+		return b.Process(d)
+	}
 	if err := b.fr.All(&d); err != nil {
 		return list, trace.TraceError(err)
 	}

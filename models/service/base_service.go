@@ -69,7 +69,7 @@ func (svc *BaseService) Update(query bson.M, update bson.M, fields []string) (er
 	return svc.update(query, update, fields)
 }
 
-func (svc *BaseService) Insert(docs ...interfaces.Model) (err error) {
+func (svc *BaseService) Insert(docs ...interface{}) (err error) {
 	return svc.insert(docs...)
 }
 
@@ -124,14 +124,7 @@ func (svc *BaseService) deleteList(query bson.M) (err error) {
 		return err
 	}
 	for _, value := range docs.Values() {
-		v := reflect.ValueOf(value)
-		var item interface{}
-		if v.CanAddr() {
-			item = v.Addr().Interface()
-		} else {
-			item = v.Interface()
-		}
-		doc, ok := item.(interfaces.Model)
+		doc, ok := value.(interfaces.Model)
 		if !ok {
 			return errors.ErrorModelInvalidType
 		}
@@ -154,87 +147,186 @@ func (svc *BaseService) count(query bson.M) (total int, err error) {
 }
 
 func (svc *BaseService) update(query bson.M, update interface{}, fields []string) (err error) {
-	vUpdate := reflect.ValueOf(update)
-	switch reflect.TypeOf(update).Kind() {
-	case reflect.Struct:
-		// ids of query
-		var ids []primitive.ObjectID
-		list := NewListBinder(svc.id, svc.find(query, nil)).MustBindListAsPtr()
-		for _, value := range list.Values() {
-			item, ok := value.(interfaces.Model)
+	update, err = svc._getUpdateBsonM(update, fields)
+	if err != nil {
+		return err
+	}
+	return svc._update(query, update)
+}
+
+func (svc *BaseService) updateId(id primitive.ObjectID, update interface{}) (err error) {
+	update, err = svc._getUpdateBsonM(update, nil)
+	if err != nil {
+		return err
+	}
+	return svc._updateById(id, update)
+}
+
+func (svc *BaseService) insert(docs ...interface{}) (err error) {
+	// validate col
+	if svc.col == nil {
+		return trace.TraceError(constants.ErrMissingCol)
+	}
+
+	// iterate docs
+	for i, doc := range docs {
+		switch doc.(type) {
+		case map[string]interface{}:
+			// doc type: map[string]interface{}, need to handle _id
+			d := doc.(map[string]interface{})
+			vId, ok := d["_id"]
 			if !ok {
-				return errors.ErrorModelInvalidType
+				// _id not exists
+				d["_id"] = primitive.NewObjectID()
+			} else {
+				// _id exists
+				switch vId.(type) {
+				case string:
+					// _id type: string
+					sId, ok := vId.(string)
+					if ok {
+						d["_id"], err = primitive.ObjectIDFromHex(sId)
+						if err != nil {
+							return trace.TraceError(err)
+						}
+					}
+				case primitive.ObjectID:
+					// _id type: primitive.ObjectID
+					// do nothing
+				default:
+					return trace.TraceError(errors.ErrorModelInvalidType)
+				}
 			}
-			ids = append(ids, item.GetId())
+		}
+		docs[i] = doc
+	}
+
+	// perform insert
+	ids, err := svc.col.InsertMany(docs)
+	if err != nil {
+		return err
+	}
+
+	// upsert artifacts
+	query := bson.M{
+		"_id": bson.M{
+			"$in": ids,
+		},
+	}
+	fr := svc.col.Find(query, nil)
+	list := NewListBinder(svc.id, fr).MustBindListWithNoFields()
+	for _, item := range list.Values() {
+		// convert to interfaces.Model
+		doc, ok := item.(interfaces.Model)
+		if !ok {
+			return trace.TraceError(errors.ErrorModelInvalidType)
 		}
 
+		// upsert artifact when performing model delegate save
+		if err := delegate.NewModelDelegate(doc).Save(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (svc *BaseService) _update(query bson.M, update interface{}) (err error) {
+	// ids of query
+	var ids []primitive.ObjectID
+	list, err := NewListBinder(svc.id, svc.find(query, nil)).Bind()
+	if err != nil {
+		return err
+	}
+	for _, value := range list.Values() {
+		item, ok := value.(interfaces.Model)
+		if !ok {
+			return errors.ErrorModelInvalidType
+		}
+		ids = append(ids, item.GetId())
+	}
+
+	// update model objects
+	if err := svc.col.Update(query, update); err != nil {
+		return err
+	}
+
+	// update artifacts
+	return mongo.GetMongoCol(interfaces.ModelColNameArtifact).Update(query, svc._getUpdateArtifactUpdate())
+}
+
+func (svc *BaseService) _updateById(id primitive.ObjectID, update interface{}) (err error) {
+	// update model object
+	if err := svc.col.UpdateId(id, update); err != nil {
+		return err
+	}
+
+	// update artifact
+	return mongo.GetMongoCol(interfaces.ModelColNameArtifact).UpdateId(id, svc._getUpdateArtifactUpdate())
+}
+
+func (svc *BaseService) _getUpdateBsonM(update interface{}, fields []string) (res bson.M, err error) {
+	switch update.(type) {
+	case interfaces.Model:
 		// convert to bson.M
 		var updateBsonM bson.M
 		bytes, err := json.Marshal(&update)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := json.Unmarshal(bytes, &updateBsonM); err != nil {
-			return err
+			return nil, err
 		}
+		return svc._getUpdateBsonM(updateBsonM, fields)
 
-		// fields map
-		fieldsMap := map[string]bool{}
-		for _, f := range fields {
-			fieldsMap[f] = true
-		}
-
-		// remove unselected fields
-		for k := range updateBsonM {
-			if _, ok := fieldsMap[k]; !ok {
-				delete(updateBsonM, k)
+	case bson.M:
+		// normalize to update bson.M
+		updateBsonM := update.(bson.M)
+		if _, ok := updateBsonM["$set"]; !ok {
+			updateBsonM = bson.M{
+				"$set": updateBsonM,
 			}
 		}
 
-		// update model objects
-		if err := svc.col.Update(query, bson.M{"$set": updateBsonM}); err != nil {
-			return err
+		// filter fields if not nil
+		if fields != nil {
+			// fields map
+			fieldsMap := map[string]bool{}
+			for _, f := range fields {
+				fieldsMap[f] = true
+			}
+
+			// remove unselected fields
+			for k := range updateBsonM {
+				if _, ok := fieldsMap[k]; !ok {
+					delete(updateBsonM, k)
+				}
+			}
 		}
 
-		// update artifacts
-		colA := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
-		if err := colA.Update(query, bson.M{
-			"$set": bson.M{
-				"_sys.update_ts": time.Now(),
-				// TODO: update_uid
-			},
-		}); err != nil {
-			return err
-		}
+		return updateBsonM, nil
+	}
 
-		return nil
-	case reflect.Ptr:
-		return svc.update(query, vUpdate.Elem().Interface(), fields)
+	v := reflect.ValueOf(update)
+	switch v.Kind() {
+	case reflect.Struct:
+		if v.CanAddr() {
+			update = v.Addr().Interface()
+			return svc._getUpdateBsonM(update, fields)
+		}
+		return nil, errors.ErrorModelInvalidType
 	default:
-		return errors.ErrorModelInvalidType
+		return nil, errors.ErrorModelInvalidType
 	}
 }
 
-func (svc *BaseService) updateId(id primitive.ObjectID, update interface{}) (err error) {
-	if svc.col == nil {
-		return trace.TraceError(constants.ErrMissingCol)
+func (svc *BaseService) _getUpdateArtifactUpdate() (res bson.M) {
+	return bson.M{
+		"$set": bson.M{
+			"_sys.update_ts": time.Now(),
+			// TODO: update_uid
+		},
 	}
-	return svc.col.UpdateId(id, update)
-}
-
-func (svc *BaseService) insert(docs ...interfaces.Model) (err error) {
-	if svc.col == nil {
-		return trace.TraceError(constants.ErrMissingCol)
-	}
-	var _docs []interface{}
-	for _, doc := range docs {
-		_docs = append(_docs, doc)
-	}
-	_, err = svc.col.InsertMany(_docs)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func NewBaseService(id interfaces.ModelId) (svc interfaces.ModelBaseService) {

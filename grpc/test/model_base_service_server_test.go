@@ -8,6 +8,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/test"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"testing"
 )
@@ -210,9 +211,7 @@ func TestModelBaseService_UpdateById(t *testing.T) {
 	ctx, cancel := T.Client.Context()
 	defer cancel()
 	update := bson.M{
-		"$set": bson.M{
-			"$name": "test-new-project",
-		},
+		"name": "test-new-project",
 	}
 	req, err := T.Client.NewModelBaseServiceRequest(interfaces.ModelIdProject, &entity.GrpcBaseServiceParams{Id: p.Id, Update: update})
 	require.Nil(t, err)
@@ -241,9 +240,7 @@ func TestModelBaseService_Update(t *testing.T) {
 	ctx, cancel := T.Client.Context()
 	defer cancel()
 	update := bson.M{
-		"$set": bson.M{
-			"$name": "test-new-project",
-		},
+		"name": "test-new-project",
 	}
 	req, err := T.Client.NewModelBaseServiceRequest(interfaces.ModelIdProject, &entity.GrpcBaseServiceParams{Query: bson.M{"name": "test-project"}, Update: update})
 	require.Nil(t, err)
@@ -266,10 +263,11 @@ func TestModelBaseService_Insert(t *testing.T) {
 	T.Setup(t)
 
 	// insert
-	var docs []interfaces.Model
+	var docs []interface{}
 	n := 10
 	for i := 0; i < n; i++ {
-		docs = append(docs, &models.Project{
+		docs = append(docs, models.Project{
+			Id:   primitive.NewObjectID(),
 			Name: "test-project",
 		})
 	}

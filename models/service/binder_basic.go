@@ -143,12 +143,12 @@ func (b *BasicBinder) assignFields(d interfaces.Model, fieldIds ...interfaces.Mo
 			}
 			var tags []interfaces.Tag
 			_ = list.All(func(index int, value interface{}) bool {
-				tag, ok := value.(models.Tag)
+				tag, ok := value.(interfaces.Tag)
 				if !ok {
 					_ = trace.TraceError(errors.ErrorModelInvalidType)
 					return false
 				}
-				tags = append(tags, &tag)
+				tags = append(tags, tag)
 				return true
 			})
 

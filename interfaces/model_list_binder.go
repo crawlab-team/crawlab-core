@@ -10,4 +10,5 @@ type modelListBinder interface {
 type ModelListBinder interface {
 	modelListBinder
 	MustBindListAsPtr() (res arraylist.List)
+	MustBindListWithNoFields() (res arraylist.List)
 }

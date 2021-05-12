@@ -17,7 +17,7 @@ type ModelBaseService interface {
 	ForceDeleteList(query bson.M) (err error)
 	UpdateById(id primitive.ObjectID, update bson.M) (err error)
 	Update(query bson.M, update bson.M, fields []string) (err error)
-	Insert(docs ...Model) (err error)
+	Insert(docs ...interface{}) (err error)
 	Count(query bson.M) (total int, err error)
 }
 

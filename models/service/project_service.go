@@ -31,6 +31,6 @@ func (svc *Service) GetProject(query bson.M, opts *mongo.FindOptions) (res *mode
 }
 
 func (svc *Service) GetProjectList(query bson.M, opts *mongo.FindOptions) (res []models2.Project, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdTag, query, opts, &res)
+	err = svc.getListSerializeTarget(interfaces.ModelIdProject, query, opts, &res)
 	return res, err
 }
