@@ -13,6 +13,8 @@ replace (
 )
 
 require (
+	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.0.0
@@ -32,6 +34,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/go-sockaddr v1.0.0
 	github.com/imroc/req v0.3.0
+	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7 // indirect
 	github.com/matcornic/hermes v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olivere/elastic/v7 v7.0.15
@@ -42,6 +45,7 @@ require (
 	github.com/shirou/gopsutil v3.20.11+incompatible
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/viper v1.7.1
+	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.4.5
