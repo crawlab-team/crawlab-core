@@ -13,11 +13,26 @@ func WithConfigPath(path string) Option {
 	}
 }
 
+func WithAddress(address interfaces.Address) Option {
+	return func(svc interfaces.NodeService) {
+		svc.SetAddress(address)
+	}
+}
+
 func WithMonitorInterval(duration time.Duration) Option {
 	return func(svc interfaces.NodeService) {
 		svc2, ok := svc.(interfaces.NodeMasterService)
 		if ok {
 			svc2.SetMonitorInterval(duration)
+		}
+	}
+}
+
+func WithStopOnError() Option {
+	return func(svc interfaces.NodeService) {
+		svc2, ok := svc.(interfaces.NodeMasterService)
+		if ok {
+			svc2.StopOnError()
 		}
 	}
 }

@@ -64,6 +64,10 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...Model
 		trace.PrintError(errors2.ErrorModelInvalidType)
 		return nil
 	}
+	if err := d.c.Restart(); err != nil {
+		trace.PrintError(err)
+		return nil
+	}
 
 	return d
 }

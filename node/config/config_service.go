@@ -78,9 +78,12 @@ func (svc *Service) SetConfigPath(path string) {
 }
 
 func NewNodeConfigService(opts ...Option) (svc2 interfaces.NodeConfigService, err error) {
+	// cfg
+	cfg := NewConfig(nil)
+
 	// config service
 	svc := &Service{
-		cfg:  &Config{},
+		cfg:  cfg,
 		path: DefaultConfigPath,
 	}
 
@@ -98,6 +101,9 @@ func NewNodeConfigService(opts ...Option) (svc2 interfaces.NodeConfigService, er
 }
 
 func ProvideConfigService(path string) func() (interfaces.NodeConfigService, error) {
+	if path == "" {
+		path = DefaultConfigPath
+	}
 	return func() (interfaces.NodeConfigService, error) {
 		return NewNodeConfigService(WithConfigPath(path))
 	}

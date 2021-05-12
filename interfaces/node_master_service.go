@@ -9,4 +9,6 @@ type NodeMasterService interface {
 	Monitor()
 	SetMonitorInterval(duration time.Duration)
 	Register() error
+	StopOnError()
+	GetServer() GrpcServer
 }

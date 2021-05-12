@@ -1,11 +1,13 @@
 package test
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	service2 "github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.uber.org/dig"
 	"io/ioutil"
 	"os"
@@ -15,6 +17,7 @@ import (
 )
 
 func init() {
+	_ = mongo.InitMongo()
 	var err error
 	T, err = NewTest()
 	if err != nil {
@@ -25,35 +28,78 @@ func init() {
 var T *Test
 
 type Test struct {
-	MasterSvc interfaces.NodeMasterService
-	WorkerSvc interfaces.NodeWorkerService
-	ModelSvc  service2.ModelService
+	DefaultSvc       interfaces.NodeMasterService
+	MasterSvc        interfaces.NodeMasterService
+	WorkerSvc        interfaces.NodeWorkerService
+	MasterSvcMonitor interfaces.NodeMasterService
+	WorkerSvcMonitor interfaces.NodeWorkerService
+	ModelSvc         service2.ModelService
 }
 
 func NewTest() (res *Test, err error) {
 	// test
 	t := &Test{}
 
-	// master config
+	// recreate config directory path
+	_ = os.RemoveAll(config.DefaultConfigDirPath)
+	_ = os.MkdirAll(config.DefaultConfigDirPath, os.FileMode(0766))
+
+	// master config and settings
 	masterNodeConfigName := "config-master.json"
 	masterNodeConfigPath := path.Join(config.DefaultConfigDirPath, masterNodeConfigName)
-	if err := ioutil.WriteFile(masterNodeConfigPath, []byte("{\"key\":\"master\",\"is_master\":true}"), os.ModePerm); err != nil {
+	if err := ioutil.WriteFile(masterNodeConfigPath, []byte("{\"key\":\"master\",\"is_master\":true}"), os.FileMode(0766)); err != nil {
 		return nil, err
 	}
+	masterHost := "0.0.0.0"
+	masterPort := "9667"
 
-	// worker config
+	// worker config and settings
 	workerNodeConfigName := "config-worker.json"
 	workerNodeConfigPath := path.Join(config.DefaultConfigDirPath, workerNodeConfigName)
-	if err = ioutil.WriteFile(workerNodeConfigPath, []byte("{\"key\":\"worker\",\"is_worker\":false}"), os.ModePerm); err != nil {
+	if err = ioutil.WriteFile(workerNodeConfigPath, []byte("{\"key\":\"worker\",\"is_master\":false}"), os.FileMode(0766)); err != nil {
 		return nil, err
 	}
+	workerHost := "localhost"
+	workerPort := masterPort
+
+	// master for monitor config and settings
+	masterNodeMonitorConfigName := "config-master-monitor.json"
+	masterNodeMonitorConfigPath := path.Join(config.DefaultConfigDirPath, masterNodeMonitorConfigName)
+	if err := ioutil.WriteFile(masterNodeMonitorConfigPath, []byte("{\"key\":\"master-monitor\",\"is_master\":true}"), os.FileMode(0766)); err != nil {
+		return nil, err
+	}
+	masterMonitorHost := masterHost
+	masterMonitorPort := "9668"
+
+	// worker for monitor config and settings
+	workerNodeMonitorConfigName := "config-worker-monitor.json"
+	workerNodeMonitorConfigPath := path.Join(config.DefaultConfigDirPath, workerNodeMonitorConfigName)
+	if err := ioutil.WriteFile(workerNodeMonitorConfigPath, []byte("{\"key\":\"worker-monitor\",\"is_master\":false}"), os.FileMode(0766)); err != nil {
+		return nil, err
+	}
+	workerMonitorHost := workerHost
+	workerMonitorPort := masterMonitorPort
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(service.ProvideMasterService(masterNodeConfigPath, service.WithMonitorInterval(3*time.Second))); err != nil {
+	if err := c.Provide(service.ProvideMasterService(
+		masterNodeConfigPath,
+		service.WithMonitorInterval(3*time.Second),
+		service.WithAddress(entity.NewAddress(&entity.AddressOptions{
+			Host: masterHost,
+			Port: masterPort,
+		})),
+	)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(service.ProvideWorkerService(workerNodeConfigPath, service.WithHeartbeatInterval(1*time.Second))); err != nil {
+	if err := c.Provide(service.ProvideWorkerService(
+		workerNodeConfigPath,
+		service.WithHeartbeatInterval(1*time.Second),
+		service.WithAddress(entity.NewAddress(&entity.AddressOptions{
+			Host: workerHost,
+			Port: workerPort,
+		})),
+	)); err != nil {
 		return nil, err
 	}
 	if err := c.Provide(service2.NewService); err != nil {
@@ -67,6 +113,41 @@ func NewTest() (res *Test, err error) {
 		return nil, err
 	}
 
+	// default service
+	t.DefaultSvc, err = service.NewMasterService()
+	if err != nil {
+		return nil, err
+	}
+
+	// master and worker for monitor
+	t.MasterSvcMonitor, err = service.NewMasterService(
+		service.WithConfigPath(masterNodeMonitorConfigPath),
+		service.WithAddress(entity.NewAddress(&entity.AddressOptions{
+			Host: masterMonitorHost,
+			Port: masterMonitorPort,
+		})),
+		service.WithMonitorInterval(3*time.Second),
+		service.WithStopOnError(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	t.WorkerSvcMonitor, err = service.NewWorkerService(
+		service.WithConfigPath(workerNodeMonitorConfigPath),
+		service.WithAddress(entity.NewAddress(&entity.AddressOptions{
+			Host: workerMonitorHost,
+			Port: workerMonitorPort,
+		})),
+		service.WithHeartbeatInterval(1*time.Second),
+		service.WithStopOnError(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// removed all data in db
+	_ = t.ModelSvc.DropAll()
+
 	// visualize dependencies
 	if err := utils.VisualizeContainer(c); err != nil {
 		return nil, err
@@ -76,7 +157,10 @@ func NewTest() (res *Test, err error) {
 }
 
 func (t *Test) Setup(t2 *testing.T) {
-	t.Cleanup()
+	if err := t.ModelSvc.DropAll(); err != nil {
+		panic(err)
+	}
+	_ = os.RemoveAll(config.DefaultConfigDirPath)
 	t2.Cleanup(t.Cleanup)
 }
 
@@ -84,4 +168,5 @@ func (t *Test) Cleanup() {
 	if err := t.ModelSvc.DropAll(); err != nil {
 		panic(err)
 	}
+	_ = os.RemoveAll(config.DefaultConfigDirPath)
 }

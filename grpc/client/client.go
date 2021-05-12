@@ -71,6 +71,11 @@ func (c *Client) Start() (err error) {
 }
 
 func (c *Client) Stop() (err error) {
+	// skip if connection is nil
+	if c.conn == nil {
+		return nil
+	}
+
 	// grpc server address
 	address := c.address.String()
 
@@ -185,6 +190,10 @@ func (c *Client) Restart() (err error) {
 	return nil
 }
 
+func (c *Client) IsClosed() (res bool) {
+	return c.conn.GetState() == connectivity.Shutdown
+}
+
 func (c *Client) connect() (err error) {
 	return backoff.RetryNotify(c._connect, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
 		log.Errorf("grpc client connect error: %v. reattempt in %.1f seconds...", err, duration.Seconds())
@@ -201,7 +210,11 @@ func (c *Client) _connect() (err error) {
 	defer cancel()
 
 	// connection
-	c.conn, err = grpc.DialContext(ctx, address, grpc.WithInsecure())
+	// TODO: configure dial options
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithInsecure())
+	opts = append(opts, grpc.WithBlock())
+	c.conn, err = grpc.DialContext(ctx, address, opts...)
 	if err != nil {
 		_ = trace.TraceError(err)
 		return errors.ErrorGrpcClientFailedToStart
@@ -275,6 +288,7 @@ func (c *Client) handleStreamMessage() {
 			}
 
 			// error
+			trace.PrintError(err)
 			c.stream = nil
 			time.Sleep(1 * time.Second)
 			continue
@@ -332,33 +346,37 @@ func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 	return client, nil
 }
 
-func ProvideClient(path string) func() (res interfaces.GrpcClient, err error) {
+func ProvideClient(path string, opts ...Option) func() (res interfaces.GrpcClient, err error) {
+	if path == "" {
+		path = config.DefaultConfigPath
+	}
+	opts = append(opts, WithConfigPath(path))
 	return func() (res interfaces.GrpcClient, err error) {
-		return NewClient(WithConfigPath(path))
+		return NewClient(opts...)
 	}
 }
 
 var clientStore = sync.Map{}
 
-func GetClient(path string) (c interfaces.GrpcClient, err error) {
+func GetClient(path string, opts ...Option) (c interfaces.GrpcClient, err error) {
 	res, ok := clientStore.Load(path)
 	if !ok {
-		return createClient(path)
+		return createClient(path, opts...)
 	}
 	c, ok = res.(interfaces.GrpcClient)
 	if !ok {
-		return createClient(path)
+		return createClient(path, opts...)
 	}
 	return c, nil
 }
 
-func ForceGetClient(path string) (p interfaces.GrpcClient, err error) {
-	return createClient(path)
+func ForceGetClient(path string, opts ...Option) (p interfaces.GrpcClient, err error) {
+	return createClient(path, opts...)
 }
 
-func createClient(path string) (client2 interfaces.GrpcClient, err error) {
+func createClient(path string, opts ...Option) (client2 interfaces.GrpcClient, err error) {
 	c := dig.New()
-	if err := c.Provide(ProvideClient(path)); err != nil {
+	if err := c.Provide(ProvideClient(path, opts...)); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(client interfaces.GrpcClient) {
@@ -366,15 +384,12 @@ func createClient(path string) (client2 interfaces.GrpcClient, err error) {
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := client2.Start(); err != nil {
-		return nil, err
-	}
 	clientStore.Store(path, client2)
 	return client2, nil
 }
 
-func ProvideGetClient(path string) func() (res interfaces.GrpcClient, err error) {
+func ProvideGetClient(path string, opts ...Option) func() (res interfaces.GrpcClient, err error) {
 	return func() (res interfaces.GrpcClient, err error) {
-		return GetClient(path)
+		return GetClient(path, opts...)
 	}
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/crawlab-team/crawlab-grpc"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
-	"time"
 )
 
 type NodeServer struct {
@@ -77,6 +76,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 			if !ok {
 				return HandleError(errors.ErrorGrpcInvalidType)
 			}
+			log.Infof("updated worker[%s] in db. id: %s", nodeKey, nodeD.GetModel().GetId().Hex())
 		}
 	} else if err == mongo.ErrNoDocuments {
 		// register new
@@ -101,6 +101,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 		if !ok {
 			return HandleError(errors.ErrorGrpcInvalidType)
 		}
+		log.Infof("added worker[%s] in db. id: %s", nodeKey, nodeD.GetModel().GetId().Hex())
 	} else {
 		// error
 		return HandleError(err)
@@ -117,7 +118,7 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 	node, err := svr.modelSvc.GetNodeByKey(req.NodeKey, nil)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return HandleError(errors.ErrorGrpcClientNotExists)
+			return HandleError(errors.ErrorNodeNotExists)
 		}
 		return HandleError(err)
 	}
@@ -129,7 +130,7 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 
 	// update status
 	nodeD := delegate.NewModelNodeDelegate(node)
-	if err := nodeD.UpdateStatus(true, time.Now(), constants.NodeStatusOnline); err != nil {
+	if err := nodeD.UpdateStatusOnline(); err != nil {
 		return HandleError(err)
 	}
 

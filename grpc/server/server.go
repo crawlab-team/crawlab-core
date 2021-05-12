@@ -31,9 +31,10 @@ type Server struct {
 	address interfaces.Address
 
 	// internals
-	svr  *grpc.Server
-	l    net.Listener
-	subs sync.Map
+	svr     *grpc.Server
+	l       net.Listener
+	subs    sync.Map
+	stopped bool
 }
 
 func (svr *Server) Init() (err error) {
@@ -60,10 +61,11 @@ func (svr *Server) Start() (err error) {
 	// start grpc server
 	go func() {
 		if err := svr.svr.Serve(svr.l); err != nil {
-			if err != grpc.ErrServerStopped {
-				_ = trace.TraceError(err)
-				log.Error(errors.ErrorGrpcServerFailedToServe.Error())
+			if err == grpc.ErrServerStopped {
+				return
 			}
+			trace.PrintError(err)
+			log.Error(errors.ErrorGrpcServerFailedToServe.Error())
 		}
 	}()
 
@@ -71,9 +73,24 @@ func (svr *Server) Start() (err error) {
 }
 
 func (svr *Server) Stop() (err error) {
+	// skip if listener is nil
+	if svr.l == nil {
+		return nil
+	}
+
+	// graceful stop
 	svr.svr.GracefulStop()
+
+	// close listener
 	_ = svr.l.Close()
+	svr.svr.GetServiceInfo()
+
+	// mark as stopped
+	svr.stopped = true
+
+	// log
 	log.Infof("grpc server stopped")
+
 	return nil
 }
 
@@ -144,6 +161,10 @@ func (svr *Server) SendStreamMessage(nodeKey string, code grpc2.StreamMessageCod
 	return sub.GetStream().Send(msg)
 }
 
+func (svr *Server) IsStopped() (res bool) {
+	return svr.stopped
+}
+
 func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	// recovery options
 	var recoveryFunc grpc_recovery.RecoveryHandlerFunc
@@ -210,8 +231,12 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	return svr, nil
 }
 
-func ProvideServer(path string) func() (res interfaces.GrpcServer, err error) {
+func ProvideServer(path string, opts ...Option) func() (res interfaces.GrpcServer, err error) {
+	if path == "" {
+		path = config.DefaultConfigPath
+	}
+	opts = append(opts, WithConfigPath(path))
 	return func() (res interfaces.GrpcServer, err error) {
-		return NewServer(WithConfigPath(path))
+		return NewServer(opts...)
 	}
 }

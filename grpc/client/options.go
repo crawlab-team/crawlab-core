@@ -13,6 +13,12 @@ func WithConfigPath(path string) Option {
 	}
 }
 
+func WithAddress(address interfaces.Address) Option {
+	return func(c interfaces.GrpcClient) {
+		c.SetAddress(address)
+	}
+}
+
 func WithTimeout(timeout time.Duration) Option {
 	return func(c interfaces.GrpcClient) {
 	}

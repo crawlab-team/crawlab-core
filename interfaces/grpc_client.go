@@ -20,4 +20,5 @@ type GrpcClient interface {
 	GetMessageChannel() chan *grpc.StreamMessage
 	Restart() error
 	NewModelBaseServiceRequest(ModelId, GrpcBaseServiceParams) (*grpc.Request, error)
+	IsClosed() bool
 }

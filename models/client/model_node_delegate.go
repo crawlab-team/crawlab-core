@@ -11,19 +11,22 @@ type ModelNodeDelegate struct {
 	interfaces.GrpcClientModelDelegate
 }
 
-func (d *ModelNodeDelegate) UpdateStatus(active bool, activeTs time.Time, status string) (err error) {
+func (d *ModelNodeDelegate) UpdateStatus(active bool, activeTs *time.Time, status string) (err error) {
 	d.n.SetActive(active)
-	d.n.SetActiveTs(activeTs)
+	if activeTs != nil {
+		d.n.SetActiveTs(*activeTs)
+	}
 	d.n.SetStatus(status)
 	return d.Save()
 }
 
 func (d *ModelNodeDelegate) UpdateStatusOnline() (err error) {
-	return d.UpdateStatus(true, time.Now(), constants.NodeStatusOnline)
+	now := time.Now()
+	return d.UpdateStatus(true, &now, constants.NodeStatusOnline)
 }
 
 func (d *ModelNodeDelegate) UpdateStatusOffline() (err error) {
-	return d.UpdateStatus(false, time.Now(), constants.NodeStatusOffline)
+	return d.UpdateStatus(false, nil, constants.NodeStatusOffline)
 }
 
 func NewModelNodeDelegate(n interfaces.Node) interfaces.ModelNodeDelegate {
