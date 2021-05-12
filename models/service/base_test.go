@@ -12,12 +12,13 @@ func SetupTest(t *testing.T) {
 	if err := mongo.InitMongo(); err != nil {
 		panic(err)
 	}
+	CleanupTest()
 	t.Cleanup(CleanupTest)
 }
 
 func CleanupTest() {
 	db := mongo.GetMongoDb("")
-	names, _ := db.ListCollectionNames(context.Background(), nil)
+	names, _ := db.ListCollectionNames(context.Background(), bson.M{})
 	for _, n := range names {
 		_, _ = db.Collection(n).DeleteMany(context.Background(), bson.M{})
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/test"
 	"testing"
+	"time"
 )
 
 type Test struct {
@@ -20,13 +21,20 @@ type Test struct {
 func (t *Test) Setup(t2 *testing.T) {
 	test.T.Cleanup()
 	t2.Cleanup(t.Cleanup)
-	_ = T.Client.Restart()
+	if !T.Client.IsStarted() {
+		_ = T.Client.Start()
+	} else if T.Client.IsClosed() {
+		_ = T.Client.Restart()
+	}
 }
 
 func (t *Test) Cleanup() {
 	_ = t.Client.Stop()
 	_ = t.Server.Stop()
 	test.T.Cleanup()
+
+	// wait to avoid caching
+	time.Sleep(200 * time.Millisecond)
 }
 
 var T *Test
@@ -36,7 +44,10 @@ func NewTest() (res *Test, err error) {
 	t := &Test{}
 
 	// server
-	t.Server, err = server.NewServer(server.WithConfigPath(test.T.MasterSvc.GetConfigPath()))
+	t.Server, err = server.NewServer(
+		server.WithConfigPath(test.T.MasterSvc.GetConfigPath()),
+		server.WithAddress(test.T.MasterSvc.GetAddress()),
+	)
 	if err != nil {
 		return nil, err
 	}

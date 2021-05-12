@@ -190,8 +190,15 @@ func (c *Client) Restart() (err error) {
 	return nil
 }
 
+func (c *Client) IsStarted() (res bool) {
+	return c.conn != nil
+}
+
 func (c *Client) IsClosed() (res bool) {
-	return c.conn.GetState() == connectivity.Shutdown
+	if c.conn != nil {
+		return c.conn.GetState() == connectivity.Shutdown
+	}
+	return false
 }
 
 func (c *Client) connect() (err error) {
