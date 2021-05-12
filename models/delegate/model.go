@@ -193,7 +193,7 @@ func (d *ModelDelegate) refreshArtifact() (err error) {
 	}
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	if err := col.FindId(d.doc.GetId()).One(d.a); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	return nil
 }

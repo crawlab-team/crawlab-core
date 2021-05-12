@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"testing"
+	"time"
 )
 
 func SetupTest(t *testing.T) {
@@ -19,4 +20,5 @@ func CleanupTest() {
 	for _, n := range names {
 		_ = db.Collection(n).Drop(context.Background())
 	}
+	time.Sleep(50 * time.Millisecond)
 }
