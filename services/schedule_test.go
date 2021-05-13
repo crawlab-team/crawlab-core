@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/crawlab-team/crawlab-core/models"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
+	spider2 "github.com/crawlab-team/crawlab-core/spider"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -44,7 +45,7 @@ func TestScheduleService_AddSchedule(t *testing.T) {
 
 	// script
 	script := `print('it works')`
-	fsSvc, err := SpiderService.GetFs(spider.Id)
+	fsSvc, err := spider2.SpiderService.GetFs(spider.Id)
 	require.Nil(t, err)
 	err = fsSvc.Save("main.py", []byte(script), nil)
 	require.Nil(t, err)
@@ -94,7 +95,7 @@ func TestScheduleService_UpdateSchedule(t *testing.T) {
 
 	// script
 	script := `print('it works')`
-	fsSvc, err := SpiderService.GetFs(spider.Id)
+	fsSvc, err := spider2.SpiderService.GetFs(spider.Id)
 	require.Nil(t, err)
 	err = fsSvc.Save("main.py", []byte(script), nil)
 	require.Nil(t, err)
@@ -149,7 +150,7 @@ func TestScheduleService_DeleteSchedule(t *testing.T) {
 
 	// script
 	script := `print('it works')`
-	fsSvc, err := SpiderService.GetFs(spider.Id)
+	fsSvc, err := spider2.SpiderService.GetFs(spider.Id)
 	require.Nil(t, err)
 	err = fsSvc.Save("main.py", []byte(script), nil)
 	require.Nil(t, err)

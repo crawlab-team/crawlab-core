@@ -102,7 +102,7 @@ func (r *TaskRunner) Init() (err error) {
 	fsPath := fmt.Sprintf("%s/%s", viper.GetString("spider.path"), r.s.Id.Hex())
 	//cwd := fmt.Sprintf("%s/%s", viper.GetString("spider.workspace"), uuid.New().String())
 	r.cwd = path.Join(os.TempDir(), uuid.New().String())
-	r.fs, err = fs.NewFileSystemService(&fs.FileSystemServiceOptions{
+	r.fs, err = fs.NewFsService(&fs.FileSystemServiceOptions{
 		IsMaster:      false,
 		FsPath:        fsPath,
 		WorkspacePath: r.cwd,

@@ -1,53 +1,27 @@
-package services
+package spider
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/task"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type SpiderServiceInterface interface {
-	// basic operations
-	Run(id primitive.ObjectID, opts *SpiderRunOptions) (err error)
-	Clone(id primitive.ObjectID, opts *SpiderCloneOptions) (err error)
-	Delete(id primitive.ObjectID) (err error)
-	Sync(id primitive.ObjectID) (err error)
-
-	// get *spiderFsService
-	GetFs(id primitive.ObjectID) (fsSvc *spiderFsService, err error)
-}
-
-type SpiderServiceOptions struct {
-}
-
-type SpiderRunOptions struct {
-	Mode       string
-	NodeIds    []primitive.ObjectID
-	Param      string
-	ScheduleId primitive.ObjectID
-}
-
-type SpiderCloneOptions struct {
-	Name string
-}
-
-func NewSpiderService(opts *SpiderServiceOptions) (svc *spiderService, err error) {
-	svc = &spiderService{}
+func NewSpiderService(opts *ServiceOptions) (svc *Service, err error) {
+	svc = &Service{}
 	return svc, nil
 }
 
-func InitSpiderService() (err error) {
-	SpiderService, err = NewSpiderService(nil)
-	return err
+type Service struct {
+	modelSvc service.ModelService
+	fsSvc    interfaces.FsService
 }
 
-type spiderService struct {
-}
-
-func (svc *spiderService) Run(id primitive.ObjectID, opts *SpiderRunOptions) (err error) {
+func (svc *Service) Run(id primitive.ObjectID, opts *RunOptions) (err error) {
 	// spider
-	s, err := models.MustGetRootService().GetSpiderById(id)
+	s, err := svc.modelSvc.GetSpiderById(id)
 	if err != nil {
 		return err
 	}
@@ -60,23 +34,23 @@ func (svc *spiderService) Run(id primitive.ObjectID, opts *SpiderRunOptions) (er
 	return nil
 }
 
-func (svc *spiderService) Clone(id primitive.ObjectID, opts *SpiderCloneOptions) (err error) {
+func (svc *Service) Clone(id primitive.ObjectID, opts *CloneOptions) (err error) {
 	// TODO: implement
 	return nil
 }
 
-func (svc *spiderService) Delete(id primitive.ObjectID) (err error) {
+func (svc *Service) Delete(id primitive.ObjectID) (err error) {
 	panic("implement me")
 }
 
-func (svc *spiderService) Sync(id primitive.ObjectID) (err error) {
+func (svc *Service) Sync(id primitive.ObjectID) (err error) {
 	if fsSvc, err := svc.GetFs(id); err == nil {
-		return fsSvc.SyncToWorkspace()
+		return svc.fsSvc.SyncToWorkspace()
 	}
 	return err
 }
 
-func (svc *spiderService) GetFs(id primitive.ObjectID) (fsSvc *spiderFsService, err error) {
+func (svc *Service) GetFs(id primitive.ObjectID) (fsSvc *FsService, err error) {
 	fsSvc, err = NewSpiderFsService(&SpiderFsServiceOptions{
 		Id: id,
 	})
@@ -86,7 +60,7 @@ func (svc *spiderService) GetFs(id primitive.ObjectID) (fsSvc *spiderFsService, 
 	return fsSvc, nil
 }
 
-func (svc *spiderService) assignTasks(s *models.Spider, opts *SpiderRunOptions) (err error) {
+func (svc *Service) assignTasks(s *models.Spider, opts *RunOptions) (err error) {
 	// main task
 	mainTask := models.Task{
 		SpiderId:   s.Id,
@@ -137,7 +111,7 @@ func (svc *spiderService) assignTasks(s *models.Spider, opts *SpiderRunOptions) 
 	return nil
 }
 
-func (svc *spiderService) getNodeIds(opts *SpiderRunOptions) (nodeIds []primitive.ObjectID, err error) {
+func (svc *Service) getNodeIds(opts *RunOptions) (nodeIds []primitive.ObjectID, err error) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		nodeIds, err = NodeService.GetAllNodeIds()
 	} else if opts.Mode == constants.RunTypeSelectedNodes {
@@ -149,7 +123,7 @@ func (svc *spiderService) getNodeIds(opts *SpiderRunOptions) (nodeIds []primitiv
 	return nodeIds, nil
 }
 
-func (svc *spiderService) isMultiTask(opts *SpiderRunOptions) (res bool) {
+func (svc *Service) isMultiTask(opts *RunOptions) (res bool) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		nodeIds, _ := NodeService.GetAllNodeIds()
 		return len(nodeIds) > 1
@@ -161,5 +135,3 @@ func (svc *spiderService) isMultiTask(opts *SpiderRunOptions) (res bool) {
 		return false
 	}
 }
-
-var SpiderService *spiderService

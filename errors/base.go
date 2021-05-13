@@ -13,6 +13,8 @@ const (
 	ErrorPrefixGrpc       = "grpc"
 	ErrorPrefixNode       = "node"
 	ErrorPrefixInject     = "inject"
+	ErrorPrefixSpider     = "spider"
+	ErrorPrefixFs         = "fs"
 )
 
 type ErrorPrefix string

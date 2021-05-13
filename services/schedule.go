@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/spider"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"github.com/robfig/cron/v3"
@@ -164,7 +165,7 @@ func (svc *scheduleService) ParseCronSpec(spec string) (s *cron.SpecSchedule, er
 
 func (svc *scheduleService) addFunc(s *models2.Schedule) (entryId cron.EntryID, err error) {
 	return svc.c.AddFunc(s.Cron, func() {
-		_ = SpiderService.Run(s.SpiderId, &SpiderRunOptions{
+		_ = spider.SpiderService.Run(s.SpiderId, &spider.RunOptions{
 			Mode:       s.Mode,
 			NodeIds:    s.NodeIds,
 			Param:      s.Param,

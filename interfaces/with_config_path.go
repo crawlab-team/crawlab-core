@@ -1,6 +1,6 @@
 package interfaces
 
 type WithConfigPath interface {
-	GetConfigPath() string
-	SetConfigPath(string)
+	GetConfigPath() (path string)
+	SetConfigPath(path string)
 }

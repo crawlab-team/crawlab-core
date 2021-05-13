@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/crawlab-team/crawlab-core/spider"
 	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/crawlab-db/redis"
@@ -20,7 +21,7 @@ func InitAll() (err error) {
 	if err := InitNodeService(); err != nil {
 		return err
 	}
-	if err := InitSpiderService(); err != nil {
+	if err := spider.InitSpiderService(); err != nil {
 		return err
 	}
 	if err := task.InitTaskService(); err != nil {

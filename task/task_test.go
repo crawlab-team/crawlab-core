@@ -119,7 +119,7 @@ func setupTask() (to *TaskTestObject, err error) {
 
 	// fs (global)
 	to.fsPath = viper.GetString("spider.path")
-	to.fs, err = fs.NewFileSystemService(&fs.FileSystemServiceOptions{
+	to.fs, err = fs.NewFsService(&fs.FileSystemServiceOptions{
 		IsMaster: true,
 		FsPath:   to.fsPath,
 	})

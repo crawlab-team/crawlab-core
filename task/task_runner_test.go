@@ -59,7 +59,7 @@ func setupTaskRunner() (to *TaskRunnerTestObject, err error) {
 	cleanupTaskRunner(to)
 
 	// fs
-	to.fs, err = fs.NewFileSystemService(&fs.FileSystemServiceOptions{
+	to.fs, err = fs.NewFsService(&fs.FileSystemServiceOptions{
 		IsMaster: true,
 		FsPath:   to.fsPath,
 		RepoPath: to.repoPath,
