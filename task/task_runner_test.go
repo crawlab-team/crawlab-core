@@ -111,7 +111,7 @@ func cleanupTaskRunner(to *TaskRunnerTestObject) {
 	var modelSvc service.ModelService
 	utils.MustResolveModule("", modelSvc)
 
-	if m, err := cfs.NewSeaweedFSManager(); err == nil {
+	if m, err := cfs.NewSeaweedFsManager(); err == nil {
 		_ = m.DeleteDir("/logs")
 		_ = m.DeleteDir("/spiders")
 	}

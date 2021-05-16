@@ -29,12 +29,12 @@ type Service struct {
 
 	// dependencies
 	nodeCfgSvc interfaces.NodeConfigService
-	fs         *cfs.SeaweedFSManager
+	fs         cfs.Manager
 	local      *vcs.GitClient
 	repo       *vcs.GitClient
 }
 
-func (svc *Service) List(path string, opts ...interfaces.FsServiceCrudOption) (files []entity.FsFileInfo, err error) {
+func (svc *Service) List(path string, opts ...interfaces.FsServiceCrudOption) (files []interfaces.FsFileInfo, err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
 		return files, errors.ErrorFsForbidden
@@ -59,7 +59,7 @@ func (svc *Service) List(path string, opts ...interfaces.FsServiceCrudOption) (f
 		if o.IsAbsolute {
 			itemPath = item.FullPath
 		}
-		info := entity.FsFileInfo{
+		f := &entity.FsFileInfo{
 			Name:      item.Name,
 			Path:      itemPath,
 			FullPath:  item.FullPath,
@@ -73,12 +73,12 @@ func (svc *Service) List(path string, opts ...interfaces.FsServiceCrudOption) (f
 			if o.IsAbsolute {
 				relativePath = item.FullPath
 			}
-			info.Children, err = svc.List(relativePath, opts...)
+			f.Children, err = svc.List(relativePath, opts...)
 			if err != nil {
 				return files, err
 			}
 		}
-		files = append(files, info)
+		files = append(files, f)
 	}
 
 	return files, nil
@@ -133,7 +133,7 @@ func (svc *Service) Rename(path, newPath string, opts ...interfaces.FsServiceCru
 	// TODO: implement rename directory
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
-		return errors.ErrorFsForbidden
+		return trace.TraceError(errors.ErrorFsForbidden)
 	}
 
 	// apply options
@@ -177,7 +177,7 @@ func (svc *Service) Rename(path, newPath string, opts ...interfaces.FsServiceCru
 func (svc *Service) Delete(path string, opts ...interfaces.FsServiceCrudOption) (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
-		return errors.ErrorFsForbidden
+		return trace.TraceError(errors.ErrorFsForbidden)
 	}
 
 	// apply options
@@ -221,30 +221,30 @@ func (svc *Service) Copy(path, newPath string, opts ...interfaces.FsServiceCrudO
 	if err != nil {
 		return trace.TraceError(err)
 	}
-	for _, file := range files {
-		if file.IsDir {
+	for _, f := range files {
+		if f.GetIsDir() {
 			// directory
-			dirPathNew := fmt.Sprintf("%s/%s", newPath, file.Name)
-			dirPath := file.Path
+			dirPathNew := fmt.Sprintf("%s/%s", newPath, f.GetName())
+			dirPath := f.GetPath()
 			if o.IsAbsolute {
-				dirPath = file.FullPath
+				dirPath = f.GetFullPath()
 			}
 			if err := svc.Copy(dirPath, dirPathNew, opts...); err != nil {
 				return err
 			}
 		} else {
 			// file
-			filePath := file.Path
+			filePath := f.GetPath()
 			if o.IsAbsolute {
-				filePath = file.FullPath
+				filePath = f.GetFullPath()
 			}
 			data, err := svc.GetFile(filePath, opts...)
 			if err != nil {
-				return trace.TraceError(err)
+				return err
 			}
-			filePathNew := fmt.Sprintf("%s/%s", newPath, file.Name)
+			filePathNew := fmt.Sprintf("%s/%s", newPath, f.GetName())
 			if err := svc.Save(filePathNew, data, opts...); err != nil {
-				return trace.TraceError(err)
+				return err
 			}
 		}
 	}
@@ -255,7 +255,7 @@ func (svc *Service) Copy(path, newPath string, opts ...interfaces.FsServiceCrudO
 func (svc *Service) Commit(msg string) (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
-		return errors.ErrorFsForbidden
+		return trace.TraceError(errors.ErrorFsForbidden)
 	}
 
 	// local temp repo
@@ -272,12 +272,12 @@ func (svc *Service) Commit(msg string) (err error) {
 
 	// commit
 	if err := c.CommitAll(msg); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 
 	// push to repo
 	if err := c.Push(vcs.GitDefaultRemoteName); err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 
 	return nil
@@ -286,7 +286,7 @@ func (svc *Service) Commit(msg string) (err error) {
 func (svc *Service) SyncToFs() (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
-		return errors.ErrorFsForbidden
+		return trace.TraceError(errors.ErrorFsForbidden)
 	}
 
 	// local temp repo
@@ -305,10 +305,15 @@ func (svc *Service) SyncToFs() (err error) {
 }
 
 func (svc *Service) SyncToWorkspace() (err error) {
+	// validate workspace path
+	if svc.workspacePath == "" {
+		return trace.TraceError(errors.ErrorFsEmptyWorkspacePath)
+	}
+
 	// create workspace directory if not exists
 	if _, err := os.Stat(svc.workspacePath); err != nil {
 		if err := os.MkdirAll(svc.workspacePath, os.ModePerm); err != nil {
-			return err
+			return trace.TraceError(err)
 		}
 	}
 
@@ -352,7 +357,7 @@ func (svc *Service) SetConfigPath(path string) {
 	svc.cfgPath = path
 }
 
-func (svc *Service) GetFs() (fs *cfs.SeaweedFSManager) {
+func (svc *Service) GetFs() (fs cfs.Manager) {
 	return svc.fs
 }
 
@@ -362,7 +367,7 @@ func (svc *Service) getLocalTempGitClient() (c *vcs.GitClient, dirPath string, e
 	dirPath = path.Join(tmpPath, uuid.New().String())
 	if _, err := os.Stat(dirPath); err == nil {
 		if err := os.RemoveAll(dirPath); err != nil {
-			return c, dirPath, err
+			return c, dirPath, trace.TraceError(err)
 		}
 	}
 
@@ -372,7 +377,7 @@ func (svc *Service) getLocalTempGitClient() (c *vcs.GitClient, dirPath string, e
 	if !matched {
 		repoPath, err = filepath.Abs(repoPath)
 		if err != nil {
-			return c, dirPath, err
+			return c, dirPath, trace.TraceError(err)
 		}
 	}
 
@@ -384,7 +389,7 @@ func (svc *Service) getLocalTempGitClient() (c *vcs.GitClient, dirPath string, e
 		IsMem:     false,
 	})
 	if err != nil {
-		return c, dirPath, err
+		return c, dirPath, trace.TraceError(err)
 	}
 
 	return c, dirPath, nil
@@ -414,10 +419,8 @@ func (svc *Service) newCrudOptions() (opts *interfaces.FsServiceCrudOptions) {
 func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	// service
 	svc := &Service{
-		cfgPath:       config.DefaultConfigPath,
-		fsPath:        "/fs",
-		repoPath:      "/repo",
-		workspacePath: "/tmp/test_workspace",
+		cfgPath: config.DefaultConfigPath,
+		fsPath:  "/fs",
 	}
 
 	// apply options
@@ -435,10 +438,10 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	if err := c.Provide(config.ProvideConfigService(svc.cfgPath)); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(cfs.NewSeaweedFSManager); err != nil {
+	if err := c.Provide(cfs.NewSeaweedFsManager); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, fs *cfs.SeaweedFSManager) {
+	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, fs cfs.Manager) {
 		svc.nodeCfgSvc = nodeCfgSvc
 		svc.fs = fs
 	}); err != nil {

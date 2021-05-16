@@ -5,3 +5,4 @@ func NewFsError(msg string) (err error) {
 }
 
 var ErrorFsForbidden = NewFsError("forbidden")
+var ErrorFsEmptyWorkspacePath = NewFsError("empty workspace path")

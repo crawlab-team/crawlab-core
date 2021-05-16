@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func NewSpiderService(opts *ServiceOptions) (svc *Service, err error) {
+func NewSpiderService(opts *interfaces.ServiceOptions) (svc *Service, err error) {
 	svc = &Service{}
 	return svc, nil
 }
@@ -19,7 +19,7 @@ type Service struct {
 	fsSvc    interfaces.FsService
 }
 
-func (svc *Service) Run(id primitive.ObjectID, opts *RunOptions) (err error) {
+func (svc *Service) Run(id primitive.ObjectID, opts *interfaces.RunOptions) (err error) {
 	// spider
 	s, err := svc.modelSvc.GetSpiderById(id)
 	if err != nil {
@@ -34,7 +34,7 @@ func (svc *Service) Run(id primitive.ObjectID, opts *RunOptions) (err error) {
 	return nil
 }
 
-func (svc *Service) Clone(id primitive.ObjectID, opts *CloneOptions) (err error) {
+func (svc *Service) Clone(id primitive.ObjectID, opts *interfaces.CloneOptions) (err error) {
 	// TODO: implement
 	return nil
 }
@@ -60,7 +60,7 @@ func (svc *Service) GetFs(id primitive.ObjectID) (fsSvc *FsService, err error) {
 	return fsSvc, nil
 }
 
-func (svc *Service) assignTasks(s *models.Spider, opts *RunOptions) (err error) {
+func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (err error) {
 	// main task
 	mainTask := models.Task{
 		SpiderId:   s.Id,
@@ -111,7 +111,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *RunOptions) (err error) 
 	return nil
 }
 
-func (svc *Service) getNodeIds(opts *RunOptions) (nodeIds []primitive.ObjectID, err error) {
+func (svc *Service) getNodeIds(opts *interfaces.RunOptions) (nodeIds []primitive.ObjectID, err error) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		nodeIds, err = NodeService.GetAllNodeIds()
 	} else if opts.Mode == constants.RunTypeSelectedNodes {
@@ -123,7 +123,7 @@ func (svc *Service) getNodeIds(opts *RunOptions) (nodeIds []primitive.ObjectID, 
 	return nodeIds, nil
 }
 
-func (svc *Service) isMultiTask(opts *RunOptions) (res bool) {
+func (svc *Service) isMultiTask(opts *interfaces.RunOptions) (res bool) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		nodeIds, _ := NodeService.GetAllNodeIds()
 		return len(nodeIds) > 1

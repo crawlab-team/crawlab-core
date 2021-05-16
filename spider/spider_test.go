@@ -2,6 +2,7 @@ package spider
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/services"
@@ -51,7 +52,7 @@ func TestSpiderService_Run(t *testing.T) {
 	require.Nil(t, err)
 
 	// run
-	err = SpiderService.Run(s.Id, &RunOptions{
+	err = SpiderService.Run(s.Id, &interfaces.RunOptions{
 		Mode: constants.RunTypeRandom,
 	})
 	require.Nil(t, err)

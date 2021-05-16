@@ -10,6 +10,16 @@ import (
 )
 
 func init() {
+	// remove tmp directory
+	if _, err := os.Stat("./tmp"); err == nil {
+		if err := os.RemoveAll("./tmp"); err != nil {
+			panic(err)
+		}
+	}
+	if err := os.MkdirAll("./tmp", os.ModePerm); err != nil {
+		panic(err)
+	}
+
 	var err error
 	T, err = NewTest()
 	if err != nil {
@@ -26,7 +36,6 @@ type Test struct {
 
 // Setup fs service test setup
 func (t *Test) Setup(t2 *testing.T) {
-	test.T.Cleanup()
 	t2.Cleanup(t.Cleanup)
 }
 
@@ -48,20 +57,20 @@ func (t *Test) Cleanup() {
 	}
 
 	// remove tmp directory
-	if _, err := os.Stat("./tmp"); err == nil {
-		if err := os.RemoveAll("./tmp"); err != nil {
-			panic(err)
-		}
-	}
-	if err := os.MkdirAll("./tmp", os.ModePerm); err != nil {
-		panic(err)
-	}
+	//if _, err := os.Stat("./tmp"); err == nil {
+	//	if err := os.RemoveAll("./tmp"); err != nil {
+	//		panic(err)
+	//	}
+	//}
+	//if err := os.MkdirAll("./tmp", os.ModePerm); err != nil {
+	//	panic(err)
+	//}
 
 	// node service cleanup
 	test.T.Cleanup()
 
 	// wait to avoid caching
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 }
 
 func NewTest() (res *Test, err error) {

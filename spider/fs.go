@@ -38,7 +38,7 @@ func (svc *FsService) SetId(id primitive.ObjectID) {
 	svc.id = id
 }
 
-func NewSpiderFsService(opts ...FsOption) (svc2 interfaces.SpiderFsService, err error) {
+func NewSpiderFsService(opts ...interfaces.FsOption) (svc2 interfaces.SpiderFsService, err error) {
 	// service
 	svc := &FsService{}
 
