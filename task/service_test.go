@@ -216,7 +216,7 @@ func TestNewTaskService(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master taskService
+	// create master Service
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -236,7 +236,7 @@ func TestTaskService_Init(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master taskService
+	// create master Service
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster:        true,
 		PollWaitSeconds: 1,
@@ -271,7 +271,7 @@ func TestTaskService_Assign(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master taskService
+	// create master Service
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -300,7 +300,7 @@ func TestTaskService_Fetch(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master taskService
+	// create master Service
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -333,7 +333,7 @@ func TestTaskService_Run(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master taskService
+	// create master Service
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster: true,
 	})
@@ -368,7 +368,7 @@ func TestTaskService_RunMultipleTasks(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master taskService
+	// create master Service
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster:        true,
 		PollWaitSeconds: 1,
@@ -406,7 +406,7 @@ func TestTaskService_RunMultipleTasksDifferentSpiders(t *testing.T) {
 	to, err := setupTask()
 	require.Nil(t, err)
 
-	// create master taskService
+	// create master Service
 	s, err := NewTaskService(&TaskServiceOptions{
 		IsMaster:        true,
 		PollWaitSeconds: 1,

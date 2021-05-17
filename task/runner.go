@@ -28,7 +28,7 @@ type TaskRunnerInterface interface {
 }
 
 type TaskRunnerOptions struct {
-	TaskService   *taskService       // TaskService on which the TaskRunner is executed
+	TaskService   *Service           // TaskService on which the TaskRunner is executed
 	TaskId        primitive.ObjectID // id of task (model.Task) to run
 	LogDriverType string             // log driver type
 }
@@ -69,13 +69,13 @@ func NewTaskRunner(options *TaskRunnerOptions) (r *TaskRunner, err error) {
 type TaskRunner struct {
 	cmd  *exec.Cmd                   // process command instance
 	pid  int                         // process id
-	svc  *taskService                // taskService
+	svc  *Service                    // Service
 	fs   *services.fileSystemService // file system service fileSystemService
 	l    clog.Driver                 // log service log.Driver
 	tid  primitive.ObjectID          // id of t (model.Task)
 	t    *models2.Task               // task model.Task
 	s    *models2.Spider             // spider model.Spider
-	ch   chan constants.TaskSignal   // channel to communicate between taskService and TaskRunner
+	ch   chan constants.TaskSignal   // channel to communicate between Service and TaskRunner
 	envs []models2.Env               // environment variables
 	opts *TaskRunnerOptions          // options
 	cwd  string                      // working directory
@@ -247,7 +247,7 @@ func (r *TaskRunner) Dispose() (err error) {
 		return err
 	}
 
-	// remove in taskService
+	// remove in Service
 	if r.svc != nil {
 		if err := r.removeTaskRunner(r.t.Id); err != nil {
 			return err

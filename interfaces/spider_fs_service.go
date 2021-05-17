@@ -7,4 +7,8 @@ type SpiderFsService interface {
 	GetWorkspacePath(id primitive.ObjectID) (res string)
 	GetRepoPath(id primitive.ObjectID) (res string)
 	SetId(id primitive.ObjectID)
+	SetFsPathBase(path string)
+	SetWorkspacePathBase(path string)
+	SetRepoPathBase(path string)
+	GetFsService() (fsSvc FsService)
 }

@@ -3,20 +3,18 @@ package spider
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/task"
+	"github.com/crawlab-team/go-trace"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func NewSpiderService(opts *interfaces.ServiceOptions) (svc *Service, err error) {
-	svc = &Service{}
-	return svc, nil
-}
-
 type Service struct {
 	modelSvc service.ModelService
-	fsSvc    interfaces.FsService
+	fsSvc    interfaces.SpiderFsService
 }
 
 func (svc *Service) Run(id primitive.ObjectID, opts *interfaces.RunOptions) (err error) {
@@ -44,25 +42,15 @@ func (svc *Service) Delete(id primitive.ObjectID) (err error) {
 }
 
 func (svc *Service) Sync(id primitive.ObjectID) (err error) {
-	if fsSvc, err := svc.GetFs(id); err == nil {
-		return svc.fsSvc.SyncToWorkspace()
+	if fsSvc, err := GetSpiderFsService(id); err == nil {
+		return fsSvc.GetFsService().SyncToWorkspace()
 	}
-	return err
-}
-
-func (svc *Service) GetFs(id primitive.ObjectID) (fsSvc *FsService, err error) {
-	fsSvc, err = NewSpiderFsService(&SpiderFsServiceOptions{
-		Id: id,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return fsSvc, nil
+	return nil
 }
 
 func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (err error) {
 	// main task
-	mainTask := models.Task{
+	mainTask := &models.Task{
 		SpiderId:   s.Id,
 		Mode:       opts.Mode,
 		Cmd:        s.Cmd,
@@ -70,7 +58,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 		Status:     constants.StatusPending,
 		ScheduleId: opts.ScheduleId,
 	}
-	if err := mainTask.Add(); err != nil {
+	if err := delegate.NewModelDelegate(mainTask).Add(); err != nil {
 		return err
 	}
 
@@ -81,7 +69,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 			return err
 		}
 		for _, nodeId := range nodeIds {
-			t := models.Task{
+			t := &models.Task{
 				SpiderId: s.Id,
 				ParentId: mainTask.Id,
 				Mode:     opts.Mode,
@@ -90,7 +78,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 				NodeId:   nodeId,
 				Status:   constants.StatusPending,
 			}
-			if err := task.TaskService.Assign(&t); err != nil {
+			if err := task.TaskService.Assign(t); err != nil {
 				return err
 			}
 		}
@@ -103,7 +91,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 		if len(nodeIds) > 0 {
 			mainTask.NodeId = nodeIds[0]
 		}
-		if err := task.TaskService.Assign(&mainTask); err != nil {
+		if err := task.TaskService.Assign(mainTask); err != nil {
 			return err
 		}
 	}
@@ -113,20 +101,37 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 
 func (svc *Service) getNodeIds(opts *interfaces.RunOptions) (nodeIds []primitive.ObjectID, err error) {
 	if opts.Mode == constants.RunTypeAllNodes {
-		nodeIds, err = NodeService.GetAllNodeIds()
+		query := bson.M{
+			"active":  true,
+			"enabled": true,
+			"status":  constants.NodeStatusOnline,
+		}
+		nodes, err := svc.modelSvc.GetNodeList(query, nil)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			nodeIds = append(nodeIds, node.GetId())
+		}
 	} else if opts.Mode == constants.RunTypeSelectedNodes {
 		nodeIds = opts.NodeIds
-	}
-	if err != nil {
-		return nil, err
 	}
 	return nodeIds, nil
 }
 
 func (svc *Service) isMultiTask(opts *interfaces.RunOptions) (res bool) {
 	if opts.Mode == constants.RunTypeAllNodes {
-		nodeIds, _ := NodeService.GetAllNodeIds()
-		return len(nodeIds) > 1
+		query := bson.M{
+			"active":  true,
+			"enabled": true,
+			"status":  constants.NodeStatusOnline,
+		}
+		nodes, err := svc.modelSvc.GetNodeList(query, nil)
+		if err != nil {
+			trace.PrintError(err)
+			return false
+		}
+		return len(nodes) > 1
 	} else if opts.Mode == constants.RunTypeRandom {
 		return false
 	} else if opts.Mode == constants.RunTypeSelectedNodes {
@@ -134,4 +139,17 @@ func (svc *Service) isMultiTask(opts *interfaces.RunOptions) (res bool) {
 	} else {
 		return false
 	}
+}
+
+func NewSpiderService(opts ...interfaces.ServiceOption) (svc2 interfaces.SpiderService, err error) {
+	svc := &Service{}
+
+	// apply options
+	for _, opt := range opts {
+		opt(svc)
+	}
+
+	// dependency injection
+
+	return svc, nil
 }

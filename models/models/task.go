@@ -39,6 +39,26 @@ func (t *Task) SetId(id primitive.ObjectID) {
 	t.Id = id
 }
 
+func (t *Task) GetNodeId() (id primitive.ObjectID) {
+	return t.NodeId
+}
+
+func (t *Task) GetNodeIds() (ids []primitive.ObjectID) {
+	return t.NodeIds
+}
+
+func (t *Task) GetNodeTags() (nodeTags []string) {
+	return t.NodeTags
+}
+
+func (t *Task) GetStatus() (status string) {
+	return t.Status
+}
+
+func (t *Task) SetStatus(status string) {
+	t.Status = status
+}
+
 type TaskDailyItem struct {
 	Date               string  `json:"date" bson:"_id"`
 	TaskCount          int     `json:"task_count" bson:"task_count"`

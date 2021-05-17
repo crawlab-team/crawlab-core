@@ -419,8 +419,10 @@ func (svc *Service) newCrudOptions() (opts *interfaces.FsServiceCrudOptions) {
 func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	// service
 	svc := &Service{
-		cfgPath: config.DefaultConfigPath,
-		fsPath:  "/fs",
+		cfgPath:       config.DefaultConfigPath,
+		fsPath:        DefaultFsPath,
+		workspacePath: DefaultWorkspacePath,
+		repoPath:      DefaultRepoPath,
 	}
 
 	// apply options

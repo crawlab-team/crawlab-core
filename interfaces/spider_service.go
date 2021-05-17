@@ -9,5 +9,4 @@ type SpiderService interface {
 	Clone(id primitive.ObjectID, opts *CloneOptions) (err error)
 	Delete(id primitive.ObjectID) (err error)
 	Sync(id primitive.ObjectID) (err error)
-	GetFs(id primitive.ObjectID) (fsSvc FsService, err error)
 }
