@@ -17,8 +17,9 @@ import (
 
 type WorkerService struct {
 	// dependencies
-	cfgSvc interfaces.NodeConfigService
-	client interfaces.GrpcClient
+	cfgSvc         interfaces.NodeConfigService
+	client         interfaces.GrpcClient
+	taskHandlerSvc interfaces.TaskHandlerService
 
 	// settings variables
 	cfgPath           string
@@ -103,6 +104,10 @@ func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err erro
 	switch msg.Code {
 	case grpc.StreamMessageCode_PING:
 		_, err = svc.client.GetNodeClient().SendHeartbeat(context.Background(), svc.client.NewRequest(svc.cfgSvc.GetBasicNodeInfo()))
+	case grpc.StreamMessageCode_RUN_TASK:
+		// TODO: run task
+	case grpc.StreamMessageCode_CANCEL_TASK:
+		// TODO: cancel task
 	}
 	if err != nil {
 		return trace.TraceError(err)
@@ -185,6 +190,9 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	if err := c.Provide(client.ProvideGetClient(svc.cfgPath, clientOpts...)); err != nil {
 		return nil, err
 	}
+	//if err := c.Provide(client.ProvideGetClient(svc.cfgPath, clientOpts...)); err != nil {
+	//	return nil, err
+	//}
 	if err := c.Invoke(func(cfgSvc interfaces.NodeConfigService, client interfaces.GrpcClient) {
 		svc.cfgSvc = cfgSvc
 		svc.client = client

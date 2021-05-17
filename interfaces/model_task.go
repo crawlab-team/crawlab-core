@@ -9,4 +9,8 @@ type Task interface {
 	GetNodeTags() (tags []string)
 	GetStatus() (status string)
 	SetStatus(status string)
+	GetSpiderId() (id primitive.ObjectID)
+	GetType() (ty string)
+	GetCmd() (cmd string)
+	GetParam() (param string)
 }

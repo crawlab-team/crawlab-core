@@ -6,15 +6,16 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Service struct {
-	modelSvc service.ModelService
-	fsSvc    interfaces.SpiderFsService
+	// dependencies
+	modelSvc     service.ModelService
+	fsSvc        interfaces.SpiderFsService
+	schedulerSvc interfaces.TaskSchedulerService
 }
 
 func (svc *Service) Run(id primitive.ObjectID, opts *interfaces.RunOptions) (err error) {
@@ -78,7 +79,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 				NodeId:   nodeId,
 				Status:   constants.StatusPending,
 			}
-			if err := task.TaskService.Assign(t); err != nil {
+			if err := svc.schedulerSvc.Assign(t); err != nil {
 				return err
 			}
 		}
@@ -91,7 +92,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 		if len(nodeIds) > 0 {
 			mainTask.NodeId = nodeIds[0]
 		}
-		if err := task.TaskService.Assign(mainTask); err != nil {
+		if err := svc.schedulerSvc.Assign(mainTask); err != nil {
 			return err
 		}
 	}

@@ -15,6 +15,7 @@ const (
 	ErrorPrefixInject     = "inject"
 	ErrorPrefixSpider     = "spider"
 	ErrorPrefixFs         = "fs"
+	ErrorPrefixTask       = "task"
 )
 
 type ErrorPrefix string

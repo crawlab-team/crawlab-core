@@ -8,7 +8,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/go-trace"
-	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"sync"
@@ -29,16 +28,16 @@ type FsService struct {
 	s  *models.Spider
 }
 
-func (svc *FsService) GetFsPath(id primitive.ObjectID) (res string) {
-	return fmt.Sprintf("%s/%s", viper.GetString("spider.fs"), id.Hex())
+func (svc *FsService) GetFsPath() (res string) {
+	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.id.Hex())
 }
 
-func (svc *FsService) GetWorkspacePath(id primitive.ObjectID) (res string) {
-	return fmt.Sprintf("%s/%s", viper.GetString("spider.workspace"), id.Hex())
+func (svc *FsService) GetWorkspacePath() (res string) {
+	return fmt.Sprintf("%s/%s", svc.workspacePathBase, svc.id.Hex())
 }
 
-func (svc *FsService) GetRepoPath(id primitive.ObjectID) (res string) {
-	return fmt.Sprintf("%s/%s", viper.GetString("spider.repo"), id.Hex())
+func (svc *FsService) GetRepoPath() (res string) {
+	return fmt.Sprintf("%s/%s", svc.repoPathBase, svc.id.Hex())
 }
 
 func (svc *FsService) SetId(id primitive.ObjectID) {
@@ -99,9 +98,9 @@ func NewSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption
 
 	// fs service
 	svc.fsSvc, err = fs.NewFsService(
-		fs.WithFsPath(svc.GetFsPath(svc.id)),
-		fs.WithWorkspacePath(svc.GetWorkspacePath(svc.id)),
-		fs.WithRepoPath(svc.GetRepoPath(svc.id)),
+		fs.WithFsPath(svc.GetFsPath()),
+		fs.WithWorkspacePath(svc.GetWorkspacePath()),
+		fs.WithRepoPath(svc.GetRepoPath()),
 	)
 	if err != nil {
 		return nil, err
@@ -135,4 +134,10 @@ func GetSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption
 	}
 
 	return svc, nil
+}
+
+func ProvideGetSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption) func() (svc interfaces.SpiderFsService, err error) {
+	return func() (svc interfaces.SpiderFsService, err error) {
+		return GetSpiderFsService(id, opts...)
+	}
 }

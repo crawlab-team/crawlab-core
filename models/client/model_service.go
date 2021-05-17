@@ -55,7 +55,7 @@ func NewServiceDelegate(opts ...ModelServiceDelegateOption) (svc2 interfaces.Grp
 	return svc, nil
 }
 
-func ProvideNewServiceDelegate(path string) func() (svc interfaces.GrpcClientModelService, err error) {
+func ProvideServiceDelegate(path string) func() (svc interfaces.GrpcClientModelService, err error) {
 	return func() (svc interfaces.GrpcClientModelService, err error) {
 		return NewServiceDelegate(WithServiceConfigPath(path))
 	}

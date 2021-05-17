@@ -200,3 +200,9 @@ func NewBaseServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 interf
 
 	return svc, nil
 }
+
+func ProvideBaseServiceDelegate(id interfaces.ModelId) func() (svc interfaces.GrpcClientModelBaseService, err error) {
+	return func() (svc interfaces.GrpcClientModelBaseService, err error) {
+		return NewBaseServiceDelegate(WithBaseServiceModelId(id))
+	}
+}

@@ -1,115 +1,62 @@
-package task
+package handler
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/fs"
-	"github.com/crawlab-team/crawlab-core/models"
-	models2 "github.com/crawlab-team/crawlab-core/models/models"
-	"github.com/crawlab-team/crawlab-core/services"
+	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/client"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/services/sys_exec"
+	"github.com/crawlab-team/crawlab-core/spider"
 	"github.com/crawlab-team/crawlab-core/utils"
 	clog "github.com/crawlab-team/crawlab-log"
-	"github.com/google/uuid"
+	"github.com/crawlab-team/go-trace"
 	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.uber.org/dig"
 	"os"
 	"os/exec"
-	"path"
 	"time"
 )
 
-type TaskRunnerInterface interface {
-	Run() (err error)
-	Cancel() (err error)
-	Dispose() (err error)
-}
+type Runner struct {
+	// dependencies
+	svc   interfaces.TaskHandlerService // task handler service
+	fsSvc interfaces.SpiderFsService    // spider fs service
 
-type TaskRunnerOptions struct {
-	TaskService   *Service           // TaskService on which the TaskRunner is executed
-	TaskId        primitive.ObjectID // id of task (model.Task) to run
-	LogDriverType string             // log driver type
-}
+	// settings variables
+	logDriverType string
 
-func NewTaskRunner(options *TaskRunnerOptions) (r *TaskRunner, err error) {
-	// validate options
-	if options == nil {
-		return r, constants.ErrInvalidOptions
-	}
-	if options.TaskId.IsZero() {
-		return r, constants.ErrInvalidOptions
-	}
-
-	// normalize LogDriverType
-	if options.LogDriverType == "" {
-		options.LogDriverType = clog.DriverTypeFs
-	}
-
-	// task service
-	svc := options.TaskService
-
-	// task runner
-	r = &TaskRunner{
-		svc:  svc,
-		tid:  options.TaskId,
-		ch:   make(chan constants.TaskSignal),
-		opts: options,
-	}
-
-	// initialize task runner
-	if err := r.Init(); err != nil {
-		return r, err
-	}
-
-	return r, nil
-}
-
-type TaskRunner struct {
-	cmd  *exec.Cmd                   // process command instance
-	pid  int                         // process id
-	svc  *Service                    // Service
-	fs   *services.fileSystemService // file system service fileSystemService
-	l    clog.Driver                 // log service log.Driver
-	tid  primitive.ObjectID          // id of t (model.Task)
-	t    *models2.Task               // task model.Task
-	s    *models2.Spider             // spider model.Spider
-	ch   chan constants.TaskSignal   // channel to communicate between Service and TaskRunner
-	envs []models2.Env               // environment variables
-	opts *TaskRunnerOptions          // options
-	cwd  string                      // working directory
+	// internals
+	cmd  *exec.Cmd                 // process command instance
+	pid  int                       // process id
+	fs   interfaces.FsService      // file system service fileSystemService
+	l    clog.Driver               // log service log.Driver
+	tid  primitive.ObjectID        // task id
+	t    interfaces.Task           // task model.Task
+	s    interfaces.Spider         // spider model.Spider
+	ch   chan constants.TaskSignal // channel to communicate between Service and Runner
+	envs []models.Env              // environment variables
+	cwd  string                    // working directory
 
 	// log internals
 	scannerStdout *bufio.Scanner
 	scannerStderr *bufio.Scanner
 }
 
-func (r *TaskRunner) Init() (err error) {
+func (r *Runner) Init() (err error) {
 	// update task
 	if err := r.updateTask(""); err != nil {
 		return err
 	}
 
-	// spider
-	s, err := models.MustGetRootService().GetSpiderById(r.t.SpiderId)
-	if err != nil {
-		return err
-	}
-	r.s = s
-
-	// worker file system service using a temp directory
-	fsPath := fmt.Sprintf("%s/%s", viper.GetString("spider.path"), r.s.Id.Hex())
-	//cwd := fmt.Sprintf("%s/%s", viper.GetString("spider.workspace"), uuid.New().String())
-	r.cwd = path.Join(os.TempDir(), uuid.New().String())
-	r.fs, err = fs.NewFsService(&fs.FileSystemServiceOptions{
-		IsMaster:      false,
-		FsPath:        fsPath,
-		WorkspacePath: r.cwd,
-	})
-	if err != nil {
-		return err
-	}
+	// working directory
+	r.cwd = r.fsSvc.GetWorkspacePath()
 
 	// sync files to workspace
 	if err := r.fs.SyncToWorkspace(); err != nil {
@@ -126,7 +73,7 @@ func (r *TaskRunner) Init() (err error) {
 	return nil
 }
 
-func (r *TaskRunner) Run() (err error) {
+func (r *Runner) Run() (err error) {
 	// update task status (processing)
 	if err := r.updateTask(constants.StatusRunning); err != nil {
 		return err
@@ -192,7 +139,7 @@ func (r *TaskRunner) Run() (err error) {
 
 	// validate task status
 	if status == "" {
-		return constants.ErrInvalidType
+		return trace.TraceError(errors.ErrorTaskInvalidType)
 	}
 
 	// update task status
@@ -209,47 +156,39 @@ func (r *TaskRunner) Run() (err error) {
 	return err
 }
 
-func (r *TaskRunner) Cancel() (err error) {
+func (r *Runner) Cancel() (err error) {
 	// kill process
 	if err := sys_exec.KillProcess(r.cmd); err != nil {
 		return err
 	}
 
 	// make sure the process does not exist
-	cancelWaitSeconds := viper.GetInt("task.cancelWaitSeconds")
-	if cancelWaitSeconds == 0 {
-		cancelWaitSeconds = 30
-	}
-	for i := 0; i < cancelWaitSeconds; i++ {
-		exists, _ := process.PidExists(int32(r.pid))
-		if !exists {
-			// successfully cancelled
-			return nil
+	op := func() error {
+		if exists, _ := process.PidExists(int32(r.pid)); exists {
+			return errors.ErrorTaskProcessStillExists
 		}
-		time.Sleep(1 * time.Second)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), r.svc.GetExitWatchDuration())
+	defer cancel()
+	b := backoff.WithContext(backoff.NewConstantBackOff(5*time.Second), ctx)
+	if err := backoff.Retry(op, b); err != nil {
+		return trace.TraceError(errors.ErrorTaskUnableToCancel)
 	}
 
-	// unable to cancel
-	return constants.ErrUnableToCancel
+	return nil
 }
 
-func (r *TaskRunner) Dispose() (err error) {
-	// validate whether it is disposable
-	if r.cwd == "" {
-		return constants.ErrUnableToDispose
-	}
-	if _, err := os.Stat(r.cwd); err != nil {
-		return constants.ErrAlreadyDisposed
-	}
-
+func (r *Runner) Dispose() (err error) {
 	// remove working directory
-	if err := os.RemoveAll(r.cwd); err != nil {
-		return err
-	}
+	// TODO: make it configurable
+	//if err := os.RemoveAll(r.cwd); err != nil {
+	//	return err
+	//}
 
-	// remove in Service
+	// remove runner from task service
 	if r.svc != nil {
-		if err := r.removeTaskRunner(r.t.Id); err != nil {
+		if err := r.removeTaskRunner(r.t.GetId()); err != nil {
 			return err
 		}
 	}
@@ -258,25 +197,33 @@ func (r *TaskRunner) Dispose() (err error) {
 	return nil
 }
 
-func (r *TaskRunner) configureCmd() (err error) {
+func (r *Runner) SetLogDriverType(driverType string) {
+	r.logDriverType = driverType
+}
+
+func (r *Runner) GetTaskId() (id primitive.ObjectID) {
+	return r.tid
+}
+
+func (r *Runner) configureCmd() (err error) {
 	var cmdStr string
-	if r.t.Type == constants.TaskTypeSpider {
+	if r.t.GetType() == constants.TaskTypeSpider {
 		// spider task
-		if r.s.Type == constants.Configurable {
+		if r.s.GetType() == constants.Configurable {
 			// configurable spider
 			cmdStr = "scrapy crawl config_spider"
 		} else {
 			// customized spider
-			cmdStr = r.s.Cmd
+			cmdStr = r.s.GetCmd()
 		}
-	} else if r.t.Type == constants.TaskTypeSystem {
+	} else if r.t.GetType() == constants.TaskTypeSystem {
 		// system task
-		cmdStr = r.t.Cmd
+		cmdStr = r.t.GetCmd()
 	}
 
 	// parameters
-	if r.t.Param != "" {
-		cmdStr += " " + r.t.Param
+	if r.t.GetParam() != "" {
+		cmdStr += " " + r.t.GetParam()
 	}
 
 	// get cmd instance
@@ -291,27 +238,27 @@ func (r *TaskRunner) configureCmd() (err error) {
 	return nil
 }
 
-func (r *TaskRunner) getLogDriver() (driver clog.Driver, err error) {
+func (r *Runner) getLogDriver() (driver clog.Driver, err error) {
 	options := r.getLogDriverOptions()
-	driver, err = clog.NewLogDriver(r.opts.LogDriverType, options)
+	driver, err = clog.NewLogDriver(r.logDriverType, options)
 	if err != nil {
 		return driver, err
 	}
 	return driver, nil
 }
 
-func (r *TaskRunner) getLogDriverOptions() (options interface{}) {
-	switch r.opts.LogDriverType {
+func (r *Runner) getLogDriverOptions() (options interface{}) {
+	switch r.logDriverType {
 	case clog.DriverTypeFs:
 		options = &clog.SeaweedFSLogDriverOptions{
 			BaseDir: viper.GetString("log.path"),
-			Prefix:  r.t.Id.Hex(),
+			Prefix:  r.tid.Hex(),
 		}
 	}
 	return options
 }
 
-func (r *TaskRunner) configureLogging() (err error) {
+func (r *Runner) configureLogging() (err error) {
 	// set stdout reader
 	stdout, _ := r.cmd.StdoutPipe()
 	r.scannerStdout = bufio.NewScanner(stdout)
@@ -323,7 +270,7 @@ func (r *TaskRunner) configureLogging() (err error) {
 	return nil
 }
 
-func (r *TaskRunner) startLogging() {
+func (r *Runner) startLogging() {
 	// start reading stdout
 	go r.startLoggingReaderStdout()
 
@@ -331,7 +278,7 @@ func (r *TaskRunner) startLogging() {
 	go r.startLoggingReaderStderr()
 }
 
-func (r *TaskRunner) startLoggingReaderStdout() {
+func (r *Runner) startLoggingReaderStdout() {
 	utils.LogDebug("begin startLoggingReaderStdout")
 	for r.scannerStdout.Scan() {
 		line := r.scannerStdout.Text()
@@ -342,7 +289,7 @@ func (r *TaskRunner) startLoggingReaderStdout() {
 	utils.LogDebug("scannerStdout reached end")
 }
 
-func (r *TaskRunner) startLoggingReaderStderr() {
+func (r *Runner) startLoggingReaderStderr() {
 	utils.LogDebug("begin startLoggingReaderStderr")
 	for r.scannerStderr.Scan() {
 		line := r.scannerStderr.Text()
@@ -353,7 +300,7 @@ func (r *TaskRunner) startLoggingReaderStderr() {
 	utils.LogDebug("scannerStderr reached end")
 }
 
-func (r *TaskRunner) startHealthCheck() {
+func (r *Runner) startHealthCheck() {
 	for {
 		exists, _ := process.PidExists(int32(r.pid))
 		if !exists {
@@ -365,7 +312,7 @@ func (r *TaskRunner) startHealthCheck() {
 	}
 }
 
-func (r *TaskRunner) configureEnv() (err error) {
+func (r *Runner) configureEnv() (err error) {
 	// TODO: refactor
 	//envs := r.s.Envs
 	//if r.s.Type == constants.Configurable {
@@ -395,7 +342,7 @@ func (r *TaskRunner) configureEnv() (err error) {
 	//col := utils.GetSpiderCol(r.s.Col, r.s.Name)
 
 	// 默认环境变量
-	r.cmd.Env = append(os.Environ(), "CRAWLAB_TASK_ID="+r.t.Id.Hex())
+	r.cmd.Env = append(os.Environ(), "CRAWLAB_TASK_ID="+r.tid.Hex())
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_COLLECTION="+col)
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_HOST="+viper.GetString("mongo.host"))
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_PORT="+viper.GetString("mongo.port"))
@@ -422,25 +369,25 @@ func (r *TaskRunner) configureEnv() (err error) {
 	//	r.cmd.Env = append(r.cmd.Env, "CRAWLAB_IS_DEDUP=0")
 	//}
 
-	// task environment variables
-	for _, env := range r.s.Envs {
-		r.cmd.Env = append(r.cmd.Env, env.Name+"="+env.Value)
-	}
+	// TODO: implement task environment variables
+	//for _, env := range r.s.Envs {
+	//	r.cmd.Env = append(r.cmd.Env, env.Name+"="+env.Value)
+	//}
 
-	// global environment variables
-	variables, err := models.MustGetRootService().GetVariableList(nil, nil)
-	if err != nil {
-		return err
-	}
-	for _, variable := range variables {
-		r.cmd.Env = append(r.cmd.Env, variable.Key+"="+variable.Value)
-	}
+	// TODO: implement global environment variables
+	//variables, err := models.MustGetRootService().GetVariableList(nil, nil)
+	//if err != nil {
+	//	return err
+	//}
+	//for _, variable := range variables {
+	//	r.cmd.Env = append(r.cmd.Env, variable.Key+"="+variable.Value)
+	//}
 	return nil
 }
 
 // wait for process to finish and send task signal (constants.TaskSignal)
-// to task runner's channel (TaskRunner.ch) according to exit code
-func (r *TaskRunner) wait() {
+// to task runner's channel (Runner.ch) according to exit code
+func (r *Runner) wait() {
 	// wait for process to finish
 	if err := r.cmd.Wait(); err != nil {
 		exitError, ok := err.(*exec.ExitError)
@@ -464,33 +411,73 @@ func (r *TaskRunner) wait() {
 	r.ch <- constants.TaskSignalFinish
 }
 
-// update and get updated info of task (TaskRunner.t)
-func (r *TaskRunner) updateTask(status string) (err error) {
+// update and get updated info of task (Runner.t)
+func (r *Runner) updateTask(status string) (err error) {
 	// update task status
 	if r.t != nil && status != "" {
-		r.t.Status = status
-		if err := r.t.Save(); err != nil {
+		r.t.SetStatus(status)
+		if err := client.NewModelDelegate(r.t).Save(); err != nil {
 			return err
 		}
 	}
 
 	// get task
-	t, err := models.MustGetRootService().GetTaskById(r.tid)
+	r.t, err = r.svc.GetModelTaskService().GetTaskById(r.tid)
 	if err != nil {
 		return err
 	}
 
-	// set task
-	r.t = t
-
 	return nil
 }
 
-func (r *TaskRunner) removeTaskRunner(taskId primitive.ObjectID) (err error) {
-	_, ok := r.svc.runners.Load(taskId)
-	if !ok {
-		return constants.ErrNotExists
+func (r *Runner) removeTaskRunner(taskId primitive.ObjectID) (err error) {
+	if _, err := r.svc.GetRunner(taskId); err != nil {
+		return err
 	}
-	r.svc.runners.Delete(taskId)
+	r.svc.DeleteRunner(taskId)
 	return nil
+}
+
+func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opts ...RunnerOption) (r2 interfaces.TaskRunner, err error) {
+	// validate options
+	if id.IsZero() {
+		return nil, constants.ErrInvalidOptions
+	}
+
+	// runner
+	r := &Runner{
+		logDriverType: clog.DriverTypeFs,
+		svc:           svc,
+		tid:           id,
+		ch:            make(chan constants.TaskSignal),
+	}
+
+	// apply options
+	for _, opt := range opts {
+		opt(r)
+	}
+
+	// spider
+	r.s, err = r.svc.GetModelSpiderService().GetSpiderById(r.t.GetSpiderId())
+	if err != nil {
+		return nil, err
+	}
+
+	// dependency injection
+	c := dig.New()
+	if err := c.Provide(spider.ProvideGetSpiderFsService(r.t.GetSpiderId())); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Invoke(func(fsSvc interfaces.SpiderFsService) {
+		r.fsSvc = fsSvc
+	}); err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// initialize task runner
+	if err := r.Init(); err != nil {
+		return r, err
+	}
+
+	return r, nil
 }

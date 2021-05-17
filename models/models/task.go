@@ -59,6 +59,22 @@ func (t *Task) SetStatus(status string) {
 	t.Status = status
 }
 
+func (t *Task) GetSpiderId() (id primitive.ObjectID) {
+	return t.SpiderId
+}
+
+func (t *Task) GetType() (ty string) {
+	return t.Type
+}
+
+func (t *Task) GetCmd() (cmd string) {
+	return t.Cmd
+}
+
+func (t *Task) GetParam() (param string) {
+	return t.Param
+}
+
 type TaskDailyItem struct {
 	Date               string  `json:"date" bson:"_id"`
 	TaskCount          int     `json:"task_count" bson:"task_count"`

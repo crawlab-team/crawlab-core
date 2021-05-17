@@ -75,3 +75,11 @@ func (s *Spider) GetTags() (tags []interfaces.Tag) {
 func (s *Spider) SetTags(tags []interfaces.Tag) {
 	s.Tags = convertInterfacesToTags(tags)
 }
+
+func (s *Spider) GetCmd() (cmd string) {
+	return s.Cmd
+}
+
+func (s *Spider) GetType() (ty string) {
+	return s.Type
+}
