@@ -6,6 +6,10 @@ import (
 
 type SpiderSyncService interface {
 	WithConfigPath
+	SetFsPathBase(path string)
+	SetWorkspacePathBase(path string)
+	SetRepoPathBase(path string)
+	GetFsService(id primitive.ObjectID) (fsSvc SpiderFsService, err error)
 	SyncToFs(id primitive.ObjectID) (err error)
 	SyncToWorkspace(id primitive.ObjectID) (err error)
 }

@@ -28,6 +28,10 @@ type Service struct {
 	s  *models.Spider
 }
 
+func (svc *Service) SetId(id primitive.ObjectID) {
+	svc.id = id
+}
+
 func (svc *Service) GetFsPath() (res string) {
 	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.id.Hex())
 }
@@ -38,10 +42,6 @@ func (svc *Service) GetWorkspacePath() (res string) {
 
 func (svc *Service) GetRepoPath() (res string) {
 	return fmt.Sprintf("%s/%s", svc.repoPathBase, svc.id.Hex())
-}
-
-func (svc *Service) SetId(id primitive.ObjectID) {
-	svc.id = id
 }
 
 func (svc *Service) SetFsPathBase(path string) {

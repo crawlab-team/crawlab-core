@@ -15,7 +15,10 @@ type Service struct {
 	nodeCfgSvc interfaces.NodeConfigService
 
 	// settings
-	cfgPath string
+	cfgPath           string
+	fsPathBase        string
+	workspacePathBase string
+	repoPathBase      string
 }
 
 func (svc *Service) GetConfigPath() (path string) {
@@ -26,20 +29,41 @@ func (svc *Service) SetConfigPath(path string) {
 	svc.cfgPath = path
 }
 
+func (svc *Service) SetFsPathBase(path string) {
+	svc.fsPathBase = path
+}
+
+func (svc *Service) SetWorkspacePathBase(path string) {
+	svc.workspacePathBase = path
+}
+
+func (svc *Service) SetRepoPathBase(path string) {
+	svc.repoPathBase = path
+}
+
+func (svc *Service) GetFsService(id primitive.ObjectID) (fsSvc interfaces.SpiderFsService, err error) {
+	return fs.GetSpiderFsService(
+		id,
+		fs.WithFsPathBase(svc.fsPathBase),
+		fs.WithWorkspacePathBase(svc.workspacePathBase),
+		fs.WithRepoPathBase(svc.repoPathBase),
+	)
+}
+
 func (svc *Service) SyncToFs(id primitive.ObjectID) (err error) {
 	// validate node type
 	if !svc.nodeCfgSvc.IsMaster() {
 		return trace.TraceError(errors.ErrorSpiderForbidden)
 	}
 
-	if fsSvc, err := fs.GetSpiderFsService(id); err == nil {
+	if fsSvc, err := svc.GetFsService(id); err == nil {
 		return fsSvc.GetFsService().SyncToFs()
 	}
 	return nil
 }
 
 func (svc *Service) SyncToWorkspace(id primitive.ObjectID) (err error) {
-	if fsSvc, err := fs.GetSpiderFsService(id); err == nil {
+	if fsSvc, err := svc.GetFsService(id); err == nil {
 		return fsSvc.GetFsService().SyncToWorkspace()
 	}
 	return nil

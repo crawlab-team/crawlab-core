@@ -1,7 +1,7 @@
 package test
 
 import (
-	fstest "github.com/crawlab-team/crawlab-core/fs/test"
+	"github.com/crawlab-team/crawlab-core/fs"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -37,23 +37,28 @@ func init() {
 var T *Test
 
 type Test struct {
-	s        *models.Spider
-	script   string
-	adminSvc interfaces.SpiderAdminService
-	syncSvc  interfaces.SpiderSyncService
-	modelSvc service.ModelService
+	s             *models.Spider
+	script        string
+	adminSvc      interfaces.SpiderAdminService
+	masterSyncSvc interfaces.SpiderSyncService
+	masterFsSvc   interfaces.SpiderFsService
+	workerSyncSvc interfaces.SpiderSyncService
+	workerFsSvc   interfaces.SpiderFsService
+	modelSvc      service.ModelService
+	fsSvc         interfaces.FsService
 }
 
 // Setup spider fs service test setup
 func (t *Test) Setup(t2 *testing.T) {
+	// remove tmp directory
+	_ = os.RemoveAll("./tmp")
+	_ = os.MkdirAll("./tmp", os.ModePerm)
+
 	t2.Cleanup(t.Cleanup)
 }
 
 // Cleanup spider fs service test cleanup
 func (t *Test) Cleanup() {
-	// fs service cleanup
-	fstest.T.Cleanup()
-
 	// wait to avoid caching
 	time.Sleep(500 * time.Millisecond)
 }
@@ -82,16 +87,51 @@ func main() {
 	if err := c.Provide(service.NewService); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Provide(fs.NewFsService); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Provide(admin.ProvideSpiderAdminService(ntest.T.MasterSvc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(sync.ProvideSpiderSyncService(ntest.T.WorkerSvc.GetConfigPath())); err != nil {
+	if err := c.Invoke(func(modelSvc service.ModelService, fsSvc interfaces.FsService, adminSvc interfaces.SpiderAdminService) {
+		t.modelSvc = modelSvc
+		t.fsSvc = fsSvc
+		t.adminSvc = adminSvc
+	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(modelSvc service.ModelService, adminSvc interfaces.SpiderAdminService, sync interfaces.SpiderSyncService) {
-		t.adminSvc = adminSvc
-		t.modelSvc = modelSvc
-	}); err != nil {
+
+	// master sync service
+	t.masterSyncSvc, err = sync.NewSpiderSyncService(
+		sync.WithConfigPath(ntest.T.MasterSvc.GetConfigPath()),
+		sync.WithFsPathBase("/fs"),
+		sync.WithRepoPathBase("./tmp/test_master_repo"),
+		sync.WithWorkspacePathBase("./tmp/test_master_workspace"),
+	)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// master fs service
+	t.masterFsSvc, err = t.masterSyncSvc.GetFsService(t.s.Id)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// worker sync service
+	t.workerSyncSvc, err = sync.NewSpiderSyncService(
+		sync.WithConfigPath(ntest.T.WorkerSvc.GetConfigPath()),
+		sync.WithFsPathBase("/fs"),
+		sync.WithRepoPathBase("./tmp/test_worker_repo"),
+		sync.WithWorkspacePathBase("./tmp/test_worker_workspace"),
+	)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// worker fs service
+	t.workerFsSvc, err = t.workerSyncSvc.GetFsService(t.s.Id)
+	if err != nil {
 		return nil, trace.TraceError(err)
 	}
 

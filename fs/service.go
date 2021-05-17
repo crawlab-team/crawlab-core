@@ -422,7 +422,7 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 		cfgPath:       config.DefaultConfigPath,
 		fsPath:        DefaultFsPath,
 		workspacePath: DefaultWorkspacePath,
-		repoPath:      DefaultRepoPath,
+		//repoPath:      DefaultRepoPath,
 	}
 
 	// apply options
