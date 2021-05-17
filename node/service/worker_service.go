@@ -21,7 +21,7 @@ type WorkerService struct {
 	client         interfaces.GrpcClient
 	taskHandlerSvc interfaces.TaskHandlerService
 
-	// settings variables
+	// settings
 	cfgPath           string
 	address           interfaces.Address
 	heartbeatInterval time.Duration
@@ -167,6 +167,7 @@ func (svc *WorkerService) reportStatus() {
 
 func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	svc := &WorkerService{
+		cfgPath:           config.DefaultConfigPath,
 		heartbeatInterval: 15 * time.Second,
 		n:                 &models.Node{},
 	}

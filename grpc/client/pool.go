@@ -11,7 +11,7 @@ import (
 )
 
 type Pool struct {
-	// settings variables
+	// settings
 	size    int
 	cfgPath string
 

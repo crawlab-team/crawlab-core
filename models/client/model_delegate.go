@@ -80,7 +80,7 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...Model
 }
 
 type ModelDelegate struct {
-	// settings variables
+	// settings
 	cfgPath string
 
 	// internals

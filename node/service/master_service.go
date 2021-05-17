@@ -24,7 +24,7 @@ type MasterService struct {
 	cfgSvc   interfaces.NodeConfigService
 	server   interfaces.GrpcServer
 
-	// settings variables
+	// settings
 	cfgPath         string
 	address         interfaces.Address
 	monitorInterval time.Duration
@@ -217,6 +217,7 @@ func (svc *MasterService) setWorkerNodeOffline(n interfaces.Node) (err error) {
 func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err error) {
 	// master service
 	svc := &MasterService{
+		cfgPath:         config.DefaultConfigPath,
 		monitorInterval: 60 * time.Second,
 		stopOnError:     false,
 	}

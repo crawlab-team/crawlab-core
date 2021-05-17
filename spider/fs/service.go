@@ -1,4 +1,4 @@
-package spider
+package fs
 
 import (
 	"fmt"
@@ -13,8 +13,8 @@ import (
 	"sync"
 )
 
-type FsService struct {
-	// settings variables
+type Service struct {
+	// settings
 	fsPathBase        string
 	workspacePathBase string
 	repoPathBase      string
@@ -28,41 +28,41 @@ type FsService struct {
 	s  *models.Spider
 }
 
-func (svc *FsService) GetFsPath() (res string) {
+func (svc *Service) GetFsPath() (res string) {
 	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.id.Hex())
 }
 
-func (svc *FsService) GetWorkspacePath() (res string) {
+func (svc *Service) GetWorkspacePath() (res string) {
 	return fmt.Sprintf("%s/%s", svc.workspacePathBase, svc.id.Hex())
 }
 
-func (svc *FsService) GetRepoPath() (res string) {
+func (svc *Service) GetRepoPath() (res string) {
 	return fmt.Sprintf("%s/%s", svc.repoPathBase, svc.id.Hex())
 }
 
-func (svc *FsService) SetId(id primitive.ObjectID) {
+func (svc *Service) SetId(id primitive.ObjectID) {
 	svc.id = id
 }
 
-func (svc *FsService) SetFsPathBase(path string) {
+func (svc *Service) SetFsPathBase(path string) {
 	svc.fsPathBase = path
 }
 
-func (svc *FsService) SetWorkspacePathBase(path string) {
+func (svc *Service) SetWorkspacePathBase(path string) {
 	svc.workspacePathBase = path
 }
 
-func (svc *FsService) SetRepoPathBase(path string) {
+func (svc *Service) SetRepoPathBase(path string) {
 	svc.repoPathBase = path
 }
 
-func (svc *FsService) GetFsService() (fsSvc interfaces.FsService) {
+func (svc *Service) GetFsService() (fsSvc interfaces.FsService) {
 	return svc.fsSvc
 }
 
-func NewSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption) (svc2 interfaces.SpiderFsService, err error) {
+func NewSpiderFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.SpiderFsService, err error) {
 	// service
-	svc := &FsService{
+	svc := &Service{
 		fsPathBase:        fs.DefaultFsPath,
 		workspacePathBase: fs.DefaultWorkspacePath,
 		repoPathBase:      fs.DefaultRepoPath,
@@ -109,7 +109,7 @@ func NewSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption
 	return svc, nil
 }
 
-func ProvideSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption) func() (svc interfaces.SpiderFsService, err error) {
+func ProvideSpiderFsService(id primitive.ObjectID, opts ...Option) func() (svc interfaces.SpiderFsService, err error) {
 	return func() (svc interfaces.SpiderFsService, err error) {
 		return NewSpiderFsService(id, opts...)
 	}
@@ -117,7 +117,7 @@ func ProvideSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOp
 
 var spiderFsSvcCache = sync.Map{}
 
-func GetSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption) (svc interfaces.SpiderFsService, err error) {
+func GetSpiderFsService(id primitive.ObjectID, opts ...Option) (svc interfaces.SpiderFsService, err error) {
 	res, ok := spiderFsSvcCache.Load(id)
 	if !ok {
 		svc, err = NewSpiderFsService(id, opts...)
@@ -136,7 +136,7 @@ func GetSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption
 	return svc, nil
 }
 
-func ProvideGetSpiderFsService(id primitive.ObjectID, opts ...interfaces.SpiderFsOption) func() (svc interfaces.SpiderFsService, err error) {
+func ProvideGetSpiderFsService(id primitive.ObjectID, opts ...Option) func() (svc interfaces.SpiderFsService, err error) {
 	return func() (svc interfaces.SpiderFsService, err error) {
 		return GetSpiderFsService(id, opts...)
 	}

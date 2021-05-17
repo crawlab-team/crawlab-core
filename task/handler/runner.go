@@ -11,7 +11,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/services/sys_exec"
-	"github.com/crawlab-team/crawlab-core/spider"
+	"github.com/crawlab-team/crawlab-core/spider/fs"
 	"github.com/crawlab-team/crawlab-core/utils"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/crawlab-team/go-trace"
@@ -29,7 +29,7 @@ type Runner struct {
 	svc   interfaces.TaskHandlerService // task handler service
 	fsSvc interfaces.SpiderFsService    // spider fs service
 
-	// settings variables
+	// settings
 	logDriverType string
 
 	// internals
@@ -465,7 +465,7 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(spider.ProvideGetSpiderFsService(r.t.GetSpiderId())); err != nil {
+	if err := c.Provide(fs.ProvideGetSpiderFsService(r.t.GetSpiderId())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(fsSvc interfaces.SpiderFsService) {

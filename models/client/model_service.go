@@ -8,7 +8,7 @@ import (
 )
 
 type ServiceDelegate struct {
-	// settings variables
+	// settings
 	cfgPath string
 
 	// internals

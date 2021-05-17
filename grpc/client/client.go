@@ -26,7 +26,7 @@ type Client struct {
 	// dependencies
 	nodeCfgSvc interfaces.NodeConfigService
 
-	// settings variables
+	// settings
 	cfgPath string
 	address interfaces.Address
 	timeout time.Duration

@@ -1,21 +1,36 @@
-package spider
+package admin
 
 import (
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.uber.org/dig"
 )
 
 type Service struct {
 	// dependencies
+	nodeCfgSvc   interfaces.NodeConfigService
 	modelSvc     service.ModelService
-	fsSvc        interfaces.SpiderFsService
 	schedulerSvc interfaces.TaskSchedulerService
+
+	// settings
+	cfgPath string
+}
+
+func (svc *Service) GetConfigPath() (path string) {
+	return svc.cfgPath
+}
+
+func (svc *Service) SetConfigPath(path string) {
+	svc.cfgPath = path
 }
 
 func (svc *Service) Run(id primitive.ObjectID, opts *interfaces.RunOptions) (err error) {
@@ -40,13 +55,6 @@ func (svc *Service) Clone(id primitive.ObjectID, opts *interfaces.CloneOptions) 
 
 func (svc *Service) Delete(id primitive.ObjectID) (err error) {
 	panic("implement me")
-}
-
-func (svc *Service) Sync(id primitive.ObjectID) (err error) {
-	if fsSvc, err := GetSpiderFsService(id); err == nil {
-		return fsSvc.GetFsService().SyncToWorkspace()
-	}
-	return nil
 }
 
 func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (err error) {
@@ -142,8 +150,10 @@ func (svc *Service) isMultiTask(opts *interfaces.RunOptions) (res bool) {
 	}
 }
 
-func NewSpiderService(opts ...interfaces.ServiceOption) (svc2 interfaces.SpiderService, err error) {
-	svc := &Service{}
+func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, err error) {
+	svc := &Service{
+		cfgPath: config.DefaultConfigPath,
+	}
 
 	// apply options
 	for _, opt := range opts {
@@ -151,6 +161,35 @@ func NewSpiderService(opts ...interfaces.ServiceOption) (svc2 interfaces.SpiderS
 	}
 
 	// dependency injection
+	c := dig.New()
+	if err := c.Provide(config.ProvideConfigService(svc.cfgPath)); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Provide(service.NewService); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Provide(scheduler.ProvideTaskSchedulerService(svc.cfgPath)); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, modelSvc service.ModelService, schedulerSvc interfaces.TaskSchedulerService) {
+		svc.nodeCfgSvc = nodeCfgSvc
+		svc.modelSvc = modelSvc
+		svc.schedulerSvc = schedulerSvc
+	}); err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// validate node type
+	if !svc.nodeCfgSvc.IsMaster() {
+		return nil, trace.TraceError(errors.ErrorSpiderForbidden)
+	}
 
 	return svc, nil
+}
+
+func ProvideSpiderAdminService(path string, opts ...Option) func() (svc interfaces.SpiderAdminService, err error) {
+	opts = append(opts, WithConfigPath(path))
+	return func() (svc interfaces.SpiderAdminService, err error) {
+		return NewSpiderAdminService(opts...)
+	}
 }

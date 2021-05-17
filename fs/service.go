@@ -21,7 +21,7 @@ import (
 )
 
 type Service struct {
-	// settings variables
+	// settings
 	cfgPath       string
 	fsPath        string
 	workspacePath string

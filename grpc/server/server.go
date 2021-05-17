@@ -26,7 +26,7 @@ type Server struct {
 	modelDelegateSvr    *ModelDelegateServer
 	modelBaseServiceSvr *ModelBaseServiceServer
 
-	// settings variables
+	// settings
 	cfgPath string
 	address interfaces.Address
 

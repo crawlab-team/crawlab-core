@@ -5,3 +5,4 @@ func NewSpiderError(msg string) (err error) {
 }
 
 var ErrorSpiderMissingRequiredOption = NewSpiderError("missing required option")
+var ErrorSpiderForbidden = NewSpiderError("forbidden")

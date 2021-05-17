@@ -23,7 +23,7 @@ type Service struct {
 	modelSpiderSvc interfaces.GrpcClientModelSpiderService
 	modelTaskSvc   interfaces.GrpcClientModelTaskService
 
-	// settings variables
+	// settings
 	cfgPath           string
 	maxRunners        int
 	exitWatchDuration time.Duration

@@ -1,29 +1,31 @@
-package spider
+package fs
 
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func WithId(id primitive.ObjectID) interfaces.SpiderFsOption {
+type Option func(svc interfaces.SpiderFsService)
+
+func WithId(id primitive.ObjectID) Option {
 	return func(fsSvc interfaces.SpiderFsService) {
 		fsSvc.SetId(id)
 	}
 }
 
-func WithFsPathBase(path string) interfaces.SpiderFsOption {
+func WithFsPathBase(path string) Option {
 	return func(svc interfaces.SpiderFsService) {
 		svc.SetFsPathBase(path)
 	}
 }
 
-func WithWorkspacePathBase(path string) interfaces.SpiderFsOption {
+func WithWorkspacePathBase(path string) Option {
 	return func(svc interfaces.SpiderFsService) {
 		svc.SetWorkspacePathBase(path)
 	}
 }
 
-func WithRepoPathBase(path string) interfaces.SpiderFsOption {
+func WithRepoPathBase(path string) Option {
 	return func(svc interfaces.SpiderFsService) {
 		svc.SetRepoPathBase(path)
 	}

@@ -22,7 +22,7 @@ type Service struct {
 	nodeCfgSvc interfaces.NodeConfigService
 	modelSvc   service.ModelService
 
-	// settings variables
+	// settings
 	cfgPath string
 }
 

@@ -14,7 +14,7 @@ import (
 )
 
 type BaseServiceDelegate struct {
-	// settings variables
+	// settings
 	cfgPath string
 
 	// internals

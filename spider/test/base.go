@@ -1,12 +1,14 @@
 package test
 
 import (
-	"github.com/crawlab-team/crawlab-core/fs/test"
+	fstest "github.com/crawlab-team/crawlab-core/fs/test"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/spider"
+	ntest "github.com/crawlab-team/crawlab-core/node/test"
+	"github.com/crawlab-team/crawlab-core/spider/admin"
+	"github.com/crawlab-team/crawlab-core/spider/sync"
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
 	"os"
@@ -37,7 +39,8 @@ var T *Test
 type Test struct {
 	s        *models.Spider
 	script   string
-	svc      interfaces.SpiderService
+	adminSvc interfaces.SpiderAdminService
+	syncSvc  interfaces.SpiderSyncService
 	modelSvc service.ModelService
 }
 
@@ -49,7 +52,7 @@ func (t *Test) Setup(t2 *testing.T) {
 // Cleanup spider fs service test cleanup
 func (t *Test) Cleanup() {
 	// fs service cleanup
-	test.T.Cleanup()
+	fstest.T.Cleanup()
 
 	// wait to avoid caching
 	time.Sleep(500 * time.Millisecond)
@@ -76,14 +79,17 @@ func main() {
 
 	// spider service
 	c := dig.New()
-	if err := c.Provide(spider.NewSpiderService); err != nil {
-		return nil, trace.TraceError(err)
-	}
 	if err := c.Provide(service.NewService); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(svc interfaces.SpiderService, modelSvc service.ModelService) {
-		t.svc = svc
+	if err := c.Provide(admin.ProvideSpiderAdminService(ntest.T.MasterSvc.GetConfigPath())); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Provide(sync.ProvideSpiderSyncService(ntest.T.WorkerSvc.GetConfigPath())); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Invoke(func(modelSvc service.ModelService, adminSvc interfaces.SpiderAdminService, sync interfaces.SpiderSyncService) {
+		t.adminSvc = adminSvc
 		t.modelSvc = modelSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)
