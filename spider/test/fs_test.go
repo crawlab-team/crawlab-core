@@ -4,10 +4,6 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/fs"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"path"
-	"path/filepath"
 	"testing"
 )
 
@@ -15,9 +11,8 @@ func TestFsService_SyncToFs(t *testing.T) {
 	var err error
 	T.Setup(t)
 
-	// write file
-	filePath, _ := filepath.Abs(path.Join(T.masterFsSvc.GetWorkspacePath(), "main.go"))
-	err = ioutil.WriteFile(filePath, []byte(T.script), os.ModePerm)
+	// add file
+	err = T.masterFsSvc.GetFsService().Save("main.go", []byte(T.script))
 	require.Nil(t, err)
 
 	// commit

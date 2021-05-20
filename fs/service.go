@@ -30,7 +30,7 @@ type Service struct {
 	w *vcs.GitClient // workspace git client (only for master)
 }
 
-func (svc *Service) List(path string, opts ...interfaces.FsServiceCrudOption) (files []interfaces.FsFileInfo, err error) {
+func (svc *Service) List(path string, opts ...interfaces.ServiceCrudOption) (files []interfaces.FsFileInfo, err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
 		return files, errors.ErrorFsForbidden
@@ -80,7 +80,7 @@ func (svc *Service) List(path string, opts ...interfaces.FsServiceCrudOption) (f
 	return files, nil
 }
 
-func (svc *Service) GetFile(path string, opts ...interfaces.FsServiceCrudOption) (data []byte, err error) {
+func (svc *Service) GetFile(path string, opts ...interfaces.ServiceCrudOption) (data []byte, err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
 		return data, trace.TraceError(errors.ErrorFsForbidden)
@@ -103,7 +103,7 @@ func (svc *Service) GetFile(path string, opts ...interfaces.FsServiceCrudOption)
 	return svc.fs.GetFile(remotePath)
 }
 
-func (svc *Service) Save(path string, data []byte, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) Save(path string, data []byte, opts ...interfaces.ServiceCrudOption) (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
 		return trace.TraceError(errors.ErrorFsForbidden)
@@ -118,7 +118,7 @@ func (svc *Service) Save(path string, data []byte, opts ...interfaces.FsServiceC
 	return svc.SyncToWorkspace()
 }
 
-func (svc *Service) Rename(path, newPath string, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) Rename(path, newPath string, opts ...interfaces.ServiceCrudOption) (err error) {
 	// TODO: implement rename directory
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
@@ -134,7 +134,7 @@ func (svc *Service) Rename(path, newPath string, opts ...interfaces.FsServiceCru
 	return svc.SyncToWorkspace()
 }
 
-func (svc *Service) Delete(path string, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) Delete(path string, opts ...interfaces.ServiceCrudOption) (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
 		return trace.TraceError(errors.ErrorFsForbidden)
@@ -149,7 +149,7 @@ func (svc *Service) Delete(path string, opts ...interfaces.FsServiceCrudOption) 
 	return svc.SyncToWorkspace()
 }
 
-func (svc *Service) Copy(path, newPath string, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) Copy(path, newPath string, opts ...interfaces.ServiceCrudOption) (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
 		return tracerr.Wrap(errors.ErrorFsForbidden)
@@ -187,7 +187,7 @@ func (svc *Service) Commit(msg string) (err error) {
 }
 
 // SyncToFs sync from repo/workspace to fs
-func (svc *Service) SyncToFs(opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) SyncToFs(opts ...interfaces.ServiceCrudOption) (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
 		return trace.TraceError(errors.ErrorFsForbidden)
@@ -272,7 +272,7 @@ func (svc *Service) GetFs() (fs cfs.Manager) {
 	return svc.fs
 }
 
-func (svc *Service) saveFs(path string, data []byte, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) saveFs(path string, data []byte, opts ...interfaces.ServiceCrudOption) (err error) {
 	// apply options
 	o := svc.newCrudOptions()
 	for _, opt := range opts {
@@ -291,7 +291,7 @@ func (svc *Service) saveFs(path string, data []byte, opts ...interfaces.FsServic
 	return svc.fs.UpdateFile(remotePath, data)
 }
 
-func (svc *Service) renameFs(path, newPath string, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) renameFs(path, newPath string, opts ...interfaces.ServiceCrudOption) (err error) {
 	// apply options
 	o := svc.newCrudOptions()
 	for _, opt := range opts {
@@ -330,7 +330,7 @@ func (svc *Service) renameFs(path, newPath string, opts ...interfaces.FsServiceC
 	return nil
 }
 
-func (svc *Service) deleteFs(path string, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) deleteFs(path string, opts ...interfaces.ServiceCrudOption) (err error) {
 	// apply options
 	o := svc.newCrudOptions()
 	for _, opt := range opts {
@@ -348,7 +348,7 @@ func (svc *Service) deleteFs(path string, opts ...interfaces.FsServiceCrudOption
 	return nil
 }
 
-func (svc *Service) copyFs(path, newPath string, opts ...interfaces.FsServiceCrudOption) (err error) {
+func (svc *Service) copyFs(path, newPath string, opts ...interfaces.ServiceCrudOption) (err error) {
 	// apply options
 	o := svc.newCrudOptions()
 	for _, opt := range opts {
@@ -404,7 +404,7 @@ func (svc *Service) syncFromRepoToWorkspace() (err error) {
 	return svc.w.Reset()
 }
 
-func (svc *Service) getRemotePath(path string, o *interfaces.FsServiceCrudOptions) (remotePath string) {
+func (svc *Service) getRemotePath(path string, o *interfaces.ServiceCrudOptions) (remotePath string) {
 	// normalize path
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
@@ -419,8 +419,8 @@ func (svc *Service) getRemotePath(path string, o *interfaces.FsServiceCrudOption
 	}
 }
 
-func (svc *Service) newCrudOptions() (o *interfaces.FsServiceCrudOptions) {
-	return &interfaces.FsServiceCrudOptions{
+func (svc *Service) newCrudOptions() (o *interfaces.ServiceCrudOptions) {
+	return &interfaces.ServiceCrudOptions{
 		IsAbsolute: false,
 	}
 }

@@ -1,14 +1,14 @@
 package interfaces
 
-type FsServiceCrudOptions struct {
+type ServiceCrudOptions struct {
 	IsAbsolute        bool // whether the path is absolute
 	OnlyFromWorkspace bool // true if only sync from workspace
 }
 
-type FsServiceCrudOption func(o *FsServiceCrudOptions)
+type ServiceCrudOption func(o *ServiceCrudOptions)
 
-func WithOnlyFromWorkspace() FsServiceCrudOption {
-	return func(o *FsServiceCrudOptions) {
+func WithOnlyFromWorkspace() ServiceCrudOption {
+	return func(o *ServiceCrudOptions) {
 		o.OnlyFromWorkspace = true
 	}
 }

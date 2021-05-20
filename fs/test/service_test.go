@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/fs"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
+	"path"
 	"testing"
 )
 
@@ -26,6 +28,12 @@ func TestService_Save(t *testing.T) {
 
 	// test absolute path
 	data, err = T.masterFsSvc.GetFile(fmt.Sprintf("%s%s", T.masterFsSvc.GetFsPath(), "/test_file.txt"), fs.IsAbsolute())
+	require.Nil(t, err)
+	require.Equal(t, content, string(data))
+
+	// validate local
+	filePath := path.Join(T.masterFsSvc.GetWorkspacePath(), "test_file.txt")
+	data, err = ioutil.ReadFile(filePath)
 	require.Nil(t, err)
 	require.Equal(t, content, string(data))
 }
@@ -51,6 +59,12 @@ func TestService_Rename(t *testing.T) {
 	ok, err = T.masterFsSvc.GetFs().Exists("/test/test_file2.txt")
 	require.Nil(t, err)
 	require.True(t, ok)
+
+	// validate local
+	filePath := path.Join(T.masterFsSvc.GetWorkspacePath(), "test_file2.txt")
+	data, err := ioutil.ReadFile(filePath)
+	require.Nil(t, err)
+	require.Equal(t, content, string(data))
 
 	// rename to existing
 	err = T.masterFsSvc.Save("test_file.txt", []byte(content))
@@ -84,6 +98,10 @@ func TestService_Delete(t *testing.T) {
 	ok, err = T.masterFsSvc.GetFs().Exists("/test/test_file.txt")
 	require.Nil(t, err)
 	require.False(t, ok)
+
+	// validate local
+	filePath := path.Join(T.masterFsSvc.GetWorkspacePath(), "test_file.txt")
+	require.NoFileExists(t, filePath)
 }
 
 func TestService_SyncToWorkspace(t *testing.T) {
@@ -98,6 +116,8 @@ func TestService_SyncToWorkspace(t *testing.T) {
 	// sync to workspace
 	err = T.workerFsSvc.SyncToWorkspace()
 	require.Nil(t, err)
+
+	// validate
 	require.FileExists(t, "./tmp/test_worker_workspace/test_file.txt")
 	data, err := ioutil.ReadFile("./tmp/test_worker_workspace/test_file.txt")
 	require.Nil(t, err)
@@ -178,6 +198,12 @@ func TestService_Copy(t *testing.T) {
 	files, err = T.masterFsSvc.List(fmt.Sprintf("%s%s", T.masterFsSvc.GetFsPath(), "/new_absolute"), fs.IsAbsolute())
 	require.Nil(t, err)
 	require.Greater(t, len(files), 0)
+
+	// validate local
+	filePath := path.Join(T.masterFsSvc.GetWorkspacePath(), "/new/test_file.txt")
+	data, err = ioutil.ReadFile(filePath)
+	require.Nil(t, err)
+	require.Equal(t, content, string(data))
 }
 
 func TestService_Commit(t *testing.T) {
@@ -215,8 +241,8 @@ func TestService_SyncToFs(t *testing.T) {
 	err = T.masterFsSvc.Save("test_file.txt", []byte(content))
 	require.Nil(t, err)
 
-	// commit to repo
-	err = T.masterFsSvc.Commit("test commit")
+	// commit
+	err = T.masterFsSvc.Commit("initial commit")
 	require.Nil(t, err)
 
 	// edit the file
@@ -224,7 +250,7 @@ func TestService_SyncToFs(t *testing.T) {
 	err = T.masterFsSvc.Save("test_file.txt", []byte(content2))
 	require.Nil(t, err)
 
-	// test file content
+	// test edited file content
 	data, err := T.masterFsSvc.GetFile("test_file.txt")
 	require.Nil(t, err)
 	require.Equal(t, content2, string(data))
@@ -233,10 +259,43 @@ func TestService_SyncToFs(t *testing.T) {
 	err = T.masterFsSvc.SyncToFs()
 	require.Nil(t, err)
 
-	// test file content
+	// test synced file content
 	data, err = T.masterFsSvc.GetFile("test_file.txt")
 	require.Nil(t, err)
 	require.Equal(t, content, string(data))
+}
+
+func TestService_SyncToFs_OnlyFromWorkspace(t *testing.T) {
+	var err error
+	T.Setup(t)
+
+	// save new file to remote
+	content := "it works"
+	err = T.masterFsSvc.Save("test_file.txt", []byte(content))
+	require.Nil(t, err)
+
+	// commit
+	err = T.masterFsSvc.Commit("initial commit")
+	require.Nil(t, err)
+
+	// edit the file
+	content2 := "hello world"
+	err = T.masterFsSvc.Save("test_file.txt", []byte(content2))
+	require.Nil(t, err)
+
+	// test edited file content
+	data, err := T.masterFsSvc.GetFile("test_file.txt")
+	require.Nil(t, err)
+	require.Equal(t, content2, string(data))
+
+	// sync to fs
+	err = T.masterFsSvc.SyncToFs(interfaces.WithOnlyFromWorkspace())
+	require.Nil(t, err)
+
+	// test synced file content
+	data, err = T.masterFsSvc.GetFile("test_file.txt")
+	require.Nil(t, err)
+	require.Equal(t, content2, string(data))
 }
 
 func TestService_List(t *testing.T) {

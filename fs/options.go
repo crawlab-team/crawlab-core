@@ -10,8 +10,8 @@ func WithConfigPath(path string) Option {
 	}
 }
 
-func IsAbsolute() interfaces.FsServiceCrudOption {
-	return func(opts *interfaces.FsServiceCrudOptions) {
+func IsAbsolute() interfaces.ServiceCrudOption {
+	return func(opts *interfaces.ServiceCrudOptions) {
 		opts.IsAbsolute = true
 	}
 }
