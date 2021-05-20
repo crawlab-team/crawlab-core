@@ -38,7 +38,6 @@ var T *Test
 
 type Test struct {
 	s             *models.Spider
-	script        string
 	adminSvc      interfaces.SpiderAdminService
 	masterSyncSvc interfaces.SpiderSyncService
 	masterFsSvc   interfaces.SpiderFsService
@@ -46,6 +45,8 @@ type Test struct {
 	workerFsSvc   interfaces.SpiderFsService
 	modelSvc      service.ModelService
 	fsSvc         interfaces.FsService
+	scriptName    string
+	script        string
 }
 
 // Setup spider fs service test setup
@@ -68,6 +69,7 @@ func NewTest() (res *Test, err error) {
 			Name: "test_spider",
 			Cmd:  "go run main.go",
 		},
+		scriptName: "main.go",
 		script: `package main
 import "fmt"
 func main() {

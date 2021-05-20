@@ -61,6 +61,7 @@ func (svc *Service) ForceGetFsService(id primitive.ObjectID) (fsSvc interfaces.S
 	)
 }
 
+// SyncToFs sync from repo/workspace to fs
 func (svc *Service) SyncToFs(id primitive.ObjectID) (err error) {
 	// validate node type
 	if !svc.nodeCfgSvc.IsMaster() {
@@ -73,6 +74,8 @@ func (svc *Service) SyncToFs(id primitive.ObjectID) (err error) {
 	return nil
 }
 
+// SyncToWorkspace sync from fs to workspace
+// Useful for worker nodes to sync files from master or fs (filer)
 func (svc *Service) SyncToWorkspace(id primitive.ObjectID) (err error) {
 	if fsSvc, err := svc.GetFsService(id); err == nil {
 		return fsSvc.GetFsService().SyncToWorkspace()

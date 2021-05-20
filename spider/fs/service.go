@@ -149,16 +149,26 @@ func ProvideSpiderFsService(id primitive.ObjectID, opts ...Option) func() (svc i
 var spiderFsSvcCache = sync.Map{}
 
 func GetSpiderFsService(id primitive.ObjectID, opts ...Option) (svc interfaces.SpiderFsService, err error) {
-	res, ok := spiderFsSvcCache.Load(id)
+	// cache key consisted of id and config path
+	// FIXME: this is only for testing purpose
+	cfgPath := getConfigPathFromOptions(opts...)
+	key := getHashStringFromIdAndConfigPath(id, cfgPath)
+
+	// attempt to load from cache
+	res, ok := spiderFsSvcCache.Load(key)
 	if !ok {
+		// not exists in cache, create a new service
 		svc, err = NewSpiderFsService(id, opts...)
 		if err != nil {
 			return nil, err
 		}
-		spiderFsSvcCache.Store(id, svc)
+
+		// store in cache
+		spiderFsSvcCache.Store(key, svc)
 		return svc, nil
 	}
 
+	// load from cache successful
 	svc, ok = res.(interfaces.SpiderFsService)
 	if !ok {
 		return nil, trace.TraceError(errors.ErrorFsInvalidType)
