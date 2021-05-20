@@ -79,11 +79,12 @@ func (svr *Server) Stop() (err error) {
 	}
 
 	// graceful stop
-	svr.svr.GracefulStop()
+	log.Infof("grpc server stopping...")
+	svr.svr.Stop()
 
 	// close listener
+	log.Infof("grpc server closing listener...")
 	_ = svr.l.Close()
-	svr.svr.GetServiceInfo()
 
 	// mark as stopped
 	svr.stopped = true
@@ -135,7 +136,11 @@ func (svr *Server) DeleteSubscribe(key string) {
 	svr.subs.Delete(key)
 }
 
-func (svr *Server) SendStreamMessage(nodeKey string, code grpc2.StreamMessageCode, d interface{}) (err error) {
+func (svr *Server) SendStreamMessage(nodeKey string, code grpc2.StreamMessageCode) (err error) {
+	return svr.SendStreamMessageWithData(nodeKey, code, nil)
+}
+
+func (svr *Server) SendStreamMessageWithData(nodeKey string, code grpc2.StreamMessageCode, d interface{}) (err error) {
 	var data []byte
 	switch d.(type) {
 	case types.Nil:

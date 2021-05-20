@@ -10,13 +10,6 @@ import (
 	"testing"
 )
 
-//func TestNewFsService(t *testing.T)  {
-//	var err error
-//	T.Setup(t)
-//
-//	require.Equal(t, T.masterFsSvc.GetWorkspacePath())
-//}
-
 func TestFsService_SyncToFs(t *testing.T) {
 	var err error
 	T.Setup(t)

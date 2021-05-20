@@ -67,10 +67,12 @@ func (svc *MasterService) Stop() {
 }
 
 func (svc *MasterService) Monitor() {
+	log.Infof("master[%s] monitoring started", svc.GetConfigService().GetNodeKey())
 	for {
 		if err := svc.monitor(); err != nil {
 			trace.PrintError(err)
 			if svc.stopOnError {
+				log.Errorf("master[%s] monitor error, now stopping...", svc.GetConfigService().GetNodeKey())
 				svc.Stop()
 				return
 			}
@@ -151,6 +153,9 @@ func (svc *MasterService) GetServer() (svr interfaces.GrpcServer) {
 func (svc *MasterService) monitor() (err error) {
 	// update master node status in db
 	if err := svc.updateMasterNodeStatus(); err != nil {
+		if err.Error() == mongo2.ErrNoDocuments.Error() {
+			return nil
+		}
 		return err
 	}
 
@@ -169,7 +174,7 @@ func (svc *MasterService) monitor() (err error) {
 	// iterate all nodes
 	for _, n := range nodes {
 		// subscribe
-		sub, err := svc.server.GetSubscribe(n.GetKey())
+		_, err := svc.server.GetSubscribe(n.GetKey())
 		if err != nil {
 			trace.PrintError(err)
 			isErr = true
@@ -180,11 +185,12 @@ func (svc *MasterService) monitor() (err error) {
 		}
 
 		// PING client
-		if err := sub.GetStream().Send(&grpc.StreamMessage{
-			Code:    grpc.StreamMessageCode_PING,
-			NodeKey: svc.GetConfigService().GetNodeKey(),
-		}); err != nil {
+		if err := svc.server.SendStreamMessage(
+			svc.GetConfigService().GetNodeKey(),
+			grpc.StreamMessageCode_PING,
+		); err != nil {
 			log.Errorf("cannot ping worker[%s]: %v", n.GetKey(), err)
+			trace.PrintError(err)
 			isErr = true
 			if err := svc.setWorkerNodeOffline(&n); err != nil {
 				trace.PrintError(err)

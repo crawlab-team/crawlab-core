@@ -10,6 +10,7 @@ type GrpcServer interface {
 	GetSubscribe(key string) (sub GrpcSubscribe, err error)
 	SetSubscribe(key string, sub GrpcSubscribe)
 	DeleteSubscribe(key string)
-	SendStreamMessage(nodeKey string, code grpc.StreamMessageCode, d interface{}) (err error)
+	SendStreamMessage(nodeKey string, code grpc.StreamMessageCode) (err error)
+	SendStreamMessageWithData(nodeKey string, code grpc.StreamMessageCode, d interface{}) (err error)
 	IsStopped() (res bool)
 }

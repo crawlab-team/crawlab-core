@@ -43,8 +43,12 @@ func NewTest() (res *Test, err error) {
 	if err := c.Provide(handler.ProvideTaskHandlerService(test.T.MasterSvc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-
-	// task handler service
+	if err := c.Invoke(func(schedulerSvc interfaces.TaskSchedulerService, handlerSvc interfaces.TaskHandlerService) {
+		t.schedulerSvc = schedulerSvc
+		t.handlerSvc = handlerSvc
+	}); err != nil {
+		return nil, trace.TraceError(err)
+	}
 
 	return t, nil
 }

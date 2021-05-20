@@ -14,9 +14,7 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/status"
 	"io"
 	"sync"
 	"time"
@@ -287,10 +285,8 @@ func (c *Client) handleStreamMessage() {
 				return
 			}
 
-			// connection closing
-			s, ok := status.FromError(err)
-			if ok && s.Code() == codes.Canceled {
-				log.Infof("received Canceled signal, disconnecting")
+			// connection closed
+			if c.IsClosed() {
 				return
 			}
 

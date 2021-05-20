@@ -107,6 +107,7 @@ func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err erro
 	case grpc.StreamMessageCode_RUN_TASK:
 		// TODO: run task
 	case grpc.StreamMessageCode_CANCEL_TASK:
+		//svc.taskHandlerSvc.Run(msg.Data)
 		// TODO: cancel task
 	}
 	if err != nil {
