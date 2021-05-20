@@ -13,7 +13,7 @@ type FsService interface {
 	Delete(path string, opts ...FsServiceCrudOption) (err error)
 	Copy(path, newPath string, opts ...FsServiceCrudOption) (err error)
 	Commit(msg string) (err error)
-	SyncToFs() (err error)
+	SyncToFs(opts ...FsServiceCrudOption) (err error)
 	SyncToWorkspace() (err error)
 	GetFsPath() (path string)
 	SetFsPath(path string)

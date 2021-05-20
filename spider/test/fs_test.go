@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 )
 
@@ -15,8 +16,12 @@ func TestFsService_SyncToFs(t *testing.T) {
 	T.Setup(t)
 
 	// write file
-	filePath := path.Join(T.masterFsSvc.GetWorkspacePath(), "main.go")
+	filePath, _ := filepath.Abs(path.Join(T.masterFsSvc.GetWorkspacePath(), "main.go"))
 	err = ioutil.WriteFile(filePath, []byte(T.script), os.ModePerm)
+	require.Nil(t, err)
+
+	// commit
+	err = T.masterFsSvc.GetFsService().Commit("initial commit")
 	require.Nil(t, err)
 
 	// sync to fs

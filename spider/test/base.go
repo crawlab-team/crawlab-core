@@ -50,10 +50,8 @@ type Test struct {
 
 // Setup spider fs service test setup
 func (t *Test) Setup(t2 *testing.T) {
-	// remove tmp directory
-	_ = os.RemoveAll("./tmp")
-	_ = os.MkdirAll("./tmp", os.ModePerm)
-
+	_ = os.MkdirAll(t.masterFsSvc.GetWorkspacePath(), os.ModePerm)
+	_ = os.MkdirAll(t.workerFsSvc.GetWorkspacePath(), os.ModePerm)
 	t2.Cleanup(t.Cleanup)
 }
 
@@ -113,7 +111,7 @@ func main() {
 	}
 
 	// master fs service
-	t.masterFsSvc, err = t.masterSyncSvc.GetFsService(t.s.Id)
+	t.masterFsSvc, err = t.masterSyncSvc.ForceGetFsService(t.s.Id)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -122,7 +120,6 @@ func main() {
 	t.workerSyncSvc, err = sync.NewSpiderSyncService(
 		sync.WithConfigPath(ntest.T.WorkerSvc.GetConfigPath()),
 		sync.WithFsPathBase("/fs"),
-		sync.WithRepoPathBase("./tmp/test_worker_repo"),
 		sync.WithWorkspacePathBase("./tmp/test_worker_workspace"),
 	)
 	if err != nil {
@@ -130,10 +127,11 @@ func main() {
 	}
 
 	// worker fs service
-	t.workerFsSvc, err = t.workerSyncSvc.GetFsService(t.s.Id)
+	t.workerFsSvc, err = t.workerSyncSvc.ForceGetFsService(t.s.Id)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
+	_ = os.MkdirAll(t.workerFsSvc.GetWorkspacePath(), os.ModePerm)
 
 	return t, nil
 }

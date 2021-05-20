@@ -10,6 +10,7 @@ type SpiderSyncService interface {
 	SetWorkspacePathBase(path string)
 	SetRepoPathBase(path string)
 	GetFsService(id primitive.ObjectID) (fsSvc SpiderFsService, err error)
+	ForceGetFsService(id primitive.ObjectID) (fsSvc SpiderFsService, err error)
 	SyncToFs(id primitive.ObjectID) (err error)
 	SyncToWorkspace(id primitive.ObjectID) (err error)
 }

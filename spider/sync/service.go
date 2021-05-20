@@ -44,6 +44,17 @@ func (svc *Service) SetRepoPathBase(path string) {
 func (svc *Service) GetFsService(id primitive.ObjectID) (fsSvc interfaces.SpiderFsService, err error) {
 	return fs.GetSpiderFsService(
 		id,
+		fs.WithConfigPath(svc.cfgPath),
+		fs.WithFsPathBase(svc.fsPathBase),
+		fs.WithWorkspacePathBase(svc.workspacePathBase),
+		fs.WithRepoPathBase(svc.repoPathBase),
+	)
+}
+
+func (svc *Service) ForceGetFsService(id primitive.ObjectID) (fsSvc interfaces.SpiderFsService, err error) {
+	return fs.NewSpiderFsService(
+		id,
+		fs.WithConfigPath(svc.cfgPath),
 		fs.WithFsPathBase(svc.fsPathBase),
 		fs.WithWorkspacePathBase(svc.workspacePathBase),
 		fs.WithRepoPathBase(svc.repoPathBase),

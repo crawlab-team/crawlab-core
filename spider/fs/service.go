@@ -10,11 +10,15 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"os"
 	"sync"
 )
 
+// Service implementation of interfaces.SpiderFsService
+// It is a wrapper of interfaces.FsService that manages a spider's fs related functions
 type Service struct {
 	// settings
+	cfgPath           string
 	fsPathBase        string
 	workspacePathBase string
 	repoPathBase      string
@@ -26,6 +30,25 @@ type Service struct {
 	// internals
 	id primitive.ObjectID
 	s  *models.Spider
+}
+
+func (svc *Service) Init() (err error) {
+	// workspace
+	if _, err := os.Stat(svc.GetWorkspacePath()); err != nil {
+		if err := os.MkdirAll(svc.GetWorkspacePath(), os.FileMode(0766)); err != nil {
+			return trace.TraceError(err)
+		}
+	}
+
+	return nil
+}
+
+func (svc *Service) GetConfigPath() string {
+	return svc.cfgPath
+}
+
+func (svc *Service) SetConfigPath(path string) {
+	svc.cfgPath = path
 }
 
 func (svc *Service) SetId(id primitive.ObjectID) {
@@ -97,12 +120,20 @@ func NewSpiderFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.
 	}
 
 	// fs service
-	svc.fsSvc, err = fs.NewFsService(
-		fs.WithFsPath(svc.GetFsPath()),
-		fs.WithWorkspacePath(svc.GetWorkspacePath()),
-		fs.WithRepoPath(svc.GetRepoPath()),
-	)
+	var fsOpts []fs.Option
+	fsOpts = append(fsOpts, fs.WithConfigPath(svc.cfgPath))
+	fsOpts = append(fsOpts, fs.WithFsPath(svc.GetFsPath()))
+	fsOpts = append(fsOpts, fs.WithWorkspacePath(svc.GetWorkspacePath()))
+	if svc.repoPathBase != "" {
+		fsOpts = append(fsOpts, fs.WithRepoPath(svc.GetRepoPath()))
+	}
+	svc.fsSvc, err = fs.NewFsService(fsOpts...)
 	if err != nil {
+		return nil, err
+	}
+
+	// initialize
+	if err := svc.Init(); err != nil {
 		return nil, err
 	}
 

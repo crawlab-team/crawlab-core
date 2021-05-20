@@ -7,6 +7,12 @@ import (
 
 type Option func(svc interfaces.SpiderFsService)
 
+func WithConfigPath(path string) Option {
+	return func(svc interfaces.SpiderFsService) {
+		svc.SetConfigPath(path)
+	}
+}
+
 func WithId(id primitive.ObjectID) Option {
 	return func(fsSvc interfaces.SpiderFsService) {
 		fsSvc.SetId(id)

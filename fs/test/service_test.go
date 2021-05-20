@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/fs"
 	vcs "github.com/crawlab-team/crawlab-vcs"
@@ -57,7 +56,8 @@ func TestService_Rename(t *testing.T) {
 	err = T.masterFsSvc.Save("test_file.txt", []byte(content))
 	require.Nil(t, err)
 	err = T.masterFsSvc.Rename("test_file.txt", "test_file2.txt")
-	require.Equal(t, constants.ErrAlreadyExists, err)
+	require.NotNil(t, err)
+	require.Equal(t, errors.ErrorFsAlreadyExists.Error(), err.Error())
 }
 
 func TestService_Delete(t *testing.T) {
@@ -194,12 +194,10 @@ func TestService_Commit(t *testing.T) {
 	require.Nil(t, err)
 
 	// new git client from remote repo
-	c, err := vcs.NewGitClient(&vcs.GitOptions{
-		Path:      "./tmp/test_local",
-		RemoteUrl: "./tmp/test_master_repo",
-		IsBare:    false,
-		IsMem:     false,
-	})
+	c, err := vcs.NewGitClient(
+		vcs.WithPath("./tmp/test_local"),
+		vcs.WithRemoteUrl("./tmp/test_master_repo"),
+	)
 	require.Nil(t, err)
 	require.NotNil(t, c)
 	require.FileExists(t, "./tmp/test_local/test_file.txt")
