@@ -2,6 +2,7 @@ package test
 
 import (
 	"encoding/json"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -25,6 +26,10 @@ func TestManagerService_Enqueue(t *testing.T) {
 	err = json.Unmarshal([]byte(data), &T.TestTaskMessage)
 	require.Nil(t, err)
 	require.Equal(t, T.TestTask.GetId(), T.TestTaskMessage.Id)
+	task, err := T.modelSvc.GetTaskById(T.TestTask.GetId())
+	require.Nil(t, err)
+	require.Equal(t, T.TestTask.GetId(), task.Id)
+	require.Equal(t, constants.TaskStatusPending, task.Status)
 }
 
 func TestManagerService_Enqueue_WithNodeId(t *testing.T) {
@@ -44,4 +49,8 @@ func TestManagerService_Enqueue_WithNodeId(t *testing.T) {
 	err = json.Unmarshal([]byte(data), &T.TestTaskMessage)
 	require.Nil(t, err)
 	require.Equal(t, T.TestTaskWithNodeId.GetId(), T.TestTaskMessage.Id)
+	task, err := T.modelSvc.GetTaskById(T.TestTask.GetId())
+	require.Nil(t, err)
+	require.Equal(t, T.TestTask.GetId(), task.Id)
+	require.Equal(t, constants.TaskStatusPending, task.Status)
 }
