@@ -75,7 +75,7 @@ func (r *Runner) Init() (err error) {
 
 func (r *Runner) Run() (err error) {
 	// update task status (processing)
-	if err := r.updateTask(constants.StatusRunning); err != nil {
+	if err := r.updateTask(constants.TaskStatusRunning); err != nil {
 		return err
 	}
 
@@ -122,19 +122,19 @@ func (r *Runner) Run() (err error) {
 	switch signal {
 	case constants.TaskSignalFinish:
 		err = nil
-		status = constants.StatusFinished
+		status = constants.TaskStatusFinished
 	case constants.TaskSignalCancel:
 		err = constants.ErrTaskCancelled
-		status = constants.StatusCancelled
+		status = constants.TaskStatusCancelled
 	case constants.TaskSignalError:
 		err = constants.ErrTaskError
-		status = constants.StatusError
+		status = constants.TaskStatusError
 	case constants.TaskSignalLost:
 		err = constants.ErrTaskLost
-		status = constants.StatusError
+		status = constants.TaskStatusError
 	default:
 		err = constants.ErrInvalidSignal
-		status = constants.StatusError
+		status = constants.TaskStatusError
 	}
 
 	// validate task status
@@ -250,7 +250,7 @@ func (r *Runner) getLogDriver() (driver clog.Driver, err error) {
 func (r *Runner) getLogDriverOptions() (options interface{}) {
 	switch r.logDriverType {
 	case clog.DriverTypeFs:
-		options = &clog.SeaweedFSLogDriverOptions{
+		options = &clog.SeaweedFsLogDriverOptions{
 			BaseDir: viper.GetString("log.path"),
 			Prefix:  r.tid.Hex(),
 		}

@@ -6,8 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
-	"github.com/crawlab-team/crawlab-core/node/config"
-	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,13 +17,13 @@ import (
 
 type Service struct {
 	// dependencies
+	interfaces.TaskBaseService
 	nodeCfgSvc     interfaces.NodeConfigService
 	modelSvc       interfaces.GrpcClientModelService
 	modelSpiderSvc interfaces.GrpcClientModelSpiderService
 	modelTaskSvc   interfaces.GrpcClientModelTaskService
 
 	// settings
-	cfgPath           string
 	maxRunners        int
 	exitWatchDuration time.Duration
 
@@ -34,28 +33,7 @@ type Service struct {
 	runners      sync.Map // pool of task runners started
 }
 
-func (svc *Service) GetConfigPath() (path string) {
-	return svc.cfgPath
-}
-
-func (svc *Service) SetConfigPath(path string) {
-	svc.cfgPath = path
-}
-
-func (svc *Service) Init() (err error) {
-	// TODO: implement
-	return nil
-}
-
 func (svc *Service) Start() {
-	panic("implement me")
-}
-
-func (svc *Service) Wait() {
-	utils.DefaultWait()
-}
-
-func (svc *Service) Stop() {
 	panic("implement me")
 }
 
@@ -179,7 +157,7 @@ func (svc *Service) getTaskRunner(taskId primitive.ObjectID) (r interfaces.TaskR
 func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
 	// normalize status
 	if status == "" {
-		status = constants.StatusPending
+		status = constants.TaskStatusPending
 	}
 
 	// set task status
@@ -207,8 +185,16 @@ func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
 }
 
 func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, err error) {
-	// construct Service
+	// base service
+	baseSvc, err := task.NewBaseService()
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// service
+	// Service
 	svc := &Service{
+		TaskBaseService:   baseSvc,
 		maxRunners:        8,
 		exitWatchDuration: 60 * time.Second,
 		mu:                sync.Mutex{},
@@ -223,15 +209,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(config.NewNodeConfigService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService) {
-		svc.nodeCfgSvc = nodeCfgSvc
-	}); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client.ProvideServiceDelegate(svc.nodeCfgSvc.GetConfigPath())); err != nil {
+	if err := c.Provide(client.ProvideServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Provide(client.NewSpiderServiceDelegate); err != nil {

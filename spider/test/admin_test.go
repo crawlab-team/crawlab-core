@@ -25,5 +25,5 @@ func TestAdminService_Run(t *testing.T) {
 	task, err := T.modelSvc.GetTask(bson.M{"spider_id": T.s.Id}, nil)
 	require.Nil(t, err)
 	require.False(t, task.Id.IsZero())
-	require.Equal(t, constants.StatusFinished, task.Status)
+	require.Equal(t, constants.TaskStatusFinished, task.Status)
 }

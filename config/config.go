@@ -2,8 +2,8 @@ package config
 
 import (
 	"github.com/fsnotify/fsnotify"
+	"github.com/prometheus/common/log"
 	"github.com/spf13/viper"
-	"log"
 	"strings"
 )
 
@@ -13,7 +13,8 @@ func init() {
 
 	// init config file
 	if err := c.Init(); err != nil {
-		panic(err)
+		log.Warn("unable to init config")
+		return
 	}
 
 	// watch config change and load responsively
@@ -31,7 +32,7 @@ type InitConfigOptions struct {
 func (c *Config) WatchConfig() {
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Printf("Config file changed: %s", e.Name)
+		log.Infof("Config file changed: %s", e.Name)
 	})
 }
 

@@ -9,6 +9,7 @@ replace (
 	github.com/crawlab-team/crawlab-log => /Users/marvzhang/projects/crawlab-team/crawlab-log
 	github.com/crawlab-team/crawlab-vcs => /Users/marvzhang/projects/crawlab-team/crawlab-vcs
 	github.com/crawlab-team/go-trace => /Users/marvzhang/projects/crawlab-team/go-trace
+	github.com/crawlab-team/goseaweedfs => /Users/marvzhang/projects/crawlab-team/goseaweedfs
 )
 
 require (
@@ -35,6 +36,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olivere/elastic/v7 v7.0.15
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/common v0.4.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil v3.20.11+incompatible

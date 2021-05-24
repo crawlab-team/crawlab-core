@@ -64,7 +64,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 		Mode:       opts.Mode,
 		Cmd:        s.Cmd,
 		Param:      opts.Param,
-		Status:     constants.StatusPending,
+		Status:     constants.TaskStatusPending,
 		ScheduleId: opts.ScheduleId,
 	}
 	if err := delegate.NewModelDelegate(mainTask).Add(); err != nil {
@@ -85,7 +85,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 				Cmd:      s.Cmd,
 				Param:    opts.Param,
 				NodeId:   nodeId,
-				Status:   constants.StatusPending,
+				Status:   constants.TaskStatusPending,
 			}
 			if err := svc.schedulerSvc.Assign(t); err != nil {
 				return err

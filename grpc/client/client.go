@@ -10,6 +10,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/utils"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
@@ -200,10 +201,7 @@ func (c *Client) IsClosed() (res bool) {
 }
 
 func (c *Client) connect() (err error) {
-	return backoff.RetryNotify(c._connect, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
-		log.Errorf("grpc client connect error: %v. reattempt in %.1f seconds...", err, duration.Seconds())
-		trace.PrintError(err)
-	})
+	return backoff.RetryNotify(c._connect, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("grpc client connect"))
 }
 
 func (c *Client) _connect() (err error) {
@@ -230,10 +228,7 @@ func (c *Client) _connect() (err error) {
 }
 
 func (c *Client) subscribe() (err error) {
-	return backoff.RetryNotify(c._subscribe, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
-		log.Errorf("grpc client subscribe error: %v. reattempt in %.1f seconds...", err, duration.Seconds())
-		trace.PrintError(err)
-	})
+	return backoff.RetryNotify(c._subscribe, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("grpc client subscribe"))
 }
 
 func (c *Client) _subscribe() (err error) {
@@ -267,10 +262,7 @@ func (c *Client) handleStreamMessage() {
 	for {
 		// resubscribe if stream is set to nil
 		if c.stream == nil {
-			if err := backoff.RetryNotify(c.subscribe, backoff.NewExponentialBackOff(), func(err error, duration time.Duration) {
-				_ = trace.TraceError(err)
-				return
-			}); err != nil {
+			if err := backoff.RetryNotify(c.subscribe, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("grpc client subscribe")); err != nil {
 				log.Errorf("subscribe")
 				return
 			}
