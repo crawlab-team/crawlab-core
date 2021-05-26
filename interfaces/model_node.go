@@ -8,4 +8,5 @@ type Node interface {
 	SetActive(active bool)
 	SetActiveTs(activeTs time.Time)
 	SetStatus(status string)
+	SetAvailable(available bool)
 }

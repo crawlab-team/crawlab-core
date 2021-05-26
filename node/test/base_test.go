@@ -10,7 +10,7 @@ import (
 func TestNodeServices_Master_Worker(t *testing.T) {
 	T, _ = NewTest()
 	T.Setup(t)
-	startMasterWorker(t)
+	startMasterWorker()
 
 	// validate master
 	masterNodeKey := T.MasterSvc.GetConfigService().GetNodeKey()
@@ -28,7 +28,7 @@ func TestNodeServices_Master_Worker(t *testing.T) {
 	require.Equal(t, workerNodeKey, workerNode.Key)
 	require.False(t, workerNode.IsMaster)
 
-	stopMasterWorker(t)
+	stopMasterWorker()
 }
 
 func TestNodeServices_Default(t *testing.T) {
@@ -53,7 +53,7 @@ func TestNodeServices_Default(t *testing.T) {
 func TestNodeServices_Monitor(t *testing.T) {
 	T, _ = NewTest()
 	T.Setup(t)
-	startMasterWorkerMonitor(t)
+	startMasterWorkerMonitor()
 	time.Sleep(3 * time.Second)
 
 	// stop worker
@@ -63,33 +63,5 @@ func TestNodeServices_Monitor(t *testing.T) {
 	// validate
 	require.True(t, T.MasterSvcMonitor.GetServer().IsStopped())
 
-	stopMasterWorkerMonitor(t)
-}
-
-func startMasterWorker(t *testing.T) {
-	go T.MasterSvc.Start()
-	time.Sleep(1 * time.Second)
-	go T.WorkerSvc.Start()
-	time.Sleep(1 * time.Second)
-}
-
-func stopMasterWorker(t *testing.T) {
-	go T.MasterSvc.Stop()
-	time.Sleep(1 * time.Second)
-	go T.WorkerSvc.Stop()
-	time.Sleep(1 * time.Second)
-}
-
-func startMasterWorkerMonitor(t *testing.T) {
-	go T.MasterSvcMonitor.Start()
-	time.Sleep(1 * time.Second)
-	go T.WorkerSvcMonitor.Start()
-	time.Sleep(1 * time.Second)
-}
-
-func stopMasterWorkerMonitor(t *testing.T) {
-	go T.MasterSvcMonitor.Stop()
-	time.Sleep(1 * time.Second)
-	go T.WorkerSvcMonitor.Stop()
-	time.Sleep(1 * time.Second)
+	stopMasterWorkerMonitor()
 }

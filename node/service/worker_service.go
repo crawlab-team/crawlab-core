@@ -103,15 +103,25 @@ func (svc *WorkerService) Recv() {
 func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err error) {
 	switch msg.Code {
 	case grpc.StreamMessageCode_PING:
-		_, err = svc.client.GetNodeClient().SendHeartbeat(context.Background(), svc.client.NewRequest(svc.cfgSvc.GetBasicNodeInfo()))
+		if _, err := svc.client.GetNodeClient().SendHeartbeat(context.Background(), svc.client.NewRequest(svc.cfgSvc.GetBasicNodeInfo())); err != nil {
+			return trace.TraceError(err)
+		}
 	case grpc.StreamMessageCode_RUN_TASK:
-		// TODO: run task
+		var t models.Task
+		if err := json.Unmarshal(msg.Data, &t); err != nil {
+			return trace.TraceError(err)
+		}
+		if err := svc.taskHandlerSvc.Run(t.Id); err != nil {
+			return trace.TraceError(err)
+		}
 	case grpc.StreamMessageCode_CANCEL_TASK:
-		//svc.taskHandlerSvc.Run(msg.Data)
-		// TODO: cancel task
-	}
-	if err != nil {
-		return trace.TraceError(err)
+		var t models.Task
+		if err := json.Unmarshal(msg.Data, &t); err != nil {
+			return trace.TraceError(err)
+		}
+		if err := svc.taskHandlerSvc.Cancel(t.Id); err != nil {
+			return trace.TraceError(err)
+		}
 	}
 	return nil
 }

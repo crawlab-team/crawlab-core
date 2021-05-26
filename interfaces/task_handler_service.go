@@ -15,6 +15,8 @@ type TaskHandlerService interface {
 	AddRunner(taskId primitive.ObjectID, r TaskRunner)
 	// DeleteRunner delete runner from pool
 	DeleteRunner(taskId primitive.ObjectID)
+	// UpdateHandlerStatus update the status of task handler
+	UpdateHandlerStatus() (err error)
 	// GetRunner get runner from pool
 	GetRunner(taskId primitive.ObjectID) (r TaskRunner, err error)
 	// GetMaxRunners get max runners

@@ -6,8 +6,10 @@ import (
 )
 
 type TaskMessage struct {
-	Id  primitive.ObjectID
-	Cmd string
+	Id    primitive.ObjectID `json:"id"`
+	Key   string             `json:"key"`
+	Cmd   string             `json:"cmd"`
+	Param string             `json:"param"`
 }
 
 func (m *TaskMessage) ToString() (string, error) {

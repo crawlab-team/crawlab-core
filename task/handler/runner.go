@@ -431,10 +431,19 @@ func (r *Runner) updateTask(status string) (err error) {
 }
 
 func (r *Runner) removeTaskRunner(taskId primitive.ObjectID) (err error) {
+	// validate if runner exists
 	if _, err := r.svc.GetRunner(taskId); err != nil {
 		return err
 	}
+
+	// update task handler status to node
+	if err := r.svc.UpdateHandlerStatus(); err != nil {
+		return err
+	}
+
+	// delete runner from pool
 	r.svc.DeleteRunner(taskId)
+
 	return nil
 }
 

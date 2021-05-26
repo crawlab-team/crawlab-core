@@ -34,3 +34,10 @@ const (
 	TaskSignalError
 	TaskSignalLost
 )
+
+const (
+	TaskListQueuePrefixPublic = "tasks:public"
+	TaskListQueuePrefixNodes  = "tasks:nodes"
+)
+
+const TaskKeyAnchor = "###"

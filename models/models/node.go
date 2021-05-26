@@ -21,6 +21,7 @@ type Node struct {
 	Active      bool               `json:"active" bson:"active"`
 	ActiveTs    time.Time          `json:"active_ts" bson:"active_ts"`
 	Settings    NodeSettings       `json:"settings" bson:"settings"`
+	Available   bool               `json:"available" bson:"available"`
 	Tags        []Tag              `json:"tags" bson:"-"`
 }
 
@@ -58,4 +59,8 @@ func (n *Node) SetActiveTs(activeTs time.Time) {
 
 func (n *Node) SetStatus(status string) {
 	n.Status = status
+}
+
+func (n *Node) SetAvailable(available bool) {
+	n.Available = available
 }

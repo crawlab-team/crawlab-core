@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -8,6 +9,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 )
@@ -70,6 +72,14 @@ func (svc *BaseService) SaveTask(t interfaces.Task, status string) (err error) {
 
 func (svc *BaseService) IsStopped() (res bool) {
 	return svc.stopped
+}
+
+func (svc *BaseService) GetQueue(nodeId primitive.ObjectID) (queue string) {
+	if nodeId.IsZero() {
+		return fmt.Sprintf("%s", constants.TaskListQueuePrefixPublic)
+	} else {
+		return fmt.Sprintf("%s:%s", constants.TaskListQueuePrefixNodes, nodeId.Hex())
+	}
 }
 
 func NewBaseService() (svc2 interfaces.TaskBaseService, err error) {

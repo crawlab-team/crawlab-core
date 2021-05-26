@@ -10,6 +10,9 @@ import (
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/manager"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
+	db "github.com/crawlab-team/crawlab-db"
+	"github.com/crawlab-team/crawlab-db/redis"
+	rtest "github.com/crawlab-team/crawlab-db/redis/test"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
@@ -27,10 +30,14 @@ func init() {
 var T *Test
 
 type Test struct {
-	managerSvc         interfaces.TaskManagerService
-	schedulerSvc       interfaces.TaskSchedulerService
-	handlerSvc         interfaces.TaskHandlerService
-	modelSvc           service.ModelService
+	// dependencies
+	managerSvc   interfaces.TaskManagerService
+	schedulerSvc interfaces.TaskSchedulerService
+	handlerSvc   interfaces.TaskHandlerService
+	modelSvc     service.ModelService
+	redis        db.RedisClient
+
+	// data
 	TestNode           interfaces.Node
 	TestSpider         interfaces.Spider
 	TestTask           interfaces.Task
@@ -43,6 +50,7 @@ func (t *Test) Setup(t2 *testing.T) {
 	if err := delegate.NewModelDelegate(t.TestNode).Add(); err != nil {
 		panic(err)
 	}
+
 	// add test spider
 	if err := delegate.NewModelDelegate(t.TestSpider).Add(); err != nil {
 		panic(err)
@@ -63,6 +71,7 @@ func (t *Test) Setup(t2 *testing.T) {
 
 func (t *Test) Cleanup() {
 	_ = t.modelSvc.DropAll()
+	rtest.T.Cleanup()
 }
 
 func NewTest() (res *Test, err error) {
@@ -82,18 +91,31 @@ func NewTest() (res *Test, err error) {
 	if err := c.Provide(service.NewService); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(managerSvc interfaces.TaskManagerService, schedulerSvc interfaces.TaskSchedulerService, handlerSvc interfaces.TaskHandlerService, modelSvc service.ModelService) {
+	if err := c.Provide(redis.GetRedisClient); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Invoke(func(
+		managerSvc interfaces.TaskManagerService,
+		schedulerSvc interfaces.TaskSchedulerService,
+		handlerSvc interfaces.TaskHandlerService,
+		modelSvc service.ModelService,
+		redis db.RedisClient,
+	) {
 		t.managerSvc = managerSvc
 		t.schedulerSvc = schedulerSvc
 		t.handlerSvc = handlerSvc
 		t.modelSvc = modelSvc
+		t.redis = redis
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
 
 	// test node
 	t.TestNode = &models.Node{
-		Id: primitive.NewObjectID(),
+		Id:        primitive.NewObjectID(),
+		Enabled:   true,
+		Active:    true,
+		Available: true,
 	}
 
 	// test spider

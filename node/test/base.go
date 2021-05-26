@@ -170,3 +170,39 @@ func (t *Test) Cleanup() {
 	}
 	_ = os.RemoveAll(config.DefaultConfigDirPath)
 }
+
+func (t *Test) StartMasterWorker() {
+	startMasterWorker()
+}
+
+func (t *Test) StopMasterWorker() {
+	stopMasterWorker()
+}
+
+func startMasterWorker() {
+	go T.MasterSvc.Start()
+	time.Sleep(1 * time.Second)
+	go T.WorkerSvc.Start()
+	time.Sleep(1 * time.Second)
+}
+
+func stopMasterWorker() {
+	go T.MasterSvc.Stop()
+	time.Sleep(1 * time.Second)
+	go T.WorkerSvc.Stop()
+	time.Sleep(1 * time.Second)
+}
+
+func startMasterWorkerMonitor() {
+	go T.MasterSvcMonitor.Start()
+	time.Sleep(1 * time.Second)
+	go T.WorkerSvcMonitor.Start()
+	time.Sleep(1 * time.Second)
+}
+
+func stopMasterWorkerMonitor() {
+	go T.MasterSvcMonitor.Stop()
+	time.Sleep(1 * time.Second)
+	go T.WorkerSvcMonitor.Stop()
+	time.Sleep(1 * time.Second)
+}

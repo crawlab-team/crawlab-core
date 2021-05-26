@@ -8,10 +8,12 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
+	db "github.com/crawlab-team/crawlab-db"
 	"github.com/crawlab-team/crawlab-db/redis"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"time"
 )
 
 type Service struct {
@@ -19,11 +21,10 @@ type Service struct {
 	interfaces.TaskBaseService
 	nodeCfgSvc interfaces.NodeConfigService
 	svr        interfaces.GrpcServer
+	redis      db.RedisClient
 }
 
 func (svc *Service) Enqueue(t interfaces.Task) (err error) {
-	// TODO: implement assign priority queue message
-	// TODO: implement task assign via grpc
 	// validate node type
 	if !svc.nodeCfgSvc.IsMaster() {
 		return errors.ErrorTaskForbidden
@@ -31,7 +32,9 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 
 	// task message
 	msg := entity.TaskMessage{
-		Id: t.GetId(),
+		Id:    t.GetId(),
+		Cmd:   t.GetCmd(),
+		Param: t.GetParam(),
 	}
 
 	// serialization
@@ -40,16 +43,8 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 		return err
 	}
 
-	// queue name
-	var queue string
-	if t.GetNodeId().IsZero() {
-		queue = "tasks:public"
-	} else {
-		queue = "tasks:node:" + t.GetNodeId().Hex()
-	}
-
 	// enqueue
-	if err := redis.RedisClient.RPush(queue, msgStr); err != nil {
+	if err := svc.redis.ZAdd(svc.GetQueue(t.GetNodeId()), svc.getScore(t), msgStr); err != nil {
 		return err
 	}
 
@@ -64,6 +59,12 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 func (svc *Service) Cancel(taskId primitive.ObjectID) (err error) {
 	// TODO: implement
 	return nil
+}
+
+func (svc *Service) getScore(t interfaces.Task) (score float32) {
+	scorePriority := float32(t.GetPriority())
+	scoreTime := float32(time.Now().Unix() / 1e12)
+	return scorePriority + scoreTime
 }
 
 func NewTaskManagerService(opts ...Option) (svc2 interfaces.TaskManagerService, err error) {
@@ -89,9 +90,13 @@ func NewTaskManagerService(opts ...Option) (svc2 interfaces.TaskManagerService, 
 	if err := c.Provide(server.ProvideServer(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, svr interfaces.GrpcServer) {
+	if err := c.Provide(redis.GetRedisClient); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, svr interfaces.GrpcServer, redis db.RedisClient) {
 		svc.nodeCfgSvc = nodeCfgSvc
 		svc.svr = svr
+		svc.redis = redis
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}

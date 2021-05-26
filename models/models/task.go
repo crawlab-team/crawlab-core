@@ -29,6 +29,7 @@ type Task struct {
 	NodeIds         []primitive.ObjectID `json:"node_ids" bson:"node_ids"`   // list of Node.Id
 	NodeTags        []string             `json:"node_tags" bson:"node_tags"` // list of Node.Tag
 	ParentId        primitive.ObjectID   `json:"parent_id" bson:"parent_id"` // parent Task.Id if it'Spider a sub-task
+	Priority        int                  `json:"priority" bson:"priority"`
 }
 
 func (t *Task) GetId() (id primitive.ObjectID) {
@@ -59,6 +60,14 @@ func (t *Task) SetStatus(status string) {
 	t.Status = status
 }
 
+func (t *Task) GetError() (error string) {
+	return t.Error
+}
+
+func (t *Task) SetError(error string) {
+	t.Error = error
+}
+
 func (t *Task) GetSpiderId() (id primitive.ObjectID) {
 	return t.SpiderId
 }
@@ -73,6 +82,10 @@ func (t *Task) GetCmd() (cmd string) {
 
 func (t *Task) GetParam() (param string) {
 	return t.Param
+}
+
+func (t *Task) GetPriority() (p int) {
+	return t.Priority
 }
 
 type TaskDailyItem struct {

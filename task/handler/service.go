@@ -20,6 +20,7 @@ type Service struct {
 	interfaces.TaskBaseService
 	nodeCfgSvc     interfaces.NodeConfigService
 	modelSvc       interfaces.GrpcClientModelService
+	modelNodeSvc   interfaces.GrpcClientModelNodeService
 	modelSpiderSvc interfaces.GrpcClientModelSpiderService
 	modelTaskSvc   interfaces.GrpcClientModelTaskService
 
@@ -38,6 +39,7 @@ func (svc *Service) Start() {
 }
 
 func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
+	// attempt to get runner from pool
 	_, ok := svc.runners.Load(taskId)
 	if ok {
 		return errors.ErrorTaskAlreadyExists
@@ -46,6 +48,11 @@ func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
 	// create a new task runner
 	r, err := NewTaskRunner(taskId, svc)
 	if err != nil {
+		return err
+	}
+
+	// update task handler status to node
+	if err := svc.UpdateHandlerStatus(); err != nil {
 		return err
 	}
 
@@ -98,6 +105,19 @@ func (svc *Service) DeleteRunner(taskId primitive.ObjectID) {
 
 	svc.runners.Delete(taskId)
 	svc.runnersCount--
+}
+
+func (svc *Service) UpdateHandlerStatus() (err error) {
+	nodeKey := svc.nodeCfgSvc.GetNodeKey()
+	n, err := svc.modelNodeSvc.GetNodeByKey(nodeKey)
+	if err != nil {
+		return err
+	}
+	n.SetAvailable(svc.maxRunners > svc.runnersCount)
+	if err := client.NewModelNodeDelegate(n).Save(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (svc *Service) GetRunner(taskId primitive.ObjectID) (r interfaces.TaskRunner, err error) {
@@ -212,14 +232,23 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	if err := c.Provide(client.ProvideServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Provide(client.NewNodeServiceDelegate); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Provide(client.NewSpiderServiceDelegate); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Provide(client.NewTaskServiceDelegate); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(modelSvc interfaces.GrpcClientModelService, modelSpiderSvc interfaces.GrpcClientModelSpiderService, modelTaskSvc interfaces.GrpcClientModelTaskService) {
+	if err := c.Invoke(func(
+		modelSvc interfaces.GrpcClientModelService,
+		modelNodeSvc interfaces.GrpcClientModelNodeService,
+		modelSpiderSvc interfaces.GrpcClientModelSpiderService,
+		modelTaskSvc interfaces.GrpcClientModelTaskService,
+	) {
 		svc.modelSvc = modelSvc
+		svc.modelNodeSvc = modelNodeSvc
 		svc.modelSpiderSvc = modelSpiderSvc
 		svc.modelTaskSvc = modelTaskSvc
 	}); err != nil {
