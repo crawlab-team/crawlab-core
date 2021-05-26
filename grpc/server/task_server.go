@@ -12,7 +12,8 @@ type TaskServer struct {
 	grpc.UnimplementedTaskServiceServer
 
 	// dependencies
-	modelSvc service.ModelService
+	modelSvc     service.ModelService
+	schedulerSvc interfaces.TaskSchedulerService
 
 	// internals
 	server interfaces.GrpcServer
@@ -27,6 +28,10 @@ func (svr TaskServer) SaveItem(ctx context.Context, req *grpc.Request) (res *grp
 }
 
 func (svr TaskServer) SaveItems(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+	panic("implement me")
+}
+
+func (svr TaskServer) FetchTask(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	panic("implement me")
 }
 

@@ -4,20 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
-	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/grpc/server"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
-	"github.com/crawlab-team/crawlab-core/utils"
 	db "github.com/crawlab-team/crawlab-db"
 	"github.com/crawlab-team/crawlab-db/redis"
-	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -31,7 +28,6 @@ type Service struct {
 	interfaces.TaskBaseService
 	nodeCfgSvc interfaces.NodeConfigService
 	modelSvc   service.ModelService
-	svr        interfaces.GrpcServer
 	redis      db.RedisClient
 
 	// settings
@@ -42,43 +38,44 @@ type Service struct {
 }
 
 func (svc *Service) Start() {
-	go svc.Fetch()
-	go svc.Assign()
+	//go svc.Fetch()
+	//go svc.Assign()
 	svc.Wait()
 	svc.Stop()
 }
 
-func (svc *Service) Fetch() {
-	for {
-		// return if quit is true
-		if svc.IsStopped() {
-			return
-		}
-
-		// fetch task with retry
-		if err := backoff.RetryNotify(func() error {
-			// fetch
-			tasks, err := svc.fetch()
-			if err != nil {
-				return trace.TraceError(err)
-			}
-
-			// skip if no task fetched
-			if tasks == nil {
-				return nil
-			}
-
-			// notify tasks channel
-			svc.ch <- tasks
-
-			return nil
-		}, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("task scheduler fetch task")); err != nil {
-			trace.PrintError(err)
-		}
-
-		// wait
-		time.Sleep(svc.fetchInterval)
-	}
+func (svc *Service) Fetch(nodeKey string) (t interfaces.Task, err error) {
+	return svc.fetch(nodeKey)
+	//for {
+	//	// return if quit is true
+	//	if svc.IsStopped() {
+	//		return
+	//	}
+	//
+	//	// fetch task with retry
+	//	if err := backoff.RetryNotify(func() error {
+	//		// fetch
+	//		tasks, err := svc.fetch()
+	//		if err != nil {
+	//			return trace.TraceError(err)
+	//		}
+	//
+	//		// skip if no task fetched
+	//		if tasks == nil {
+	//			return nil
+	//		}
+	//
+	//		// notify tasks channel
+	//		svc.ch <- tasks
+	//
+	//		return nil
+	//	}, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("task scheduler fetch task")); err != nil {
+	//		trace.PrintError(err)
+	//	}
+	//
+	//	// wait
+	//	time.Sleep(svc.fetchInterval)
+	//}
 }
 
 func (svc *Service) Assign() {
@@ -106,48 +103,38 @@ func (svc *Service) GetTaskChannel() (ch chan []interfaces.Task) {
 	return svc.ch
 }
 
-func (svc *Service) fetch() (tasks []interfaces.Task, err error) {
-	// available nodes
-	nodes, err := svc.getAvailableNodes()
+func (svc *Service) fetch(nodeKey string) (t interfaces.Task, err error) {
+	// node
+	n, err := svc.modelSvc.GetNodeByKey(nodeKey, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// skip if no available nodes
-	if len(nodes) == 0 {
-		return nil, nil
+	// validate node
+	if !n.Enabled {
+		return nil, errors.ErrorTaskForbidden
 	}
 
-	// assign tasks to each available node asynchronously
-	wg := sync.WaitGroup{}
-	wg.Add(len(nodes))
-	for _, n := range nodes {
-		// start goroutine to
-		go func(n models.Node) {
-			// fetch task
-			t, err := svc._fetch(n.GetId())
-			if err != nil {
-				trace.PrintError(err)
-				wg.Done()
-				return
-			}
-
-			// skip if empty result returned
-			if t == nil {
-				wg.Done()
-				return
-			}
-
-			// add to results
-			tasks = append(tasks, t)
-
-			// done
-			wg.Done()
-		}(n)
+	// attempt to fetch task from the queue for dedicated node
+	t, err = svc._fetch(n.GetId())
+	if err != nil {
+		return nil, err
 	}
-	wg.Wait()
+	if t != nil {
+		return t, nil
+	}
 
-	return tasks, nil
+	// fetch task from the public queue (random)
+	t, err = svc._fetch(primitive.NilObjectID)
+	if err != nil {
+		return nil, err
+	}
+	if t != nil {
+		return t, nil
+	}
+
+	// no task fetched
+	return nil, nil
 }
 
 func (svc *Service) _fetch(nodeId primitive.ObjectID) (t interfaces.Task, err error) {
@@ -202,11 +189,6 @@ func (svc *Service) _assign(t interfaces.Task) (err error) {
 	// node
 	n, err := svc.modelSvc.GetNodeById(t.GetNodeId())
 	if err != nil {
-		return err
-	}
-
-	// assign task
-	if err := svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_RUN_TASK, t); err != nil {
 		return err
 	}
 
@@ -266,16 +248,12 @@ func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerServi
 	if err := c.Provide(service.NewService); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(server.ProvideServer(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
 	if err := c.Provide(redis.GetRedisClient); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(
 		nodeCfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
-		svr interfaces.GrpcServer,
 		redis db.RedisClient,
 	) {
 		svc.nodeCfgSvc = nodeCfgSvc
