@@ -13,8 +13,8 @@ func WithConfigPath(path string) Option {
 	}
 }
 
-func WithFetchInterval(interval time.Duration) Option {
+func WithInterval(interval time.Duration) Option {
 	return func(svc interfaces.TaskSchedulerService) {
-		svc.SetFetchInterval(interval)
+		svc.SetInterval(interval)
 	}
 }

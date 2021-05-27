@@ -7,6 +7,12 @@ type Node interface {
 	GetKey() (key string)
 	SetActive(active bool)
 	SetActiveTs(activeTs time.Time)
+	GetStatus() (status string)
 	SetStatus(status string)
-	SetAvailable(available bool)
+	GetEnabled() (enabled bool)
+	SetEnabled(enabled bool)
+	GetAvailableRunners() (runners int)
+	SetAvailableRunners(runners int)
+	IncrementAvailableRunners()
+	DecrementAvailableRunners()
 }

@@ -247,7 +247,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	if err := c.Provide(config.ProvideConfigService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(server.ProvideServer(svc.cfgPath, serverOpts...)); err != nil {
+	if err := c.Provide(server.ProvideGetServer(svc.cfgPath, serverOpts...)); err != nil {
 		return nil, err
 	}
 	if err := c.Invoke(func(cfgSvc interfaces.NodeConfigService, modelSvc service.ModelService, server interfaces.GrpcServer) {

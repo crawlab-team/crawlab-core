@@ -44,6 +44,10 @@ func (t *Task) GetNodeId() (id primitive.ObjectID) {
 	return t.NodeId
 }
 
+func (t *Task) SetNodeId(id primitive.ObjectID) {
+	t.NodeId = id
+}
+
 func (t *Task) GetNodeIds() (ids []primitive.ObjectID) {
 	return t.NodeIds
 }

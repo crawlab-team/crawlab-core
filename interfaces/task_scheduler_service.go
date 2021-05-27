@@ -1,15 +1,19 @@
 package interfaces
 
-import "time"
+import (
+	"time"
+)
 
 type TaskSchedulerService interface {
 	TaskBaseService
-	// Fetch dequeue task from task queue
-	Fetch() (t Task, err error)
-	// Assign tasks via sending grpc stream message to handler(s)
-	Assign()
-	// SetFetchInterval set the interval or duration between two adjacent fetches
-	SetFetchInterval(interval time.Duration)
-	// GetTaskChannel internal channel of task
-	GetTaskChannel() (ch chan []Task)
+	// Enqueue task into the task queue
+	Enqueue(t Task) (err error)
+	// DequeueAndSchedule continuously dequeue task and schedule to corresponding node
+	DequeueAndSchedule()
+	// Dequeue task with node info from the task queue
+	Dequeue() (tasks []Task, err error)
+	// Schedule task to corresponding node
+	Schedule(tasks []Task) (err error)
+	// SetInterval set the interval or duration between two adjacent fetches
+	SetInterval(interval time.Duration)
 }

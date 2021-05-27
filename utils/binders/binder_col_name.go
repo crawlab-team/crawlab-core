@@ -42,6 +42,8 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return interfaces.ModelColNameToken, nil
 	case interfaces.ModelIdVariable:
 		return interfaces.ModelColNameVariable, nil
+	case interfaces.ModelIdTaskQueue:
+		return interfaces.ModelColNameTaskQueue, nil
 
 	// invalid
 	default:

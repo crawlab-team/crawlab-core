@@ -113,7 +113,6 @@ func (svc *Service) UpdateHandlerStatus() (err error) {
 	if err != nil {
 		return err
 	}
-	n.SetAvailable(svc.maxRunners > svc.runnersCount)
 	if err := client.NewModelNodeDelegate(n).Save(); err != nil {
 		return err
 	}

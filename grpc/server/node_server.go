@@ -138,7 +138,7 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 }
 
 func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_SubscribeServer) (err error) {
-	log.Infof("received subscribe request from node[%s]", request.NodeKey)
+	log.Infof("master received subscribe request from node[%s]", request.NodeKey)
 
 	// finished channel
 	finished := make(chan bool)
@@ -149,6 +149,8 @@ func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_S
 		Finished: finished,
 	})
 	ctx := stream.Context()
+
+	log.Infof("master subscribed node[%s]", request.NodeKey)
 
 	// Keep this scope alive because once this scope exits - the stream is closed
 	for {

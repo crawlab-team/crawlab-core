@@ -32,6 +32,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/go-sockaddr v1.0.0
 	github.com/imroc/req v0.3.0
+	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901
 	github.com/matcornic/hermes v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olivere/elastic/v7 v7.0.15

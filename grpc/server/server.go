@@ -19,6 +19,8 @@ import (
 	"sync"
 )
 
+var subs = sync.Map{}
+
 type Server struct {
 	// dependencies
 	nodeCfgSvc          interfaces.NodeConfigService
@@ -34,7 +36,6 @@ type Server struct {
 	// internals
 	svr     *grpc.Server
 	l       net.Listener
-	subs    sync.Map
 	stopped bool
 }
 
@@ -118,23 +119,23 @@ func (svr *Server) SetConfigPath(path string) {
 }
 
 func (svr *Server) GetSubscribe(key string) (sub interfaces.GrpcSubscribe, err error) {
-	res, ok := svr.subs.Load(key)
+	res, ok := subs.Load(key)
 	if !ok {
-		return nil, errors.ErrorNodeStreamNotFound
+		return nil, errors.ErrorGrpcStreamNotFound
 	}
 	sub, ok = res.(interfaces.GrpcSubscribe)
 	if !ok {
-		return nil, errors.ErrorNodeInvalidType
+		return nil, errors.ErrorGrpcInvalidType
 	}
 	return sub, nil
 }
 
 func (svr *Server) SetSubscribe(key string, sub interfaces.GrpcSubscribe) {
-	svr.subs.Store(key, sub)
+	subs.Store(key, sub)
 }
 
 func (svr *Server) DeleteSubscribe(key string) {
-	svr.subs.Delete(key)
+	subs.Delete(key)
 }
 
 func (svr *Server) SendStreamMessage(nodeKey string, code grpc2.StreamMessageCode) (err error) {
@@ -193,7 +194,6 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 				grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 			),
 		),
-		subs: sync.Map{},
 	}
 
 	// options
@@ -249,5 +249,29 @@ func ProvideServer(path string, opts ...Option) func() (res interfaces.GrpcServe
 	opts = append(opts, WithConfigPath(path))
 	return func() (res interfaces.GrpcServer, err error) {
 		return NewServer(opts...)
+	}
+}
+
+var serverStore = sync.Map{}
+
+func GetServer(path string, opts ...Option) (svr interfaces.GrpcServer, err error) {
+	if path == "" {
+		path = config.DefaultConfigPath
+	}
+	opts = append(opts, WithConfigPath(path))
+	res, ok := serverStore.Load(path)
+	if !ok {
+		return NewServer(opts...)
+	}
+	svr, ok = res.(interfaces.GrpcServer)
+	if !ok {
+		return NewServer(opts...)
+	}
+	return svr, nil
+}
+
+func ProvideGetServer(path string, opts ...Option) func() (svr interfaces.GrpcServer, err error) {
+	return func() (svr interfaces.GrpcServer, err error) {
+		return GetServer(path, opts...)
 	}
 }

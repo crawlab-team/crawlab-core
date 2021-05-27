@@ -8,6 +8,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -107,13 +108,14 @@ func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err erro
 			return trace.TraceError(err)
 		}
 	case grpc.StreamMessageCode_RUN_TASK:
-		var t models.Task
-		if err := json.Unmarshal(msg.Data, &t); err != nil {
-			return trace.TraceError(err)
-		}
-		if err := svc.taskHandlerSvc.Run(t.Id); err != nil {
-			return trace.TraceError(err)
-		}
+		// TODO: implement
+		//var t models.Task
+		//if err := json.Unmarshal(msg.Data, &t); err != nil {
+		//	return trace.TraceError(err)
+		//}
+		//if err := svc.taskHandlerSvc.Run(t.Id); err != nil {
+		//	return trace.TraceError(err)
+		//}
 	case grpc.StreamMessageCode_CANCEL_TASK:
 		var t models.Task
 		if err := json.Unmarshal(msg.Data, &t); err != nil {
@@ -202,12 +204,13 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	if err := c.Provide(client.ProvideGetClient(svc.cfgPath, clientOpts...)); err != nil {
 		return nil, err
 	}
-	//if err := c.Provide(client.ProvideGetClient(svc.cfgPath, clientOpts...)); err != nil {
-	//	return nil, err
-	//}
-	if err := c.Invoke(func(cfgSvc interfaces.NodeConfigService, client interfaces.GrpcClient) {
+	if err := c.Provide(handler.ProvideTaskHandlerService(svc.cfgPath)); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(cfgSvc interfaces.NodeConfigService, client interfaces.GrpcClient, taskHandlerSvc interfaces.TaskHandlerService) {
 		svc.cfgSvc = cfgSvc
 		svc.client = client
+		svc.taskHandlerSvc = taskHandlerSvc
 	}); err != nil {
 		return nil, err
 	}

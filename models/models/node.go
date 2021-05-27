@@ -7,26 +7,22 @@ import (
 )
 
 type Node struct {
-	Id          primitive.ObjectID `json:"_id" bson:"_id"`
-	Key         string             `json:"key" bson:"key"`
-	Name        string             `json:"name" bson:"name"`
-	Ip          string             `json:"ip" bson:"ip"`
-	Port        string             `json:"port" bson:"port"`
-	Mac         string             `json:"mac" bson:"mac"`
-	Hostname    string             `json:"hostname" bson:"hostname"`
-	Description string             `json:"description" bson:"description"`
-	IsMaster    bool               `json:"is_master" bson:"is_master"`
-	Status      string             `json:"status" bson:"status"`
-	Enabled     bool               `json:"enabled" bson:"enabled"`
-	Active      bool               `json:"active" bson:"active"`
-	ActiveTs    time.Time          `json:"active_ts" bson:"active_ts"`
-	Settings    NodeSettings       `json:"settings" bson:"settings"`
-	Available   bool               `json:"available" bson:"available"`
-	Tags        []Tag              `json:"tags" bson:"-"`
-}
-
-type NodeSettings struct {
-	MaxRunners int `json:"max_runners" bson:"max_runners"`
+	Id               primitive.ObjectID `json:"_id" bson:"_id"`
+	Key              string             `json:"key" bson:"k"`
+	Name             string             `json:"name" bson:"n"`
+	Ip               string             `json:"ip" bson:"ip"`
+	Port             string             `json:"port" bson:"p"`
+	Mac              string             `json:"mac" bson:"m"`
+	Hostname         string             `json:"hostname" bson:"h"`
+	Description      string             `json:"description" bson:"d"`
+	IsMaster         bool               `json:"is_master" bson:"im"`
+	Status           string             `json:"status" bson:"s"`
+	Enabled          bool               `json:"enabled" bson:"en"`
+	Active           bool               `json:"active" bson:"a"`
+	ActiveTs         time.Time          `json:"active_ts" bson:"at"`
+	AvailableRunners int                `json:"available_runners" bson:"ar"`
+	MaxRunners       int                `json:"max_runners" bson:"mr"`
+	Tags             []Tag              `json:"tags" bson:"-"`
 }
 
 func (n *Node) GetId() (id primitive.ObjectID) {
@@ -57,10 +53,34 @@ func (n *Node) SetActiveTs(activeTs time.Time) {
 	n.ActiveTs = activeTs
 }
 
+func (n *Node) GetStatus() (status string) {
+	return n.Status
+}
+
 func (n *Node) SetStatus(status string) {
 	n.Status = status
 }
 
-func (n *Node) SetAvailable(available bool) {
-	n.Available = available
+func (n *Node) GetEnabled() (enabled bool) {
+	return n.Enabled
+}
+
+func (n *Node) SetEnabled(enabled bool) {
+	n.Enabled = enabled
+}
+
+func (n *Node) GetAvailableRunners() (runners int) {
+	return n.AvailableRunners
+}
+
+func (n *Node) SetAvailableRunners(runners int) {
+	n.AvailableRunners = runners
+}
+
+func (n *Node) IncrementAvailableRunners() {
+	n.AvailableRunners++
+}
+
+func (n *Node) DecrementAvailableRunners() {
+	n.AvailableRunners--
 }

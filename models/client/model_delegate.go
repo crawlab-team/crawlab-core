@@ -37,6 +37,8 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 		return newModelDelegate(interfaces.ModelIdToken, doc, opts...)
 	case *models2.Variable:
 		return newModelDelegate(interfaces.ModelIdVariable, doc, opts...)
+	case *models2.TaskQueueItem:
+		return newModelDelegate(interfaces.ModelIdTaskQueue, doc, opts...)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil

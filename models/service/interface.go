@@ -53,5 +53,8 @@ type ModelService interface {
 	GetVariable(query bson.M, opts *mongo.FindOptions) (res *models2.Variable, err error)
 	GetVariableList(query bson.M, opts *mongo.FindOptions) (res []models2.Variable, err error)
 	GetVariableByKey(key string, opts *mongo.FindOptions) (res *models2.Variable, err error)
+	GetTaskQueueItemById(id primitive.ObjectID) (res *models2.TaskQueueItem, err error)
+	GetTaskQueueItem(query bson.M, opts *mongo.FindOptions) (res *models2.TaskQueueItem, err error)
+	GetTaskQueueItemList(query bson.M, opts *mongo.FindOptions) (res []models2.TaskQueueItem, err error)
 	DropAll() (err error)
 }

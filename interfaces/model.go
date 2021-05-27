@@ -24,21 +24,23 @@ const (
 	ModelIdSetting
 	ModelIdToken
 	ModelIdVariable
+	ModelIdTaskQueue
 )
 
 const (
-	ModelColNameArtifact = "artifacts"
-	ModelColNameTag      = "tags"
-	ModelColNameNode     = "nodes"
-	ModelColNameProject  = "projects"
-	ModelColNameSpider   = "spiders"
-	ModelColNameTask     = "tasks"
-	ModelColNameJob      = "jobs"
-	ModelColNameSchedule = "schedules"
-	ModelColNameUser     = "users"
-	ModelColNameSetting  = "settings"
-	ModelColNameToken    = "tokens"
-	ModelColNameVariable = "variables"
+	ModelColNameArtifact  = "artifacts"
+	ModelColNameTag       = "tags"
+	ModelColNameNode      = "nodes"
+	ModelColNameProject   = "projects"
+	ModelColNameSpider    = "spiders"
+	ModelColNameTask      = "tasks"
+	ModelColNameJob       = "jobs"
+	ModelColNameSchedule  = "schedules"
+	ModelColNameUser      = "users"
+	ModelColNameSetting   = "settings"
+	ModelColNameToken     = "tokens"
+	ModelColNameVariable  = "variables"
+	ModelColNameTaskQueue = "task_queue"
 )
 
 type ModelWithTags interface {

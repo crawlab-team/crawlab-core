@@ -4,11 +4,14 @@ func NewGrpcError(msg string) (err error) {
 	return NewError(ErrorPrefixGrpc, msg)
 }
 
-var ErrorGrpcClientFailedToStart = NewGrpcError("client failed to start")
-var ErrorGrpcServerFailedToListen = NewGrpcError("server failed to listen")
-var ErrorGrpcServerFailedToServe = NewGrpcError("server failed to serve")
-var ErrorGrpcClientNotExists = NewGrpcError("client not exists")
-var ErrorGrpcClientAlreadyExists = NewGrpcError("client already exists")
-var ErrorGrpcInvalidType = NewGrpcError("invalid type")
-var ErrorGrpcNotAllowed = NewGrpcError("not allowed")
-var ErrorGrpcSubscribeNotExists = NewGrpcError("subscribe not exists")
+var (
+	ErrorGrpcClientFailedToStart  = NewGrpcError("client failed to start")
+	ErrorGrpcServerFailedToListen = NewGrpcError("server failed to listen")
+	ErrorGrpcServerFailedToServe  = NewGrpcError("server failed to serve")
+	ErrorGrpcClientNotExists      = NewGrpcError("client not exists")
+	ErrorGrpcClientAlreadyExists  = NewGrpcError("client already exists")
+	ErrorGrpcInvalidType          = NewGrpcError("invalid type")
+	ErrorGrpcNotAllowed           = NewGrpcError("not allowed")
+	ErrorGrpcSubscribeNotExists   = NewGrpcError("subscribe not exists")
+	ErrorGrpcStreamNotFound       = NewGrpcError("stream not found")
+)
