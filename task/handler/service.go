@@ -27,18 +27,21 @@ type Service struct {
 	// settings
 	maxRunners        int
 	exitWatchDuration time.Duration
+	reportInterval    time.Duration
 
 	// internals variables
+	stopped      bool
 	mu           sync.Mutex
 	runnersCount int      // number of task runners
 	runners      sync.Map // pool of task runners started
 }
 
-func (svc *Service) Start() {
-	panic("implement me")
-}
-
 func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
+	// validate if there are available runners
+	if svc.runnersCount >= svc.maxRunners {
+		return errors.ErrorTaskNoAvailableRunners
+	}
+
 	// attempt to get runner from pool
 	_, ok := svc.runners.Load(taskId)
 	if ok {
@@ -51,13 +54,8 @@ func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
 		return err
 	}
 
-	// update task handler status to node
-	if err := svc.UpdateHandlerStatus(); err != nil {
-		return err
-	}
-
 	// add runner to pool
-	svc.AddRunner(taskId, r)
+	svc.addRunner(taskId, r)
 
 	// create a goroutine to run task
 	go func() {
@@ -72,16 +70,21 @@ func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
 			default:
 				log.Errorf("task[%s] finished with unknown error: %v", r.GetTaskId().Hex(), err)
 			}
-			return
+
+			// delete runner from pool
+			svc.deleteRunner(r.GetTaskId())
 		}
 		log.Infof("task[%s] finished", r.GetTaskId().Hex())
+
+		// delete runner from pool
+		svc.deleteRunner(r.GetTaskId())
 	}()
 
 	return nil
 }
 
 func (svc *Service) Cancel(taskId primitive.ObjectID) (err error) {
-	r, err := svc.getTaskRunner(taskId)
+	r, err := svc.getRunner(taskId)
 	if err != nil {
 		return err
 	}
@@ -91,44 +94,20 @@ func (svc *Service) Cancel(taskId primitive.ObjectID) (err error) {
 	return nil
 }
 
-func (svc *Service) AddRunner(taskId primitive.ObjectID, r interfaces.TaskRunner) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+func (svc *Service) ReportHandlerStatus() {
+	for {
+		if svc.stopped {
+			return
+		}
 
-	svc.runners.Store(taskId, r)
-	svc.runnersCount++
-}
+		// report handler status
+		if err := svc.reportHandlerStatus(); err != nil {
+			trace.PrintError(err)
+		}
 
-func (svc *Service) DeleteRunner(taskId primitive.ObjectID) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	svc.runners.Delete(taskId)
-	svc.runnersCount--
-}
-
-func (svc *Service) UpdateHandlerStatus() (err error) {
-	nodeKey := svc.nodeCfgSvc.GetNodeKey()
-	n, err := svc.modelNodeSvc.GetNodeByKey(nodeKey)
-	if err != nil {
-		return err
+		// wait
+		time.Sleep(svc.reportInterval)
 	}
-	if err := client.NewModelNodeDelegate(n).Save(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (svc *Service) GetRunner(taskId primitive.ObjectID) (r interfaces.TaskRunner, err error) {
-	res, ok := svc.runners.Load(taskId)
-	if !ok {
-		return nil, trace.TraceError(errors.ErrorTaskNotExists)
-	}
-	r, ok = res.(interfaces.TaskRunner)
-	if !ok {
-		return nil, trace.TraceError(errors.ErrorTaskInvalidType)
-	}
-	return r, nil
 }
 
 func (svc *Service) GetMaxRunners() (maxRunners int) {
@@ -147,6 +126,14 @@ func (svc *Service) SetExitWatchDuration(duration time.Duration) {
 	svc.exitWatchDuration = duration
 }
 
+func (svc *Service) GetReportInterval() (interval time.Duration) {
+	return svc.reportInterval
+}
+
+func (svc *Service) SetReportInterval(interval time.Duration) {
+	svc.reportInterval = interval
+}
+
 func (svc *Service) GetModelService() (modelSvc interfaces.GrpcClientModelService) {
 	return svc.modelSvc
 }
@@ -159,7 +146,7 @@ func (svc *Service) GetModelTaskService() (modelTaskSvc interfaces.GrpcClientMod
 	return svc.modelTaskSvc
 }
 
-func (svc *Service) getTaskRunner(taskId primitive.ObjectID) (r interfaces.TaskRunner, err error) {
+func (svc *Service) getRunner(taskId primitive.ObjectID) (r interfaces.TaskRunner, err error) {
 	v, ok := svc.runners.Load(taskId)
 	if !ok {
 		return nil, errors.ErrorTaskNotExists
@@ -171,6 +158,22 @@ func (svc *Service) getTaskRunner(taskId primitive.ObjectID) (r interfaces.TaskR
 		return nil, errors.ErrorModelInvalidType
 	}
 	return r, nil
+}
+
+func (svc *Service) addRunner(taskId primitive.ObjectID, r interfaces.TaskRunner) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	svc.runners.Store(taskId, r)
+	svc.runnersCount++
+}
+
+func (svc *Service) deleteRunner(taskId primitive.ObjectID) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	svc.runners.Delete(taskId)
+	svc.runnersCount--
 }
 
 func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
@@ -203,6 +206,21 @@ func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
 	}
 }
 
+func (svc *Service) reportHandlerStatus() (err error) {
+	nodeKey := svc.nodeCfgSvc.GetNodeKey()
+	n, err := svc.modelNodeSvc.GetNodeByKey(nodeKey)
+	if err != nil {
+		return err
+	}
+	ar := svc.maxRunners - svc.runnersCount
+	n.SetAvailableRunners(ar)
+	n.SetMaxRunners(svc.maxRunners)
+	if err := client.NewModelNodeDelegate(n).Save(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, err error) {
 	// base service
 	baseSvc, err := task.NewBaseService()
@@ -216,6 +234,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		TaskBaseService:   baseSvc,
 		maxRunners:        8,
 		exitWatchDuration: 60 * time.Second,
+		reportInterval:    60 * time.Second,
 		mu:                sync.Mutex{},
 		runnersCount:      0,
 		runners:           sync.Map{},

@@ -77,6 +77,14 @@ func (n *Node) SetAvailableRunners(runners int) {
 	n.AvailableRunners = runners
 }
 
+func (n *Node) GetMaxRunners() (runners int) {
+	return n.MaxRunners
+}
+
+func (n *Node) SetMaxRunners(runners int) {
+	n.MaxRunners = runners
+}
+
 func (n *Node) IncrementAvailableRunners() {
 	n.AvailableRunners++
 }

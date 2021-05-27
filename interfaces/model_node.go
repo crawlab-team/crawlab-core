@@ -13,6 +13,8 @@ type Node interface {
 	SetEnabled(enabled bool)
 	GetAvailableRunners() (runners int)
 	SetAvailableRunners(runners int)
+	GetMaxRunners() (runners int)
+	SetMaxRunners(runners int)
 	IncrementAvailableRunners()
 	DecrementAvailableRunners()
 }

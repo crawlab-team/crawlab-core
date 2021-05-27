@@ -2,12 +2,10 @@ package constants
 
 const (
 	TaskStatusPending   = "pending"
-	TaskStatusAssigned  = "assigned"
 	TaskStatusRunning   = "running"
 	TaskStatusFinished  = "finished"
 	TaskStatusError     = "error"
 	TaskStatusCancelled = "cancelled"
-	TaskStatusAbnormal  = "abnormal"
 )
 
 const (
@@ -39,5 +37,3 @@ const (
 	TaskListQueuePrefixPublic = "tasks:public"
 	TaskListQueuePrefixNodes  = "tasks:nodes"
 )
-
-const TaskKeyAnchor = "###"

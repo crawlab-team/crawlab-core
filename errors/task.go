@@ -11,4 +11,5 @@ var (
 	ErrorTaskProcessStillExists = NewTaskError("process still exists")
 	ErrorTaskUnableToCancel     = NewTaskError("unable to cancel")
 	ErrorTaskForbidden          = NewTaskError("forbidden")
+	ErrorTaskNoAvailableRunners = NewTaskError("no available runner")
 )

@@ -87,7 +87,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 				NodeId:   nodeId,
 				Status:   constants.TaskStatusPending,
 			}
-			if err := svc.schedulerSvc.Assign(t); err != nil {
+			if err := svc.schedulerSvc.Enqueue(t); err != nil {
 				return err
 			}
 		}
@@ -100,7 +100,7 @@ func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (
 		if len(nodeIds) > 0 {
 			mainTask.NodeId = nodeIds[0]
 		}
-		if err := svc.schedulerSvc.Assign(mainTask); err != nil {
+		if err := svc.schedulerSvc.Enqueue(mainTask); err != nil {
 			return err
 		}
 	}

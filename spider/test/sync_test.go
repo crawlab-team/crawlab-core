@@ -15,8 +15,8 @@ func TestFsService_SyncToFs(t *testing.T) {
 	T.Setup(t)
 
 	// save file to local
-	filePath := path.Join(T.masterFsSvc.GetWorkspacePath(), T.scriptName)
-	err = ioutil.WriteFile(filePath, []byte(T.script), os.ModePerm)
+	filePath := path.Join(T.masterFsSvc.GetWorkspacePath(), T.ScriptName)
+	err = ioutil.WriteFile(filePath, []byte(T.Script), os.ModePerm)
 	require.Nil(t, err)
 
 	// commit
@@ -24,14 +24,14 @@ func TestFsService_SyncToFs(t *testing.T) {
 	require.Nil(t, err)
 
 	// sync to fs
-	err = T.masterSyncSvc.SyncToFs(T.s.Id)
+	err = T.masterSyncSvc.SyncToFs(T.TestSpider.Id)
 	require.Nil(t, err)
 
 	// validate
-	remotePath := fmt.Sprintf("%s/%s/%s", fs.DefaultFsPath, T.s.Id.Hex(), T.scriptName)
+	remotePath := fmt.Sprintf("%s/%s/%s", fs.DefaultFsPath, T.TestSpider.Id.Hex(), T.ScriptName)
 	data, err := T.fsSvc.GetFs().GetFile(remotePath)
 	require.Nil(t, err)
-	require.Equal(t, T.script, string(data))
+	require.Equal(t, T.Script, string(data))
 }
 
 func TestFsService_SyncToWorkspace(t *testing.T) {
@@ -40,15 +40,15 @@ func TestFsService_SyncToWorkspace(t *testing.T) {
 
 	// save file to local
 	require.Nil(t, err)
-	err = T.masterFsSvc.GetFsService().Save(T.scriptName, []byte(T.script))
+	err = T.masterFsSvc.GetFsService().Save(T.ScriptName, []byte(T.Script))
 
 	// sync to fs
-	err = T.workerSyncSvc.SyncToWorkspace(T.s.Id)
+	err = T.workerSyncSvc.SyncToWorkspace(T.TestSpider.Id)
 	require.Nil(t, err)
 
 	// validate
-	filePath := path.Join(T.workerFsSvc.GetWorkspacePath(), T.scriptName)
+	filePath := path.Join(T.workerFsSvc.GetWorkspacePath(), T.ScriptName)
 	data, err := ioutil.ReadFile(filePath)
 	require.Nil(t, err)
-	require.Equal(t, T.script, string(data))
+	require.Equal(t, T.Script, string(data))
 }

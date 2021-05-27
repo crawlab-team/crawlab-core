@@ -6,7 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/test"
+	ntest "github.com/crawlab-team/crawlab-core/node/test"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/go-trace"
@@ -64,11 +64,11 @@ func (t *Test) NewTask() (t2 interfaces.Task) {
 }
 
 func (t *Test) StartMasterWorker() {
-	test.T.StartMasterWorker()
+	ntest.T.StartMasterWorker()
 }
 
 func (t *Test) StopMasterWorker() {
-	test.T.StopMasterWorker()
+	ntest.T.StopMasterWorker()
 }
 
 func NewTest() (res *Test, err error) {
@@ -76,10 +76,10 @@ func NewTest() (res *Test, err error) {
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(scheduler.ProvideTaskSchedulerService(test.T.MasterSvc.GetConfigPath(), scheduler.WithInterval(5*time.Second))); err != nil {
+	if err := c.Provide(scheduler.ProvideTaskSchedulerService(ntest.T.MasterSvc.GetConfigPath(), scheduler.WithInterval(5*time.Second))); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(handler.ProvideTaskHandlerService(test.T.MasterSvc.GetConfigPath())); err != nil {
+	if err := c.Provide(handler.ProvideTaskHandlerService(ntest.T.MasterSvc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Provide(service.NewService); err != nil {

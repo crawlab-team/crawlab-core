@@ -108,14 +108,13 @@ func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err erro
 			return trace.TraceError(err)
 		}
 	case grpc.StreamMessageCode_RUN_TASK:
-		// TODO: implement
-		//var t models.Task
-		//if err := json.Unmarshal(msg.Data, &t); err != nil {
-		//	return trace.TraceError(err)
-		//}
-		//if err := svc.taskHandlerSvc.Run(t.Id); err != nil {
-		//	return trace.TraceError(err)
-		//}
+		var t models.Task
+		if err := json.Unmarshal(msg.Data, &t); err != nil {
+			return trace.TraceError(err)
+		}
+		if err := svc.taskHandlerSvc.Run(t.Id); err != nil {
+			return trace.TraceError(err)
+		}
 	case grpc.StreamMessageCode_CANCEL_TASK:
 		var t models.Task
 		if err := json.Unmarshal(msg.Data, &t); err != nil {

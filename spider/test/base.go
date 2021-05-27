@@ -37,7 +37,7 @@ func init() {
 var T *Test
 
 type Test struct {
-	s             *models.Spider
+	// dependencies
 	adminSvc      interfaces.SpiderAdminService
 	masterSyncSvc interfaces.SpiderSyncService
 	masterFsSvc   interfaces.SpiderFsService
@@ -45,8 +45,10 @@ type Test struct {
 	workerFsSvc   interfaces.SpiderFsService
 	modelSvc      service.ModelService
 	fsSvc         interfaces.FsService
-	scriptName    string
-	script        string
+	// data
+	TestSpider *models.Spider
+	ScriptName string
+	Script     string
 }
 
 // Setup spider fs service test setup
@@ -65,12 +67,12 @@ func (t *Test) Cleanup() {
 func NewTest() (res *Test, err error) {
 	// test
 	t := &Test{
-		s: &models.Spider{
+		TestSpider: &models.Spider{
 			Name: "test_spider",
 			Cmd:  "go run main.go",
 		},
-		scriptName: "main.go",
-		script: `package main
+		ScriptName: "main.go",
+		Script: `package main
 import "fmt"
 func main() {
   fmt.Println("it works")
@@ -78,7 +80,7 @@ func main() {
 	}
 
 	// add spider to db
-	if err := delegate.NewModelDelegate(t.s).Add(); err != nil {
+	if err := delegate.NewModelDelegate(t.TestSpider).Add(); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +115,7 @@ func main() {
 	}
 
 	// master fs service
-	t.masterFsSvc, err = t.masterSyncSvc.ForceGetFsService(t.s.Id)
+	t.masterFsSvc, err = t.masterSyncSvc.ForceGetFsService(t.TestSpider.Id)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -129,7 +131,7 @@ func main() {
 	}
 
 	// worker fs service
-	t.workerFsSvc, err = t.workerSyncSvc.ForceGetFsService(t.s.Id)
+	t.workerFsSvc, err = t.workerSyncSvc.ForceGetFsService(t.TestSpider.Id)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}

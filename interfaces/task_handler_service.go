@@ -11,14 +11,8 @@ type TaskHandlerService interface {
 	Run(taskId primitive.ObjectID) (err error)
 	// Cancel task locally
 	Cancel(taskId primitive.ObjectID) (err error)
-	// AddRunner add runner to pool
-	AddRunner(taskId primitive.ObjectID, r TaskRunner)
-	// DeleteRunner delete runner from pool
-	DeleteRunner(taskId primitive.ObjectID)
-	// UpdateHandlerStatus update the status of task handler
-	UpdateHandlerStatus() (err error)
-	// GetRunner get runner from pool
-	GetRunner(taskId primitive.ObjectID) (r TaskRunner, err error)
+	// ReportHandlerStatus periodically report handler status to master
+	ReportHandlerStatus()
 	// GetMaxRunners get max runners
 	GetMaxRunners() (maxRunners int)
 	// SetMaxRunners set max runners
@@ -27,6 +21,10 @@ type TaskHandlerService interface {
 	GetExitWatchDuration() (duration time.Duration)
 	// SetExitWatchDuration set max runners
 	SetExitWatchDuration(duration time.Duration)
+	// GetReportInterval get report interval
+	GetReportInterval() (interval time.Duration)
+	// SetReportInterval set report interval
+	SetReportInterval(interval time.Duration)
 	// GetModelService get model service
 	GetModelService() (modelSvc GrpcClientModelService)
 	// GetModelSpiderService get model spider service

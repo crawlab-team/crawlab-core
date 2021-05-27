@@ -25,6 +25,12 @@ func WithExitWatchDuration(duration time.Duration) Option {
 	}
 }
 
+func WithReportInterval(interval time.Duration) Option {
+	return func(svc interfaces.TaskHandlerService) {
+		svc.SetExitWatchDuration(interval)
+	}
+}
+
 type RunnerOption func(runner interfaces.TaskRunner)
 
 func WithLogDriverType(driverType string) RunnerOption {
