@@ -11,8 +11,8 @@ type TaskHandlerService interface {
 	Run(taskId primitive.ObjectID) (err error)
 	// Cancel task locally
 	Cancel(taskId primitive.ObjectID) (err error)
-	// ReportHandlerStatus periodically report handler status to master
-	ReportHandlerStatus()
+	// ReportStatus periodically report handler status to master
+	ReportStatus()
 	// GetMaxRunners get max runners
 	GetMaxRunners() (maxRunners int)
 	// SetMaxRunners set max runners

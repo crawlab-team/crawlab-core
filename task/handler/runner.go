@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -77,6 +78,9 @@ func (r *Runner) Run() (err error) {
 	if err := r.updateTask(constants.TaskStatusRunning); err != nil {
 		return err
 	}
+
+	// log task started
+	log.Infof("task[%s] started", r.tid.Hex())
 
 	// configure cmd
 	if err := r.configureCmd(); err != nil {
@@ -198,7 +202,7 @@ func (r *Runner) GetTaskId() (id primitive.ObjectID) {
 
 func (r *Runner) configureCmd() (err error) {
 	var cmdStr string
-	if r.t.GetType() == constants.TaskTypeSpider {
+	if r.t.GetType() == constants.TaskTypeSpider || r.t.GetType() == "" {
 		// spider task
 		if r.s.GetType() == constants.Configurable {
 			// configurable spider

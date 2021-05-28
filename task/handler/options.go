@@ -27,7 +27,7 @@ func WithExitWatchDuration(duration time.Duration) Option {
 
 func WithReportInterval(interval time.Duration) Option {
 	return func(svc interfaces.TaskHandlerService) {
-		svc.SetExitWatchDuration(interval)
+		svc.SetReportInterval(interval)
 	}
 }
 

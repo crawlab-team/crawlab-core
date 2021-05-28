@@ -9,6 +9,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	ntest "github.com/crawlab-team/crawlab-core/node/test"
+	"github.com/crawlab-team/crawlab-core/spider/fs"
 	stest "github.com/crawlab-team/crawlab-core/spider/test"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
@@ -35,22 +36,31 @@ var T *Test
 
 type Test struct {
 	// dependencies
-	schedulerSvc  interfaces.TaskSchedulerService
-	handlerSvc    interfaces.TaskHandlerService
-	modelSvc      service.ModelService
-	masterFsSvc   interfaces.SpiderFsService
-	workerFsSvc   interfaces.SpiderFsService
-	masterSyncSvc interfaces.SpiderSyncService
-	client        interfaces.GrpcClient
-	server        interfaces.GrpcServer
-	sub           grpc.NodeService_SubscribeClient
+	schedulerSvc    interfaces.TaskSchedulerService
+	handlerSvc      interfaces.TaskHandlerService
+	modelSvc        service.ModelService
+	masterFsSvc     interfaces.SpiderFsService
+	workerFsSvc     interfaces.SpiderFsService
+	masterFsSvcLong interfaces.SpiderFsService
+	masterSyncSvc   interfaces.SpiderSyncService
+	client          interfaces.GrpcClient
+	server          interfaces.GrpcServer
+	sub             grpc.NodeService_SubscribeClient
+
+	// settings
+	ReportInterval    time.Duration
+	MaxRunners        int
+	ExitWatchDuration time.Duration
 
 	// data
 	TestNode           interfaces.Node
 	TestSpider         interfaces.Spider
+	TestSpiderLong     interfaces.Spider
 	TestTask           interfaces.Task
 	TestTaskWithNodeId interfaces.Task
 	TestTaskMessage    entity.TaskMessage
+	ScriptNameLong     string
+	ScriptLong         string
 }
 
 func (t *Test) Setup(t2 *testing.T) {
@@ -77,6 +87,12 @@ func (t *Test) NewTask() (t2 interfaces.Task) {
 	}
 }
 
+func (t *Test) NewTaskLong() (t2 interfaces.Task) {
+	return &models.Task{
+		SpiderId: t.TestSpiderLong.GetId(),
+	}
+}
+
 func (t *Test) StartMasterWorker() {
 	ntest.T.StartMasterWorker()
 }
@@ -86,14 +102,33 @@ func (t *Test) StopMasterWorker() {
 }
 
 func NewTest() (res *Test, err error) {
-	t := &Test{}
+	t := &Test{
+		ReportInterval:    1 * time.Second,
+		MaxRunners:        20,
+		ExitWatchDuration: 5 * time.Second,
+		ScriptNameLong:    "main.go",
+		ScriptLong: `package main
+import "fmt"
+import "time"
+func main() {
+  for i := 0; i < 10; i++ {
+    fmt.Println("it works")
+    time.Sleep(1 * time.Second)
+  }
+}`,
+	}
 
 	// dependency injection
 	c := dig.New()
 	if err := c.Provide(scheduler.ProvideTaskSchedulerService(ntest.T.MasterSvc.GetConfigPath(), scheduler.WithInterval(5*time.Second))); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(handler.ProvideTaskHandlerService(ntest.T.WorkerSvc.GetConfigPath())); err != nil {
+	if err := c.Provide(handler.ProvideTaskHandlerService(
+		ntest.T.WorkerSvc.GetConfigPath(),
+		handler.WithReportInterval(t.ReportInterval),
+		handler.WithMaxRunners(t.MaxRunners),
+		handler.WithExitWatchDuration(t.ExitWatchDuration),
+	)); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Provide(service.NewService); err != nil {
@@ -117,10 +152,10 @@ func NewTest() (res *Test, err error) {
 	// test node
 	t.TestNode = &models.Node{
 		Id:               primitive.NewObjectID(),
-		Key:              "test_node_key",
+		Key:              ntest.T.WorkerSvc.GetConfigService().GetNodeKey(),
 		Enabled:          true,
 		Active:           true,
-		AvailableRunners: 20,
+		AvailableRunners: t.MaxRunners,
 	}
 
 	// test spider
@@ -143,6 +178,33 @@ func NewTest() (res *Test, err error) {
 	}
 	if err := t.masterSyncSvc.SyncToFs(t.TestSpider.GetId()); err != nil {
 		panic(err)
+	}
+
+	// long task spider
+	t.TestSpiderLong = &models.Spider{
+		Id:  primitive.NewObjectID(),
+		Cmd: "go run main.go",
+	}
+	if err := delegate.NewModelDelegate(t.TestSpiderLong).Add(); err != nil {
+		return nil, err
+	}
+
+	// long task spider dependency injection
+	t.masterFsSvcLong, err = fs.GetSpiderFsService(t.TestSpiderLong.GetId(), fs.WithConfigPath(ntest.T.MasterSvc.GetConfigPath()))
+	if err != nil {
+		return nil, err
+	}
+
+	// add file (long task) to spider fs
+	filePathLong := path.Join(t.masterFsSvcLong.GetWorkspacePath(), t.ScriptNameLong)
+	if err := ioutil.WriteFile(filePathLong, []byte(t.ScriptLong), os.ModePerm); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := t.masterFsSvcLong.GetFsService().Commit("initial commit"); err != nil {
+		return nil, err
+	}
+	if err := t.masterSyncSvc.SyncToFs(t.TestSpiderLong.GetId()); err != nil {
+		return nil, trace.TraceError(err)
 	}
 
 	// grpc server/client
