@@ -16,6 +16,7 @@ import (
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"io/ioutil"
 	"os"
@@ -53,32 +54,58 @@ type Test struct {
 	ExitWatchDuration time.Duration
 
 	// data
-	TestNode           interfaces.Node
-	TestSpider         interfaces.Spider
-	TestSpiderLong     interfaces.Spider
-	TestTask           interfaces.Task
-	TestTaskWithNodeId interfaces.Task
-	TestTaskMessage    entity.TaskMessage
-	ScriptNameLong     string
-	ScriptLong         string
+	TestNode        interfaces.Node
+	TestSpider      interfaces.Spider
+	TestSpiderLong  interfaces.Spider
+	TestTaskMessage entity.TaskMessage
+	ScriptNameLong  string
+	ScriptLong      string
 }
 
 func (t *Test) Setup(t2 *testing.T) {
 	// add test node
+	t.TestNode = t.NewNode()
 	if err := delegate.NewModelDelegate(t.TestNode).Add(); err != nil {
 		panic(err)
 	}
 
 	// add test spider
-	//if err := delegate.NewModelDelegate(t.TestSpider).Add(); err != nil {
-	//	panic(err)
-	//}
+	if _, err := t.modelSvc.GetSpiderById(t.TestSpider.GetId()); err != nil {
+		if err == mongo.ErrNoDocuments {
+			if err := delegate.NewModelDelegate(t.TestSpider).Add(); err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	}
+
+	// add test spider (long task)
+	if _, err := t.modelSvc.GetSpiderById(t.TestSpiderLong.GetId()); err != nil {
+		if err == mongo.ErrNoDocuments {
+			if err := delegate.NewModelDelegate(t.TestSpiderLong).Add(); err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	}
 
 	t2.Cleanup(t.Cleanup)
 }
 
 func (t *Test) Cleanup() {
 	_ = t.modelSvc.DropAll()
+}
+
+func (t *Test) NewNode() (n interfaces.Node) {
+	return &models.Node{
+		Key:              ntest.T.WorkerSvc.GetConfigService().GetNodeKey(),
+		Enabled:          true,
+		Active:           true,
+		AvailableRunners: t.MaxRunners,
+		MaxRunners:       t.MaxRunners,
+	}
 }
 
 func (t *Test) NewTask() (t2 interfaces.Task) {
@@ -150,23 +177,10 @@ func main() {
 	t.masterSyncSvc = stest.T.GetMasterSyncSvc()
 
 	// test node
-	t.TestNode = &models.Node{
-		Id:               primitive.NewObjectID(),
-		Key:              ntest.T.WorkerSvc.GetConfigService().GetNodeKey(),
-		Enabled:          true,
-		Active:           true,
-		AvailableRunners: t.MaxRunners,
-	}
+	t.TestNode = t.NewNode()
 
 	// test spider
 	t.TestSpider = stest.T.TestSpider
-
-	// test task
-	t.TestTask = t.NewTask()
-
-	// test task with node id
-	t.TestTaskWithNodeId = t.NewTask()
-	t.TestTaskWithNodeId.SetNodeId(t.TestNode.GetId())
 
 	// add file to spider fs
 	filePath := path.Join(t.masterFsSvc.GetWorkspacePath(), stest.T.ScriptName)

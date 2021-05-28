@@ -88,6 +88,13 @@ func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
 	return nil
 }
 
+func (svc *Service) Reset() {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+	svc.runners = sync.Map{}
+	svc.runnersCount = 0
+}
+
 func (svc *Service) Cancel(taskId primitive.ObjectID) (err error) {
 	r, err := svc.getRunner(taskId)
 	if err != nil {
@@ -170,7 +177,9 @@ func (svc *Service) addRunner(taskId primitive.ObjectID, r interfaces.TaskRunner
 	defer svc.mu.Unlock()
 
 	svc.runners.Store(taskId, r)
-	svc.runnersCount++
+	if svc.runnersCount < svc.maxRunners {
+		svc.runnersCount++
+	}
 }
 
 func (svc *Service) deleteRunner(taskId primitive.ObjectID) {
@@ -178,7 +187,9 @@ func (svc *Service) deleteRunner(taskId primitive.ObjectID) {
 	defer svc.mu.Unlock()
 
 	svc.runners.Delete(taskId)
-	svc.runnersCount--
+	if svc.runnersCount > 0 {
+		svc.runnersCount--
+	}
 }
 
 func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {

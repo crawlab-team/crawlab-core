@@ -13,6 +13,8 @@ type TaskHandlerService interface {
 	Cancel(taskId primitive.ObjectID) (err error)
 	// ReportStatus periodically report handler status to master
 	ReportStatus()
+	// Reset reset internals to default
+	Reset()
 	// GetMaxRunners get max runners
 	GetMaxRunners() (maxRunners int)
 	// SetMaxRunners set max runners

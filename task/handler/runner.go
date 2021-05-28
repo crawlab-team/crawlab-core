@@ -174,7 +174,7 @@ func (r *Runner) Cancel() (err error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), r.svc.GetExitWatchDuration())
 	defer cancel()
-	b := backoff.WithContext(backoff.NewConstantBackOff(5*time.Second), ctx)
+	b := backoff.WithContext(backoff.NewConstantBackOff(1*time.Second), ctx)
 	if err := backoff.Retry(op, b); err != nil {
 		return trace.TraceError(errors.ErrorTaskUnableToCancel)
 	}

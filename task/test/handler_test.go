@@ -12,16 +12,44 @@ func TestHandlerService_Run(t *testing.T) {
 	var err error
 	T.Setup(t)
 
-	err = T.schedulerSvc.Enqueue(T.TestTask)
+	task := T.NewTask()
+	err = T.schedulerSvc.Enqueue(task)
 	require.Nil(t, err)
 
-	err = T.handlerSvc.Run(T.TestTask.GetId())
+	err = T.handlerSvc.Run(task.GetId())
 	require.Nil(t, err)
 	time.Sleep(1 * time.Second)
 
-	task, err := T.modelSvc.GetTaskById(T.TestTask.GetId())
+	task, err = T.modelSvc.GetTaskById(task.GetId())
 	require.Nil(t, err)
-	require.Equal(t, constants.TaskStatusFinished, task.Status)
+	require.Equal(t, constants.TaskStatusFinished, task.GetStatus())
+}
+
+func TestHandlerService_Cancel(t *testing.T) {
+	var err error
+	T.Setup(t)
+
+	task := T.NewTaskLong()
+	err = T.schedulerSvc.Enqueue(task)
+	require.Nil(t, err)
+	time.Sleep(1 * time.Second)
+
+	err = T.handlerSvc.Run(task.GetId())
+	require.Nil(t, err)
+	time.Sleep(2 * time.Second)
+
+	err = T.handlerSvc.Cancel(task.GetId())
+	require.Nil(t, err)
+	time.Sleep(2 * time.Second)
+
+	task, err = T.modelSvc.GetTaskById(task.GetId())
+	require.Nil(t, err)
+	require.Equal(t, constants.TaskStatusCancelled, task.GetStatus())
+
+	var n interfaces.Node
+	n, err = T.modelSvc.GetNodeByKey(T.TestNode.GetKey(), nil)
+	require.Nil(t, err)
+	require.Equal(t, n.GetMaxRunners(), n.GetAvailableRunners())
 }
 
 func TestHandlerService_ReportStatus(t *testing.T) {
