@@ -35,7 +35,6 @@ type Runner struct {
 	// internals
 	cmd  *exec.Cmd                 // process command instance
 	pid  int                       // process id
-	fs   interfaces.FsService      // file system service fileSystemService
 	l    clog.Driver               // log service log.Driver
 	tid  primitive.ObjectID        // task id
 	t    interfaces.Task           // task model.Task
@@ -59,7 +58,7 @@ func (r *Runner) Init() (err error) {
 	r.cwd = r.fsSvc.GetWorkspacePath()
 
 	// sync files to workspace
-	if err := r.fs.SyncToWorkspace(); err != nil {
+	if err := r.fsSvc.GetFsService().SyncToWorkspace(); err != nil {
 		return err
 	}
 
@@ -408,7 +407,7 @@ func (r *Runner) updateTask(status string) (err error) {
 	// update task status
 	if r.t != nil && status != "" {
 		r.t.SetStatus(status)
-		if err := client.NewModelDelegate(r.t).Save(); err != nil {
+		if err := client.NewModelDelegate(r.t, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
 			return err
 		}
 	}
@@ -439,6 +438,12 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 	// apply options
 	for _, opt := range opts {
 		opt(r)
+	}
+
+	// task
+	r.t, err = r.svc.GetModelTaskService().GetTaskById(id)
+	if err != nil {
+		return nil, err
 	}
 
 	// spider

@@ -39,13 +39,13 @@ type Service struct {
 func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
 	// validate if there are available runners
 	if svc.runnersCount >= svc.maxRunners {
-		return errors.ErrorTaskNoAvailableRunners
+		return trace.TraceError(errors.ErrorTaskNoAvailableRunners)
 	}
 
 	// attempt to get runner from pool
 	_, ok := svc.runners.Load(taskId)
 	if ok {
-		return errors.ErrorTaskAlreadyExists
+		return trace.TraceError(errors.ErrorTaskAlreadyExists)
 	}
 
 	// create a new task runner
@@ -229,7 +229,6 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	}
 
 	// service
-	// Service
 	svc := &Service{
 		TaskBaseService:   baseSvc,
 		maxRunners:        8,
@@ -250,13 +249,13 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	if err := c.Provide(client.ProvideServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(client.NewNodeServiceDelegate); err != nil {
+	if err := c.Provide(client.ProvideNodeServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(client.NewSpiderServiceDelegate); err != nil {
+	if err := c.Provide(client.ProvideSpiderServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(client.NewTaskServiceDelegate); err != nil {
+	if err := c.Provide(client.ProvideTaskServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(

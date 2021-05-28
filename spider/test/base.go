@@ -64,6 +64,18 @@ func (t *Test) Cleanup() {
 	time.Sleep(500 * time.Millisecond)
 }
 
+func (t *Test) GetMasterFsSvc() interfaces.SpiderFsService {
+	return t.masterFsSvc
+}
+
+func (t *Test) GetWorkerFsSvc() interfaces.SpiderFsService {
+	return t.workerFsSvc
+}
+
+func (t *Test) GetMasterSyncSvc() interfaces.SpiderSyncService {
+	return t.masterSyncSvc
+}
+
 func NewTest() (res *Test, err error) {
 	// test
 	t := &Test{

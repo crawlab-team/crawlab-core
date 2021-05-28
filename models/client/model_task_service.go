@@ -4,10 +4,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
-	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/dig"
 )
 
 type TaskServiceDelegate struct {
@@ -53,19 +51,27 @@ func (svc *TaskServiceDelegate) GetTaskList(query bson.M, opts *mongo.FindOption
 	return res, nil
 }
 
-func NewTaskServiceDelegate() (svc2 interfaces.GrpcClientModelTaskService, err error) {
-	svc := &TaskServiceDelegate{}
+func NewTaskServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 interfaces.GrpcClientModelTaskService, err error) {
+	// apply options
+	opts = append(opts, WithBaseServiceModelId(interfaces.ModelIdTask))
 
-	// dependency injection
-	c := dig.New()
-	if err := c.Provide(ProvideBaseServiceDelegate(interfaces.ModelIdTask)); err != nil {
-		return nil, trace.TraceError(err)
+	// base service
+	baseSvc, err := NewBaseServiceDelegate(opts...)
+	if err != nil {
+		return nil, err
 	}
-	if err := c.Invoke(func(baseSvc interfaces.GrpcClientModelBaseService) {
-		svc.GrpcClientModelBaseService = baseSvc
-	}); err != nil {
-		return nil, trace.TraceError(err)
-	}
+
+	// service
+	svc := &TaskServiceDelegate{baseSvc}
 
 	return svc, nil
+}
+
+func ProvideTaskServiceDelegate(path string, opts ...ModelBaseServiceDelegateOption) func() (svc interfaces.GrpcClientModelTaskService, err error) {
+	if path != "" {
+		opts = append(opts, WithBaseServiceConfigPath(path))
+	}
+	return func() (svc interfaces.GrpcClientModelTaskService, err error) {
+		return NewTaskServiceDelegate(opts...)
+	}
 }

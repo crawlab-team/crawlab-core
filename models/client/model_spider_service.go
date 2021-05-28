@@ -4,10 +4,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
-	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/dig"
 )
 
 type SpiderServiceDelegate struct {
@@ -53,19 +51,27 @@ func (svc *SpiderServiceDelegate) GetSpiderList(query bson.M, opts *mongo.FindOp
 	return res, nil
 }
 
-func NewSpiderServiceDelegate() (svc2 interfaces.GrpcClientModelSpiderService, err error) {
-	svc := &SpiderServiceDelegate{}
+func NewSpiderServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 interfaces.GrpcClientModelSpiderService, err error) {
+	// apply options
+	opts = append(opts, WithBaseServiceModelId(interfaces.ModelIdSpider))
 
-	// dependency injection
-	c := dig.New()
-	if err := c.Provide(ProvideBaseServiceDelegate(interfaces.ModelIdSpider)); err != nil {
-		return nil, trace.TraceError(err)
+	// base service
+	baseSvc, err := NewBaseServiceDelegate(opts...)
+	if err != nil {
+		return nil, err
 	}
-	if err := c.Invoke(func(baseSvc interfaces.GrpcClientModelBaseService) {
-		svc.GrpcClientModelBaseService = baseSvc
-	}); err != nil {
-		return nil, trace.TraceError(err)
-	}
+
+	// service
+	svc := &SpiderServiceDelegate{baseSvc}
 
 	return svc, nil
+}
+
+func ProvideSpiderServiceDelegate(path string, opts ...ModelBaseServiceDelegateOption) func() (svc interfaces.GrpcClientModelSpiderService, err error) {
+	if path != "" {
+		opts = append(opts, WithBaseServiceConfigPath(path))
+	}
+	return func() (svc interfaces.GrpcClientModelSpiderService, err error) {
+		return NewSpiderServiceDelegate(opts...)
+	}
 }
