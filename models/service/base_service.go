@@ -69,6 +69,10 @@ func (svc *BaseService) Update(query bson.M, update bson.M, fields []string) (er
 	return svc.update(query, update, fields)
 }
 
+func (svc *BaseService) UpdateDoc(query bson.M, doc interfaces.Model, fields []string) (err error) {
+	return svc.update(query, doc, fields)
+}
+
 func (svc *BaseService) Insert(docs ...interface{}) (err error) {
 	return svc.insert(docs...)
 }
@@ -280,13 +284,8 @@ func (svc *BaseService) _getUpdateBsonM(update interface{}, fields []string) (re
 		return svc._getUpdateBsonM(updateBsonM, fields)
 
 	case bson.M:
-		// normalize to update bson.M
+		// convert to bson.M
 		updateBsonM := update.(bson.M)
-		if _, ok := updateBsonM["$set"]; !ok {
-			updateBsonM = bson.M{
-				"$set": updateBsonM,
-			}
-		}
 
 		// filter fields if not nil
 		if fields != nil {
@@ -301,6 +300,13 @@ func (svc *BaseService) _getUpdateBsonM(update interface{}, fields []string) (re
 				if _, ok := fieldsMap[k]; !ok {
 					delete(updateBsonM, k)
 				}
+			}
+		}
+
+		// normalize update bson.M
+		if _, ok := updateBsonM["$set"]; !ok {
+			updateBsonM = bson.M{
+				"$set": updateBsonM,
 			}
 		}
 

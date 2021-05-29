@@ -41,7 +41,7 @@ func (svc *Service) Run(id primitive.ObjectID, opts *interfaces.RunOptions) (err
 	}
 
 	// assign tasks
-	if err := svc.assignTasks(s, opts); err != nil {
+	if err := svc.scheduleTasks(s, opts); err != nil {
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (svc *Service) Delete(id primitive.ObjectID) (err error) {
 	panic("implement me")
 }
 
-func (svc *Service) assignTasks(s *models.Spider, opts *interfaces.RunOptions) (err error) {
+func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.RunOptions) (err error) {
 	// main task
 	mainTask := &models.Task{
 		SpiderId:   s.Id,

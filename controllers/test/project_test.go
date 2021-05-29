@@ -1,39 +1,25 @@
-package controllers
+package test
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models"
-	models2 "github.com/crawlab-team/crawlab-core/models/models"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/gin-gonic/gin"
+	"github.com/crawlab-team/crawlab-core/models/delegate"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 )
 
-func cleanupProjectController() {
-	_ = models.svc.NewBaseService(interfaces.ModelIdProject).DeleteList(nil)
-}
-
 func TestProjectController_Get(t *testing.T) {
-	setupTest(t, cleanupProjectController)
+	T.Setup(t)
+	e := T.NewExpect(t)
 
-	app := gin.New()
-	app.GET("/projects/:id", ProjectController.Get)
-	app.PUT("/projects", ProjectController.Put)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
-
-	p := models2.Project{
+	p := models.Project{
 		Name: "test project",
 	}
 	res := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
@@ -49,17 +35,10 @@ func TestProjectController_Get(t *testing.T) {
 }
 
 func TestProjectController_Post(t *testing.T) {
-	setupTest(t, cleanupProjectController)
+	T.Setup(t)
+	e := T.NewExpect(t)
 
-	app := gin.New()
-	app.GET("/projects/:id", ProjectController.Get)
-	app.PUT("/projects", ProjectController.Put)
-	app.POST("/projects/:id", ProjectController.Post)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
-
-	p := models2.Project{
+	p := models.Project{
 		Name:        "old name",
 		Description: "old description",
 	}
@@ -93,15 +72,10 @@ func TestProjectController_Post(t *testing.T) {
 }
 
 func TestProjectController_Put(t *testing.T) {
-	setupTest(t, cleanupProjectController)
+	T.Setup(t)
+	e := T.NewExpect(t)
 
-	app := gin.New()
-	app.PUT("/projects", ProjectController.Put)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
-
-	p := models2.Project{
+	p := models.Project{
 		Name:        "test project",
 		Description: "this is a test project",
 	}
@@ -113,17 +87,10 @@ func TestProjectController_Put(t *testing.T) {
 }
 
 func TestProjectController_Delete(t *testing.T) {
-	setupTest(t, cleanupProjectController)
+	T.Setup(t)
+	e := T.NewExpect(t)
 
-	app := gin.New()
-	app.GET("/projects/:id", ProjectController.Get)
-	app.PUT("/projects", ProjectController.Put)
-	app.DELETE("/projects/:id", ProjectController.Delete)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
-
-	p := models2.Project{
+	p := models.Project{
 		Name:        "test project",
 		Description: "this is a test project",
 	}
@@ -160,20 +127,14 @@ func TestProjectController_Delete(t *testing.T) {
 }
 
 func TestProjectController_GetList(t *testing.T) {
-	setupTest(t, cleanupProjectController)
-
-	app := gin.New()
-	app.GET("/projects", ProjectController.GetList)
-	app.PUT("/projects", ProjectController.Put)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
+	T.Setup(t)
+	e := T.NewExpect(t)
 
 	n := 100 // total
 	bn := 10 // batch
 
 	for i := 0; i < n; i++ {
-		p := models2.Project{
+		p := models.Project{
 			Name: fmt.Sprintf("test name %d", i+1),
 		}
 		obj := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
@@ -218,19 +179,13 @@ func TestProjectController_GetList(t *testing.T) {
 }
 
 func TestProjectController_PutList(t *testing.T) {
-	setupTest(t, cleanupProjectController)
-
-	app := gin.New()
-	app.GET("/projects", ProjectController.GetList)
-	app.PUT("/projects/batch", ProjectController.PutList)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
+	T.Setup(t)
+	e := T.NewExpect(t)
 
 	n := 10
-	var docs []models2.Project
+	var docs []models.Project
 	for i := 0; i < n; i++ {
-		docs = append(docs, models2.Project{
+		docs = append(docs, models.Project{
 			Name:        fmt.Sprintf("project %d", i+1),
 			Description: "this is a project",
 		})
@@ -246,20 +201,13 @@ func TestProjectController_PutList(t *testing.T) {
 }
 
 func TestProjectController_DeleteList(t *testing.T) {
-	setupTest(t, cleanupProjectController)
-
-	app := gin.New()
-	app.GET("/projects", ProjectController.GetList)
-	app.PUT("/projects/batch", ProjectController.PutList)
-	app.DELETE("/projects", ProjectController.DeleteList)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
+	T.Setup(t)
+	e := T.NewExpect(t)
 
 	n := 10
-	var docs []models2.Project
+	var docs []models.Project
 	for i := 0; i < n; i++ {
-		docs = append(docs, models2.Project{
+		docs = append(docs, models.Project{
 			Name:        fmt.Sprintf("project %d", i+1),
 			Description: "this is a project",
 		})
@@ -296,23 +244,16 @@ func TestProjectController_DeleteList(t *testing.T) {
 }
 
 func TestProjectController_PostList(t *testing.T) {
-	setupTest(t, cleanupProjectController)
-
-	app := gin.New()
-	app.GET("/projects", ProjectController.GetList)
-	app.PUT("/projects/batch", ProjectController.PutList)
-	app.POST("/projects", ProjectController.PostList)
-	s := httptest.NewServer(app)
-	e := httpexpect.New(t, s.URL)
-	defer s.Close()
+	T.Setup(t)
+	e := T.NewExpect(t)
 
 	// now
 	now := time.Now()
 
 	n := 10
-	var docs []models2.Project
+	var docs []models.Project
 	for i := 0; i < n; i++ {
-		docs = append(docs, models2.Project{
+		docs = append(docs, models.Project{
 			Name:        "old name",
 			Description: "old description",
 		})
@@ -336,7 +277,7 @@ func TestProjectController_PostList(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// update
-	p := models2.Project{
+	p := models.Project{
 		Name:        "new name",
 		Description: "new description",
 	}
@@ -369,10 +310,10 @@ func TestProjectController_PostList(t *testing.T) {
 	}
 
 	// check artifacts
-	pl, err := models.MustGetRootService().GetProjectList(bson.M{"_id": bson.M{"$in": ids}}, nil)
+	pl, err := T.modelSvc.GetProjectList(bson.M{"_id": bson.M{"$in": ids}}, nil)
 	require.Nil(t, err)
 	for _, p := range pl {
-		a, err := p.GetArtifact()
+		a, err := delegate.NewModelDelegate(&p).GetArtifact()
 		require.Nil(t, err)
 		require.True(t, a.GetSys().GetUpdateTs().After(now))
 		require.True(t, a.GetSys().GetUpdateTs().After(a.GetSys().GetCreateTs()))

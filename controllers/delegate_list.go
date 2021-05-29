@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
@@ -115,15 +116,20 @@ func (d *ListControllerDelegate) PostList(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
+
+	// query
 	query := bson.M{
 		"_id": bson.M{
 			"$in": payload.Ids,
 		},
 	}
-	if err := d.svc.Update(query, doc, payload.Fields); err != nil {
+
+	// update
+	if err := d.svc.UpdateDoc(query, doc, payload.Fields); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
+
 	HandleSuccess(c)
 }
 
@@ -154,7 +160,7 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 				HandleErrorInternalServerError(c, errors.ErrorModelInvalidType)
 				return
 			}
-			if err := doc.Add(); err != nil {
+			if err := delegate.NewModelDelegate(doc).Add(); err != nil {
 				_ = trace.TraceError(err)
 				continue
 			}

@@ -59,3 +59,12 @@ func NewService(opts ...Option) (svc2 ModelService, err error) {
 
 	return svc, nil
 }
+
+var modelSvc ModelService
+
+func GetService(opts ...Option) (svc ModelService, err error) {
+	if modelSvc != nil {
+		return modelSvc, nil
+	}
+	return NewService(opts...)
+}
