@@ -21,6 +21,7 @@ require (
 	github.com/crawlab-team/crawlab-log v0.0.0
 	github.com/crawlab-team/crawlab-vcs v0.0.0
 	github.com/crawlab-team/go-trace v0.1.0
+	github.com/crawlab-team/goseaweedfs v0.1.6
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.9

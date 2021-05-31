@@ -83,7 +83,7 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 	}
 
 	// response
-	HandleSuccessListData(c, data, total)
+	HandleSuccessWithListData(c, data, total)
 }
 
 func (d *ListControllerDelegate) getAll(c *gin.Context) {
@@ -107,7 +107,7 @@ func (d *ListControllerDelegate) getAll(c *gin.Context) {
 	}
 
 	// response
-	HandleSuccessListData(c, data, total)
+	HandleSuccessWithListData(c, data, total)
 }
 
 func (d *ListControllerDelegate) PostList(c *gin.Context) {
@@ -180,7 +180,7 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 	}
 
 	// success
-	HandleSuccessData(c, docs)
+	HandleSuccessWithData(c, docs)
 }
 
 func (d *ListControllerDelegate) DeleteList(c *gin.Context) {

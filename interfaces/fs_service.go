@@ -8,6 +8,7 @@ type FsService interface {
 	WithConfigPath
 	List(path string, opts ...ServiceCrudOption) (files []FsFileInfo, err error)
 	GetFile(path string, opts ...ServiceCrudOption) (data []byte, err error)
+	GetFileInfo(path string, opts ...ServiceCrudOption) (file FsFileInfo, err error)
 	Save(path string, data []byte, opts ...ServiceCrudOption) (err error)
 	Rename(path, newPath string, opts ...ServiceCrudOption) (err error)
 	Delete(path string, opts ...ServiceCrudOption) (err error)

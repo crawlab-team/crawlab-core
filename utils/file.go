@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/apex/log"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"io"
 	"io/ioutil"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"strings"
 )
 
-// 删除文件
 func RemoveFiles(path string) {
 	if err := os.RemoveAll(path); err != nil {
 		log.Errorf("remove files error: %s, path: %s", err.Error(), path)
@@ -22,7 +22,6 @@ func RemoveFiles(path string) {
 	}
 }
 
-// 读取文件一行
 func ReadFileOneLine(fileName string) string {
 	file := OpenFile(fileName)
 	defer Close(file)
@@ -43,7 +42,6 @@ func GetSpiderMd5Str(file string) string {
 	return md5Str
 }
 
-// 创建文件
 func OpenFile(fileName string) *os.File {
 	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, os.ModePerm)
 	if err != nil {
@@ -64,7 +62,6 @@ func CreateDirPath(filePath string) {
 	}
 }
 
-// 判断所给路径文件/文件夹是否存在
 func Exists(path string) bool {
 	_, err := os.Stat(path) //os.Stat获取文件信息
 	if err != nil {
@@ -73,7 +70,6 @@ func Exists(path string) bool {
 	return true
 }
 
-// 判断所给路径是否为文件夹
 func IsDir(path string) bool {
 	s, err := os.Stat(path)
 	if err != nil {
@@ -92,15 +88,10 @@ func ListDir(path string) []os.FileInfo {
 	return list
 }
 
-// 判断所给路径是否为文件
 func IsFile(path string) bool {
 	return !IsDir(path)
 }
 
-/**
-@tarFile：压缩文件路径
-@dest：解压文件夹
-*/
 func DeCompressByPath(tarFile, dest string) error {
 	srcFile, err := os.Open(tarFile)
 	if err != nil {
@@ -110,10 +101,6 @@ func DeCompressByPath(tarFile, dest string) error {
 	return DeCompress(srcFile, dest)
 }
 
-/**
-@zipFile：压缩文件
-@dstPath：解压之后文件保存路径
-*/
 func DeCompress(srcFile *os.File, dstPath string) error {
 	// 如果保存路径不存在，创建一个
 	if !Exists(dstPath) {
@@ -382,4 +369,18 @@ func SetFileVariable(filePath string, key string, value string) error {
 	f.Close()
 
 	return nil
+}
+
+func TrimFileData(data []byte) (res []byte) {
+	if string(data) == constants.EmptyFileData {
+		return res
+	}
+	return data
+}
+
+func FillEmptyFileData(data []byte) (res []byte) {
+	if len(data) == 0 {
+		return []byte(constants.EmptyFileData)
+	}
+	return data
 }

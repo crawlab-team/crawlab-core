@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"os"
+	"path"
 	"sync"
 )
 
@@ -55,6 +56,38 @@ func (svc *Service) SetId(id primitive.ObjectID) {
 	svc.id = id
 }
 
+func (svc *Service) List(path string) (files []interfaces.FsFileInfo, err error) {
+	return svc.fsSvc.List(path)
+}
+
+func (svc *Service) GetFile(path string) (data []byte, err error) {
+	return svc.fsSvc.GetFile(path)
+}
+
+func (svc *Service) GetFileInfo(path string) (file interfaces.FsFileInfo, err error) {
+	return svc.fsSvc.GetFileInfo(path)
+}
+
+func (svc *Service) Save(path string, data []byte) (err error) {
+	return svc.fsSvc.Save(path, data)
+}
+
+func (svc *Service) Rename(path, newPath string) (err error) {
+	return svc.fsSvc.Rename(path, newPath)
+}
+
+func (svc *Service) Delete(path string) (err error) {
+	return svc.fsSvc.Delete(path)
+}
+
+func (svc *Service) Copy(path, newPath string) (err error) {
+	return svc.fsSvc.Copy(path, newPath)
+}
+
+func (svc *Service) Commit(msg string) (err error) {
+	panic("implement me")
+}
+
 func (svc *Service) GetFsPath() (res string) {
 	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.id.Hex())
 }
@@ -81,6 +114,10 @@ func (svc *Service) SetRepoPathBase(path string) {
 
 func (svc *Service) GetFsService() (fsSvc interfaces.FsService) {
 	return svc.fsSvc
+}
+
+func (svc *Service) getFsPath(p string) (res string) {
+	return path.Join(svc.GetFsPath(), p)
 }
 
 func NewSpiderFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.SpiderFsService, err error) {
@@ -121,9 +158,15 @@ func NewSpiderFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.
 
 	// fs service
 	var fsOpts []fs.Option
-	fsOpts = append(fsOpts, fs.WithConfigPath(svc.cfgPath))
-	fsOpts = append(fsOpts, fs.WithFsPath(svc.GetFsPath()))
-	fsOpts = append(fsOpts, fs.WithWorkspacePath(svc.GetWorkspacePath()))
+	if svc.cfgPath != "" {
+		fsOpts = append(fsOpts, fs.WithConfigPath(svc.cfgPath))
+	}
+	if svc.GetFsPath() != "" {
+		fsOpts = append(fsOpts, fs.WithFsPath(svc.GetFsPath()))
+	}
+	if svc.GetWorkspacePath() != "" {
+		fsOpts = append(fsOpts, fs.WithWorkspacePath(svc.GetWorkspacePath()))
+	}
 	if svc.repoPathBase != "" {
 		fsOpts = append(fsOpts, fs.WithRepoPath(svc.GetRepoPath()))
 	}

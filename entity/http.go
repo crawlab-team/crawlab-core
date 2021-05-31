@@ -26,11 +26,17 @@ type ListRequestData struct {
 }
 
 type BatchRequestPayload struct {
-	Ids []primitive.ObjectID `json:"ids"`
+	Ids []primitive.ObjectID `form:"ids" json:"ids"`
 }
 
 type BatchRequestPayloadWithStringData struct {
-	Ids    []primitive.ObjectID `json:"ids"`
-	Data   string               `json:"data"`
-	Fields []string             `json:"fields"`
+	Ids    []primitive.ObjectID `form:"ids" json:"ids"`
+	Data   string               `form:"data" json:"data"`
+	Fields []string             `form:"fields" json:"fields"`
+}
+
+type FileRequestPayload struct {
+	Path    string `json:"path" form:"path"`
+	NewPath string `json:"new_path" form:"new_path"`
+	Data    string `json:"data" form:"data"`
 }

@@ -85,6 +85,13 @@ func (svr ModelBaseServiceServer) Update(ctx context.Context, req *grpc.Request)
 	})
 }
 
+func (svr ModelBaseServiceServer) UpdateDoc(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
+		err := svc.UpdateDoc(params.Query, params.Doc, params.Fields)
+		return nil, err
+	})
+}
+
 func (svr ModelBaseServiceServer) Insert(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
 		err := svc.Insert(params.Docs...)

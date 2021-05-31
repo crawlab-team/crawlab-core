@@ -103,6 +103,47 @@ func (svc *Service) GetFile(path string, opts ...interfaces.ServiceCrudOption) (
 	return svc.fs.GetFile(remotePath)
 }
 
+func (svc *Service) GetFileInfo(path string, opts ...interfaces.ServiceCrudOption) (file interfaces.FsFileInfo, err error) {
+	// forbidden if not master
+	if !svc.nodeCfgSvc.IsMaster() {
+		return file, trace.TraceError(errors.ErrorFsForbidden)
+	}
+
+	// apply options
+	o := svc.newCrudOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	// normalize remote path
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	remotePath := fmt.Sprintf("%s%s", svc.fsPath, path)
+	if o.IsAbsolute {
+		remotePath = path
+	}
+	f, err := svc.fs.GetFileInfo(remotePath)
+	if err != nil {
+		return nil, err
+	}
+
+	itemPath := strings.Replace(f.FullPath, svc.fsPath, "", 1)
+	if o.IsAbsolute {
+		itemPath = f.FullPath
+	}
+	file = &entity.FsFileInfo{
+		Name:      f.Name,
+		Path:      itemPath,
+		FullPath:  f.FullPath,
+		Extension: f.Extension,
+		Md5:       f.Md5,
+		IsDir:     f.IsDir,
+		FileSize:  f.FileSize,
+	}
+	return file, nil
+}
+
 func (svc *Service) Save(path string, data []byte, opts ...interfaces.ServiceCrudOption) (err error) {
 	// forbidden if not master
 	if !svc.nodeCfgSvc.IsMaster() {
@@ -429,7 +470,7 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	// service
 	svc := &Service{
 		cfgPath:       config.DefaultConfigPath,
-		fsPath:        DefaultFsPath,
+		fsPath:        "",
 		workspacePath: DefaultWorkspacePath,
 		//repoPath:      DefaultRepoPath,
 	}

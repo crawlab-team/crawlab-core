@@ -42,23 +42,13 @@ func (svc *Service) SetRepoPathBase(path string) {
 }
 
 func (svc *Service) GetFsService(id primitive.ObjectID) (fsSvc interfaces.SpiderFsService, err error) {
-	return fs.GetSpiderFsService(
-		id,
-		fs.WithConfigPath(svc.cfgPath),
-		fs.WithFsPathBase(svc.fsPathBase),
-		fs.WithWorkspacePathBase(svc.workspacePathBase),
-		fs.WithRepoPathBase(svc.repoPathBase),
-	)
+	opts := svc.getOptions()
+	return fs.GetSpiderFsService(id, opts...)
 }
 
 func (svc *Service) ForceGetFsService(id primitive.ObjectID) (fsSvc interfaces.SpiderFsService, err error) {
-	return fs.NewSpiderFsService(
-		id,
-		fs.WithConfigPath(svc.cfgPath),
-		fs.WithFsPathBase(svc.fsPathBase),
-		fs.WithWorkspacePathBase(svc.workspacePathBase),
-		fs.WithRepoPathBase(svc.repoPathBase),
-	)
+	opts := svc.getOptions()
+	return fs.NewSpiderFsService(id, opts...)
 }
 
 // SyncToFs sync from repo/workspace to fs
@@ -81,6 +71,22 @@ func (svc *Service) SyncToWorkspace(id primitive.ObjectID) (err error) {
 		return fsSvc.GetFsService().SyncToWorkspace()
 	}
 	return nil
+}
+
+func (svc *Service) getOptions() (opts []fs.Option) {
+	if svc.cfgPath != "" {
+		opts = append(opts, fs.WithConfigPath(svc.cfgPath))
+	}
+	if svc.fsPathBase != "" {
+		opts = append(opts, fs.WithFsPathBase(svc.fsPathBase))
+	}
+	if svc.workspacePathBase != "" {
+		opts = append(opts, fs.WithWorkspacePathBase(svc.workspacePathBase))
+	}
+	if svc.repoPathBase != "" {
+		opts = append(opts, fs.WithRepoPathBase(svc.repoPathBase))
+	}
+	return opts
 }
 
 func NewSpiderSyncService(opts ...Option) (svc2 interfaces.SpiderSyncService, err error) {

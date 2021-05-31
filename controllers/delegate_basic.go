@@ -36,7 +36,7 @@ func (d *BasicControllerDelegate) Get(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	HandleSuccessData(c, doc)
+	HandleSuccessWithData(c, doc)
 }
 
 func (d *BasicControllerDelegate) Post(c *gin.Context) {
@@ -63,7 +63,7 @@ func (d *BasicControllerDelegate) Post(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	HandleSuccessData(c, doc)
+	HandleSuccessWithData(c, doc)
 }
 
 func (d *BasicControllerDelegate) Put(c *gin.Context) {
@@ -76,7 +76,7 @@ func (d *BasicControllerDelegate) Put(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	HandleSuccessData(c, doc)
+	HandleSuccessWithData(c, doc)
 }
 
 func (d *BasicControllerDelegate) Delete(c *gin.Context) {
