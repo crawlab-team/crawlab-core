@@ -5,6 +5,7 @@ import "time"
 type Node interface {
 	ModelWithTags
 	GetKey() (key string)
+	GetIsMaster() (ok bool)
 	SetActive(active bool)
 	SetActiveTs(activeTs time.Time)
 	GetStatus() (status string)

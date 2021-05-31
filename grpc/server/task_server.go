@@ -12,8 +12,7 @@ type TaskServer struct {
 	grpc.UnimplementedTaskServiceServer
 
 	// dependencies
-	modelSvc     service.ModelService
-	schedulerSvc interfaces.TaskSchedulerService
+	modelSvc service.ModelService
 
 	// internals
 	server interfaces.GrpcServer

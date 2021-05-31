@@ -142,7 +142,7 @@ package test
 //	require.Nil(t, err)
 //
 //	// run
-//	err = runner.Run()
+//	err = runner.Schedule()
 //	require.Nil(t, err)
 //
 //	// test logs
@@ -173,7 +173,7 @@ package test
 //	require.Nil(t, err)
 //
 //	// run
-//	err = runner.Run()
+//	err = runner.Schedule()
 //	require.Equal(t, constants.ErrTaskError, err)
 //
 //	// test logs
@@ -217,7 +217,7 @@ package test
 //	require.Nil(t, err)
 //
 //	// run
-//	err = runner.Run()
+//	err = runner.Schedule()
 //	require.Nil(t, err)
 //
 //	// test logs
@@ -263,7 +263,7 @@ package test
 //	}()
 //
 //	// run
-//	err = runner.Run()
+//	err = runner.Schedule()
 //	require.Equal(t, constants.ErrTaskCancelled, err)
 //
 //	// test logs

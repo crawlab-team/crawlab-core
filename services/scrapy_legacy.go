@@ -27,7 +27,7 @@ package services
 //	cmd.Dir = s.Src
 //	cmd.Stdout = &stdout
 //	cmd.Stderr = &stderr
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		debug.PrintStack()
 //		return []string{}, errors.New(stderr.String())
@@ -53,7 +53,7 @@ package services
 //	cmd.Dir = s.Src
 //	cmd.Stdout = &stdout
 //	cmd.Stderr = &stderr
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		log.Errorf(stderr.String())
 //		debug.PrintStack()
@@ -144,7 +144,7 @@ package services
 //	cmd.Dir = s.Src
 //	cmd.Stdout = &stdout
 //	cmd.Stderr = &stderr
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		log.Errorf(stderr.String())
 //		debug.PrintStack()
@@ -210,7 +210,7 @@ package services
 //	cmd.Dir = s.Src
 //	cmd.Stdout = &stdout
 //	cmd.Stderr = &stderr
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		log.Errorf(stderr.String())
 //		debug.PrintStack()
@@ -234,7 +234,7 @@ package services
 //	cmd.Dir = s.Src
 //	cmd.Stdout = &stdout
 //	cmd.Stderr = &stderr
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		log.Errorf(stderr.String())
 //		debug.PrintStack()
@@ -254,7 +254,7 @@ package services
 //	cmd.Dir = s.Src
 //	cmd.Stdout = &stdout
 //	cmd.Stderr = &stderr
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		log.Errorf("stdout: " + stdout.String())
 //		log.Errorf("stderr: " + stderr.String())
@@ -273,7 +273,7 @@ package services
 //	cmd.Dir = s.Src
 //	cmd.Stdout = &stdout
 //	cmd.Stderr = &stderr
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		log.Errorf("stdout: " + stdout.String())
 //		log.Errorf("stderr: " + stderr.String())

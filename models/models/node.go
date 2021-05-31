@@ -45,6 +45,10 @@ func (n *Node) GetKey() (key string) {
 	return n.Key
 }
 
+func (n *Node) GetIsMaster() (ok bool) {
+	return n.IsMaster
+}
+
 func (n *Node) SetActive(active bool) {
 	n.Active = active
 }

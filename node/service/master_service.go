@@ -10,6 +10,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/task/handler"
+	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -20,9 +22,12 @@ import (
 )
 
 type MasterService struct {
-	modelSvc service.ModelService
-	cfgSvc   interfaces.NodeConfigService
-	server   interfaces.GrpcServer
+	// dependencies
+	modelSvc     service.ModelService
+	cfgSvc       interfaces.NodeConfigService
+	server       interfaces.GrpcServer
+	schedulerSvc interfaces.TaskSchedulerService
+	handlerSvc   interfaces.TaskHandlerService
 
 	// settings
 	cfgPath         string
@@ -49,6 +54,12 @@ func (svc *MasterService) Start() {
 
 	// start monitoring worker nodes
 	go svc.Monitor()
+
+	// start task handler
+	go svc.handlerSvc.Start()
+
+	// start task scheduler
+	go svc.schedulerSvc.Start()
 
 	// wait for quit signal
 	svc.Wait()
@@ -250,10 +261,24 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	if err := c.Provide(server.ProvideGetServer(svc.cfgPath, serverOpts...)); err != nil {
 		return nil, err
 	}
-	if err := c.Invoke(func(cfgSvc interfaces.NodeConfigService, modelSvc service.ModelService, server interfaces.GrpcServer) {
+	if err := c.Provide(scheduler.ProvideGetTaskSchedulerService(svc.cfgPath)); err != nil {
+		return nil, err
+	}
+	if err := c.Provide(handler.ProvideTaskHandlerService(svc.cfgPath)); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(
+		cfgSvc interfaces.NodeConfigService,
+		modelSvc service.ModelService,
+		server interfaces.GrpcServer,
+		schedulerSvc interfaces.TaskSchedulerService,
+		handlerSvc interfaces.TaskHandlerService,
+	) {
 		svc.cfgSvc = cfgSvc
 		svc.modelSvc = modelSvc
 		svc.server = server
+		svc.schedulerSvc = schedulerSvc
+		svc.handlerSvc = handlerSvc
 	}); err != nil {
 		return nil, err
 	}

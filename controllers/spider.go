@@ -5,6 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/spider/sync"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/gin-gonic/gin"
@@ -56,10 +57,16 @@ var SpiderActions = []Action{
 		Path:        "/:id/files/copy",
 		HandlerFunc: spiderCtx.copyFile,
 	},
+	{
+		Method:      http.MethodPost,
+		Path:        "/:id/run",
+		HandlerFunc: spiderCtx.run,
+	},
 }
 
 type spiderContext struct {
-	syncSvc interfaces.SpiderSyncService
+	syncSvc  interfaces.SpiderSyncService
+	adminSvc interfaces.SpiderAdminService
 }
 
 func (ctx *spiderContext) listDir(c *gin.Context) {
@@ -185,6 +192,26 @@ func (ctx *spiderContext) copyFile(c *gin.Context) {
 	HandleSuccess(c)
 }
 
+func (ctx *spiderContext) run(c *gin.Context) {
+	id, err := ctx._processActionRequest(c)
+	if err != nil {
+		return
+	}
+
+	var opts interfaces.SpiderRunOptions
+	if err := c.ShouldBindJSON(&opts); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	if err := ctx.adminSvc.Schedule(id, &opts); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
+}
+
 func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id primitive.ObjectID, payload entity.FileRequestPayload, fsSvc interfaces.SpiderFsService, err error) {
 	// id
 	id, err = primitive.ObjectIDFromHex(c.Param("id"))
@@ -215,6 +242,17 @@ func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id
 	return
 }
 
+func (ctx *spiderContext) _processActionRequest(c *gin.Context) (id primitive.ObjectID, err error) {
+	// id
+	id, err = primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	return
+}
+
 var spiderCtx = newSpiderContext()
 
 func newSpiderContext() *spiderContext {
@@ -226,8 +264,15 @@ func newSpiderContext() *spiderContext {
 	if err := c.Provide(sync.NewSpiderSyncService); err != nil {
 		panic(err)
 	}
-	if err := c.Invoke(func(syncSvc interfaces.SpiderSyncService) {
+	if err := c.Provide(admin.NewSpiderAdminService); err != nil {
+		panic(err)
+	}
+	if err := c.Invoke(func(
+		syncSvc interfaces.SpiderSyncService,
+		adminSvc interfaces.SpiderAdminService,
+	) {
 		ctx.syncSvc = syncSvc
+		ctx.adminSvc = adminSvc
 	}); err != nil {
 		panic(err)
 	}

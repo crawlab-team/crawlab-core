@@ -146,7 +146,7 @@ package services
 //
 //func (svc *scheduleService) addFunc(s *models2.Schedule) (entryId cron.EntryID, err error) {
 //	return svc.c.AddFunc(s.Cron, func() {
-//		_ = spider.SpiderService.Run(s.SpiderId, &interfaces.RunOptions{
+//		_ = spider.SpiderService.Schedule(s.SpiderId, &interfaces.RunOptions{
 //			Mode:       s.Mode,
 //			NodeIds:    s.NodeIds,
 //			Param:      s.Param,

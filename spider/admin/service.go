@@ -33,7 +33,7 @@ func (svc *Service) SetConfigPath(path string) {
 	svc.cfgPath = path
 }
 
-func (svc *Service) Run(id primitive.ObjectID, opts *interfaces.RunOptions) (err error) {
+func (svc *Service) Schedule(id primitive.ObjectID, opts *interfaces.SpiderRunOptions) (err error) {
 	// spider
 	s, err := svc.modelSvc.GetSpiderById(id)
 	if err != nil {
@@ -48,7 +48,7 @@ func (svc *Service) Run(id primitive.ObjectID, opts *interfaces.RunOptions) (err
 	return nil
 }
 
-func (svc *Service) Clone(id primitive.ObjectID, opts *interfaces.CloneOptions) (err error) {
+func (svc *Service) Clone(id primitive.ObjectID, opts *interfaces.SpiderCloneOptions) (err error) {
 	// TODO: implement
 	return nil
 }
@@ -57,22 +57,21 @@ func (svc *Service) Delete(id primitive.ObjectID) (err error) {
 	panic("implement me")
 }
 
-func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.RunOptions) (err error) {
+func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOptions) (err error) {
 	// main task
 	mainTask := &models.Task{
 		SpiderId:   s.Id,
 		Mode:       opts.Mode,
 		Cmd:        s.Cmd,
 		Param:      opts.Param,
-		Status:     constants.TaskStatusPending,
 		ScheduleId: opts.ScheduleId,
-	}
-	if err := delegate.NewModelDelegate(mainTask).Add(); err != nil {
-		return err
 	}
 
 	if svc.isMultiTask(opts) {
 		// multi tasks
+		if err := delegate.NewModelDelegate(mainTask).Add(); err != nil {
+			return err
+		}
 		nodeIds, err := svc.getNodeIds(opts)
 		if err != nil {
 			return err
@@ -85,7 +84,6 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.RunOptions)
 				Cmd:      s.Cmd,
 				Param:    opts.Param,
 				NodeId:   nodeId,
-				Status:   constants.TaskStatusPending,
 			}
 			if err := svc.schedulerSvc.Enqueue(t); err != nil {
 				return err
@@ -108,7 +106,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.RunOptions)
 	return nil
 }
 
-func (svc *Service) getNodeIds(opts *interfaces.RunOptions) (nodeIds []primitive.ObjectID, err error) {
+func (svc *Service) getNodeIds(opts *interfaces.SpiderRunOptions) (nodeIds []primitive.ObjectID, err error) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		query := bson.M{
 			"active":  true,
@@ -128,7 +126,7 @@ func (svc *Service) getNodeIds(opts *interfaces.RunOptions) (nodeIds []primitive
 	return nodeIds, nil
 }
 
-func (svc *Service) isMultiTask(opts *interfaces.RunOptions) (res bool) {
+func (svc *Service) isMultiTask(opts *interfaces.SpiderRunOptions) (res bool) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		query := bson.M{
 			"active":  true,
@@ -168,7 +166,7 @@ func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, 
 	if err := c.Provide(service.NewService); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(scheduler.ProvideTaskSchedulerService(svc.cfgPath)); err != nil {
+	if err := c.Provide(scheduler.ProvideGetTaskSchedulerService(svc.cfgPath)); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, modelSvc service.ModelService, schedulerSvc interfaces.TaskSchedulerService) {

@@ -6,9 +6,9 @@ package test
 //)
 //
 //func TestMain(m *testing.M) {
-//	m.Run()
+//	m.Schedule()
 //}
 //
 //func TestGrpc(t *testing.T) {
-//	t.Run("grpc", )
+//	t.Schedule("grpc", )
 //}

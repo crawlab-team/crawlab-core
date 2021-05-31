@@ -6,7 +6,10 @@ import (
 
 type SpiderAdminService interface {
 	WithConfigPath
-	Run(id primitive.ObjectID, opts *RunOptions) (err error)
-	Clone(id primitive.ObjectID, opts *CloneOptions) (err error)
+	// Schedule a new task of the spider
+	Schedule(id primitive.ObjectID, opts *SpiderRunOptions) (err error)
+	// Clone the spider
+	Clone(id primitive.ObjectID, opts *SpiderCloneOptions) (err error)
+	// Delete the spider
 	Delete(id primitive.ObjectID) (err error)
 }

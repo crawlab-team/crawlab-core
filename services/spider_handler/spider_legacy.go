@@ -145,7 +145,7 @@ package spider_handler
 //	//递归修改目标文件夹权限
 //	// 解决scrapy.setting中开启LOG_ENABLED 和 LOG_FILE时不能创建log文件的问题
 //	cmd := exec.Command("chmod", "-R", "777", dstPath)
-//	if err := cmd.Run(); err != nil {
+//	if err := cmd.Schedule(); err != nil {
 //		log.Errorf(err.Error())
 //		debug.PrintStack()
 //		return

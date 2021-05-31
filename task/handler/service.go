@@ -6,6 +6,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
+	"github.com/crawlab-team/crawlab-core/models/delegate"
+	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/go-trace"
@@ -19,11 +21,12 @@ import (
 type Service struct {
 	// dependencies
 	interfaces.TaskBaseService
-	cfgSvc         interfaces.NodeConfigService
-	modelSvc       interfaces.GrpcClientModelService
-	modelNodeSvc   interfaces.GrpcClientModelNodeService
-	modelSpiderSvc interfaces.GrpcClientModelSpiderService
-	modelTaskSvc   interfaces.GrpcClientModelTaskService
+	cfgSvc               interfaces.NodeConfigService
+	modelSvc             service.ModelService
+	clientModelSvc       interfaces.GrpcClientModelService
+	clientModelNodeSvc   interfaces.GrpcClientModelNodeService
+	clientModelSpiderSvc interfaces.GrpcClientModelSpiderService
+	clientModelTaskSvc   interfaces.GrpcClientModelTaskService
 
 	// settings
 	maxRunners        int
@@ -147,15 +150,15 @@ func (svc *Service) SetReportInterval(interval time.Duration) {
 }
 
 func (svc *Service) GetModelService() (modelSvc interfaces.GrpcClientModelService) {
-	return svc.modelSvc
+	return svc.clientModelSvc
 }
 
 func (svc *Service) GetModelSpiderService() (modelSpiderSvc interfaces.GrpcClientModelSpiderService) {
-	return svc.modelSpiderSvc
+	return svc.clientModelSpiderSvc
 }
 
 func (svc *Service) GetModelTaskService() (modelTaskSvc interfaces.GrpcClientModelTaskService) {
-	return svc.modelTaskSvc
+	return svc.clientModelTaskSvc
 }
 
 func (svc *Service) getRunner(taskId primitive.ObjectID) (r interfaces.TaskRunner, err error) {
@@ -202,7 +205,7 @@ func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
 	t.SetStatus(status)
 
 	// attempt to get task from database
-	_, err = svc.modelTaskSvc.GetTaskById(t.GetId())
+	_, err = svc.clientModelTaskSvc.GetTaskById(t.GetId())
 	if err != nil {
 		// if task does not exist, add to database
 		if err == mongo.ErrNoDocuments {
@@ -223,17 +226,35 @@ func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
 }
 
 func (svc *Service) reportStatus() (err error) {
+	// node key
 	nodeKey := svc.cfgSvc.GetNodeKey()
-	n, err := svc.modelNodeSvc.GetNodeByKey(nodeKey)
+
+	// current node
+	var n interfaces.Node
+	if svc.cfgSvc.IsMaster() {
+		n, err = svc.modelSvc.GetNodeByKey(nodeKey, nil)
+	} else {
+		n, err = svc.clientModelNodeSvc.GetNodeByKey(nodeKey)
+	}
 	if err != nil {
 		return err
 	}
+
+	// update node
 	ar := svc.maxRunners - svc.runnersCount
 	n.SetAvailableRunners(ar)
 	n.SetMaxRunners(svc.maxRunners)
-	if err := client.NewModelDelegate(n, client.WithDelegateConfigPath(svc.GetConfigPath())).Save(); err != nil {
+
+	// save node
+	if svc.cfgSvc.IsMaster() {
+		err = client.NewModelDelegate(n, client.WithDelegateConfigPath(svc.GetConfigPath())).Save()
+	} else {
+		err = delegate.NewModelDelegate(n).Save()
+	}
+	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -265,6 +286,9 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	if err := c.Provide(config.ProvideConfigService(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Provide(service.NewService); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Provide(client.ProvideServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -279,16 +303,18 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	}
 	if err := c.Invoke(func(
 		cfgSvc interfaces.NodeConfigService,
-		modelSvc interfaces.GrpcClientModelService,
-		modelNodeSvc interfaces.GrpcClientModelNodeService,
-		modelSpiderSvc interfaces.GrpcClientModelSpiderService,
-		modelTaskSvc interfaces.GrpcClientModelTaskService,
+		modelSvc service.ModelService,
+		clientModelSvc interfaces.GrpcClientModelService,
+		clientModelNodeSvc interfaces.GrpcClientModelNodeService,
+		clientModelSpiderSvc interfaces.GrpcClientModelSpiderService,
+		clientModelTaskSvc interfaces.GrpcClientModelTaskService,
 	) {
 		svc.cfgSvc = cfgSvc
 		svc.modelSvc = modelSvc
-		svc.modelNodeSvc = modelNodeSvc
-		svc.modelSpiderSvc = modelSpiderSvc
-		svc.modelTaskSvc = modelTaskSvc
+		svc.clientModelSvc = clientModelSvc
+		svc.clientModelNodeSvc = clientModelNodeSvc
+		svc.clientModelSpiderSvc = clientModelSpiderSvc
+		svc.clientModelTaskSvc = clientModelTaskSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}

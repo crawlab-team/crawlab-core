@@ -15,7 +15,7 @@ func TestAdminService_Run(t *testing.T) {
 
 	// TODO: implement
 	// run
-	err = T.adminSvc.Run(T.TestSpider.Id, &interfaces.RunOptions{
+	err = T.adminSvc.Schedule(T.TestSpider.Id, &interfaces.SpiderRunOptions{
 		Mode: constants.RunTypeRandom,
 	})
 	require.Nil(t, err)

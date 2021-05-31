@@ -3,13 +3,16 @@ package scheduler
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
+	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -28,6 +31,7 @@ type Service struct {
 	nodeCfgSvc interfaces.NodeConfigService
 	modelSvc   service.ModelService
 	svr        interfaces.GrpcServer
+	handlerSvc interfaces.TaskHandlerService
 
 	// settings
 	interval time.Duration
@@ -40,6 +44,10 @@ func (svc *Service) Start() {
 }
 
 func (svc *Service) Enqueue(t interfaces.Task) (err error) {
+	// set task status
+	t.SetStatus(constants.TaskStatusPending)
+
+	// run mongo transaction
 	if err := mongo.RunTransaction(func(sc mongo2.SessionContext) error {
 		// add task
 		if err := delegate.NewModelDelegate(t).Add(); err != nil {
@@ -62,6 +70,8 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 	}); err != nil {
 		return trace.TraceError(err)
 	}
+
+	// success
 	return nil
 }
 
@@ -135,6 +145,7 @@ func (svc *Service) Schedule(tasks []interfaces.Task) (err error) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(tasks))
 
+	// iterate tasks and execute each of them
 	for _, t := range tasks {
 		go func(t interfaces.Task) {
 			var err error
@@ -145,28 +156,34 @@ func (svc *Service) Schedule(tasks []interfaces.Task) (err error) {
 			if !ok {
 				// not exists in cache
 				n, err = svc.modelSvc.GetNodeById(t.GetNodeId())
-				if err != nil {
-					e = append(e, err)
-					svc.handleTaskError(t, err)
-					wg.Done()
-					return
+				if err == nil {
+					nodesCache.Store(n.GetId(), n)
 				}
-				nodesCache.Store(n.GetId(), n)
 			} else {
 				// exists in cache
 				n, ok = res.(interfaces.Node)
 				if !ok {
-					e = append(e, err)
-					svc.handleTaskError(t, err)
-					wg.Done()
-					return
+					err = errors.ErrorTaskInvalidType
 				}
 			}
-
-			// send to execute task
-			if err := svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_RUN_TASK, t); err != nil {
+			if err != nil {
 				e = append(e, err)
-				svc.handleTaskError(t, err)
+				svc.handleTaskError(n, t, err)
+				wg.Done()
+				return
+			}
+
+			// schedule task
+			if n.GetIsMaster() {
+				// execute task on master
+				err = svc.handlerSvc.Run(t.GetId())
+			} else {
+				// send to execute task on worker nodes
+				err = svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_RUN_TASK, t)
+			}
+			if err != nil {
+				e = append(e, err)
+				svc.handleTaskError(n, t, err)
 				wg.Done()
 				return
 			}
@@ -205,8 +222,11 @@ func (svc *Service) getResourcesAndNodesMap() (resources map[string]interfaces.N
 	nodesMap = map[primitive.ObjectID]interfaces.Node{}
 	resources = map[string]interfaces.Node{}
 	query := bson.M{
+		// enabled: true
 		"en": true,
-		"a":  true,
+		// active: true
+		"a": true,
+		// available_runners > 0
 		"ar": bson.M{
 			"$gt": 0,
 		},
@@ -276,11 +296,15 @@ func (svc *Service) dequeueTasks(tasks []interfaces.Task) (err error) {
 	return nil
 }
 
-func (svc *Service) handleTaskError(t interfaces.Task, err error) {
+func (svc *Service) handleTaskError(n interfaces.Node, t interfaces.Task, err error) {
 	trace.PrintError(err)
 	t.SetStatus(constants.TaskStatusError)
 	t.SetError(err.Error())
-	_ = delegate.NewModelDelegate(t).Save()
+	if n.GetIsMaster() {
+		_ = delegate.NewModelDelegate(t).Save()
+	} else {
+		_ = client.NewModelDelegate(t).Save()
+	}
 }
 
 func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerService, err error) {
@@ -312,14 +336,19 @@ func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerServi
 	if err := c.Provide(server.ProvideGetServer(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Provide(handler.ProvideTaskHandlerService(svc.GetConfigPath())); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Invoke(func(
 		nodeCfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
 		svr interfaces.GrpcServer,
+		handlerSvc interfaces.TaskHandlerService,
 	) {
 		svc.nodeCfgSvc = nodeCfgSvc
 		svc.modelSvc = modelSvc
 		svc.svr = svr
+		svc.handlerSvc = handlerSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -331,5 +360,29 @@ func ProvideTaskSchedulerService(path string, opts ...Option) func() (svc interf
 	opts = append(opts, WithConfigPath(path))
 	return func() (svc interfaces.TaskSchedulerService, err error) {
 		return NewTaskSchedulerService(opts...)
+	}
+}
+
+var store = sync.Map{}
+
+func GetTaskSchedulerService(path string, opts ...Option) (svr interfaces.TaskSchedulerService, err error) {
+	if path == "" {
+		path = config.DefaultConfigPath
+	}
+	opts = append(opts, WithConfigPath(path))
+	res, ok := store.Load(path)
+	if !ok {
+		return NewTaskSchedulerService(opts...)
+	}
+	svr, ok = res.(interfaces.TaskSchedulerService)
+	if !ok {
+		return NewTaskSchedulerService(opts...)
+	}
+	return svr, nil
+}
+
+func ProvideGetTaskSchedulerService(path string, opts ...Option) func() (svr interfaces.TaskSchedulerService, err error) {
+	return func() (svr interfaces.TaskSchedulerService, err error) {
+		return GetTaskSchedulerService(path, opts...)
 	}
 }

@@ -12,4 +12,5 @@ var (
 	ErrorTaskUnableToCancel     = NewTaskError("unable to cancel")
 	ErrorTaskForbidden          = NewTaskError("forbidden")
 	ErrorTaskNoAvailableRunners = NewTaskError("no available runner")
+	ErrorTaskEmptySpiderId      = NewTaskError("empty spider id")
 )

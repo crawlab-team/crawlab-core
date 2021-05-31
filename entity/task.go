@@ -19,3 +19,6 @@ func (m *TaskMessage) ToString() (string, error) {
 	}
 	return string(data), err
 }
+
+type TaskRunOptions struct {
+}
