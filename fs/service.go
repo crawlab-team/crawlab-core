@@ -2,6 +2,7 @@ package fs
 
 import (
 	"fmt"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -51,6 +52,11 @@ func (svc *Service) List(path string, opts ...interfaces.ServiceCrudOption) (fil
 		return files, err
 	}
 	for _, item := range items {
+		// skip keep file
+		if item.Name == constants.FsKeepFileName {
+			continue
+		}
+
 		itemPath := strings.Replace(item.FullPath, svc.fsPath, "", 1)
 		if o.IsAbsolute {
 			itemPath = item.FullPath
@@ -196,8 +202,25 @@ func (svc *Service) Copy(path, newPath string, opts ...interfaces.ServiceCrudOpt
 		return tracerr.Wrap(errors.ErrorFsForbidden)
 	}
 
-	if err := svc.copyFs(path, newPath, opts...); err != nil {
+	// apply options
+	o := svc.newCrudOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	// remote path
+	remotePath := svc.getRemotePath(path, o)
+
+	// info
+	info, err := svc.fs.GetFileInfo(remotePath)
+	if err != nil {
 		return err
+	}
+
+	if info.IsDir {
+		err = svc.copyFsDir(path, newPath, opts...)
+	} else {
+		err = svc.copyFsFile(path, newPath, opts...)
 	}
 
 	return nil
@@ -381,15 +404,64 @@ func (svc *Service) deleteFs(path string, opts ...interfaces.ServiceCrudOption) 
 	// remote path
 	remotePath := svc.getRemotePath(path, o)
 
+	// info
+	info, err := svc.fs.GetFileInfo(remotePath)
+	if err != nil {
+		return err
+	}
+
 	// delete remote file
-	if err := svc.fs.DeleteFile(remotePath); err != nil {
+	if info.IsDir {
+		err = svc.fs.DeleteDir(remotePath)
+	} else {
+		err = svc.fs.DeleteFile(remotePath)
+	}
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc *Service) copyFs(path, newPath string, opts ...interfaces.ServiceCrudOption) (err error) {
+func (svc *Service) copyFsFile(path, newPath string, opts ...interfaces.ServiceCrudOption) (err error) {
+	// apply options
+	o := svc.newCrudOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	// normalize paths
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	if !strings.HasPrefix(newPath, "/") {
+		newPath = "/" + newPath
+	}
+
+	// error if new remote path exists
+	ok, err := svc.fs.Exists(svc.getRemotePath(newPath, o))
+	if err != nil {
+		return err
+	}
+	if ok {
+		return trace.TraceError(errors.ErrorFsAlreadyExists)
+	}
+
+	// original file data
+	data, err := svc.GetFile(path)
+	if err != nil {
+		return err
+	}
+
+	// write to new path
+	if err := svc.Save(newPath, data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc *Service) copyFsDir(path, newPath string, opts ...interfaces.ServiceCrudOption) (err error) {
 	// apply options
 	o := svc.newCrudOptions()
 	for _, opt := range opts {
@@ -417,7 +489,7 @@ func (svc *Service) copyFs(path, newPath string, opts ...interfaces.ServiceCrudO
 			if o.IsAbsolute {
 				dirPath = f.GetFullPath()
 			}
-			if err := svc.copyFs(dirPath, dirPathNew, opts...); err != nil {
+			if err := svc.copyFsDir(dirPath, dirPathNew, opts...); err != nil {
 				return err
 			}
 		} else {

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/spider/sync"
@@ -36,13 +38,18 @@ var SpiderActions = []Action{
 	},
 	{
 		Method:      http.MethodPost,
+		Path:        "/:id/files/save/dir",
+		HandlerFunc: spiderCtx.saveDir,
+	},
+	{
+		Method:      http.MethodPost,
 		Path:        "/:id/files/rename",
 		HandlerFunc: spiderCtx.renameFile,
 	},
 	{
 		Method:      http.MethodDelete,
-		Path:        "/:id/files",
-		HandlerFunc: spiderCtx.deleteFile,
+		Path:        "/:id/files/delete",
+		HandlerFunc: spiderCtx.delete,
 	},
 	{
 		Method:      http.MethodPost,
@@ -119,6 +126,23 @@ func (ctx *spiderContext) saveFile(c *gin.Context) {
 	HandleSuccess(c)
 }
 
+func (ctx *spiderContext) saveDir(c *gin.Context) {
+	_, payload, fsSvc, err := ctx._processFileRequest(c, http.MethodPost)
+	if err != nil {
+		return
+	}
+
+	data := []byte("")
+	path := fmt.Sprintf("%s/%s", payload.Path, constants.FsKeepFileName)
+
+	if err := fsSvc.Save(path, data); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
+}
+
 func (ctx *spiderContext) renameFile(c *gin.Context) {
 	_, payload, fsSvc, err := ctx._processFileRequest(c, http.MethodPost)
 	if err != nil {
@@ -133,7 +157,7 @@ func (ctx *spiderContext) renameFile(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-func (ctx *spiderContext) deleteFile(c *gin.Context) {
+func (ctx *spiderContext) delete(c *gin.Context) {
 	_, payload, fsSvc, err := ctx._processFileRequest(c, http.MethodPost)
 	if err != nil {
 		return
