@@ -49,8 +49,10 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 
 	// run mongo transaction
 	if err := mongo.RunTransaction(func(sc mongo2.SessionContext) error {
+		var err error
+
 		// add task
-		if err := delegate.NewModelDelegate(t).Add(); err != nil {
+		if err = delegate.NewModelDelegate(t).Add(); err != nil {
 			return err
 		}
 
@@ -60,8 +62,19 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 			Priority: t.GetPriority(),
 		}
 
+		// task stat
+		ts := &models.TaskStat{
+			Id: t.GetId(),
+		}
+
 		// enqueue task
-		_, err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Insert(tq)
+		_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Insert(tq)
+		if err != nil {
+			return trace.TraceError(err)
+		}
+
+		// add task stat
+		_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskStat).Insert(ts)
 		if err != nil {
 			return trace.TraceError(err)
 		}

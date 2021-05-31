@@ -20,8 +20,16 @@ func WithAddress(address interfaces.Address) Option {
 
 type NodeServerOption func(svr *NodeServer)
 
-func WithServer(server interfaces.GrpcServer) NodeServerOption {
+func WithServerNodeServerService(server interfaces.GrpcServer) NodeServerOption {
 	return func(svr *NodeServer) {
+		svr.server = server
+	}
+}
+
+type TaskServerOption func(svr *TaskServer)
+
+func WithServerTaskServerService(server interfaces.GrpcServer) TaskServerOption {
+	return func(svr *TaskServer) {
 		svr.server = server
 	}
 }

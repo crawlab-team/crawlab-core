@@ -3,7 +3,7 @@ package delegate
 import (
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	models2 "github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-db/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
@@ -14,29 +14,29 @@ import (
 
 func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 	switch doc.(type) {
-	case *models2.Artifact:
+	case *models.Artifact:
 		return newModelDelegate(interfaces.ModelIdArtifact, doc)
-	case *models2.Tag:
+	case *models.Tag:
 		return newModelDelegate(interfaces.ModelIdTag, doc)
-	case *models2.Node:
+	case *models.Node:
 		return newModelDelegate(interfaces.ModelIdNode, doc)
-	case *models2.Project:
+	case *models.Project:
 		return newModelDelegate(interfaces.ModelIdProject, doc)
-	case *models2.Spider:
+	case *models.Spider:
 		return newModelDelegate(interfaces.ModelIdSpider, doc)
-	case *models2.Task:
+	case *models.Task:
 		return newModelDelegate(interfaces.ModelIdTask, doc)
-	case *models2.Job:
+	case *models.Job:
 		return newModelDelegate(interfaces.ModelIdJob, doc)
-	case *models2.Schedule:
+	case *models.Schedule:
 		return newModelDelegate(interfaces.ModelIdSchedule, doc)
-	case *models2.User:
+	case *models.User:
 		return newModelDelegate(interfaces.ModelIdUser, doc)
-	case *models2.Setting:
+	case *models.Setting:
 		return newModelDelegate(interfaces.ModelIdSetting, doc)
-	case *models2.Token:
+	case *models.Token:
 		return newModelDelegate(interfaces.ModelIdToken, doc)
-	case *models2.Variable:
+	case *models.Variable:
 		return newModelDelegate(interfaces.ModelIdVariable, doc)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
@@ -46,13 +46,13 @@ func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 
 func newModelDelegate(id interfaces.ModelId, doc interfaces.Model) interfaces.ModelDelegate {
 	// collection name
-	colName := models2.GetModelColName(id)
+	colName := models.GetModelColName(id)
 
 	// model delegate
 	d := &ModelDelegate{
 		id:  id,
 		doc: doc,
-		a: &models2.Artifact{
+		a: &models.Artifact{
 			Col: colName,
 		},
 		colName: colName,
@@ -216,7 +216,7 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 	// context
 	// TODO: implement user
 	ctx := col.GetContext()
-	user, ok := ctx.Value(models2.UserContextKey).(*models2.User)
+	user, ok := ctx.Value(models.UserContextKey).(*models.User)
 
 	// assign id to artifact
 	d.a.SetId(d.doc.GetId())
@@ -264,7 +264,7 @@ func (d *ModelDelegate) deleteArtifact() (err error) {
 	d.a.SetDel(true)
 	d.a.GetSys().SetDeleteTs(time.Now())
 	// TODO: implement user
-	user, ok := ctx.Value(models2.UserContextKey).(*models2.User)
+	user, ok := ctx.Value(models.UserContextKey).(*models.User)
 	if ok {
 		d.a.GetSys().SetDeleteUid(user.Id)
 	}

@@ -212,7 +212,7 @@ func NewNodeServer(opts ...NodeServerOption) (res *NodeServer, err error) {
 
 func ProvideNodeServer(server interfaces.GrpcServer, opts ...NodeServerOption) func() (res *NodeServer, err error) {
 	return func() (*NodeServer, error) {
-		opts = append(opts, WithServer(server))
+		opts = append(opts, WithServerNodeServerService(server))
 		return NewNodeServer(opts...)
 	}
 }

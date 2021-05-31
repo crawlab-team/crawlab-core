@@ -14,6 +14,7 @@ type ModelMap struct {
 	Token         Token
 	Variable      Variable
 	TaskQueueItem TaskQueueItem
+	TaskStat      TaskStat
 }
 
 type ModelListMap struct {
@@ -30,6 +31,7 @@ type ModelListMap struct {
 	Tokens         []Token
 	Variables      []Variable
 	TaskQueueItems []TaskQueueItem
+	TaskStats      []TaskStat
 }
 
 func NewModelMap() (m *ModelMap) {

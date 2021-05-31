@@ -25,6 +25,7 @@ const (
 	ModelIdToken
 	ModelIdVariable
 	ModelIdTaskQueue
+	ModelIdTaskStat
 )
 
 const (
@@ -41,6 +42,7 @@ const (
 	ModelColNameToken     = "tokens"
 	ModelColNameVariable  = "variables"
 	ModelColNameTaskQueue = "task_queue"
+	ModelColNameTaskStat  = "task_stats"
 )
 
 type ModelWithTags interface {

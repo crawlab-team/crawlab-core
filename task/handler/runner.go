@@ -51,7 +51,7 @@ type Runner struct {
 
 func (r *Runner) Init() (err error) {
 	// update task
-	if err := r.updateTask(""); err != nil {
+	if err := r.updateTask("", nil); err != nil {
 		return err
 	}
 
@@ -75,7 +75,7 @@ func (r *Runner) Init() (err error) {
 
 func (r *Runner) Run() (err error) {
 	// update task status (processing)
-	if err := r.updateTask(constants.TaskStatusRunning); err != nil {
+	if err := r.updateTask(constants.TaskStatusRunning, nil); err != nil {
 		return err
 	}
 
@@ -146,7 +146,7 @@ func (r *Runner) Run() (err error) {
 	}
 
 	// update task status
-	if err := r.updateTask(status); err != nil {
+	if err := r.updateTask(status, err); err != nil {
 		return err
 	}
 
@@ -407,10 +407,13 @@ func (r *Runner) wait() {
 }
 
 // update and get updated info of task (Runner.t)
-func (r *Runner) updateTask(status string) (err error) {
+func (r *Runner) updateTask(status string, e error) (err error) {
 	// update task status
 	if r.t != nil && status != "" {
 		r.t.SetStatus(status)
+		if e != nil {
+			r.t.SetError(e.Error())
+		}
 		if err := client.NewModelDelegate(r.t, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
 			return err
 		}

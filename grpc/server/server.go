@@ -215,7 +215,7 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	if err := c.Provide(ProvideNodeServer(svr)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(NewTaskServer); err != nil {
+	if err := c.Provide(ProvideTaskServer(svr)); err != nil {
 		return nil, err
 	}
 	if err := c.Invoke(func(
