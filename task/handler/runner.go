@@ -36,7 +36,6 @@ type Runner struct {
 	// internals
 	cmd  *exec.Cmd                 // process command instance
 	pid  int                       // process id
-	l    clog.Driver               // log service log.Driver
 	tid  primitive.ObjectID        // task id
 	t    interfaces.Task           // task model.Task
 	s    interfaces.Spider         // spider model.Spider
@@ -60,13 +59,6 @@ func (r *Runner) Init() (err error) {
 
 	// sync files to workspace
 	if err := r.fsSvc.GetFsService().SyncToWorkspace(); err != nil {
-		return err
-	}
-
-	// log driver
-	// TODO: configure TTL
-	r.l, err = r.getLogDriver()
-	if err != nil {
 		return err
 	}
 
@@ -149,9 +141,6 @@ func (r *Runner) Run() (err error) {
 	if err := r.updateTask(status, err); err != nil {
 		return err
 	}
-
-	// flush log
-	_ = r.l.Flush()
 
 	// dispose
 	_ = r.Dispose()
@@ -278,7 +267,7 @@ func (r *Runner) startLoggingReaderStdout() {
 	for r.scannerStdout.Scan() {
 		line := r.scannerStdout.Text()
 		utils.LogDebug(fmt.Sprintf("scannerStdout line: %s", line))
-		_ = r.l.WriteLine(line)
+		//_ = r.l.WriteLine(line)
 	}
 	// reach end
 	utils.LogDebug("scannerStdout reached end")
@@ -289,7 +278,7 @@ func (r *Runner) startLoggingReaderStderr() {
 	for r.scannerStderr.Scan() {
 		line := r.scannerStderr.Text()
 		utils.LogDebug(fmt.Sprintf("scannerStderr line: %s", line))
-		_ = r.l.WriteLine(line)
+		//_ = r.l.WriteLine(line)
 	}
 	// reach end
 	utils.LogDebug("scannerStderr reached end")

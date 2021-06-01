@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
@@ -11,7 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"io"
 	"net/http"
+	"strings"
 )
 
 var SpiderController ListActionController
@@ -220,16 +223,27 @@ func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id
 		return
 	}
 
-	// data
-	switch method {
-	case http.MethodGet:
-		err = c.ShouldBindQuery(&payload)
-	default:
-		err = c.ShouldBindJSON(&payload)
-	}
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
+	// payload
+	contentType := c.GetHeader("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		// multipart/form-data
+		payload, err = ctx._getFileRequestMultipartPayload(c)
+		if err != nil {
+			HandleErrorBadRequest(c, err)
+			return
+		}
+	} else {
+		// query or application/json
+		switch method {
+		case http.MethodGet:
+			err = c.ShouldBindQuery(&payload)
+		default:
+			err = c.ShouldBindJSON(&payload)
+		}
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
 	}
 
 	// fs service
@@ -239,6 +253,24 @@ func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id
 		return
 	}
 
+	return
+}
+
+func (ctx *spiderContext) _getFileRequestMultipartPayload(c *gin.Context) (payload entity.FileRequestPayload, err error) {
+	fh, err := c.FormFile("file")
+	if err != nil {
+		return
+	}
+	f, err := fh.Open()
+	if err != nil {
+		return
+	}
+	buf := bytes.NewBuffer(nil)
+	if _, err = io.Copy(buf, f); err != nil {
+		return
+	}
+	payload.Path = c.PostForm("path")
+	payload.Data = buf.String()
 	return
 }
 

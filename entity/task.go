@@ -22,3 +22,9 @@ func (m *TaskMessage) ToString() (string, error) {
 
 type TaskRunOptions struct {
 }
+
+type StreamMessageTaskData struct {
+	TaskId  primitive.ObjectID `json:"task_id"`
+	Records []interface{}      `json:"data"`
+	Logs    []string           `json:"logs"`
+}

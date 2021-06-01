@@ -13,6 +13,7 @@ import (
 	"github.com/ztrue/tracerr"
 	"go.uber.org/dig"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -46,11 +47,18 @@ func (svc *Service) List(path string, opts ...interfaces.ServiceCrudOption) (fil
 	// remote path
 	remotePath := svc.getRemotePath(path, o)
 
-	// list items of remote path recursively
+	// list items of directory
 	items, err := svc.fs.ListDir(remotePath, false)
 	if err != nil {
 		return files, err
 	}
+
+	// sort items
+	itemsSlice := FilerFileInfoSlice(items)
+	sort.Sort(itemsSlice)
+	items = itemsSlice
+
+	// iterate items and list items recursively
 	for _, item := range items {
 		// skip keep file
 		if item.Name == constants.FsKeepFileName {
@@ -156,9 +164,20 @@ func (svc *Service) Save(path string, data []byte, opts ...interfaces.ServiceCru
 		return trace.TraceError(errors.ErrorFsForbidden)
 	}
 
+	// apply options
+	o := svc.newCrudOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	// save fs
 	if err := svc.saveFs(path, data, opts...); err != nil {
 		return err
+	}
+
+	// skip if NotSyncToWorkspace is set to true
+	if o.NotSyncToWorkspace {
+		return nil
 	}
 
 	// sync to workspace
@@ -172,9 +191,20 @@ func (svc *Service) Rename(path, newPath string, opts ...interfaces.ServiceCrudO
 		return trace.TraceError(errors.ErrorFsForbidden)
 	}
 
+	// apply options
+	o := svc.newCrudOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	// rename fs
 	if err := svc.renameFs(path, newPath, opts...); err != nil {
 		return err
+	}
+
+	// skip if NotSyncToWorkspace is set to true
+	if o.NotSyncToWorkspace {
+		return nil
 	}
 
 	// sync to workspace
@@ -187,9 +217,20 @@ func (svc *Service) Delete(path string, opts ...interfaces.ServiceCrudOption) (e
 		return trace.TraceError(errors.ErrorFsForbidden)
 	}
 
+	// apply options
+	o := svc.newCrudOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	// delete fs
 	if err := svc.deleteFs(path, opts...); err != nil {
 		return err
+	}
+
+	// skip if NotSyncToWorkspace is set to true
+	if o.NotSyncToWorkspace {
+		return nil
 	}
 
 	// sync to workspace
@@ -223,7 +264,13 @@ func (svc *Service) Copy(path, newPath string, opts ...interfaces.ServiceCrudOpt
 		err = svc.copyFsFile(path, newPath, opts...)
 	}
 
-	return nil
+	// skip if NotSyncToWorkspace is set to true
+	if o.NotSyncToWorkspace {
+		return nil
+	}
+
+	// sync to workspace
+	return svc.SyncToWorkspace()
 }
 
 func (svc *Service) Commit(msg string) (err error) {
@@ -534,7 +581,9 @@ func (svc *Service) getRemotePath(path string, o *interfaces.ServiceCrudOptions)
 
 func (svc *Service) newCrudOptions() (o *interfaces.ServiceCrudOptions) {
 	return &interfaces.ServiceCrudOptions{
-		IsAbsolute: false,
+		IsAbsolute:         false,
+		OnlyFromWorkspace:  false,
+		NotSyncToWorkspace: true,
 	}
 }
 
