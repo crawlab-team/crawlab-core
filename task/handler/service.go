@@ -38,6 +38,7 @@ type Service struct {
 	mu           sync.Mutex
 	runnersCount int      // number of task runners
 	runners      sync.Map // pool of task runners started
+	syncLocks    sync.Map // files sync locks map of task runners
 }
 
 func (svc *Service) Start() {
@@ -123,6 +124,19 @@ func (svc *Service) ReportStatus() {
 		// wait
 		time.Sleep(svc.reportInterval)
 	}
+}
+
+func (svc *Service) IsSyncLocked(spiderId primitive.ObjectID) (ok bool) {
+	_, ok = svc.syncLocks.Load(spiderId)
+	return ok
+}
+
+func (svc *Service) LockSync(spiderId primitive.ObjectID) {
+	svc.syncLocks.Store(spiderId, true)
+}
+
+func (svc *Service) UnlockSync(spiderId primitive.ObjectID) {
+	svc.syncLocks.Delete(spiderId)
 }
 
 func (svc *Service) GetMaxRunners() (maxRunners int) {
@@ -274,6 +288,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		mu:                sync.Mutex{},
 		runnersCount:      0,
 		runners:           sync.Map{},
+		syncLocks:         sync.Map{},
 	}
 
 	// apply options

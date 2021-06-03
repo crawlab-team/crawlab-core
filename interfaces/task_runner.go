@@ -1,6 +1,9 @@
 package interfaces
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
+)
 
 type TaskRunner interface {
 	Init() (err error)
@@ -8,5 +11,6 @@ type TaskRunner interface {
 	Cancel() (err error)
 	Dispose() (err error)
 	SetLogDriverType(driverType string)
+	SetSubscribeTimeout(timeout time.Duration)
 	GetTaskId() (id primitive.ObjectID)
 }

@@ -302,6 +302,12 @@ func (svc *Service) updateResources(nodesMap map[primitive.ObjectID]interfaces.N
 
 func (svc *Service) dequeueTasks(tasks []interfaces.Task) (err error) {
 	for _, t := range tasks {
+		// save task with node id
+		if err := delegate.NewModelDelegate(t).Save(); err != nil {
+			return err
+		}
+
+		// remove task queue item
 		if err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).DeleteId(t.GetId()); err != nil {
 			return err
 		}

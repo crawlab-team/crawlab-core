@@ -3,17 +3,21 @@ package handler
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	gclient "github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/services/sys_exec"
 	"github.com/crawlab-team/crawlab-core/spider/fs"
 	"github.com/crawlab-team/crawlab-core/utils"
+	grpc "github.com/crawlab-team/crawlab-grpc"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/crawlab-team/go-trace"
 	"github.com/shirou/gopsutil/process"
@@ -31,17 +35,21 @@ type Runner struct {
 	fsSvc interfaces.SpiderFsService    // spider fs service
 
 	// settings
-	logDriverType string
+	logDriverType    string
+	subscribeTimeout time.Duration
 
 	// internals
-	cmd  *exec.Cmd                 // process command instance
-	pid  int                       // process id
-	tid  primitive.ObjectID        // task id
-	t    interfaces.Task           // task model.Task
-	s    interfaces.Spider         // spider model.Spider
-	ch   chan constants.TaskSignal // channel to communicate between Service and Runner
-	envs []models.Env              // environment variables
-	cwd  string                    // working directory
+	cmd  *exec.Cmd                        // process command instance
+	pid  int                              // process id
+	tid  primitive.ObjectID               // task id
+	t    interfaces.Task                  // task model.Task
+	s    interfaces.Spider                // spider model.Spider
+	ch   chan constants.TaskSignal        // channel to communicate between Service and Runner
+	err  error                            // standard process error
+	envs []models.Env                     // environment variables
+	cwd  string                           // working directory
+	c    interfaces.GrpcClient            // grpc client
+	sub  grpc.TaskService_SubscribeClient // grpc task service stream client
 
 	// log internals
 	scannerStdout *bufio.Scanner
@@ -58,7 +66,12 @@ func (r *Runner) Init() (err error) {
 	r.cwd = r.fsSvc.GetWorkspacePath()
 
 	// sync files to workspace
-	if err := r.fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+	if err := r.syncFiles(); err != nil {
+		return err
+	}
+
+	// grpc task service stream client
+	if err := r.initSub(); err != nil {
 		return err
 	}
 
@@ -122,7 +135,7 @@ func (r *Runner) Run() (err error) {
 		err = constants.ErrTaskCancelled
 		status = constants.TaskStatusCancelled
 	case constants.TaskSignalError:
-		err = constants.ErrTaskError
+		err = r.err
 		status = constants.TaskStatusError
 	case constants.TaskSignalLost:
 		err = constants.ErrTaskLost
@@ -183,6 +196,10 @@ func (r *Runner) Dispose() (err error) {
 
 func (r *Runner) SetLogDriverType(driverType string) {
 	r.logDriverType = driverType
+}
+
+func (r *Runner) SetSubscribeTimeout(timeout time.Duration) {
+	r.subscribeTimeout = timeout
 }
 
 func (r *Runner) GetTaskId() (id primitive.ObjectID) {
@@ -267,7 +284,7 @@ func (r *Runner) startLoggingReaderStdout() {
 	for r.scannerStdout.Scan() {
 		line := r.scannerStdout.Text()
 		utils.LogDebug(fmt.Sprintf("scannerStdout line: %s", line))
-		//_ = r.l.WriteLine(line)
+		r.writeLogLine(line)
 	}
 	// reach end
 	utils.LogDebug("scannerStdout reached end")
@@ -278,7 +295,7 @@ func (r *Runner) startLoggingReaderStderr() {
 	for r.scannerStderr.Scan() {
 		line := r.scannerStderr.Text()
 		utils.LogDebug(fmt.Sprintf("scannerStderr line: %s", line))
-		//_ = r.l.WriteLine(line)
+		r.writeLogLine(line)
 	}
 	// reach end
 	utils.LogDebug("scannerStderr reached end")
@@ -387,6 +404,7 @@ func (r *Runner) wait() {
 		}
 
 		// standard error
+		r.err = err
 		r.ch <- constants.TaskSignalError
 		return
 	}
@@ -417,6 +435,49 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 	return nil
 }
 
+func (r *Runner) syncFiles() (err error) {
+	// skip if files sync is locked
+	if r.svc.IsSyncLocked(r.s.GetId()) {
+		return
+	}
+
+	// lock files sync
+	r.svc.LockSync(r.s.GetId())
+	defer r.svc.UnlockSync(r.s.GetId())
+	if err := r.fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Runner) initSub() (err error) {
+	r.sub, err = r.c.GetTaskClient().Subscribe(context.Background())
+	if err != nil {
+		return trace.TraceError(err)
+	}
+	return nil
+}
+
+func (r *Runner) writeLogLine(line string) {
+	data, err := json.Marshal(&entity.StreamMessageTaskData{
+		TaskId: r.tid,
+		Logs:   []string{line},
+	})
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+	msg := &grpc.StreamMessage{
+		Code: grpc.StreamMessageCode_INSERT_LOGS,
+		Data: data,
+	}
+	if err := r.sub.Send(msg); err != nil {
+		trace.PrintError(err)
+		return
+	}
+}
+
 func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opts ...RunnerOption) (r2 interfaces.TaskRunner, err error) {
 	// validate options
 	if id.IsZero() {
@@ -425,10 +486,11 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 
 	// runner
 	r := &Runner{
-		logDriverType: clog.DriverTypeFs,
-		svc:           svc,
-		tid:           id,
-		ch:            make(chan constants.TaskSignal),
+		logDriverType:    clog.DriverTypeFs,
+		subscribeTimeout: 30 * time.Second,
+		svc:              svc,
+		tid:              id,
+		ch:               make(chan constants.TaskSignal),
 	}
 
 	// apply options
@@ -453,8 +515,15 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 	if err := c.Provide(fs.ProvideGetSpiderFsService(r.t.GetSpiderId())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(fsSvc interfaces.SpiderFsService) {
+	if err := c.Provide(gclient.ProvideGetClient(r.svc.GetConfigPath())); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Invoke(func(
+		fsSvc interfaces.SpiderFsService,
+		c interfaces.GrpcClient,
+	) {
 		r.fsSvc = fsSvc
+		r.c = c
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
