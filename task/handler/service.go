@@ -11,6 +11,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
@@ -348,7 +349,21 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 }
 
 func ProvideTaskHandlerService(path string, opts ...Option) func() (svc interfaces.TaskHandlerService, err error) {
+	// config path
 	opts = append(opts, WithConfigPath(path))
+
+	// max runners
+	maxRunners := viper.GetInt("task.handler.maxRunners")
+	if maxRunners > 0 {
+		opts = append(opts, WithMaxRunners(maxRunners))
+	}
+
+	// report interval
+	reportIntervalSeconds := viper.GetInt("task.handler.reportInterval")
+	if reportIntervalSeconds > 0 {
+		opts = append(opts, WithReportInterval(time.Duration(reportIntervalSeconds)*time.Second))
+	}
+
 	return func() (svc interfaces.TaskHandlerService, err error) {
 		return NewTaskHandlerService(opts...)
 	}

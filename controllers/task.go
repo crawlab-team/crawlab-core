@@ -85,9 +85,10 @@ func (ctx *taskContext) run(c *gin.Context) {
 
 	// options
 	opts := &interfaces.SpiderRunOptions{
-		Mode:    t.Mode,
-		NodeIds: t.NodeIds,
-		Param:   t.Param,
+		Mode:     t.Mode,
+		NodeIds:  t.NodeIds,
+		Param:    t.Param,
+		Priority: t.Priority,
 	}
 
 	// run
@@ -116,9 +117,10 @@ func (ctx *taskContext) restart(c *gin.Context) {
 
 	// options
 	opts := &interfaces.SpiderRunOptions{
-		Mode:    t.Mode,
-		NodeIds: t.NodeIds,
-		Param:   t.Param,
+		Mode:     t.Mode,
+		NodeIds:  t.NodeIds,
+		Param:    t.Param,
+		Priority: t.Priority,
 	}
 
 	// run
@@ -174,7 +176,7 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 
 	// get list
 	list, err := ctx.modelTaskSvc.GetList(query, &mongo.FindOptions{
-		Sort:  bson.M{"_id": -1},
+		Sort:  bson.D{{"_id", -1}},
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
 	})
@@ -220,9 +222,9 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 	}
 
 	// cache task stat list to dict
-	dict := map[primitive.ObjectID]*models.TaskStat{}
+	dict := map[primitive.ObjectID]models.TaskStat{}
 	for _, s := range stats {
-		dict[s.GetId()] = &s
+		dict[s.GetId()] = s
 	}
 
 	// iterate task list again
@@ -231,9 +233,9 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 		t := d.(*models.Task)
 		s, ok := dict[t.GetId()]
 		if ok {
-			t.Stat = s
+			t.Stat = &s
 		}
-		data = append(data, t)
+		data = append(data, *t)
 	}
 
 	// response

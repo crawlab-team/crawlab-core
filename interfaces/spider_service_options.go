@@ -7,6 +7,7 @@ type SpiderRunOptions struct {
 	NodeIds    []primitive.ObjectID
 	Param      string
 	ScheduleId primitive.ObjectID
+	Priority   int
 }
 
 type SpiderCloneOptions struct {

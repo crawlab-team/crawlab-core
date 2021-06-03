@@ -65,6 +65,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 		Cmd:        s.Cmd,
 		Param:      opts.Param,
 		ScheduleId: opts.ScheduleId,
+		Priority:   opts.Priority,
 	}
 
 	if svc.isMultiTask(opts) {
@@ -84,6 +85,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 				Cmd:      s.Cmd,
 				Param:    opts.Param,
 				NodeId:   nodeId,
+				Priority: opts.Priority,
 			}
 			if err := svc.schedulerSvc.Enqueue(t); err != nil {
 				return err

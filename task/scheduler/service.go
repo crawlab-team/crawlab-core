@@ -17,6 +17,7 @@ import (
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/joeshaw/multierror"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
@@ -47,41 +48,32 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 	// set task status
 	t.SetStatus(constants.TaskStatusPending)
 
-	// run mongo transaction
-	if err := mongo.RunTransaction(func(sc mongo2.SessionContext) error {
-		var err error
+	// add task
+	if err = delegate.NewModelDelegate(t).Add(); err != nil {
+		return err
+	}
 
-		// add task
-		if err = delegate.NewModelDelegate(t).Add(); err != nil {
-			return err
-		}
+	// task queue item
+	tq := &models.TaskQueueItem{
+		Id:       t.GetId(),
+		Priority: t.GetPriority(),
+	}
 
-		// task queue item
-		tq := &models.TaskQueueItem{
-			Id:       t.GetId(),
-			Priority: t.GetPriority(),
-		}
+	// task stat
+	ts := &models.TaskStat{
+		Id:       t.GetId(),
+		CreateTs: time.Now(),
+	}
 
-		// task stat
-		ts := &models.TaskStat{
-			Id:       t.GetId(),
-			CreateTs: time.Now(),
-		}
+	// enqueue task
+	_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Insert(tq)
+	if err != nil {
+		return trace.TraceError(err)
+	}
 
-		// enqueue task
-		_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Insert(tq)
-		if err != nil {
-			return trace.TraceError(err)
-		}
-
-		// add task stat
-		_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskStat).Insert(ts)
-		if err != nil {
-			return trace.TraceError(err)
-		}
-
-		return nil
-	}); err != nil {
+	// add task stat
+	_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskStat).Insert(ts)
+	if err != nil {
 		return trace.TraceError(err)
 	}
 
@@ -103,6 +95,11 @@ func (svc *Service) DequeueAndSchedule() {
 			tasks, err := svc.Dequeue()
 			if err != nil {
 				return trace.TraceError(err)
+			}
+
+			// skip if no tasks available
+			if tasks == nil || len(tasks) == 0 {
+				return nil
 			}
 
 			// schedule tasks
@@ -219,8 +216,9 @@ func (svc *Service) SetInterval(interval time.Duration) {
 
 func (svc *Service) getTaskQueueItems() (tqList []models.TaskQueueItem, err error) {
 	opts := &mongo.FindOptions{
-		Sort: bson.M{
-			"p": -1,
+		Sort: bson.D{
+			{"p", 1},
+			{"_id", 1},
 		},
 	}
 	if err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Find(nil, opts).All(&tqList); err != nil {
@@ -402,6 +400,10 @@ func GetTaskSchedulerService(path string, opts ...Option) (svr interfaces.TaskSc
 }
 
 func ProvideGetTaskSchedulerService(path string, opts ...Option) func() (svr interfaces.TaskSchedulerService, err error) {
+	intervalSeconds := viper.GetInt("task.scheduler.interval")
+	if intervalSeconds > 0 {
+		opts = append(opts, WithInterval(time.Duration(intervalSeconds)*time.Second))
+	}
 	return func() (svr interfaces.TaskSchedulerService, err error) {
 		return GetTaskSchedulerService(path, opts...)
 	}
