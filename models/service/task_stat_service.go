@@ -21,16 +21,16 @@ func convertTypeTaskStat(d interface{}, err error) (res *models2.TaskStat, err2 
 }
 
 func (svc *Service) GetTaskStatById(id primitive.ObjectID) (res *models2.TaskStat, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTaskQueue).GetById(id)
+	d, err := svc.NewBaseService(interfaces.ModelIdTaskStat).GetById(id)
 	return convertTypeTaskStat(d, err)
 }
 
 func (svc *Service) GetTaskStat(query bson.M, opts *mongo.FindOptions) (res *models2.TaskStat, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTaskQueue).Get(query, opts)
+	d, err := svc.NewBaseService(interfaces.ModelIdTaskStat).Get(query, opts)
 	return convertTypeTaskStat(d, err)
 }
 
 func (svc *Service) GetTaskStatList(query bson.M, opts *mongo.FindOptions) (res []models2.TaskStat, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdTaskQueue, query, opts, &res)
+	err = svc.getListSerializeTarget(interfaces.ModelIdTaskStat, query, opts, &res)
 	return res, err
 }

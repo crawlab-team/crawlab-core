@@ -98,7 +98,7 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/spiders", controllers.SpiderController)
 
 	// task
-	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/tasks", controllers.TaskController)
+	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/tasks", &controllers.TaskController)
 
 	// tag
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tags", controllers.TagController)

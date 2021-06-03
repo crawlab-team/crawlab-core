@@ -20,6 +20,7 @@ type Task struct {
 	NodeTags   []string             `json:"node_tags" bson:"node_tags"` // list of Node.Tag
 	ParentId   primitive.ObjectID   `json:"parent_id" bson:"parent_id"` // parent Task.Id if it'Spider a sub-task
 	Priority   int                  `json:"priority" bson:"priority"`
+	Stat       *TaskStat            `json:"stat,omitempty" bson:"-"`
 }
 
 func (t *Task) GetId() (id primitive.ObjectID) {

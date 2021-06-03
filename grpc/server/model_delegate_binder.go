@@ -53,6 +53,10 @@ func (b *ModelDelegateBinder) Bind() (res interface{}, err error) {
 		return b.process(&m.Token)
 	case interfaces.ModelIdVariable:
 		return b.process(&m.Variable)
+	case interfaces.ModelIdTaskQueue:
+		return b.process(&m.TaskQueueItem)
+	case interfaces.ModelIdTaskStat:
+		return b.process(&m.TaskStat)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

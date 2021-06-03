@@ -39,4 +39,6 @@ type TaskHandlerService interface {
 	GetModelSpiderService() (modelSpiderSvc GrpcClientModelSpiderService)
 	// GetModelTaskService get model task service
 	GetModelTaskService() (modelTaskSvc GrpcClientModelTaskService)
+	// GetModelTaskStatService get model task stat service
+	GetModelTaskStatService() (modelTaskStatSvc GrpcClientModelTaskStatService)
 }

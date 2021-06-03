@@ -415,8 +415,8 @@ func (r *Runner) wait() {
 
 // update and get updated info of task (Runner.t)
 func (r *Runner) updateTask(status string, e error) (err error) {
-	// update task status
 	if r.t != nil && status != "" {
+		// update task status
 		r.t.SetStatus(status)
 		if e != nil {
 			r.t.SetError(e.Error())
@@ -424,6 +424,9 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 		if err := client.NewModelDelegate(r.t, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
 			return err
 		}
+
+		// update task stat
+		go r._updateTaskStat(status)
 	}
 
 	// get task
@@ -473,6 +476,29 @@ func (r *Runner) writeLogLine(line string) {
 		Data: data,
 	}
 	if err := r.sub.Send(msg); err != nil {
+		trace.PrintError(err)
+		return
+	}
+}
+
+func (r *Runner) _updateTaskStat(status string) {
+	ts, err := r.svc.GetModelTaskStatService().GetTaskStatById(r.tid)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+	switch status {
+	case constants.TaskStatusPending:
+		// do nothing
+	case constants.TaskStatusRunning:
+		ts.SetStartTs(time.Now())
+		ts.SetWaitDuration(ts.GetStartTs().Sub(ts.GetCreateTs()).Milliseconds())
+	case constants.TaskStatusFinished, constants.TaskStatusError, constants.TaskStatusCancelled:
+		ts.SetEndTs(time.Now())
+		ts.SetRuntimeDuration(ts.GetEndTs().Sub(ts.GetStartTs()).Milliseconds())
+		ts.SetTotalDuration(ts.GetEndTs().Sub(ts.GetCreateTs()).Milliseconds())
+	}
+	if err := client.NewModelDelegate(ts, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
 		trace.PrintError(err)
 		return
 	}

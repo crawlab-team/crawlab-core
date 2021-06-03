@@ -38,6 +38,10 @@ func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 		return newModelDelegate(interfaces.ModelIdToken, doc)
 	case *models.Variable:
 		return newModelDelegate(interfaces.ModelIdVariable, doc)
+	case *models.TaskQueueItem:
+		return newModelDelegate(interfaces.ModelIdTaskQueue, doc)
+	case *models.TaskStat:
+		return newModelDelegate(interfaces.ModelIdTaskStat, doc)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
@@ -200,8 +204,8 @@ func (d *ModelDelegate) refreshArtifact() (err error) {
 
 // upsertArtifact
 func (d *ModelDelegate) upsertArtifact() (err error) {
-	// skip artifact
-	if d.id == interfaces.ModelIdArtifact {
+	// skip
+	if d._skip() {
 		return nil
 	}
 
@@ -254,6 +258,11 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 
 // deleteArtifact
 func (d *ModelDelegate) deleteArtifact() (err error) {
+	// skip
+	if d._skip() {
+		return nil
+	}
+
 	if d.doc.GetId().IsZero() {
 		return trace.TraceError(errors.ErrMissingValue)
 	}
@@ -273,6 +282,11 @@ func (d *ModelDelegate) deleteArtifact() (err error) {
 
 // updateTags
 func (d *ModelDelegate) updateTags() (err error) {
+	// skip
+	if d._skip() {
+		return nil
+	}
+
 	// validate id
 	if d.doc.GetId().IsZero() {
 		return trace.TraceError(errors.ErrMissingValue)
@@ -308,4 +322,16 @@ func (d *ModelDelegate) updateTags() (err error) {
 	// update tag ids
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	return col.ReplaceId(d.a.GetId(), d.a)
+}
+
+func (d *ModelDelegate) _skip() (ok bool) {
+	switch d.id {
+	case
+		interfaces.ModelIdArtifact,
+		interfaces.ModelIdTaskQueue,
+		interfaces.ModelIdTaskStat:
+		return true
+	default:
+		return false
+	}
 }

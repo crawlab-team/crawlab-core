@@ -6,15 +6,18 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"net/http"
 	"sync"
 )
 
-var TaskController ListActionController
+var TaskController taskController
 
 var TaskActions = []Action{
 	{
@@ -34,10 +37,26 @@ var TaskActions = []Action{
 	},
 }
 
+type taskController struct {
+	ListActionControllerDelegate
+	d   ListActionControllerDelegate
+	ctx *taskContext
+}
+
+func (ctr *taskController) GetList(c *gin.Context) {
+	withStats := c.Query("stats")
+	if withStats == "" {
+		ctr.d.GetList(c)
+		return
+	}
+	ctr.ctx.getListWithStats(c)
+}
+
 type taskContext struct {
-	modelSvc service.ModelService
-	adminSvc interfaces.SpiderAdminService
-	l        clog.Driver
+	modelSvc     service.ModelService
+	modelTaskSvc interfaces.ModelBaseService
+	adminSvc     interfaces.SpiderAdminService
+	l            clog.Driver
 
 	// internals
 	drivers sync.Map
@@ -148,6 +167,79 @@ func (ctx *taskContext) getLogs(c *gin.Context) {
 	HandleSuccessWithListData(c, logs, total)
 }
 
+func (ctx *taskContext) getListWithStats(c *gin.Context) {
+	// params
+	pagination := MustGetPagination(c)
+	query := MustGetFilterQuery(c)
+
+	// get list
+	list, err := ctx.modelTaskSvc.GetList(query, &mongo.FindOptions{
+		Sort:  bson.M{"_id": -1},
+		Skip:  pagination.Size * (pagination.Page - 1),
+		Limit: pagination.Size,
+	})
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			HandleErrorNotFound(c, err)
+		} else {
+			HandleErrorInternalServerError(c, err)
+		}
+		return
+	}
+
+	// check empty list
+	if len(list.Values()) == 0 {
+		HandleSuccessWithListData(c, nil, 0)
+		return
+	}
+
+	// task ids
+	var ids []primitive.ObjectID
+	for _, d := range list.Values() {
+		t := d.(interfaces.Model)
+		ids = append(ids, t.GetId())
+	}
+
+	// total count
+	total, err := ctx.modelTaskSvc.Count(query)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// task stat list
+	query = bson.M{
+		"_id": bson.M{
+			"$in": ids,
+		},
+	}
+	stats, err := ctx.modelSvc.GetTaskStatList(query, nil)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// cache task stat list to dict
+	dict := map[primitive.ObjectID]*models.TaskStat{}
+	for _, s := range stats {
+		dict[s.GetId()] = &s
+	}
+
+	// iterate task list again
+	var data []interface{}
+	for _, d := range list.Values() {
+		t := d.(*models.Task)
+		s, ok := dict[t.GetId()]
+		if ok {
+			t.Stat = s
+		}
+		data = append(data, t)
+	}
+
+	// response
+	HandleSuccessWithListData(c, data, total)
+}
+
 func (ctx *taskContext) _getLogDriver(id primitive.ObjectID) (l clog.Driver, err error) {
 	// attempt to get from cache
 	res, ok := ctx.drivers.Load(id)
@@ -191,5 +283,25 @@ func newTaskContext() *taskContext {
 		panic(err)
 	}
 
+	// model task service
+	ctx.modelTaskSvc = ctx.modelSvc.NewBaseService(interfaces.ModelIdTask)
+
 	return ctx
+}
+
+func newTaskController() taskController {
+	modelSvc, err := service.GetService()
+	if err != nil {
+		panic(err)
+	}
+
+	ctr := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.NewBaseService(interfaces.ModelIdTask), TaskActions)
+	d := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.NewBaseService(interfaces.ModelIdTask), TaskActions)
+	ctx := newTaskContext()
+
+	return taskController{
+		ListActionControllerDelegate: *ctr,
+		d:                            *d,
+		ctx:                          ctx,
+	}
 }

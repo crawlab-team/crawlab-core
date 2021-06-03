@@ -64,7 +64,8 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 
 		// task stat
 		ts := &models.TaskStat{
-			Id: t.GetId(),
+			Id:       t.GetId(),
+			CreateTs: time.Now(),
 		}
 
 		// enqueue task
