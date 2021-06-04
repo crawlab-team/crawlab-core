@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/entity"
@@ -26,22 +25,6 @@ type TaskServer struct {
 
 	// internals
 	server interfaces.GrpcServer
-}
-
-func (svr TaskServer) GetTaskInfo(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	panic("implement me")
-}
-
-func (svr TaskServer) SaveItem(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	panic("implement me")
-}
-
-func (svr TaskServer) SaveItems(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	panic("implement me")
-}
-
-func (svr TaskServer) FetchTask(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	panic("implement me")
 }
 
 func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err error) {
