@@ -264,7 +264,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	if err := c.Provide(scheduler.ProvideGetTaskSchedulerService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(handler.ProvideTaskHandlerService(svc.cfgPath)); err != nil {
+	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
 	if err := c.Invoke(func(

@@ -140,13 +140,17 @@ func GetTaskStatsService(path string, opts ...Option) (svr interfaces.TaskStatsS
 	}
 	opts = append(opts, WithConfigPath(path))
 	res, ok := store.Load(path)
-	if !ok {
-		return NewTaskStatsService(opts...)
+	if ok {
+		svr, ok = res.(interfaces.TaskStatsService)
+		if ok {
+			return svr, nil
+		}
 	}
-	svr, ok = res.(interfaces.TaskStatsService)
-	if !ok {
-		return NewTaskStatsService(opts...)
+	svr, err = NewTaskStatsService(opts...)
+	if err != nil {
+		return nil, err
 	}
+	store.Store(path, svr)
 	return svr, nil
 }
 

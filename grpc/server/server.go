@@ -260,13 +260,17 @@ func GetServer(path string, opts ...Option) (svr interfaces.GrpcServer, err erro
 	}
 	opts = append(opts, WithConfigPath(path))
 	res, ok := serverStore.Load(path)
-	if !ok {
-		return NewServer(opts...)
+	if ok {
+		svr, ok = res.(interfaces.GrpcServer)
+		if ok {
+			return svr, nil
+		}
 	}
-	svr, ok = res.(interfaces.GrpcServer)
-	if !ok {
-		return NewServer(opts...)
+	svr, err = NewServer(opts...)
+	if err != nil {
+		return nil, err
 	}
+	serverStore.Store(path, svr)
 	return svr, nil
 }
 

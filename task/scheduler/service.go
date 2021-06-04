@@ -354,7 +354,7 @@ func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerServi
 	if err := c.Provide(server.ProvideGetServer(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(handler.ProvideTaskHandlerService(svc.GetConfigPath())); err != nil {
+	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(
@@ -389,13 +389,17 @@ func GetTaskSchedulerService(path string, opts ...Option) (svr interfaces.TaskSc
 	}
 	opts = append(opts, WithConfigPath(path))
 	res, ok := store.Load(path)
-	if !ok {
-		return NewTaskSchedulerService(opts...)
+	if ok {
+		svr, ok = res.(interfaces.TaskSchedulerService)
+		if ok {
+			return svr, nil
+		}
 	}
-	svr, ok = res.(interfaces.TaskSchedulerService)
-	if !ok {
-		return NewTaskSchedulerService(opts...)
+	svr, err = NewTaskSchedulerService(opts...)
+	if err != nil {
+		return nil, err
 	}
+	store.Store(path, svr)
 	return svr, nil
 }
 

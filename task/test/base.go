@@ -150,7 +150,7 @@ func main() {
 	if err := c.Provide(scheduler.ProvideTaskSchedulerService(ntest.T.MasterSvc.GetConfigPath(), scheduler.WithInterval(5*time.Second))); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(handler.ProvideTaskHandlerService(
+	if err := c.Provide(handler.ProvideGetTaskHandlerService(
 		ntest.T.WorkerSvc.GetConfigPath(),
 		handler.WithReportInterval(t.ReportInterval),
 		handler.WithMaxRunners(t.MaxRunners),

@@ -36,11 +36,10 @@ type Service struct {
 	reportInterval    time.Duration
 
 	// internals variables
-	stopped      bool
-	mu           sync.Mutex
-	runnersCount int      // number of task runners
-	runners      sync.Map // pool of task runners started
-	syncLocks    sync.Map // files sync locks map of task runners
+	stopped   bool
+	mu        sync.Mutex
+	runners   sync.Map // pool of task runners started
+	syncLocks sync.Map // files sync locks map of task runners
 }
 
 func (svc *Service) Start() {
@@ -49,7 +48,7 @@ func (svc *Service) Start() {
 
 func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
 	// validate if there are available runners
-	if svc.runnersCount >= svc.maxRunners {
+	if svc.getRunnerCount() >= svc.maxRunners {
 		return trace.TraceError(errors.ErrorTaskNoAvailableRunners)
 	}
 
@@ -97,8 +96,6 @@ func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
 func (svc *Service) Reset() {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
-	svc.runners = sync.Map{}
-	svc.runnersCount = 0
 }
 
 func (svc *Service) Cancel(taskId primitive.ObjectID) (err error) {
@@ -181,7 +178,18 @@ func (svc *Service) GetModelTaskStatService() (modelTaskSvc interfaces.GrpcClien
 	return svc.clientModelTaskStatSvc
 }
 
+func (svc *Service) getRunnerCount() (n int) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+	svc.runners.Range(func(key, value interface{}) bool {
+		n++
+		return true
+	})
+	return n
+}
+
 func (svc *Service) getRunner(taskId primitive.ObjectID) (r interfaces.TaskRunner, err error) {
+	//r, ok := svc.runners[taskId]
 	v, ok := svc.runners.Load(taskId)
 	if !ok {
 		return nil, errors.ErrorTaskNotExists
@@ -198,21 +206,13 @@ func (svc *Service) getRunner(taskId primitive.ObjectID) (r interfaces.TaskRunne
 func (svc *Service) addRunner(taskId primitive.ObjectID, r interfaces.TaskRunner) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
-
 	svc.runners.Store(taskId, r)
-	if svc.runnersCount < svc.maxRunners {
-		svc.runnersCount++
-	}
 }
 
 func (svc *Service) deleteRunner(taskId primitive.ObjectID) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
-
 	svc.runners.Delete(taskId)
-	if svc.runnersCount > 0 {
-		svc.runnersCount--
-	}
 }
 
 func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
@@ -261,7 +261,7 @@ func (svc *Service) reportStatus() (err error) {
 	}
 
 	// update node
-	ar := svc.maxRunners - svc.runnersCount
+	ar := svc.maxRunners - svc.getRunnerCount()
 	n.SetAvailableRunners(ar)
 	n.SetMaxRunners(svc.maxRunners)
 
@@ -292,7 +292,6 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		exitWatchDuration: 60 * time.Second,
 		reportInterval:    60 * time.Second,
 		mu:                sync.Mutex{},
-		runnersCount:      0,
 		runners:           sync.Map{},
 		syncLocks:         sync.Map{},
 	}
@@ -351,7 +350,34 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 func ProvideTaskHandlerService(path string, opts ...Option) func() (svc interfaces.TaskHandlerService, err error) {
 	// config path
 	opts = append(opts, WithConfigPath(path))
+	return func() (svc interfaces.TaskHandlerService, err error) {
+		return NewTaskHandlerService(opts...)
+	}
+}
 
+var store = sync.Map{}
+
+func GetTaskHandlerService(path string, opts ...Option) (svr interfaces.TaskHandlerService, err error) {
+	if path == "" {
+		path = config.DefaultConfigPath
+	}
+	opts = append(opts, WithConfigPath(path))
+	res, ok := store.Load(path)
+	if ok {
+		svr, ok = res.(interfaces.TaskHandlerService)
+		if ok {
+			return svr, nil
+		}
+	}
+	svr, err = NewTaskHandlerService(opts...)
+	if err != nil {
+		return nil, err
+	}
+	store.Store(path, svr)
+	return svr, nil
+}
+
+func ProvideGetTaskHandlerService(path string, opts ...Option) func() (svr interfaces.TaskHandlerService, err error) {
 	// max runners
 	maxRunners := viper.GetInt("task.handler.maxRunners")
 	if maxRunners > 0 {
@@ -363,8 +389,7 @@ func ProvideTaskHandlerService(path string, opts ...Option) func() (svc interfac
 	if reportIntervalSeconds > 0 {
 		opts = append(opts, WithReportInterval(time.Duration(reportIntervalSeconds)*time.Second))
 	}
-
-	return func() (svc interfaces.TaskHandlerService, err error) {
-		return NewTaskHandlerService(opts...)
+	return func() (svr interfaces.TaskHandlerService, err error) {
+		return GetTaskHandlerService(path, opts...)
 	}
 }

@@ -203,7 +203,7 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	if err := c.Provide(client.ProvideGetClient(svc.cfgPath, clientOpts...)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(handler.ProvideTaskHandlerService(svc.cfgPath)); err != nil {
+	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
 	if err := c.Invoke(func(cfgSvc interfaces.NodeConfigService, client interfaces.GrpcClient, taskHandlerSvc interfaces.TaskHandlerService) {
