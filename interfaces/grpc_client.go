@@ -13,6 +13,7 @@ type GrpcClient interface {
 	GetModelBaseServiceClient() grpc.ModelBaseServiceClient
 	GetNodeClient() grpc.NodeServiceClient
 	GetTaskClient() grpc.TaskServiceClient
+	GetPluginClient() grpc.PluginServiceClient
 	SetAddress(Address)
 	SetTimeout(time.Duration)
 	Context() (context.Context, context.CancelFunc)

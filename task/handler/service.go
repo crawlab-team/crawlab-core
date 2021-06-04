@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/apex/log"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -359,7 +360,7 @@ var store = sync.Map{}
 
 func GetTaskHandlerService(path string, opts ...Option) (svr interfaces.TaskHandlerService, err error) {
 	if path == "" {
-		path = config.DefaultConfigPath
+		path = config2.DefaultConfigPath
 	}
 	opts = append(opts, WithConfigPath(path))
 	res, ok := store.Load(path)

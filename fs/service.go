@@ -2,6 +2,7 @@ package fs
 
 import (
 	"fmt"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -590,7 +591,7 @@ func (svc *Service) newCrudOptions() (o *interfaces.ServiceCrudOptions) {
 func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	// service
 	svc := &Service{
-		cfgPath:       config.DefaultConfigPath,
+		cfgPath:       config2.DefaultConfigPath,
 		fsPath:        "",
 		workspacePath: DefaultWorkspacePath,
 		//repoPath:      DefaultRepoPath,

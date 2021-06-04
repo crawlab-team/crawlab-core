@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/apex/log"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -179,7 +180,7 @@ func (svc *WorkerService) reportStatus() {
 
 func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	svc := &WorkerService{
-		cfgPath:           config.DefaultConfigPath,
+		cfgPath:           config2.DefaultConfigPath,
 		heartbeatInterval: 15 * time.Second,
 		n:                 &models.Node{},
 	}

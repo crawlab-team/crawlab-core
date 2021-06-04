@@ -1,9 +1,9 @@
 package client
 
 import (
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/node/config"
 	"go.uber.org/dig"
 )
 
@@ -33,7 +33,7 @@ func (d *ServiceDelegate) NewBaseServiceDelegate(id interfaces.ModelId) (svc int
 func NewServiceDelegate(opts ...ModelServiceDelegateOption) (svc2 interfaces.GrpcClientModelService, err error) {
 	// service delegate
 	svc := &ServiceDelegate{
-		cfgPath: config.DefaultConfigPath,
+		cfgPath: config2.DefaultConfigPath,
 	}
 
 	// apply options

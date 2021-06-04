@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -40,6 +41,7 @@ type Client struct {
 	ModelBaseServiceClient grpc2.ModelBaseServiceClient
 	NodeClient             grpc2.NodeServiceClient
 	TaskClient             grpc2.TaskServiceClient
+	PluginClient           grpc2.PluginServiceClient
 }
 
 func (c *Client) Init() (err error) {
@@ -106,6 +108,9 @@ func (c *Client) Register() (err error) {
 	// task
 	c.TaskClient = grpc2.NewTaskServiceClient(c.conn)
 
+	// plugin
+	c.PluginClient = grpc2.NewPluginServiceClient(c.conn)
+
 	// log
 	log.Infof("grpc client registered client services")
 
@@ -126,6 +131,10 @@ func (c *Client) GetNodeClient() grpc2.NodeServiceClient {
 
 func (c *Client) GetTaskClient() grpc2.TaskServiceClient {
 	return c.TaskClient
+}
+
+func (c *Client) GetPluginClient() grpc2.PluginServiceClient {
+	return c.PluginClient
 }
 
 func (c *Client) SetAddress(address interfaces.Address) {
@@ -308,7 +317,7 @@ func (c *Client) needRestart() bool {
 func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 	// client
 	client := &Client{
-		cfgPath: config.DefaultConfigPath,
+		cfgPath: config2.DefaultConfigPath,
 		address: entity.NewAddress(&entity.AddressOptions{
 			Host: constants.DefaultGrpcClientRemoteHost,
 			Port: constants.DefaultGrpcClientRemotePort,
@@ -343,7 +352,7 @@ func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 
 func ProvideClient(path string, opts ...Option) func() (res interfaces.GrpcClient, err error) {
 	if path == "" {
-		path = config.DefaultConfigPath
+		path = config2.DefaultConfigPath
 	}
 	opts = append(opts, WithConfigPath(path))
 	return func() (res interfaces.GrpcClient, err error) {

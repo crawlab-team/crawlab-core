@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"github.com/apex/log"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -181,7 +182,7 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 
 	// server
 	svr := &Server{
-		cfgPath: config.DefaultConfigPath,
+		cfgPath: config2.DefaultConfigPath,
 		address: entity.NewAddress(&entity.AddressOptions{
 			Host: constants.DefaultGrpcServerHost,
 			Port: constants.DefaultGrpcServerPort,
@@ -244,7 +245,7 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 
 func ProvideServer(path string, opts ...Option) func() (res interfaces.GrpcServer, err error) {
 	if path == "" {
-		path = config.DefaultConfigPath
+		path = config2.DefaultConfigPath
 	}
 	opts = append(opts, WithConfigPath(path))
 	return func() (res interfaces.GrpcServer, err error) {
@@ -256,7 +257,7 @@ var serverStore = sync.Map{}
 
 func GetServer(path string, opts ...Option) (svr interfaces.GrpcServer, err error) {
 	if path == "" {
-		path = config.DefaultConfigPath
+		path = config2.DefaultConfigPath
 	}
 	opts = append(opts, WithConfigPath(path))
 	res, ok := serverStore.Load(path)

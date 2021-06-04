@@ -60,6 +60,8 @@ func (b *ListBinder) Bind() (list arraylist.List, err error) {
 		return b.Process(m.TaskQueueItems)
 	case interfaces.ModelIdTaskStat:
 		return b.Process(m.TaskStats)
+	case interfaces.ModelIdPlugin:
+		return b.Process(m.Plugins)
 	default:
 		return list, errors.ErrorModelInvalidModelId
 	}

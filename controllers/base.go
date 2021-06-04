@@ -16,6 +16,7 @@ const (
 	ControllerIdTag
 	ControllerIdLogin
 	ControllerIdColor
+	ControllerIdPlugin
 )
 
 type ControllerId int

@@ -57,6 +57,8 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 		return b.Process(&m.TaskQueueItem)
 	case interfaces.ModelIdTaskStat:
 		return b.Process(&m.TaskStat)
+	case interfaces.ModelIdPlugin:
+		return b.Process(&m.Plugin)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

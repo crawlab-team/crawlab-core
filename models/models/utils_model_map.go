@@ -15,6 +15,7 @@ type ModelMap struct {
 	Variable      Variable
 	TaskQueueItem TaskQueueItem
 	TaskStat      TaskStat
+	Plugin        Plugin
 }
 
 type ModelListMap struct {
@@ -32,6 +33,7 @@ type ModelListMap struct {
 	Variables      []Variable
 	TaskQueueItems []TaskQueueItem
 	TaskStats      []TaskStat
+	Plugins        []Plugin
 }
 
 func NewModelMap() (m *ModelMap) {

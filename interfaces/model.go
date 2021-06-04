@@ -26,6 +26,7 @@ const (
 	ModelIdVariable
 	ModelIdTaskQueue
 	ModelIdTaskStat
+	ModelIdPlugin
 )
 
 const (
@@ -43,6 +44,7 @@ const (
 	ModelColNameVariable  = "variables"
 	ModelColNameTaskQueue = "task_queue"
 	ModelColNameTaskStat  = "task_stats"
+	ModelColNamePlugin    = "plugins"
 )
 
 type ModelWithTags interface {

@@ -2,12 +2,12 @@ package client
 
 import (
 	"encoding/json"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
-	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/go-trace"
 )
 
@@ -41,6 +41,8 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 		return newModelDelegate(interfaces.ModelIdTaskQueue, doc, opts...)
 	case *models.TaskStat:
 		return newModelDelegate(interfaces.ModelIdTaskStat, doc, opts...)
+	case *models.Plugin:
+		return newModelDelegate(interfaces.ModelIdPlugin, doc, opts...)
 	default:
 		_ = trace.TraceError(errors.ErrorModelInvalidType)
 		return nil
@@ -54,7 +56,7 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...Model
 	d := &ModelDelegate{
 		id:      id,
 		doc:     doc,
-		cfgPath: config.DefaultConfigPath,
+		cfgPath: config2.DefaultConfigPath,
 	}
 
 	// apply options

@@ -1,6 +1,7 @@
 package admin
 
 import (
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -152,7 +153,7 @@ func (svc *Service) isMultiTask(opts *interfaces.SpiderRunOptions) (res bool) {
 
 func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, err error) {
 	svc := &Service{
-		cfgPath: config.DefaultConfigPath,
+		cfgPath: config2.DefaultConfigPath,
 	}
 
 	// apply options

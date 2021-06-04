@@ -59,5 +59,9 @@ type ModelService interface {
 	GetTaskStatById(id primitive.ObjectID) (res *models.TaskStat, err error)
 	GetTaskStat(query bson.M, opts *mongo.FindOptions) (res *models.TaskStat, err error)
 	GetTaskStatList(query bson.M, opts *mongo.FindOptions) (res []models.TaskStat, err error)
+	GetPluginById(id primitive.ObjectID) (res *models.Plugin, err error)
+	GetPlugin(query bson.M, opts *mongo.FindOptions) (res *models.Plugin, err error)
+	GetPluginByName(name string) (res *models.Plugin, err error)
+	GetPluginList(query bson.M, opts *mongo.FindOptions) (res []models.Plugin, err error)
 	DropAll() (err error)
 }

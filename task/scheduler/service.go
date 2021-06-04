@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
@@ -385,7 +386,7 @@ var store = sync.Map{}
 
 func GetTaskSchedulerService(path string, opts ...Option) (svr interfaces.TaskSchedulerService, err error) {
 	if path == "" {
-		path = config.DefaultConfigPath
+		path = config2.DefaultConfigPath
 	}
 	opts = append(opts, WithConfigPath(path))
 	res, ok := store.Load(path)

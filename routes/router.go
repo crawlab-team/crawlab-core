@@ -109,5 +109,8 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// color
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/colors", controllers.ColorController)
 
+	// plugin
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/plugins", controllers.PluginController)
+
 	return nil
 }

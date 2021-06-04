@@ -2,6 +2,7 @@ package stats
 
 import (
 	"github.com/apex/log"
+	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/node/config"
@@ -136,7 +137,7 @@ var store = sync.Map{}
 
 func GetTaskStatsService(path string, opts ...Option) (svr interfaces.TaskStatsService, err error) {
 	if path == "" {
-		path = config.DefaultConfigPath
+		path = config2.DefaultConfigPath
 	}
 	opts = append(opts, WithConfigPath(path))
 	res, ok := store.Load(path)

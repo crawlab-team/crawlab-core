@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -84,7 +85,7 @@ func NewNodeConfigService(opts ...Option) (svc2 interfaces.NodeConfigService, er
 	// config service
 	svc := &Service{
 		cfg:  cfg,
-		path: DefaultConfigPath,
+		path: config.DefaultConfigPath,
 	}
 
 	// apply options
@@ -102,7 +103,7 @@ func NewNodeConfigService(opts ...Option) (svc2 interfaces.NodeConfigService, er
 
 func ProvideConfigService(path string) func() (interfaces.NodeConfigService, error) {
 	if path == "" {
-		path = DefaultConfigPath
+		path = config.DefaultConfigPath
 	}
 	return func() (interfaces.NodeConfigService, error) {
 		return NewNodeConfigService(WithConfigPath(path))
