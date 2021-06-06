@@ -7,16 +7,30 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
 )
 
 // GetFilter Get entity.Filter from gin.Context
 func GetFilter(c *gin.Context) (f *entity.Filter, err error) {
+	// bind
 	condStr := c.Query(constants.FilterQueryFieldConditions)
 	var conditions []entity.Condition
 	if err := json.Unmarshal([]byte(condStr), &conditions); err != nil {
 		return nil, err
 	}
+
+	// attempt to convert object id
+	for i, cond := range conditions {
+		switch cond.Value.(type) {
+		case string:
+			id, err := primitive.ObjectIDFromHex(cond.Value.(string))
+			if err == nil {
+				conditions[i].Value = id
+			}
+		}
+	}
+
 	return &entity.Filter{
 		IsOr:       false,
 		Conditions: conditions,

@@ -11,7 +11,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
-	"github.com/crawlab-team/crawlab-core/plugin"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -20,7 +19,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
-	"path"
 	"time"
 )
 
@@ -31,7 +29,7 @@ type MasterService struct {
 	server       interfaces.GrpcServer
 	schedulerSvc interfaces.TaskSchedulerService
 	handlerSvc   interfaces.TaskHandlerService
-	pluginSvc    interfaces.PluginService
+	//pluginSvc    interfaces.PluginService
 
 	// settings
 	cfgPath         string
@@ -65,8 +63,8 @@ func (svc *MasterService) Start() {
 	// start task scheduler
 	go svc.schedulerSvc.Start()
 
-	// start plugin service
-	go svc.pluginSvc.Start()
+	//// start plugin service
+	//go svc.pluginSvc.Start()
 
 	// wait for quit signal
 	svc.Wait()
@@ -274,23 +272,23 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(plugin.ProvideGetPluginService(path.Join(svc.cfgPath, plugin.DefaultPluginDirName))); err != nil {
-		return nil, err
-	}
+	//if err := c.Provide(plugin.ProvideGetPluginService(path.Join(svc.cfgPath, plugin.DefaultPluginDirName))); err != nil {
+	//	return nil, err
+	//}
 	if err := c.Invoke(func(
 		cfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
 		server interfaces.GrpcServer,
 		schedulerSvc interfaces.TaskSchedulerService,
 		handlerSvc interfaces.TaskHandlerService,
-		pluginSvc interfaces.PluginService,
+		//pluginSvc interfaces.PluginService,
 	) {
 		svc.cfgSvc = cfgSvc
 		svc.modelSvc = modelSvc
 		svc.server = server
 		svc.schedulerSvc = schedulerSvc
 		svc.handlerSvc = handlerSvc
-		svc.pluginSvc = pluginSvc
+		//svc.pluginSvc = pluginSvc
 	}); err != nil {
 		return nil, err
 	}

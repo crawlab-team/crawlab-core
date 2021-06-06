@@ -86,7 +86,7 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc := NewRouterService(app)
 
 	// node
-	svc.RegisterListControllerToGroup(groups.AuthGroup, "/nodes", controllers.NodeController)
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/nodes", &controllers.NodeController)
 
 	// project
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/projects", controllers.ProjectController)

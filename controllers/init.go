@@ -11,7 +11,7 @@ func InitControllers() (err error) {
 		return err
 	}
 
-	NodeController = NewListControllerDelegate(ControllerIdNode, modelSvc.NewBaseService(interfaces.ModelIdNode))
+	NodeController = newNodeController()
 	ProjectController = NewListControllerDelegate(ControllerIdProject, modelSvc.NewBaseService(interfaces.ModelIdProject))
 	SpiderController = NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.NewBaseService(interfaces.ModelIdSpider), SpiderActions)
 	TaskController = newTaskController()
