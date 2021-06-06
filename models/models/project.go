@@ -10,6 +10,7 @@ type Project struct {
 	Name        string             `json:"name" bson:"name"`
 	Description string             `json:"description" bson:"description"`
 	Tags        []Tag              `json:"tags" bson:"-"`
+	Spiders     int                `json:"spiders" bson:"-"`
 }
 
 func (p *Project) GetId() (id primitive.ObjectID) {

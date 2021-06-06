@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
+	"github.com/emirpasic/gods/lists/arraylist"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -49,63 +50,11 @@ func (d *ListControllerDelegate) Delete(c *gin.Context) {
 }
 
 func (d *ListControllerDelegate) GetList(c *gin.Context) {
-	// get all if query field "all" is set true
-	all := MustGetFilterAll(c)
-	if all {
-		d.getAll(c)
-		return
-	}
-
-	// params
-	pagination := MustGetPagination(c)
-	query := MustGetFilterQuery(c)
-
-	// get list
-	list, err := d.svc.GetList(query, &mongo.FindOptions{
-		Sort:  bson.D{{"_id", -1}},
-		Skip:  pagination.Size * (pagination.Page - 1),
-		Limit: pagination.Size,
-	})
+	list, total, err := d.getList(c)
 	if err != nil {
-		if err == mongo2.ErrNoDocuments {
-			HandleErrorNotFound(c, err)
-		} else {
-			HandleErrorInternalServerError(c, err)
-		}
 		return
 	}
 	data := list.Values()
-
-	// total count
-	total, err := d.svc.Count(query)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
-	// response
-	HandleSuccessWithListData(c, data, total)
-}
-
-func (d *ListControllerDelegate) getAll(c *gin.Context) {
-	// get list
-	list, err := d.svc.GetList(nil, nil)
-	if err != nil {
-		if err == mongo2.ErrNoDocuments {
-			HandleErrorNotFound(c, err)
-		} else {
-			HandleErrorInternalServerError(c, err)
-		}
-		return
-	}
-	data := list.Values()
-
-	// total count
-	total, err := d.svc.Count(nil)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
 
 	// response
 	HandleSuccessWithListData(c, data, total)
@@ -182,6 +131,67 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 
 	// success
 	HandleSuccessWithData(c, docs)
+}
+
+func (d *ListControllerDelegate) getAll(c *gin.Context) {
+	// get list
+	list, err := d.svc.GetList(nil, nil)
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			HandleErrorNotFound(c, err)
+		} else {
+			HandleErrorInternalServerError(c, err)
+		}
+		return
+	}
+	data := list.Values()
+
+	// total count
+	total, err := d.svc.Count(nil)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// response
+	HandleSuccessWithListData(c, data, total)
+}
+
+func (d *ListControllerDelegate) getList(c *gin.Context) (list arraylist.List, total int, err error) {
+	// get all if query field "all" is set true
+	all := MustGetFilterAll(c)
+	if all {
+		d.getAll(c)
+		return
+	}
+
+	// params
+	pagination := MustGetPagination(c)
+	query := MustGetFilterQuery(c)
+
+	// get list
+	list, err = d.svc.GetList(query, &mongo.FindOptions{
+		Sort:  bson.D{{"_id", -1}},
+		Skip:  pagination.Size * (pagination.Page - 1),
+		Limit: pagination.Size,
+	})
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			HandleErrorNotFound(c, err)
+		} else {
+			HandleErrorInternalServerError(c, err)
+		}
+		return
+	}
+
+	// total count
+	total, err = d.svc.Count(query)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	return list, total, nil
 }
 
 func (d *ListControllerDelegate) DeleteList(c *gin.Context) {

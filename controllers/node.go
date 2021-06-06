@@ -16,7 +16,6 @@ var NodeController nodeController
 
 type nodeController struct {
 	ListControllerDelegate
-	d ListControllerDelegate
 }
 
 func (ctr *nodeController) Put(c *gin.Context) {
@@ -88,10 +87,8 @@ func newNodeController() nodeController {
 	}
 
 	ctr := NewListControllerDelegate(ControllerIdNode, modelSvc.NewBaseService(interfaces.ModelIdNode))
-	d := NewListControllerDelegate(ControllerIdNode, modelSvc.NewBaseService(interfaces.ModelIdNode))
 
 	return nodeController{
 		ListControllerDelegate: *ctr,
-		d:                      *d,
 	}
 }
