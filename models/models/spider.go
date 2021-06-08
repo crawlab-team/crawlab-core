@@ -11,20 +11,20 @@ type Env struct {
 }
 
 type Spider struct {
-	Id          primitive.ObjectID   `json:"_id" bson:"_id"`                   // 爬虫ID
-	Name        string               `json:"name" bson:"name"`                 // 爬虫名称（唯一）
-	DisplayName string               `json:"display_name" bson:"display_name"` // 爬虫显示名称
-	Type        string               `json:"type" bson:"type"`                 // 爬虫类别
-	Col         string               `json:"col" bson:"col"`                   // 结果储存位置
-	Envs        []Env                `json:"envs" bson:"envs"`                 // 环境变量
-	Description string               `json:"description" bson:"description"`   // 备注
-	ProjectId   primitive.ObjectID   `json:"project_id" bson:"project_id"`     // Project.Id
-	IsPublic    bool                 `json:"is_public" bson:"is_public"`       // 是否公开
-	Mode        string               `json:"mode" bson:"mode"`                 // default Task.Mode
-	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`         // default Task.NodeIds
-	NodeTags    []string             `json:"node_tags" bson:"node_tags"`       // default Task.NodeTags
-	Tags        []Tag                `json:"tags" bson:"-"`
+	Id          primitive.ObjectID   `json:"_id" bson:"_id"`                 // spider id
+	Name        string               `json:"name" bson:"name"`               // spider name
+	Type        string               `json:"type" bson:"type"`               // spider type
+	Col         string               `json:"col" bson:"col"`                 // data collection
+	Description string               `json:"description" bson:"description"` // description
+	ProjectId   primitive.ObjectID   `json:"project_id" bson:"project_id"`   // Project.Id
+	Mode        string               `json:"mode" bson:"mode"`               // default Task.Mode
+	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`       // default Task.NodeIds
+	NodeTags    []string             `json:"node_tags" bson:"node_tags"`     // default Task.NodeTags
+	Tags        []Tag                `json:"tags" bson:"-"`                  // tags
 	Stat        *SpiderStat          `json:"stat,omitempty" bson:"-"`
+
+	IsPublic bool  `json:"is_public" bson:"is_public"` // 是否公开
+	Envs     []Env `json:"envs" bson:"envs"`           // 环境变量
 
 	// 自定义爬虫
 	Cmd   string `json:"cmd" bson:"cmd"`     // 执行命令
