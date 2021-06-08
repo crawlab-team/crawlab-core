@@ -48,6 +48,8 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return interfaces.ModelColNameTaskStat, nil
 	case interfaces.ModelIdPlugin:
 		return interfaces.ModelColNamePlugin, nil
+	case interfaces.ModelIdSpiderStat:
+		return interfaces.ModelColNameSpiderStat, nil
 
 	// invalid
 	default:

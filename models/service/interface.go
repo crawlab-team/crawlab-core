@@ -63,5 +63,8 @@ type ModelService interface {
 	GetPlugin(query bson.M, opts *mongo.FindOptions) (res *models.Plugin, err error)
 	GetPluginByName(name string) (res *models.Plugin, err error)
 	GetPluginList(query bson.M, opts *mongo.FindOptions) (res []models.Plugin, err error)
+	GetSpiderStatById(id primitive.ObjectID) (res *models.SpiderStat, err error)
+	GetSpiderStat(query bson.M, opts *mongo.FindOptions) (res *models.SpiderStat, err error)
+	GetSpiderStatList(query bson.M, opts *mongo.FindOptions) (res []models.SpiderStat, err error)
 	DropAll() (err error)
 }

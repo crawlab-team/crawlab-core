@@ -24,6 +24,7 @@ type Spider struct {
 	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`         // default Task.NodeIds
 	NodeTags    []string             `json:"node_tags" bson:"node_tags"`       // default Task.NodeTags
 	Tags        []Tag                `json:"tags" bson:"-"`
+	Stat        *SpiderStat          `json:"stat,omitempty" bson:"-"`
 
 	// 自定义爬虫
 	Cmd   string `json:"cmd" bson:"cmd"`     // 执行命令

@@ -17,11 +17,13 @@ import (
 	"github.com/crawlab-team/crawlab-core/services/sys_exec"
 	"github.com/crawlab-team/crawlab-core/spider/fs"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/crawlab-team/go-trace"
 	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"os"
@@ -425,8 +427,11 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 			return err
 		}
 
-		// update task stat
-		go r._updateTaskStat(status)
+		// update stats
+		go func() {
+			r._updateTaskStat(status)
+			r._updateSpiderStat()
+		}()
 	}
 
 	// get task
@@ -499,6 +504,35 @@ func (r *Runner) _updateTaskStat(status string) {
 		ts.SetTotalDuration(ts.GetEndTs().Sub(ts.GetCreateTs()).Milliseconds())
 	}
 	if err := client.NewModelDelegate(ts, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
+		trace.PrintError(err)
+		return
+	}
+}
+
+func (r *Runner) _updateSpiderStat() {
+	// task stat
+	ts, err := r.svc.GetModelTaskStatService().GetTaskStatById(r.tid)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+
+	// update
+	update := bson.M{
+		"$set": bson.M{
+			"ltid": r.tid,
+		},
+		"$inc": bson.M{
+			"t":  1,                              // tasks
+			"r":  ts.GetResultCount(),            // results
+			"wd": ts.GetWaitDuration() / 1000,    // wait duration
+			"rd": ts.GetRuntimeDuration() / 1000, // runtime duration
+			"td": ts.GetTotalDuration() / 1000,   // total duration
+		},
+	}
+
+	// perform update
+	if err := mongo.GetMongoCol(interfaces.ModelColNameSpiderStat).UpdateId(r.s.GetId(), update); err != nil {
 		trace.PrintError(err)
 		return
 	}

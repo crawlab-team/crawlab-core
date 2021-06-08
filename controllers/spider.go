@@ -6,18 +6,25 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
+	"github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/spider/sync"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 )
 
-var SpiderController ListActionController
+var SpiderController *spiderController
 
 var SpiderActions = []Action{
 	{
@@ -65,11 +72,41 @@ var SpiderActions = []Action{
 		Path:        "/:id/run",
 		HandlerFunc: spiderCtx.run,
 	},
+	//{
+	//	Method:      http.MethodPost,
+	//	Path:        "/:id/clone",
+	//	HandlerFunc: spiderCtx.clone,
+	//},
+}
+
+type spiderController struct {
+	ListActionControllerDelegate
+	d   ListActionControllerDelegate
+	ctx *spiderContext
+}
+
+func (ctr *spiderController) Put(c *gin.Context) {
+	s, err := ctr.ctx._put(c)
+	if err != nil {
+		return
+	}
+	HandleSuccessWithData(c, s)
+}
+
+func (ctr *spiderController) GetList(c *gin.Context) {
+	withStats := c.Query("stats")
+	if withStats == "" {
+		ctr.d.GetList(c)
+		return
+	}
+	ctr.ctx.getListWithStats(c)
 }
 
 type spiderContext struct {
-	syncSvc  interfaces.SpiderSyncService
-	adminSvc interfaces.SpiderAdminService
+	modelSvc       service.ModelService
+	modelSpiderSvc interfaces.ModelBaseService
+	syncSvc        interfaces.SpiderSyncService
+	adminSvc       interfaces.SpiderAdminService
 }
 
 func (ctx *spiderContext) listDir(c *gin.Context) {
@@ -215,6 +252,139 @@ func (ctx *spiderContext) run(c *gin.Context) {
 	HandleSuccess(c)
 }
 
+func (ctx *spiderContext) getListWithStats(c *gin.Context) {
+	// params
+	pagination := MustGetPagination(c)
+	query := MustGetFilterQuery(c)
+
+	// get list
+	list, err := ctx.modelSpiderSvc.GetList(query, &mongo.FindOptions{
+		Sort:  bson.D{{"_id", -1}},
+		Skip:  pagination.Size * (pagination.Page - 1),
+		Limit: pagination.Size,
+	})
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			HandleErrorNotFound(c, err)
+		} else {
+			HandleErrorInternalServerError(c, err)
+		}
+		return
+	}
+
+	// check empty list
+	if len(list.Values()) == 0 {
+		HandleSuccessWithListData(c, nil, 0)
+		return
+	}
+
+	// ids
+	var ids []primitive.ObjectID
+	for _, d := range list.Values() {
+		s := d.(*models.Spider)
+		ids = append(ids, s.GetId())
+	}
+
+	// total count
+	total, err := ctx.modelSpiderSvc.Count(query)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// stat list
+	query = bson.M{
+		"_id": bson.M{
+			"$in": ids,
+		},
+	}
+	stats, err := ctx.modelSvc.GetSpiderStatList(query, nil)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// cache stat list to dict
+	dict := map[primitive.ObjectID]models.SpiderStat{}
+	var tids []primitive.ObjectID
+	for _, st := range stats {
+		if st.Tasks > 0 {
+			taskCount := int64(st.Tasks)
+			st.AverageWaitDuration = int64(math.Round(float64(st.WaitDuration) / float64(taskCount)))
+			st.AverageRuntimeDuration = int64(math.Round(float64(st.RuntimeDuration) / float64(taskCount)))
+			st.AverageTotalDuration = int64(math.Round(float64(st.TotalDuration) / float64(taskCount)))
+		}
+		dict[st.GetId()] = st
+
+		if !st.LastTaskId.IsZero() {
+			tids = append(tids, st.LastTaskId)
+		}
+	}
+
+	// task list and stats
+	var tasks []models.Task
+	dictTask := map[primitive.ObjectID]models.Task{}
+	dictTaskStat := map[primitive.ObjectID]models.TaskStat{}
+	if len(tids) > 0 {
+		// task list
+		queryTask := bson.M{
+			"_id": bson.M{
+				"$in": tids,
+			},
+		}
+		tasks, err = ctx.modelSvc.GetTaskList(queryTask, nil)
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+
+		// task stats list
+		taskStats, err := ctx.modelSvc.GetTaskStatList(queryTask, nil)
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+
+		// cache task stats to dict
+		for _, st := range taskStats {
+			dictTaskStat[st.GetId()] = st
+		}
+
+		// cache task list to dict
+		for _, t := range tasks {
+			st, ok := dictTaskStat[t.GetId()]
+			if ok {
+				t.Stat = &st
+			}
+			dictTask[t.GetSpiderId()] = t
+		}
+	}
+
+	// iterate list again
+	var data []interface{}
+	for _, d := range list.Values() {
+		s := d.(*models.Spider)
+
+		// spider stat
+		st, ok := dict[s.GetId()]
+		if ok {
+			s.Stat = &st
+
+			// last task
+			t, ok := dictTask[s.GetId()]
+			if ok {
+				s.Stat.LastTask = &t
+			}
+		}
+
+		// add to list
+		data = append(data, *s)
+	}
+
+	// response
+	HandleSuccessWithListData(c, data, total)
+}
+
 func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id primitive.ObjectID, payload entity.FileRequestPayload, fsSvc interfaces.SpiderFsService, err error) {
 	// id
 	id, err = primitive.ObjectIDFromHex(c.Param("id"))
@@ -285,6 +455,32 @@ func (ctx *spiderContext) _processActionRequest(c *gin.Context) (id primitive.Ob
 	return
 }
 
+func (ctx *spiderContext) _put(c *gin.Context) (s *models.Spider, err error) {
+	// bind
+	s = &models.Spider{}
+	if err := c.ShouldBindJSON(&s); err != nil {
+		HandleErrorBadRequest(c, err)
+		return nil, err
+	}
+
+	// add
+	if err := delegate2.NewModelDelegate(s).Add(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	// add stat
+	st := &models.SpiderStat{
+		Id: s.GetId(),
+	}
+	if err := delegate2.NewModelDelegate(st).Add(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	return s, nil
+}
+
 var spiderCtx = newSpiderContext()
 
 func newSpiderContext() *spiderContext {
@@ -293,6 +489,9 @@ func newSpiderContext() *spiderContext {
 
 	// dependency injection
 	c := dig.New()
+	if err := c.Provide(service.NewService); err != nil {
+		panic(err)
+	}
 	if err := c.Provide(sync.NewSpiderSyncService); err != nil {
 		panic(err)
 	}
@@ -300,14 +499,36 @@ func newSpiderContext() *spiderContext {
 		panic(err)
 	}
 	if err := c.Invoke(func(
+		modelSvc service.ModelService,
 		syncSvc interfaces.SpiderSyncService,
 		adminSvc interfaces.SpiderAdminService,
 	) {
+		ctx.modelSvc = modelSvc
 		ctx.syncSvc = syncSvc
 		ctx.adminSvc = adminSvc
 	}); err != nil {
 		panic(err)
 	}
 
+	// model spider service
+	ctx.modelSpiderSvc = ctx.modelSvc.NewBaseService(interfaces.ModelIdSpider)
+
 	return ctx
+}
+
+func newSpiderController() *spiderController {
+	modelSvc, err := service.GetService()
+	if err != nil {
+		panic(err)
+	}
+
+	ctr := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.NewBaseService(interfaces.ModelIdSpider), SpiderActions)
+	d := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.NewBaseService(interfaces.ModelIdSpider), SpiderActions)
+	ctx := newSpiderContext()
+
+	return &spiderController{
+		ListActionControllerDelegate: *ctr,
+		d:                            *d,
+		ctx:                          ctx,
+	}
 }

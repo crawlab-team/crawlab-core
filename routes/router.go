@@ -86,10 +86,10 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc := NewRouterService(app)
 
 	// node
-	svc.RegisterListControllerToGroup(groups.AuthGroup, "/nodes", &controllers.NodeController)
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/nodes", controllers.NodeController)
 
 	// project
-	svc.RegisterListControllerToGroup(groups.AuthGroup, "/projects", &controllers.ProjectController)
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/projects", controllers.ProjectController)
 
 	// user
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/users", controllers.UserController)
@@ -98,7 +98,7 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/spiders", controllers.SpiderController)
 
 	// task
-	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/tasks", &controllers.TaskController)
+	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/tasks", controllers.TaskController)
 
 	// tag
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tags", controllers.TagController)

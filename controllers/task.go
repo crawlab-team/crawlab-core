@@ -17,7 +17,7 @@ import (
 	"sync"
 )
 
-var TaskController taskController
+var TaskController *taskController
 
 var TaskActions = []Action{
 	{
@@ -195,7 +195,7 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 		return
 	}
 
-	// task ids
+	// ids
 	var ids []primitive.ObjectID
 	for _, d := range list.Values() {
 		t := d.(interfaces.Model)
@@ -209,7 +209,7 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 		return
 	}
 
-	// task stat list
+	// stat list
 	query = bson.M{
 		"_id": bson.M{
 			"$in": ids,
@@ -221,13 +221,13 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 		return
 	}
 
-	// cache task stat list to dict
+	// cache stat list to dict
 	dict := map[primitive.ObjectID]models.TaskStat{}
 	for _, s := range stats {
 		dict[s.GetId()] = s
 	}
 
-	// iterate task list again
+	// iterate list again
 	var data []interface{}
 	for _, d := range list.Values() {
 		t := d.(*models.Task)
@@ -291,7 +291,7 @@ func newTaskContext() *taskContext {
 	return ctx
 }
 
-func newTaskController() taskController {
+func newTaskController() *taskController {
 	modelSvc, err := service.GetService()
 	if err != nil {
 		panic(err)
@@ -301,7 +301,7 @@ func newTaskController() taskController {
 	d := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.NewBaseService(interfaces.ModelIdTask), TaskActions)
 	ctx := newTaskContext()
 
-	return taskController{
+	return &taskController{
 		ListActionControllerDelegate: *ctr,
 		d:                            *d,
 		ctx:                          ctx,

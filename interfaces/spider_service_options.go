@@ -3,11 +3,13 @@ package interfaces
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type SpiderRunOptions struct {
-	Mode       string
-	NodeIds    []primitive.ObjectID
-	Param      string
-	ScheduleId primitive.ObjectID
-	Priority   int
+	Mode       string               `json:"mode"`
+	NodeIds    []primitive.ObjectID `json:"node_ids"`
+	NodeTags   []string             `json:"node_tags"`
+	Cmd        string               `json:"cmd"`
+	Param      string               `json:"param"`
+	ScheduleId primitive.ObjectID   `json:"schedule_id"`
+	Priority   int                  `json:"priority"`
 }
 
 type SpiderCloneOptions struct {

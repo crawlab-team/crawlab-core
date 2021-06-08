@@ -16,6 +16,7 @@ type ModelMap struct {
 	TaskQueueItem TaskQueueItem
 	TaskStat      TaskStat
 	Plugin        Plugin
+	SpiderStat    SpiderStat
 }
 
 type ModelListMap struct {
@@ -34,6 +35,7 @@ type ModelListMap struct {
 	TaskQueueItems []TaskQueueItem
 	TaskStats      []TaskStat
 	Plugins        []Plugin
+	SpiderStats    []SpiderStat
 }
 
 func NewModelMap() (m *ModelMap) {

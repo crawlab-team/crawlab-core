@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var ProjectController projectController
+var ProjectController *projectController
 
 type projectController struct {
 	ListControllerDelegate
@@ -75,7 +75,7 @@ func (ctr *projectController) GetList(c *gin.Context) {
 	HandleSuccessWithListData(c, projects, total)
 }
 
-func newProjectController() projectController {
+func newProjectController() *projectController {
 	modelSvc, err := service.GetService()
 	if err != nil {
 		panic(err)
@@ -83,7 +83,7 @@ func newProjectController() projectController {
 
 	ctr := NewListControllerDelegate(ControllerIdProject, modelSvc.NewBaseService(interfaces.ModelIdProject))
 
-	return projectController{
+	return &projectController{
 		ListControllerDelegate: *ctr,
 	}
 }

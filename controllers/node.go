@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var NodeController nodeController
+var NodeController *nodeController
 
 type nodeController struct {
 	ListControllerDelegate
@@ -80,7 +80,7 @@ func (ctr *nodeController) _put(n *models.Node) (err error) {
 	return nil
 }
 
-func newNodeController() nodeController {
+func newNodeController() *nodeController {
 	modelSvc, err := service.GetService()
 	if err != nil {
 		panic(err)
@@ -88,7 +88,7 @@ func newNodeController() nodeController {
 
 	ctr := NewListControllerDelegate(ControllerIdNode, modelSvc.NewBaseService(interfaces.ModelIdNode))
 
-	return nodeController{
+	return &nodeController{
 		ListControllerDelegate: *ctr,
 	}
 }

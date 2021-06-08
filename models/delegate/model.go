@@ -44,6 +44,8 @@ func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 		return newModelDelegate(interfaces.ModelIdTaskStat, doc)
 	case *models.Plugin:
 		return newModelDelegate(interfaces.ModelIdPlugin, doc)
+	case *models.SpiderStat:
+		return newModelDelegate(interfaces.ModelIdSpiderStat, doc)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
@@ -331,7 +333,8 @@ func (d *ModelDelegate) _skip() (ok bool) {
 	case
 		interfaces.ModelIdArtifact,
 		interfaces.ModelIdTaskQueue,
-		interfaces.ModelIdTaskStat:
+		interfaces.ModelIdTaskStat,
+		interfaces.ModelIdSpiderStat:
 		return true
 	default:
 		return false
