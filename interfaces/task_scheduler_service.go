@@ -1,6 +1,7 @@
 package interfaces
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -14,6 +15,8 @@ type TaskSchedulerService interface {
 	Dequeue() (tasks []Task, err error)
 	// Schedule task to corresponding node
 	Schedule(tasks []Task) (err error)
+	// Cancel task to corresponding node
+	Cancel(id primitive.ObjectID) (err error)
 	// SetInterval set the interval or duration between two adjacent fetches
 	SetInterval(interval time.Duration)
 }

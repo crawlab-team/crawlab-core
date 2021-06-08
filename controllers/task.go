@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
+	"github.com/crawlab-team/crawlab-core/task/scheduler"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/gin-gonic/gin"
@@ -29,6 +32,11 @@ var TaskActions = []Action{
 		Method:      http.MethodPost,
 		Path:        "/:id/restart",
 		HandlerFunc: taskCtx.restart,
+	},
+	{
+		Method:      http.MethodPost,
+		Path:        "/:id/cancel",
+		HandlerFunc: taskCtx.cancel,
 	},
 	{
 		Method:      http.MethodGet,
@@ -56,6 +64,7 @@ type taskContext struct {
 	modelSvc     service.ModelService
 	modelTaskSvc interfaces.ModelBaseService
 	adminSvc     interfaces.SpiderAdminService
+	schedulerSvc interfaces.TaskSchedulerService
 	l            clog.Driver
 
 	// internals
@@ -125,6 +134,36 @@ func (ctx *taskContext) restart(c *gin.Context) {
 
 	// run
 	if err := ctx.adminSvc.Schedule(t.SpiderId, opts); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
+}
+
+func (ctx *taskContext) cancel(c *gin.Context) {
+	// id
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// task
+	t, err := ctx.modelSvc.GetTaskById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// validate
+	if !utils.IsCancellable(t.Status) {
+		HandleErrorInternalServerError(c, errors.ErrorControllerNotCancellable)
+		return
+	}
+
+	// run
+	if err := ctx.schedulerSvc.Cancel(id); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -278,9 +317,17 @@ func newTaskContext() *taskContext {
 	if err := c.Provide(admin.NewSpiderAdminService); err != nil {
 		panic(err)
 	}
-	if err := c.Invoke(func(modelSvc service.ModelService, adminSvc interfaces.SpiderAdminService) {
+	if err := c.Provide(scheduler.ProvideGetTaskSchedulerService(config.DefaultConfigPath)); err != nil {
+		panic(err)
+	}
+	if err := c.Invoke(func(
+		modelSvc service.ModelService,
+		adminSvc interfaces.SpiderAdminService,
+		schedulerSvc interfaces.TaskSchedulerService,
+	) {
 		ctx.modelSvc = modelSvc
 		ctx.adminSvc = adminSvc
+		ctx.schedulerSvc = schedulerSvc
 	}); err != nil {
 		panic(err)
 	}

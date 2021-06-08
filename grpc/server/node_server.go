@@ -112,7 +112,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 	return HandleSuccessWithData(node)
 }
 
-// SendHeartbeat from handler/worker to master
+// SendHeartbeat from worker to master
 func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	// find in db
 	node, err := svr.modelSvc.GetNodeByKey(req.NodeKey, nil)

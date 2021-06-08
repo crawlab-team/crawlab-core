@@ -211,6 +211,24 @@ func (svc *Service) Schedule(tasks []interfaces.Task) (err error) {
 	return e.Err()
 }
 
+func (svc *Service) Cancel(id primitive.ObjectID) (err error) {
+	if svc.nodeCfgSvc.IsMaster() {
+		// cancel task on master
+		return svc.handlerSvc.Cancel(id)
+	} else {
+		// send to cancel task on worker nodes
+		t, err := svc.modelSvc.GetTaskById(id)
+		if err != nil {
+			return err
+		}
+		n, err := svc.modelSvc.GetNodeById(t.GetNodeId())
+		if err != nil {
+			return err
+		}
+		return svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t)
+	}
+}
+
 func (svc *Service) SetInterval(interval time.Duration) {
 	svc.interval = interval
 }
