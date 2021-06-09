@@ -1,7 +1,6 @@
 package stats
 
 import (
-	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
@@ -36,7 +35,6 @@ func (svc *Service) InsertData(id primitive.ObjectID, records ...interface{}) (e
 }
 
 func (svc *Service) InsertLogs(id primitive.ObjectID, logs ...string) (err error) {
-	log.Infof(logs[0])
 	l, err := svc.getLogDriver(id)
 	if err != nil {
 		return err
@@ -82,6 +80,8 @@ func (svc *Service) getLogDriver(id primitive.ObjectID) (l clog.Driver, err erro
 		return nil, err
 	}
 	svc.drivers.Store(id, l)
+
+	// TODO: cleanup log driver
 
 	return l, nil
 }
