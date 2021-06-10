@@ -21,12 +21,12 @@ func convertTypeJob(d interface{}, err error) (res *models2.Job, err2 error) {
 }
 
 func (svc *Service) GetJobById(id primitive.ObjectID) (res *models2.Job, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdJob).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdJob).GetById(id)
 	return convertTypeJob(d, err)
 }
 
 func (svc *Service) GetJob(query bson.M, opts *mongo.FindOptions) (res *models2.Job, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdJob).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdJob).Get(query, opts)
 	return convertTypeJob(d, err)
 }
 

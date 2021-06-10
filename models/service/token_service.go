@@ -21,12 +21,12 @@ func convertTypeToken(d interface{}, err error) (res *models2.Token, err2 error)
 }
 
 func (svc *Service) GetTokenById(id primitive.ObjectID) (res *models2.Token, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdToken).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdToken).GetById(id)
 	return convertTypeToken(d, err)
 }
 
 func (svc *Service) GetToken(query bson.M, opts *mongo.FindOptions) (res *models2.Token, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdToken).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdToken).Get(query, opts)
 	return convertTypeToken(d, err)
 }
 

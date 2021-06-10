@@ -37,7 +37,7 @@ func TestSchedulerService_Dequeue(t *testing.T) {
 	require.Nil(t, err)
 	require.Len(t, tasks, 1)
 
-	count, err := T.modelSvc.NewBaseService(interfaces.ModelIdTaskQueue).Count(nil)
+	count, err := T.modelSvc.GetBaseService(interfaces.ModelIdTaskQueue).Count(nil)
 	require.Nil(t, err)
 	require.Equal(t, 0, count)
 
@@ -60,7 +60,7 @@ func TestSchedulerService_Dequeue_Max(t *testing.T) {
 	require.Nil(t, err)
 	require.Len(t, tasks, T.TestNode.GetAvailableRunners())
 
-	count, err := T.modelSvc.NewBaseService(interfaces.ModelIdTaskQueue).Count(nil)
+	count, err := T.modelSvc.GetBaseService(interfaces.ModelIdTaskQueue).Count(nil)
 	require.Nil(t, err)
 	require.Equal(t, 0, count)
 
@@ -85,7 +85,7 @@ func TestSchedulerService_Dequeue_Overflow(t *testing.T) {
 	require.Nil(t, err)
 	require.Len(t, tasks, T.TestNode.GetAvailableRunners())
 
-	count, err := T.modelSvc.NewBaseService(interfaces.ModelIdTaskQueue).Count(nil)
+	count, err := T.modelSvc.GetBaseService(interfaces.ModelIdTaskQueue).Count(nil)
 	require.Nil(t, err)
 	require.Equal(t, overflow, count)
 

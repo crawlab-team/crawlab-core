@@ -106,8 +106,8 @@ package test
 //		_ = m.DeleteDir("/logs")
 //		_ = m.DeleteDir("/spiders")
 //	}
-//	_ = modelSvc.NewBaseService(interfaces.ModelIdSpider).DeleteById(to.spiderId)
-//	_ = modelSvc.NewBaseService(interfaces.ModelIdTask).DeleteById(to.spiderId)
+//	_ = modelSvc.GetBaseService(interfaces.ModelIdSpider).DeleteById(to.spiderId)
+//	_ = modelSvc.GetBaseService(interfaces.ModelIdTask).DeleteById(to.spiderId)
 //	_ = os.RemoveAll("./tmp/repo")
 //}
 //

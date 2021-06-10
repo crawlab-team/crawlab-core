@@ -112,7 +112,7 @@ package service
 //}
 //
 //func NewTagService() (svc *tagService) {
-//	return &tagService{svc.NewBaseService(interfaces.ModelIdTag)}
+//	return &tagService{svc.GetBaseService(interfaces.ModelIdTag)}
 //}
 //
 //var TagService *tagService

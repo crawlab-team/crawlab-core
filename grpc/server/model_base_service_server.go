@@ -110,7 +110,7 @@ func (svr ModelBaseServiceServer) handleRequest(req *grpc.Request, handle handle
 	if err != nil {
 		return HandleError(err)
 	}
-	svc := svr.modelSvc.NewBaseService(msg.GetModelId())
+	svc := svr.modelSvc.GetBaseService(msg.GetModelId())
 	d, err := handle(params, svc)
 	if err != nil {
 		return HandleError(err)

@@ -24,12 +24,12 @@ func convertTypeTag(d interface{}, err error) (res *models2.Tag, err2 error) {
 }
 
 func (svc *Service) GetTagById(id primitive.ObjectID) (res *models2.Tag, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTag).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdTag).GetById(id)
 	return convertTypeTag(d, err)
 }
 
 func (svc *Service) GetTag(query bson.M, opts *mongo.FindOptions) (res *models2.Tag, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTag).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdTag).Get(query, opts)
 	return convertTypeTag(d, err)
 }
 
@@ -106,7 +106,7 @@ func (svc *Service) UpdateTags(colName string, query bson.M, tags []interfaces.T
 	fields := []string{"_tid"}
 
 	// update in db
-	if err := svc.NewBaseService(interfaces.ModelIdTag).Update(query, update, fields); err != nil {
+	if err := svc.GetBaseService(interfaces.ModelIdTag).Update(query, update, fields); err != nil {
 		return tagIds, trace.TraceError(err)
 	}
 

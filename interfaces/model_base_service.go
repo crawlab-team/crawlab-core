@@ -8,6 +8,10 @@ import (
 )
 
 type ModelBaseService interface {
+	GetModelId() (id ModelId)
+	SetModelId(id ModelId)
+	GetCol() (col *mongo.Col)
+	SetCol(col *mongo.Col)
 	GetById(id primitive.ObjectID) (res Model, err error)
 	Get(query bson.M, opts *mongo.FindOptions) (res Model, err error)
 	GetList(query bson.M, opts *mongo.FindOptions) (res arraylist.List, err error)
@@ -23,5 +27,5 @@ type ModelBaseService interface {
 }
 
 type ModelService interface {
-	NewBaseService(id ModelId) (svc ModelBaseService)
+	GetBaseService(id ModelId) (svc ModelBaseService)
 }

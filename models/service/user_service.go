@@ -21,12 +21,12 @@ func convertTypeUser(d interface{}, err error) (res *models2.User, err2 error) {
 }
 
 func (svc *Service) GetUserById(id primitive.ObjectID) (res *models2.User, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdUser).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdUser).GetById(id)
 	return convertTypeUser(d, err)
 }
 
 func (svc *Service) GetUser(query bson.M, opts *mongo.FindOptions) (res *models2.User, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdUser).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdUser).Get(query, opts)
 	return convertTypeUser(d, err)
 }
 

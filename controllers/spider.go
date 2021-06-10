@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -13,6 +14,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/spider/sync"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/go-trace"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -85,8 +87,20 @@ type spiderController struct {
 	ctx *spiderContext
 }
 
+func (ctr *spiderController) Get(c *gin.Context) {
+	ctr.ctx._get(c)
+}
+
 func (ctr *spiderController) Put(c *gin.Context) {
 	s, err := ctr.ctx._put(c)
+	if err != nil {
+		return
+	}
+	HandleSuccessWithData(c, s)
+}
+
+func (ctr *spiderController) Post(c *gin.Context) {
+	s, err := ctr.ctx._post(c)
 	if err != nil {
 		return
 	}
@@ -99,7 +113,7 @@ func (ctr *spiderController) GetList(c *gin.Context) {
 		ctr.d.GetList(c)
 		return
 	}
-	ctr.ctx.getListWithStats(c)
+	ctr.ctx._getListWithStats(c)
 }
 
 type spiderContext struct {
@@ -252,7 +266,101 @@ func (ctx *spiderContext) run(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-func (ctx *spiderContext) getListWithStats(c *gin.Context) {
+func (ctx *spiderContext) _get(c *gin.Context) {
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+	s, err := ctx.modelSvc.GetSpiderById(id)
+	if err == mongo2.ErrNoDocuments {
+		HandleErrorNotFound(c, err)
+		return
+	}
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// stat
+	s.Stat, err = ctx.modelSvc.GetSpiderStatById(s.GetId())
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// data collection
+	if !s.ColId.IsZero() {
+		col, err := ctx.modelSvc.GetDataCollectionById(s.ColId)
+		if err != nil {
+			if err != mongo2.ErrNoDocuments {
+				HandleErrorInternalServerError(c, err)
+				return
+			}
+		} else {
+			s.ColName = col.Name
+		}
+	}
+
+	HandleSuccessWithData(c, s)
+}
+
+func (ctx *spiderContext) _post(c *gin.Context) (s *models.Spider, err error) {
+	// bind
+	s = &models.Spider{}
+	if err := c.ShouldBindJSON(&s); err != nil {
+		HandleErrorBadRequest(c, err)
+		return nil, err
+	}
+
+	// upsert data collection
+	if err := ctx._upsertDataCollection(s); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	// save
+	if err := delegate2.NewModelDelegate(s).Save(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (ctx *spiderContext) _put(c *gin.Context) (s *models.Spider, err error) {
+	// bind
+	s = &models.Spider{}
+	if err := c.ShouldBindJSON(&s); err != nil {
+		HandleErrorBadRequest(c, err)
+		return nil, err
+	}
+
+	// upsert data collection
+	if err := ctx._upsertDataCollection(s); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	// add
+	if err := delegate2.NewModelDelegate(s).Add(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	// add stat
+	st := &models.SpiderStat{
+		Id: s.GetId(),
+	}
+	if err := delegate2.NewModelDelegate(st).Add(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (ctx *spiderContext) _getListWithStats(c *gin.Context) {
 	// params
 	pagination := MustGetPagination(c)
 	query := MustGetFilterQuery(c)
@@ -455,30 +563,36 @@ func (ctx *spiderContext) _processActionRequest(c *gin.Context) (id primitive.Ob
 	return
 }
 
-func (ctx *spiderContext) _put(c *gin.Context) (s *models.Spider, err error) {
-	// bind
-	s = &models.Spider{}
-	if err := c.ShouldBindJSON(&s); err != nil {
-		HandleErrorBadRequest(c, err)
-		return nil, err
+func (ctx *spiderContext) _upsertDataCollection(s *models.Spider) (err error) {
+	if s.ColId.IsZero() {
+		// validate
+		if s.ColName == "" {
+			return trace.TraceError(errors.ErrorControllerMissingRequestFields)
+		}
+		// no id
+		dc, err := ctx.modelSvc.GetDataCollectionByName(s.ColName, nil)
+		if err != nil {
+			if err == mongo2.ErrNoDocuments {
+				// not exists, add new
+				dc = &models.DataCollection{Name: s.ColName}
+				if err := delegate2.NewModelDelegate(dc).Add(); err != nil {
+					return err
+				}
+			} else {
+				// error
+				return err
+			}
+		}
+		s.ColId = dc.Id
+	} else {
+		// with id
+		dc, err := ctx.modelSvc.GetDataCollectionById(s.ColId)
+		if err != nil {
+			return err
+		}
+		s.ColId = dc.Id
 	}
-
-	// add
-	if err := delegate2.NewModelDelegate(s).Add(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return nil, err
-	}
-
-	// add stat
-	st := &models.SpiderStat{
-		Id: s.GetId(),
-	}
-	if err := delegate2.NewModelDelegate(st).Add(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return nil, err
-	}
-
-	return s, nil
+	return nil
 }
 
 var spiderCtx = newSpiderContext()
@@ -511,7 +625,7 @@ func newSpiderContext() *spiderContext {
 	}
 
 	// model spider service
-	ctx.modelSpiderSvc = ctx.modelSvc.NewBaseService(interfaces.ModelIdSpider)
+	ctx.modelSpiderSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdSpider)
 
 	return ctx
 }
@@ -522,8 +636,8 @@ func newSpiderController() *spiderController {
 		panic(err)
 	}
 
-	ctr := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.NewBaseService(interfaces.ModelIdSpider), SpiderActions)
-	d := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.NewBaseService(interfaces.ModelIdSpider), SpiderActions)
+	ctr := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.GetBaseService(interfaces.ModelIdSpider), SpiderActions)
+	d := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.GetBaseService(interfaces.ModelIdSpider), SpiderActions)
 	ctx := newSpiderContext()
 
 	return &spiderController{

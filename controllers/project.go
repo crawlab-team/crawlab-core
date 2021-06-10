@@ -81,7 +81,7 @@ func newProjectController() *projectController {
 		panic(err)
 	}
 
-	ctr := NewListControllerDelegate(ControllerIdProject, modelSvc.NewBaseService(interfaces.ModelIdProject))
+	ctr := NewListControllerDelegate(ControllerIdProject, modelSvc.GetBaseService(interfaces.ModelIdProject))
 
 	return &projectController{
 		ListControllerDelegate: *ctr,

@@ -28,25 +28,30 @@ const (
 	ModelIdTaskStat
 	ModelIdPlugin
 	ModelIdSpiderStat
+	ModelIdDataSource
+	ModelIdDataCollection
+	ModelIdResult
 )
 
 const (
-	ModelColNameArtifact   = "artifacts"
-	ModelColNameTag        = "tags"
-	ModelColNameNode       = "nodes"
-	ModelColNameProject    = "projects"
-	ModelColNameSpider     = "spiders"
-	ModelColNameTask       = "tasks"
-	ModelColNameJob        = "jobs"
-	ModelColNameSchedule   = "schedules"
-	ModelColNameUser       = "users"
-	ModelColNameSetting    = "settings"
-	ModelColNameToken      = "tokens"
-	ModelColNameVariable   = "variables"
-	ModelColNameTaskQueue  = "task_queue"
-	ModelColNameTaskStat   = "task_stats"
-	ModelColNamePlugin     = "plugins"
-	ModelColNameSpiderStat = "spider_stats"
+	ModelColNameArtifact       = "artifacts"
+	ModelColNameTag            = "tags"
+	ModelColNameNode           = "nodes"
+	ModelColNameProject        = "projects"
+	ModelColNameSpider         = "spiders"
+	ModelColNameTask           = "tasks"
+	ModelColNameJob            = "jobs"
+	ModelColNameSchedule       = "schedules"
+	ModelColNameUser           = "users"
+	ModelColNameSetting        = "settings"
+	ModelColNameToken          = "tokens"
+	ModelColNameVariable       = "variables"
+	ModelColNameTaskQueue      = "task_queue"
+	ModelColNameTaskStat       = "task_stats"
+	ModelColNamePlugin         = "plugins"
+	ModelColNameSpiderStat     = "spider_stats"
+	ModelColNameDataSource     = "data_sources"
+	ModelColNameDataCollection = "data_collections"
 )
 
 type ModelWithTags interface {

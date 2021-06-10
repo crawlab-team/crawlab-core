@@ -59,6 +59,12 @@ func (b *ListBinder) Bind() (list arraylist.List, err error) {
 		return b.Process(&m.Plugins)
 	case interfaces.ModelIdSpiderStat:
 		return b.Process(&m.SpiderStats)
+	case interfaces.ModelIdDataSource:
+		return b.Process(&m.DataSources)
+	case interfaces.ModelIdDataCollection:
+		return b.Process(&m.DataCollections)
+	case interfaces.ModelIdResult:
+		return b.Process(&m.Results)
 	default:
 		return list, errors.ErrorModelInvalidModelId
 	}

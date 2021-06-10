@@ -57,6 +57,12 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 		return b.Process(&m.Plugin)
 	case interfaces.ModelIdSpiderStat:
 		return b.Process(&m.SpiderStat)
+	case interfaces.ModelIdDataSource:
+		return b.Process(&m.DataSource)
+	case interfaces.ModelIdDataCollection:
+		return b.Process(&m.DataCollection)
+	case interfaces.ModelIdResult:
+		return b.Process(&m.Result)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

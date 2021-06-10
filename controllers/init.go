@@ -15,11 +15,12 @@ func InitControllers() (err error) {
 	ProjectController = newProjectController()
 	SpiderController = newSpiderController()
 	TaskController = newTaskController()
-	UserController = NewListControllerDelegate(ControllerIdUser, modelSvc.NewBaseService(interfaces.ModelIdUser))
-	TagController = NewListControllerDelegate(ControllerIdTag, modelSvc.NewBaseService(interfaces.ModelIdTag))
+	UserController = NewListControllerDelegate(ControllerIdUser, modelSvc.GetBaseService(interfaces.ModelIdUser))
+	TagController = NewListControllerDelegate(ControllerIdTag, modelSvc.GetBaseService(interfaces.ModelIdTag))
 	LoginController = NewActionControllerDelegate(ControllerIdLogin, LoginActions)
 	ColorController = NewActionControllerDelegate(ControllerIdColor, ColorActions)
-	PluginController = NewListControllerDelegate(ControllerIdPlugin, modelSvc.NewBaseService(interfaces.ModelIdPlugin))
+	PluginController = NewListControllerDelegate(ControllerIdPlugin, modelSvc.GetBaseService(interfaces.ModelIdPlugin))
+	DataCollectionController = NewListControllerDelegate(ControllerIdDataCollection, modelSvc.GetBaseService(interfaces.ModelIdDataCollection))
 
 	return nil
 }

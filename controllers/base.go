@@ -17,6 +17,8 @@ const (
 	ControllerIdLogin
 	ControllerIdColor
 	ControllerIdPlugin
+	ControllerIdDataSource
+	ControllerIdDataCollection
 )
 
 type ControllerId int

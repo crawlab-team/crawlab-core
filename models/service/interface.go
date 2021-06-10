@@ -66,5 +66,12 @@ type ModelService interface {
 	GetSpiderStatById(id primitive.ObjectID) (res *models.SpiderStat, err error)
 	GetSpiderStat(query bson.M, opts *mongo.FindOptions) (res *models.SpiderStat, err error)
 	GetSpiderStatList(query bson.M, opts *mongo.FindOptions) (res []models.SpiderStat, err error)
+	GetDataSourceById(id primitive.ObjectID) (res *models.DataSource, err error)
+	GetDataSource(query bson.M, opts *mongo.FindOptions) (res *models.DataSource, err error)
+	GetDataSourceList(query bson.M, opts *mongo.FindOptions) (res []models.DataSource, err error)
+	GetDataCollectionById(id primitive.ObjectID) (res *models.DataCollection, err error)
+	GetDataCollection(query bson.M, opts *mongo.FindOptions) (res *models.DataCollection, err error)
+	GetDataCollectionList(query bson.M, opts *mongo.FindOptions) (res []models.DataCollection, err error)
+	GetDataCollectionByName(name string, opts *mongo.FindOptions) (res *models.DataCollection, err error)
 	DropAll() (err error)
 }

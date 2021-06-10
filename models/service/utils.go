@@ -24,7 +24,7 @@ func (svc *Service) serializeList(list arraylist.List, target interface{}) (err 
 }
 
 func (svc *Service) getListSerializeTarget(id interfaces.ModelId, query bson.M, opts *mongo.FindOptions, target interface{}) (err error) {
-	list, err := svc.NewBaseService(id).GetList(query, opts)
+	list, err := svc.GetBaseService(id).GetList(query, opts)
 	if err != nil {
 		return err
 	}

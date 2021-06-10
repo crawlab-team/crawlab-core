@@ -64,6 +64,12 @@ func (b *ListBinder) Bind() (list arraylist.List, err error) {
 		return b.Process(m.Plugins)
 	case interfaces.ModelIdSpiderStat:
 		return b.Process(m.SpiderStats)
+	case interfaces.ModelIdDataSource:
+		return b.Process(m.DataSources)
+	case interfaces.ModelIdDataCollection:
+		return b.Process(m.DataCollections)
+	case interfaces.ModelIdResult:
+		return b.Process(m.Results)
 	default:
 		return list, errors.ErrorModelInvalidModelId
 	}
@@ -142,6 +148,12 @@ func (b *ListBinder) _assignListFields(asPtr bool, list interface{}, fieldIds ..
 		} else {
 			item = vItem.Interface()
 		}
+
+		// skip if no field ids
+		if len(fieldIds) == 0 {
+			res.Add(item)
+			continue
+		}
 		doc, ok := item.(interfaces.Model)
 		if !ok {
 			return res, errors.ErrorModelInvalidType
@@ -151,13 +163,7 @@ func (b *ListBinder) _assignListFields(asPtr bool, list interface{}, fieldIds ..
 			return res, err
 		}
 		v := reflect.ValueOf(ptr)
-		if !asPtr {
-			// non-pointer item
-			res.Add(v.Elem().Interface())
-		} else {
-			// pointer item
-			res.Add(v.Interface())
-		}
+		b._addItem(&res, v, asPtr)
 	}
 	return res, nil
 }
@@ -168,4 +174,14 @@ func (b *ListBinder) assignListFields(list interface{}, fieldIds ...interfaces.M
 
 func (b *ListBinder) assignListFieldsAsPtr(list interface{}, fieldIds ...interfaces.ModelId) (res arraylist.List, err error) {
 	return b._assignListFields(true, list, fieldIds...)
+}
+
+func (b *ListBinder) _addItem(list *arraylist.List, item reflect.Value, asPtr bool) {
+	if !asPtr {
+		// non-pointer item
+		list.Add(item.Elem().Interface())
+	} else {
+		// pointer item
+		list.Add(item.Interface())
+	}
 }

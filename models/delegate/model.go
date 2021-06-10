@@ -46,6 +46,12 @@ func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 		return newModelDelegate(interfaces.ModelIdPlugin, doc)
 	case *models.SpiderStat:
 		return newModelDelegate(interfaces.ModelIdSpiderStat, doc)
+	case *models.DataSource:
+		return newModelDelegate(interfaces.ModelIdDataSource, doc)
+	case *models.DataCollection:
+		return newModelDelegate(interfaces.ModelIdDataCollection, doc)
+	case *models.Result:
+		return newModelDelegate(interfaces.ModelIdResult, doc)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil

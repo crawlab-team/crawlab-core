@@ -33,8 +33,8 @@ func (svc *Service) DropAll() (err error) {
 	return nil
 }
 
-func (svc *Service) NewBaseService(id interfaces.ModelId) (svc2 interfaces.ModelBaseService) {
-	return NewBaseService(id)
+func (svc *Service) GetBaseService(id interfaces.ModelId) (svc2 interfaces.ModelBaseService) {
+	return GetBaseService(id)
 }
 
 func NewService(opts ...Option) (svc2 ModelService, err error) {

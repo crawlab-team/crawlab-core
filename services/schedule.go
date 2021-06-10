@@ -77,7 +77,7 @@ package services
 //			return err
 //		}
 //	} else {
-//		_, err = modelSvc.NewBaseService(interfaces.ModelIdSchedule).GetById(s.Id)
+//		_, err = modelSvc.GetBaseService(interfaces.ModelIdSchedule).GetById(s.Id)
 //		if err == nil {
 //			return constants.ErrAlreadyExists
 //		}

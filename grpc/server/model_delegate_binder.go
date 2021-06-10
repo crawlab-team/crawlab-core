@@ -61,6 +61,12 @@ func (b *ModelDelegateBinder) Bind() (res interface{}, err error) {
 		return b.process(&m.Plugin)
 	case interfaces.ModelIdSpiderStat:
 		return b.process(&m.SpiderStat)
+	case interfaces.ModelIdDataSource:
+		return b.process(&m.DataSource)
+	case interfaces.ModelIdDataCollection:
+		return b.process(&m.DataCollection)
+	case interfaces.ModelIdResult:
+		return b.process(&m.Result)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

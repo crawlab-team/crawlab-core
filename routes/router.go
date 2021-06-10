@@ -112,5 +112,8 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// plugin
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/plugins", controllers.PluginController)
 
+	// data collection
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/data/collections", controllers.DataCollectionController)
+
 	return nil
 }

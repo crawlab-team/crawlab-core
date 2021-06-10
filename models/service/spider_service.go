@@ -21,12 +21,12 @@ func convertTypeSpider(d interface{}, err error) (res *models2.Spider, err2 erro
 }
 
 func (svc *Service) GetSpiderById(id primitive.ObjectID) (res *models2.Spider, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdSpider).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdSpider).GetById(id)
 	return convertTypeSpider(d, err)
 }
 
 func (svc *Service) GetSpider(query bson.M, opts *mongo.FindOptions) (res *models2.Spider, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdSpider).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdSpider).Get(query, opts)
 	return convertTypeSpider(d, err)
 }
 

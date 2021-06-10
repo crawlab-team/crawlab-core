@@ -21,12 +21,12 @@ func convertTypePlugin(d interface{}, err error) (res *models2.Plugin, err2 erro
 }
 
 func (svc *Service) GetPluginById(id primitive.ObjectID) (res *models2.Plugin, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdPlugin).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdPlugin).GetById(id)
 	return convertTypePlugin(d, err)
 }
 
 func (svc *Service) GetPlugin(query bson.M, opts *mongo.FindOptions) (res *models2.Plugin, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdPlugin).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdPlugin).Get(query, opts)
 	return convertTypePlugin(d, err)
 }
 

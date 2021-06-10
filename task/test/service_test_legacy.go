@@ -200,11 +200,11 @@ package test
 //		_ = m.DeleteDir("/spiders")
 //	}
 //	for _, s := range to.spiders {
-//		_ = modelSvc.NewBaseService(interfaces.ModelIdSpider).DeleteById(s.Id)
+//		_ = modelSvc.GetBaseService(interfaces.ModelIdSpider).DeleteById(s.Id)
 //	}
 //	to.spiders = []*models2.Spider{}
 //	for _, t := range to.tasks {
-//		_ = modelSvc.NewBaseService(interfaces.ModelIdTask).DeleteById(t.Id)
+//		_ = modelSvc.GetBaseService(interfaces.ModelIdTask).DeleteById(t.Id)
 //	}
 //	to.tasks = []*models2.Task{}
 //	_ = os.RemoveAll("./tmp/repo")

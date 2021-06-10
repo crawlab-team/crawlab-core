@@ -21,12 +21,12 @@ func convertTypeTaskStat(d interface{}, err error) (res *models2.TaskStat, err2 
 }
 
 func (svc *Service) GetTaskStatById(id primitive.ObjectID) (res *models2.TaskStat, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTaskStat).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdTaskStat).GetById(id)
 	return convertTypeTaskStat(d, err)
 }
 
 func (svc *Service) GetTaskStat(query bson.M, opts *mongo.FindOptions) (res *models2.TaskStat, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTaskStat).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdTaskStat).Get(query, opts)
 	return convertTypeTaskStat(d, err)
 }
 

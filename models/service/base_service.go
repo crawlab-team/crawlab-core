@@ -13,12 +13,29 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
+	"sync"
 	"time"
 )
 
 type BaseService struct {
 	id  interfaces.ModelId
 	col *mongo.Col
+}
+
+func (svc *BaseService) GetModelId() (id interfaces.ModelId) {
+	return svc.id
+}
+
+func (svc *BaseService) SetModelId(id interfaces.ModelId) {
+	svc.id = id
+}
+
+func (svc *BaseService) GetCol() (col *mongo.Col) {
+	return svc.col
+}
+
+func (svc *BaseService) SetCol(col *mongo.Col) {
+	svc.col = col
 }
 
 func (svc *BaseService) GetById(id primitive.ObjectID) (res interfaces.Model, err error) {
@@ -335,14 +352,56 @@ func (svc *BaseService) _getUpdateArtifactUpdate() (res bson.M) {
 	}
 }
 
-func NewBaseService(id interfaces.ModelId) (svc interfaces.ModelBaseService) {
+func NewBaseService(id interfaces.ModelId, opts ...BaseServiceOption) (svc interfaces.ModelBaseService) {
+	// initialize mongo client
 	if mongo.Client == nil {
 		_ = mongo.InitMongo()
 	}
-	colName := models2.GetModelColName(id)
-	col := mongo.GetMongoCol(colName)
-	return &BaseService{
-		id:  id,
-		col: col,
+
+	// service
+	svc = &BaseService{
+		id: id,
 	}
+
+	// apply options
+	for _, opt := range opts {
+		opt(svc)
+	}
+
+	// get collection name if not set
+	if svc.GetCol() == nil {
+		colName := models2.GetModelColName(id)
+		svc.SetCol(mongo.GetMongoCol(colName))
+	}
+
+	return svc
+}
+
+var store = sync.Map{}
+
+func GetBaseService(id interfaces.ModelId) (svc interfaces.ModelBaseService) {
+	res, ok := store.Load(id)
+	if ok {
+		svc, ok = res.(interfaces.ModelBaseService)
+		if ok {
+			return svc
+		}
+	}
+	svc = NewBaseService(id)
+	store.Store(id, svc)
+	return svc
+}
+
+func GetBaseServiceByColName(id interfaces.ModelId, colName string) (svc interfaces.ModelBaseService) {
+	res, ok := store.Load(colName)
+	if ok {
+		svc, ok = res.(interfaces.ModelBaseService)
+		if ok {
+			return svc
+		}
+	}
+	col := mongo.GetMongoCol(colName)
+	svc = NewBaseService(id, WithBaseServiceCol(col))
+	store.Store(colName, svc)
+	return svc
 }

@@ -14,7 +14,8 @@ type Spider struct {
 	Id          primitive.ObjectID   `json:"_id" bson:"_id"`                 // spider id
 	Name        string               `json:"name" bson:"name"`               // spider name
 	Type        string               `json:"type" bson:"type"`               // spider type
-	Col         string               `json:"col" bson:"col"`                 // data collection
+	ColId       primitive.ObjectID   `json:"col_id" bson:"col_id"`           // data collection id
+	ColName     string               `json:"col_name,omitempty" bson:"-"`    // data collection name
 	Description string               `json:"description" bson:"description"` // description
 	ProjectId   primitive.ObjectID   `json:"project_id" bson:"project_id"`   // Project.Id
 	Mode        string               `json:"mode" bson:"mode"`               // default Task.Mode

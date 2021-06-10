@@ -21,12 +21,12 @@ func convertTypeTaskQueueItem(d interface{}, err error) (res *models2.TaskQueueI
 }
 
 func (svc *Service) GetTaskQueueItemById(id primitive.ObjectID) (res *models2.TaskQueueItem, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTaskQueue).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdTaskQueue).GetById(id)
 	return convertTypeTaskQueueItem(d, err)
 }
 
 func (svc *Service) GetTaskQueueItem(query bson.M, opts *mongo.FindOptions) (res *models2.TaskQueueItem, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdTaskQueue).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdTaskQueue).Get(query, opts)
 	return convertTypeTaskQueueItem(d, err)
 }
 

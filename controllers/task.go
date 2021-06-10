@@ -333,7 +333,7 @@ func newTaskContext() *taskContext {
 	}
 
 	// model task service
-	ctx.modelTaskSvc = ctx.modelSvc.NewBaseService(interfaces.ModelIdTask)
+	ctx.modelTaskSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdTask)
 
 	return ctx
 }
@@ -344,8 +344,8 @@ func newTaskController() *taskController {
 		panic(err)
 	}
 
-	ctr := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.NewBaseService(interfaces.ModelIdTask), TaskActions)
-	d := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.NewBaseService(interfaces.ModelIdTask), TaskActions)
+	ctr := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.GetBaseService(interfaces.ModelIdTask), TaskActions)
+	d := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.GetBaseService(interfaces.ModelIdTask), TaskActions)
 	ctx := newTaskContext()
 
 	return &taskController{

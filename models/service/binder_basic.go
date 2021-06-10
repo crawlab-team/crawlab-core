@@ -61,6 +61,12 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 		return b.Process(&m.Plugin)
 	case interfaces.ModelIdSpiderStat:
 		return b.Process(&m.SpiderStat)
+	case interfaces.ModelIdDataSource:
+		return b.Process(&m.DataSource)
+	case interfaces.ModelIdDataCollection:
+		return b.Process(&m.DataCollection)
+	case interfaces.ModelIdResult:
+		return b.Process(&m.Result)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}
@@ -137,7 +143,7 @@ func (b *BasicBinder) assignFields(d interfaces.Model, fieldIds ...interfaces.Mo
 			}
 
 			// get tags
-			modelTagSvc := modelSvc.NewBaseService(interfaces.ModelIdTag)
+			modelTagSvc := modelSvc.GetBaseService(interfaces.ModelIdTag)
 			list, err := modelTagSvc.GetList(bson.M{
 				"_id": bson.M{
 					"$in": a.GetTagIds(),

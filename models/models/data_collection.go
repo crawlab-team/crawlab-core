@@ -2,15 +2,15 @@ package models
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type DataSource struct {
+type DataCollection struct {
 	Id   primitive.ObjectID `json:"_id" bson:"_id"`
 	Name string             `json:"name" bson:"name"`
 }
 
-func (ds *DataSource) GetId() (id primitive.ObjectID) {
-	return ds.Id
+func (dc *DataCollection) GetId() (id primitive.ObjectID) {
+	return dc.Id
 }
 
-func (ds *DataSource) SetId(id primitive.ObjectID) {
-	ds.Id = id
+func (dc *DataCollection) SetId(id primitive.ObjectID) {
+	dc.Id = id
 }

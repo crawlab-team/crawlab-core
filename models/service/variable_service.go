@@ -21,12 +21,12 @@ func convertTypeVariable(d interface{}, err error) (res *models2.Variable, err2 
 }
 
 func (svc *Service) GetVariableById(id primitive.ObjectID) (res *models2.Variable, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdVariable).GetById(id)
+	d, err := svc.GetBaseService(interfaces.ModelIdVariable).GetById(id)
 	return convertTypeVariable(d, err)
 }
 
 func (svc *Service) GetVariable(query bson.M, opts *mongo.FindOptions) (res *models2.Variable, err error) {
-	d, err := svc.NewBaseService(interfaces.ModelIdVariable).Get(query, opts)
+	d, err := svc.GetBaseService(interfaces.ModelIdVariable).Get(query, opts)
 	return convertTypeVariable(d, err)
 }
 

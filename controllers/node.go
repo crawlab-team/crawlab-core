@@ -86,7 +86,7 @@ func newNodeController() *nodeController {
 		panic(err)
 	}
 
-	ctr := NewListControllerDelegate(ControllerIdNode, modelSvc.NewBaseService(interfaces.ModelIdNode))
+	ctr := NewListControllerDelegate(ControllerIdNode, modelSvc.GetBaseService(interfaces.ModelIdNode))
 
 	return &nodeController{
 		ListControllerDelegate: *ctr,
