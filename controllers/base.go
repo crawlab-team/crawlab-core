@@ -19,6 +19,7 @@ const (
 	ControllerIdPlugin
 	ControllerIdDataSource
 	ControllerIdDataCollection
+	ControllerIdResult
 )
 
 type ControllerId int

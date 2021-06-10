@@ -21,6 +21,7 @@ func InitControllers() (err error) {
 	ColorController = NewActionControllerDelegate(ControllerIdColor, ColorActions)
 	PluginController = NewListControllerDelegate(ControllerIdPlugin, modelSvc.GetBaseService(interfaces.ModelIdPlugin))
 	DataCollectionController = NewListControllerDelegate(ControllerIdDataCollection, modelSvc.GetBaseService(interfaces.ModelIdDataCollection))
+	ResultController = NewActionControllerDelegate(ControllerIdResult, ResultActions)
 
 	return nil
 }
