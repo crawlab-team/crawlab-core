@@ -17,6 +17,9 @@ func WithBaseServiceModelId(id interfaces.ModelId) BaseServiceOption {
 
 func WithBaseServiceCol(col *mongo.Col) BaseServiceOption {
 	return func(svc interfaces.ModelBaseService) {
-		svc.SetCol(col)
+		_svc, ok := svc.(*BaseService)
+		if ok {
+			_svc.SetCol(col)
+		}
 	}
 }
