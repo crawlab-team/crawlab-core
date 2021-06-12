@@ -17,6 +17,7 @@ import (
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -196,6 +197,10 @@ func (ctx *taskContext) getLogs(c *gin.Context) {
 	// logs
 	logs, err := l.Find("", (p.Page-1)*p.Size, p.Size)
 	if err != nil {
+		if strings.HasSuffix(err.Error(), "Status:404 Not Found") {
+			HandleSuccess(c)
+			return
+		}
 		HandleErrorInternalServerError(c, err)
 		return
 	}

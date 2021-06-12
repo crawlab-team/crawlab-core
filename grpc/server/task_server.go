@@ -13,6 +13,7 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
 	"io"
+	"strings"
 )
 
 type TaskServer struct {
@@ -33,6 +34,13 @@ func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err er
 		if err == io.EOF {
 			return nil
 		}
+		if err != nil {
+			if strings.HasSuffix(err.Error(), "context canceled") {
+				return nil
+			}
+			trace.PrintError(err)
+			continue
+		}
 		switch msg.Code {
 		case grpc.StreamMessageCode_INSERT_DATA:
 			err = svr.handleInsertData(msg)
@@ -41,9 +49,6 @@ func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err er
 		default:
 			err = errors.ErrorGrpcInvalidCode
 			log.Errorf("invalid stream message code: %d", msg.Code)
-		}
-		if err != nil {
-			trace.PrintError(err)
 		}
 	}
 }

@@ -176,8 +176,8 @@ func (d *ListControllerDelegate) getList(c *gin.Context) (list arraylist.List, t
 		Limit: pagination.Size,
 	})
 	if err != nil {
-		if err == mongo2.ErrNoDocuments {
-			HandleErrorNotFound(c, err)
+		if err.Error() == mongo2.ErrNoDocuments.Error() {
+			HandleSuccessWithListData(c, nil, 0)
 		} else {
 			HandleErrorInternalServerError(c, err)
 		}

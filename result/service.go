@@ -5,6 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"sync"
@@ -34,6 +35,14 @@ func (svc *Service) GetList(query bson.M, opts *mongo.FindOptions) (results []in
 
 func (svc *Service) Count(query bson.M) (total int, err error) {
 	return svc.modelColSvc.Count(query)
+}
+
+func (svc *Service) Insert(docs ...interface{}) (err error) {
+	_, err = mongo.GetMongoCol(svc.dc.Name).InsertMany(docs)
+	if err != nil {
+		return trace.TraceError(err)
+	}
+	return nil
 }
 
 func (svc *Service) getList(query bson.M, opts *mongo.FindOptions) (results []interfaces.Result, err error) {

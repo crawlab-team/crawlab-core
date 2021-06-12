@@ -11,4 +11,5 @@ type ResultService interface {
 	SetId(id primitive.ObjectID)
 	GetList(query bson.M, opts *mongo.FindOptions) (results []Result, err error)
 	Count(query bson.M) (total int, err error)
+	Insert(docs ...interface{}) (err error)
 }

@@ -372,7 +372,7 @@ func (ctx *spiderContext) _getListWithStats(c *gin.Context) {
 		Limit: pagination.Size,
 	})
 	if err != nil {
-		if err == mongo2.ErrNoDocuments {
+		if err.Error() == mongo2.ErrNoDocuments.Error() {
 			HandleErrorNotFound(c, err)
 		} else {
 			HandleErrorInternalServerError(c, err)

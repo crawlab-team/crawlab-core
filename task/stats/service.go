@@ -3,8 +3,9 @@ package stats
 import (
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/client"
+	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/result"
 	"github.com/crawlab-team/crawlab-core/task"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/crawlab-team/go-trace"
@@ -16,22 +17,22 @@ import (
 type Service struct {
 	// dependencies
 	interfaces.TaskBaseService
-	nodeCfgSvc         interfaces.NodeConfigService
-	clientModelSvc     interfaces.GrpcClientModelService
-	clientModelTaskSvc interfaces.GrpcClientModelTaskService
+	nodeCfgSvc interfaces.NodeConfigService
+	modelSvc   service.ModelService
 
 	// internals
-	mu      sync.Mutex
-	cache   sync.Map
-	drivers sync.Map
+	mu             sync.Mutex
+	cache          sync.Map
+	logDrivers     sync.Map
+	resultServices sync.Map
 }
 
 func (svc *Service) InsertData(id primitive.ObjectID, records ...interface{}) (err error) {
-	//t, err := svc.getTask(id)
-	//if err != nil {
-	//	return err
-	//}
-	panic("implement me")
+	resultSvc, err := svc.getResultService(id)
+	if err != nil {
+		return err
+	}
+	return resultSvc.Insert(records...)
 }
 
 func (svc *Service) InsertLogs(id primitive.ObjectID, logs ...string) (err error) {
@@ -42,44 +43,65 @@ func (svc *Service) InsertLogs(id primitive.ObjectID, logs ...string) (err error
 	return l.WriteLines(logs)
 }
 
-func (svc *Service) getTask(id primitive.ObjectID) (t interfaces.Task, err error) {
+func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interfaces.ResultService, err error) {
 	// attempt to get from cache
-	res, ok := svc.cache.Load(id)
+	res, ok := svc.resultServices.Load(id)
 	if ok {
-		t, ok = res.(interfaces.Task)
+		// hit in cache
+		resultSvc, ok = res.(interfaces.ResultService)
 		if ok {
-			return t, nil
+			return resultSvc, nil
 		}
 	}
 
 	// task
-	t, err = svc.clientModelTaskSvc.GetTaskById(id)
+	t, err := svc.modelSvc.GetTaskById(id)
 	if err != nil {
 		return nil, err
 	}
-	svc.cache.Store(id, t)
 
-	return t, nil
+	// spider
+	s, err := svc.modelSvc.GetSpiderById(t.SpiderId)
+	if err != nil {
+		return nil, err
+	}
+
+	// result service
+	resultSvc, err = result.GetResultService(s.ColId)
+	if err != nil {
+		return nil, err
+	}
+
+	// store in cache
+	svc.resultServices.Store(id, resultSvc)
+
+	// TODO: cleanup result service
+
+	return resultSvc, nil
 }
 
 func (svc *Service) getLogDriver(id primitive.ObjectID) (l clog.Driver, err error) {
 	// attempt to get from cache
-	res, ok := svc.drivers.Load(id)
+	res, ok := svc.logDrivers.Load(id)
 	if ok {
+		// hit in cache
 		l, ok = res.(clog.Driver)
 		if ok {
 			return l, nil
 		}
 	}
 
-	// TODO: other types of log drivers
+	// log driver
+	// TODO: other types of log logDrivers
 	l, err = clog.NewSeaweedFsLogDriver(&clog.SeaweedFsLogDriverOptions{
 		Prefix: id.Hex(),
 	})
 	if err != nil {
 		return nil, err
 	}
-	svc.drivers.Store(id, l)
+
+	// store in cache
+	svc.logDrivers.Store(id, l)
 
 	// TODO: cleanup log driver
 
@@ -97,7 +119,7 @@ func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err 
 	svc := &Service{
 		TaskBaseService: baseSvc,
 		cache:           sync.Map{},
-		drivers:         sync.Map{},
+		logDrivers:      sync.Map{},
 	}
 
 	// apply options
@@ -114,18 +136,11 @@ func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err 
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(client.ProvideServiceDelegate(svc.nodeCfgSvc.GetConfigPath())); err != nil {
+	if err := c.Provide(service.GetService); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(client.ProvideTaskServiceDelegate(svc.nodeCfgSvc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(
-		clientModelSvc interfaces.GrpcClientModelService,
-		clientModelTaskSvc interfaces.GrpcClientModelTaskService,
-	) {
-		svc.clientModelSvc = clientModelSvc
-		svc.clientModelTaskSvc = clientModelTaskSvc
+	if err := c.Invoke(func(modelSvc service.ModelService) {
+		svc.modelSvc = modelSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}

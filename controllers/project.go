@@ -23,6 +23,12 @@ func (ctr *projectController) GetList(c *gin.Context) {
 	}
 	data := list.Values()
 
+	// check empty list
+	if len(list.Values()) == 0 {
+		HandleSuccessWithListData(c, nil, 0)
+		return
+	}
+
 	// project ids
 	var ids []primitive.ObjectID
 
