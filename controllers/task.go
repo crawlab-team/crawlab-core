@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/result"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -43,6 +44,11 @@ var TaskActions = []Action{
 		Method:      http.MethodGet,
 		Path:        "/:id/logs",
 		HandlerFunc: taskCtx.getLogs,
+	},
+	{
+		Method:      http.MethodGet,
+		Path:        "/:id/data",
+		HandlerFunc: taskCtx.getData,
 	},
 }
 
@@ -283,6 +289,68 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 	}
 
 	// response
+	HandleSuccessWithListData(c, data, total)
+}
+
+func (ctx *taskContext) getData(c *gin.Context) {
+	// id
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// pagination
+	p, err := GetPagination(c)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// task
+	t, err := ctx.modelSvc.GetTaskById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// spider
+	s, err := ctx.modelSvc.GetSpiderById(t.SpiderId)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// result service
+	resultSvc, err := result.GetResultService(s.ColId)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// query
+	query := bson.M{
+		"_tid": id,
+	}
+
+	// list
+	data, err := resultSvc.GetList(query, &mongo.FindOptions{
+		Skip:  (p.Page - 1) * p.Size,
+		Limit: p.Size,
+		Sort:  bson.D{{"_id", -1}},
+	})
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// total
+	total, err := resultSvc.Count(query)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
 	HandleSuccessWithListData(c, data, total)
 }
 

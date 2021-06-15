@@ -1,3 +1,5 @@
 package entity
 
-type ResultItem = map[string]interface{}
+import "go.mongodb.org/mongo-driver/bson"
+
+type Result = bson.M

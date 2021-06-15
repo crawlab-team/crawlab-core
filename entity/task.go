@@ -25,6 +25,6 @@ type TaskRunOptions struct {
 
 type StreamMessageTaskData struct {
 	TaskId  primitive.ObjectID `json:"task_id"`
-	Records []interface{}      `json:"data"`
+	Records []Result           `json:"data"`
 	Logs    []string           `json:"logs"`
 }

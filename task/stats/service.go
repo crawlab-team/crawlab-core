@@ -7,8 +7,10 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/result"
 	"github.com/crawlab-team/crawlab-core/task"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/crawlab-team/go-trace"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"sync"
@@ -32,7 +34,11 @@ func (svc *Service) InsertData(id primitive.ObjectID, records ...interface{}) (e
 	if err != nil {
 		return err
 	}
-	return resultSvc.Insert(records...)
+	if err := resultSvc.Insert(records...); err != nil {
+		return err
+	}
+	go svc.updateTaskStats(id, len(records))
+	return nil
 }
 
 func (svc *Service) InsertLogs(id primitive.ObjectID, logs ...string) (err error) {
@@ -106,6 +112,14 @@ func (svc *Service) getLogDriver(id primitive.ObjectID) (l clog.Driver, err erro
 	// TODO: cleanup log driver
 
 	return l, nil
+}
+
+func (svc *Service) updateTaskStats(id primitive.ObjectID, resultCount int) {
+	_ = mongo.GetMongoCol(interfaces.ModelColNameTaskStat).UpdateId(id, bson.M{
+		"$inc": bson.M{
+			"rc": resultCount,
+		},
+	})
 }
 
 func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err error) {

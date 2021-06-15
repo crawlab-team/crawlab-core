@@ -11,6 +11,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/task/stats"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"io"
 	"strings"
@@ -58,7 +59,21 @@ func (svr TaskServer) handleInsertData(msg *grpc.StreamMessage) (err error) {
 	if err != nil {
 		return err
 	}
-	return svr.statsSvc.InsertData(data.TaskId, data.Records...)
+	var records []interface{}
+	for _, d := range data.Records {
+		res, ok := d["_tid"]
+		if ok {
+			switch res.(type) {
+			case string:
+				id, err := primitive.ObjectIDFromHex(res.(string))
+				if err == nil {
+					d["_tid"] = id
+				}
+			}
+		}
+		records = append(records, d)
+	}
+	return svr.statsSvc.InsertData(data.TaskId, records...)
 }
 
 func (svr TaskServer) handleInsertLogs(msg *grpc.StreamMessage) (err error) {
