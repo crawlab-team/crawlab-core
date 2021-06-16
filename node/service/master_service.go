@@ -11,6 +11,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/schedule"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -29,6 +30,7 @@ type MasterService struct {
 	server       interfaces.GrpcServer
 	schedulerSvc interfaces.TaskSchedulerService
 	handlerSvc   interfaces.TaskHandlerService
+	scheduleSvc  interfaces.ScheduleService
 	//pluginSvc    interfaces.PluginService
 
 	// settings
@@ -62,6 +64,9 @@ func (svc *MasterService) Start() {
 
 	// start task scheduler
 	go svc.schedulerSvc.Start()
+
+	// start schedule service
+	go svc.scheduleSvc.Start()
 
 	//// start plugin service
 	//go svc.pluginSvc.Start()
@@ -272,6 +277,9 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
+	if err := c.Provide(schedule.ProvideGetScheduleService(svc.cfgPath)); err != nil {
+		return nil, err
+	}
 	//if err := c.Provide(plugin.ProvideGetPluginService(path.Join(svc.cfgPath, plugin.DefaultPluginDirName))); err != nil {
 	//	return nil, err
 	//}
@@ -281,6 +289,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 		server interfaces.GrpcServer,
 		schedulerSvc interfaces.TaskSchedulerService,
 		handlerSvc interfaces.TaskHandlerService,
+		scheduleSvc interfaces.ScheduleService,
 		//pluginSvc interfaces.PluginService,
 	) {
 		svc.cfgSvc = cfgSvc
@@ -288,6 +297,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 		svc.server = server
 		svc.schedulerSvc = schedulerSvc
 		svc.handlerSvc = handlerSvc
+		svc.scheduleSvc = scheduleSvc
 		//svc.pluginSvc = pluginSvc
 	}); err != nil {
 		return nil, err

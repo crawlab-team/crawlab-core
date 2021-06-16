@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -106,9 +107,43 @@ func (ctr *scheduleController) DeleteList(c *gin.Context) {
 var scheduleCtx = newScheduleContext()
 
 func (ctx *scheduleContext) enable(c *gin.Context) {
+	s, err := ctx._getSchedule(c)
+	if err != nil {
+		return
+	}
+	if err := ctx.scheduleSvc.Enable(s); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccess(c)
 }
 
 func (ctx *scheduleContext) disable(c *gin.Context) {
+	s, err := ctx._getSchedule(c)
+	if err != nil {
+		return
+	}
+	if err := ctx.scheduleSvc.Disable(s); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccess(c)
+}
+
+func (ctx *scheduleContext) _getSchedule(c *gin.Context) (s *models.Schedule, err error) {
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	s, err = ctx.modelSvc.GetScheduleById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	return s, nil
 }
 
 type scheduleContext struct {
@@ -125,7 +160,7 @@ func newScheduleContext() *scheduleContext {
 	if err := c.Provide(service.NewService); err != nil {
 		panic(err)
 	}
-	if err := c.Provide(schedule.NewScheduleService); err != nil {
+	if err := c.Provide(schedule.ProvideGetScheduleService(config.DefaultConfigPath)); err != nil {
 		panic(err)
 	}
 	if err := c.Invoke(func(

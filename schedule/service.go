@@ -11,7 +11,9 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"sync"
 	"time"
 )
 
@@ -32,6 +34,7 @@ type Service struct {
 	logger    cron.Logger
 	schedules []models.Schedule
 	stopped   bool
+	mu        sync.Mutex
 }
 
 func (svc *Service) GetLocation() (loc *time.Location) {
@@ -86,7 +89,10 @@ func (svc *Service) Stop() {
 }
 
 func (svc *Service) Enable(s interfaces.Schedule) (err error) {
-	id, err := svc.cron.AddFunc(s.GetCron(), svc.schedule(s))
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	id, err := svc.cron.AddFunc(s.GetCron(), svc.schedule(s.GetId()))
 	if err != nil {
 		return trace.TraceError(err)
 	}
@@ -96,8 +102,12 @@ func (svc *Service) Enable(s interfaces.Schedule) (err error) {
 }
 
 func (svc *Service) Disable(s interfaces.Schedule) (err error) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
 	svc.cron.Remove(s.GetEntryId())
 	s.SetEnabled(false)
+	s.SetEntryId(-1)
 	return delegate.NewModelDelegate(s).Save()
 }
 
@@ -167,8 +177,15 @@ func (svc *Service) fetch() (err error) {
 	return nil
 }
 
-func (svc *Service) schedule(s interfaces.Schedule) (fn func()) {
+func (svc *Service) schedule(id primitive.ObjectID) (fn func()) {
 	return func() {
+		// schedule
+		s, err := svc.modelSvc.GetScheduleById(id)
+		if err != nil {
+			trace.PrintError(err)
+			return
+		}
+
 		// spider
 		spider, err := svc.modelSvc.GetSpiderById(s.GetSpiderId())
 		if err != nil {
@@ -221,7 +238,8 @@ func (svc *Service) schedule(s interfaces.Schedule) (fn func()) {
 func NewScheduleService(opts ...Option) (svc2 interfaces.ScheduleService, err error) {
 	// service
 	svc := &Service{
-		loc: time.Local,
+		WithConfigPath: config.NewConfigPathService(),
+		loc:            time.Local,
 		// TODO: implement delay and skip
 		delay:          false,
 		skip:           false,
@@ -235,14 +253,6 @@ func NewScheduleService(opts ...Option) (svc2 interfaces.ScheduleService, err er
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(config.NewConfigPathService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(cfgPath interfaces.WithConfigPath) {
-		svc.WithConfigPath = cfgPath
-	}); err != nil {
-		return nil, trace.TraceError(err)
-	}
 	if err := c.Provide(service.GetService); err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -281,5 +291,33 @@ func ProvideScheduleService(path string, opts ...Option) func() (svc interfaces.
 	opts = append(opts, WithConfigPath(path))
 	return func() (svc interfaces.ScheduleService, err error) {
 		return NewScheduleService(opts...)
+	}
+}
+
+var store = sync.Map{}
+
+func GetScheduleService(path string, opts ...Option) (svc interfaces.ScheduleService, err error) {
+	if path == "" {
+		path = config.DefaultConfigPath
+	}
+	opts = append(opts, WithConfigPath(path))
+	res, ok := store.Load(path)
+	if ok {
+		svc, ok = res.(interfaces.ScheduleService)
+		if ok {
+			return svc, nil
+		}
+	}
+	svc, err = NewScheduleService(opts...)
+	if err != nil {
+		return nil, err
+	}
+	store.Store(path, svc)
+	return svc, nil
+}
+
+func ProvideGetScheduleService(path string, opts ...Option) func() (svr interfaces.ScheduleService, err error) {
+	return func() (svr interfaces.ScheduleService, err error) {
+		return GetScheduleService(path, opts...)
 	}
 }
