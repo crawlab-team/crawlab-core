@@ -28,8 +28,9 @@ type Spider struct {
 	Envs     []Env `json:"envs" bson:"envs"`           // 环境变量
 
 	// 自定义爬虫
-	Cmd   string `json:"cmd" bson:"cmd"`     // 执行命令
-	Param string `json:"param" bson:"param"` // default task param
+	Cmd      string `json:"cmd" bson:"cmd"`     // 执行命令
+	Param    string `json:"param" bson:"param"` // default task param
+	Priority int    `json:"priority" bson:"priority"`
 
 	// Scrapy 爬虫（属于自定义爬虫）
 	IsScrapy    bool     `json:"is_scrapy" bson:"is_scrapy"`       // 是否为 Scrapy 爬虫
@@ -78,10 +79,54 @@ func (s *Spider) SetTags(tags []interfaces.Tag) {
 	s.Tags = convertInterfacesToTags(tags)
 }
 
+func (s *Spider) GetType() (ty string) {
+	return s.Type
+}
+
+func (s *Spider) GetMode() (mode string) {
+	return s.Mode
+}
+
+func (s *Spider) SetMode(mode string) {
+	s.Mode = mode
+}
+
+func (s *Spider) GetNodeIds() (ids []primitive.ObjectID) {
+	return s.NodeIds
+}
+
+func (s *Spider) SetNodeIds(ids []primitive.ObjectID) {
+	s.NodeIds = ids
+}
+
+func (s *Spider) GetNodeTags() (tags []string) {
+	return s.NodeTags
+}
+
+func (s *Spider) SetNodeTags(tags []string) {
+	s.NodeTags = tags
+}
+
 func (s *Spider) GetCmd() (cmd string) {
 	return s.Cmd
 }
 
-func (s *Spider) GetType() (ty string) {
-	return s.Type
+func (s *Spider) SetCmd(cmd string) {
+	s.Cmd = cmd
+}
+
+func (s *Spider) GetParam() (param string) {
+	return s.Param
+}
+
+func (s *Spider) SetParam(param string) {
+	s.Param = param
+}
+
+func (s *Spider) GetPriority() (p int) {
+	return s.Priority
+}
+
+func (s *Spider) SetPriority(p int) {
+	s.Priority = p
 }

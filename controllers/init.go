@@ -22,6 +22,7 @@ func InitControllers() (err error) {
 	PluginController = NewListControllerDelegate(ControllerIdPlugin, modelSvc.GetBaseService(interfaces.ModelIdPlugin))
 	DataCollectionController = NewListControllerDelegate(ControllerIdDataCollection, modelSvc.GetBaseService(interfaces.ModelIdDataCollection))
 	ResultController = NewActionControllerDelegate(ControllerIdResult, ResultActions)
+	ScheduleController = newScheduleController()
 
 	return nil
 }

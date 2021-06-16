@@ -1,10 +1,20 @@
 package interfaces
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"github.com/robfig/cron/v3"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
-type Spider interface {
+type Schedule interface {
 	Model
-	GetType() (ty string)
+	GetEnabled() (enabled bool)
+	SetEnabled(enabled bool)
+	GetEntryId() (id cron.EntryID)
+	SetEntryId(id cron.EntryID)
+	GetCron() (c string)
+	SetCron(c string)
+	GetSpiderId() (id primitive.ObjectID)
+	SetSpiderId(id primitive.ObjectID)
 	GetMode() (mode string)
 	SetMode(mode string)
 	GetNodeIds() (ids []primitive.ObjectID)

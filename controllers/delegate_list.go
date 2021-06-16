@@ -133,6 +133,23 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 	HandleSuccessWithData(c, docs)
 }
 
+func (d *ListControllerDelegate) DeleteList(c *gin.Context) {
+	payload, err := NewJsonBinder(d.id).BindBatchRequestPayload(c)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+	if err := d.svc.DeleteList(bson.M{
+		"_id": bson.M{
+			"$in": payload.Ids,
+		},
+	}); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccess(c)
+}
+
 func (d *ListControllerDelegate) getAll(c *gin.Context) {
 	// get list
 	list, err := d.svc.GetList(nil, nil)
@@ -192,21 +209,4 @@ func (d *ListControllerDelegate) getList(c *gin.Context) (list arraylist.List, t
 	}
 
 	return list, total, nil
-}
-
-func (d *ListControllerDelegate) DeleteList(c *gin.Context) {
-	payload, err := NewJsonBinder(d.id).BindBatchRequestPayload(c)
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-	if err := d.svc.DeleteList(bson.M{
-		"_id": bson.M{
-			"$in": payload.Ids,
-		},
-	}); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	HandleSuccess(c)
 }
