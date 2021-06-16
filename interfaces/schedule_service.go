@@ -1,6 +1,7 @@
 package interfaces
 
 import (
+	"github.com/robfig/cron/v3"
 	"time"
 )
 
@@ -18,4 +19,5 @@ type ScheduleService interface {
 	Enable(s Schedule) (err error)
 	Disable(s Schedule) (err error)
 	Update()
+	GetCron() (c *cron.Cron)
 }

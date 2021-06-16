@@ -90,6 +90,7 @@ func (svc *Service) Enable(s interfaces.Schedule) (err error) {
 	if err != nil {
 		return trace.TraceError(err)
 	}
+	s.SetEnabled(true)
 	s.SetEntryId(id)
 	return delegate.NewModelDelegate(s).Save()
 }
@@ -110,6 +111,10 @@ func (svc *Service) Update() {
 
 		time.Sleep(svc.updateInterval)
 	}
+}
+
+func (svc *Service) GetCron() (c *cron.Cron) {
+	return svc.cron
 }
 
 func (svc *Service) update() {
