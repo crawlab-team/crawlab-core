@@ -29,11 +29,16 @@ type Test struct {
 }
 
 func (t *Test) Setup(t2 *testing.T) {
+	var err error
+	t.userSvc, err = user.GetUserService()
+	if err != nil {
+		panic(err)
+	}
 	t2.Cleanup(t.Cleanup)
 }
 
 func (t *Test) Cleanup() {
-	_ = t.modelSvc.GetBaseService(interfaces.ModelIdTask).Delete(nil)
+	_ = t.modelSvc.GetBaseService(interfaces.ModelIdUser).Delete(nil)
 }
 
 func NewTest() (t *Test, err error) {
@@ -48,12 +53,8 @@ func NewTest() (t *Test, err error) {
 	if err := c.Provide(service.GetService); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(user.GetUserService); err != nil {
-		return nil, err
-	}
-	if err := c.Invoke(func(modelSvc service.ModelService, userSvc interfaces.UserService) {
+	if err := c.Invoke(func(modelSvc service.ModelService) {
 		t.modelSvc = modelSvc
-		t.userSvc = userSvc
 	}); err != nil {
 		return nil, err
 	}

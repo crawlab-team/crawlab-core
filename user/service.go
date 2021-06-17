@@ -135,7 +135,10 @@ func (svc *Service) getSecretFunc() jwt.Keyfunc {
 
 func NewUserService(opts ...Option) (svc2 interfaces.UserService, err error) {
 	// service
-	svc := &Service{}
+	svc := &Service{
+		jwtSecret:        "crawlab",
+		jwtSigningMethod: jwt.SigningMethodHS256,
+	}
 
 	// dependency injection
 	c := dig.New()
