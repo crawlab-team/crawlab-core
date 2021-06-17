@@ -1,6 +1,7 @@
 package delegate
 
 import (
+	"github.com/crawlab-team/crawlab-core/constants"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -230,7 +231,7 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 	// context
 	// TODO: implement user
 	ctx := col.GetContext()
-	user, ok := ctx.Value(models.UserContextKey).(*models.User)
+	user, ok := ctx.Value(constants.UserContextKey).(*models.User)
 
 	// assign id to artifact
 	d.a.SetId(d.doc.GetId())
@@ -283,7 +284,7 @@ func (d *ModelDelegate) deleteArtifact() (err error) {
 	d.a.SetDel(true)
 	d.a.GetSys().SetDeleteTs(time.Now())
 	// TODO: implement user
-	user, ok := ctx.Value(models.UserContextKey).(*models.User)
+	user, ok := ctx.Value(constants.UserContextKey).(*models.User)
 	if ok {
 		d.a.GetSys().SetDeleteUid(user.Id)
 	}

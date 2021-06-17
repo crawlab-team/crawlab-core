@@ -9,3 +9,7 @@ const (
 	DefaultAdminUsername = "admin"
 	DefaultAdminPassword = "admin"
 )
+
+const (
+	UserContextKey = "user"
+)

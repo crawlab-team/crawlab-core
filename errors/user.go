@@ -11,4 +11,5 @@ var (
 	ErrorUserAlreadyExists         = NewUserError("already exists")
 	ErrorUserMismatch              = NewUserError("mismatch")
 	ErrorUserMissingRequiredFields = NewUserError("missing required fields")
+	ErrorUserUnauthorized          = NewUserError("unauthorized")
 )

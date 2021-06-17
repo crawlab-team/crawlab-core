@@ -13,6 +13,30 @@ type User struct {
 	Setting  UserSetting        `json:"setting" bson:"setting"`
 }
 
+func (u *User) GetId() (id primitive.ObjectID) {
+	return u.Id
+}
+
+func (u *User) SetId(id primitive.ObjectID) {
+	u.Id = id
+}
+
+func (u *User) GetUsername() (name string) {
+	return u.Username
+}
+
+func (u *User) GetPassword() (p string) {
+	return u.Password
+}
+
+func (u *User) GetRole() (r string) {
+	return u.Role
+}
+
+func (u *User) GetEmail() (email string) {
+	return u.Email
+}
+
 type UserSetting struct {
 	NotificationTrigger  string   `json:"notification_trigger" bson:"notification_trigger"`
 	DingTalkRobotWebhook string   `json:"ding_talk_robot_webhook" bson:"ding_talk_robot_webhook"`
@@ -22,13 +46,3 @@ type UserSetting struct {
 	MaxErrorLog          int      `json:"max_error_log" bson:"max_error_log"`
 	LogExpireDuration    int64    `json:"log_expire_duration" bson:"log_expire_duration"`
 }
-
-func (u *User) GetId() (id primitive.ObjectID) {
-	return u.Id
-}
-
-func (u *User) SetId(id primitive.ObjectID) {
-	u.Id = id
-}
-
-const UserContextKey = "user"

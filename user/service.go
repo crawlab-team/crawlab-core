@@ -52,6 +52,9 @@ func (svc *Service) Create(opts *interfaces.UserCreateOptions) (err error) {
 	if opts.Username == "" || opts.Password == "" {
 		return trace.TraceError(errors.ErrorUserMissingRequiredFields)
 	}
+	if opts.Role == "" {
+		opts.Role = constants.RoleNormal
+	}
 	if _, err := svc.modelSvc.GetUserByUsername(opts.Username, nil); err == nil {
 		return trace.TraceError(errors.ErrorUserAlreadyExists)
 	}
@@ -67,31 +70,35 @@ func (svc *Service) Create(opts *interfaces.UserCreateOptions) (err error) {
 	return nil
 }
 
-func (svc *Service) Login(opts *interfaces.UserLoginOptions) (token string, err error) {
-	u, err := svc.modelSvc.GetUserByUsername(opts.Username, nil)
+func (svc *Service) Login(opts *interfaces.UserLoginOptions) (token string, u interfaces.User, err error) {
+	u, err = svc.modelSvc.GetUserByUsername(opts.Username, nil)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	if u.Password != utils.EncryptPassword(opts.Password) {
-		return "", errors.ErrorUserMismatch
+	if u.GetPassword() != utils.EncryptPassword(opts.Password) {
+		return "", nil, errors.ErrorUserMismatch
 	}
 	token, err = svc.makeToken(u)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return token, nil
+	return token, u, nil
 }
 
-func (svc *Service) makeToken(user *models.User) (tokenStr string, err error) {
+func (svc *Service) CheckToken(tokenStr string) (u interfaces.User, err error) {
+	return svc.checkToken(tokenStr)
+}
+
+func (svc *Service) makeToken(user interfaces.User) (tokenStr string, err error) {
 	token := jwt.NewWithClaims(svc.jwtSigningMethod, jwt.MapClaims{
-		"id":       user.Id,
-		"username": user.Username,
+		"id":       user.GetId(),
+		"username": user.GetUsername(),
 		"nbf":      time.Now().Unix(),
 	})
 	return token.SignedString([]byte(svc.jwtSecret))
 }
 
-func (svc *Service) checkToken(tokenStr string) (user *models.User, err error) {
+func (svc *Service) checkToken(tokenStr string) (user interfaces.User, err error) {
 	token, err := jwt.Parse(tokenStr, svc.getSecretFunc())
 	if err != nil {
 		return
@@ -119,7 +126,7 @@ func (svc *Service) checkToken(tokenStr string) (user *models.User, err error) {
 		return
 	}
 
-	if username != user.Username {
+	if username != user.GetUsername() {
 		err = errors.ErrorUserMismatch
 		return
 	}

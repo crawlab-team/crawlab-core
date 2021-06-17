@@ -4,9 +4,11 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/errors"
-	user2 "github.com/crawlab-team/crawlab-core/user"
+	"github.com/crawlab-team/crawlab-core/user"
 	"github.com/gin-gonic/gin"
 )
+
+var userSvc, _ = user.GetUserService()
 
 func AuthorizationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -14,16 +16,15 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 		tokenStr := c.GetHeader("Authorization")
 
 		// validate token
-		user, err := user2.CheckToken(tokenStr)
-
-		// validation failed, return error response
+		u, err := userSvc.CheckToken(tokenStr)
 		if err != nil {
+			// validation failed, return error response
 			controllers.HandleErrorUnauthorized(c, errors.ErrorHttpUnauthorized)
 			return
 		}
 
 		// set user in context
-		c.Set(constants.ContextUser, &user)
+		c.Set(constants.ContextUser, u)
 
 		// validation success
 		c.Next()
