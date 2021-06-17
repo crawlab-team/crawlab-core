@@ -92,7 +92,7 @@ func InitRoutes(app *gin.Engine) (err error) {
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/projects", controllers.ProjectController)
 
 	// user
-	svc.RegisterListControllerToGroup(groups.AuthGroup, "/users", controllers.UserController)
+	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/users", controllers.UserController)
 
 	// spider
 	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/spiders", controllers.SpiderController)
@@ -118,7 +118,7 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// result
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/results", controllers.ResultController)
 
-	// schedules
+	// schedule
 	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/schedules", controllers.ScheduleController)
 
 	return nil

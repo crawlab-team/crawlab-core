@@ -24,13 +24,14 @@ type Test struct {
 	userSvc  interfaces.UserService
 
 	// test data
-	TestUsername string
-	TestPassword string
+	TestUsername    string
+	TestPassword    string
+	TestNewPassword string
 }
 
 func (t *Test) Setup(t2 *testing.T) {
 	var err error
-	t.userSvc, err = user.GetUserService()
+	t.userSvc, err = user.NewUserService()
 	if err != nil {
 		panic(err)
 	}
@@ -44,8 +45,9 @@ func (t *Test) Cleanup() {
 func NewTest() (t *Test, err error) {
 	// test
 	t = &Test{
-		TestUsername: "test_username",
-		TestPassword: "test_password",
+		TestUsername:    "test_username",
+		TestPassword:    "test_password",
+		TestNewPassword: "test_new_password",
 	}
 
 	// dependency injection

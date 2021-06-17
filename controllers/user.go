@@ -8,6 +8,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/user"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"net/http"
 )
@@ -17,18 +18,8 @@ var UserController *userController
 var UserActions = []Action{
 	{
 		Method:      http.MethodPost,
-		Path:        "/login",
-		HandlerFunc: userCtx.login,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/logout",
-		HandlerFunc: userCtx.logout,
-	},
-	{
-		Method:      http.MethodGet,
-		Path:        "/me",
-		HandlerFunc: userCtx.me,
+		Path:        "/:id/change-password",
+		HandlerFunc: userCtx.changePassword,
 	},
 }
 
@@ -63,26 +54,25 @@ type userContext struct {
 	userSvc  interfaces.UserService
 }
 
-func (ctx *userContext) login(c *gin.Context) {
-	var u models.User
-	if err := c.ShouldBindJSON(&u); err != nil {
+func (ctx *userContext) changePassword(c *gin.Context) {
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	token, loggedInUser, err := ctx.userSvc.Login(&interfaces.UserLoginOptions{
-		Username: u.Username,
-		Password: u.Password,
-	})
-	if err != nil {
-		HandleErrorUnauthorized(c, errors.ErrorUserUnauthorized)
+	var payload models.User
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		HandleErrorBadRequest(c, err)
 		return
 	}
-	c.Set(constants.UserContextKey, loggedInUser)
-	HandleSuccessWithData(c, token)
-}
-
-func (ctx *userContext) logout(c *gin.Context) {
-	c.Set(constants.UserContextKey, nil)
+	if len(payload.Password) < 6 {
+		HandleErrorBadRequest(c, errors.ErrorUserInvalidPassword)
+		return
+	}
+	if err := ctx.userSvc.ChangePassword(id, payload.Password); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
 	HandleSuccess(c)
 }
 

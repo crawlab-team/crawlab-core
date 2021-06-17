@@ -45,3 +45,17 @@ func TestUserService_Create_Login_CheckToken(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, u.Username, u3.GetUsername())
 }
+
+func TestUserService_ChangePassword(t *testing.T) {
+	var err error
+	T.Setup(t)
+
+	u, err := T.modelSvc.GetUserByUsername(constants.DefaultAdminUsername, nil)
+	require.Nil(t, err)
+	err = T.userSvc.ChangePassword(u.Id, T.TestNewPassword)
+	require.Nil(t, err)
+
+	u2, err := T.modelSvc.GetUserByUsername(constants.DefaultAdminUsername, nil)
+	require.Nil(t, err)
+	require.Equal(t, utils.EncryptPassword(T.TestNewPassword), u2.Password)
+}

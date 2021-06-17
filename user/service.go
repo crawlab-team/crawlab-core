@@ -89,6 +89,18 @@ func (svc *Service) CheckToken(tokenStr string) (u interfaces.User, err error) {
 	return svc.checkToken(tokenStr)
 }
 
+func (svc *Service) ChangePassword(id primitive.ObjectID, password string) (err error) {
+	u, err := svc.modelSvc.GetUserById(id)
+	if err != nil {
+		return err
+	}
+	u.Password = utils.EncryptPassword(password)
+	if err := delegate.NewModelDelegate(u).Save(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (svc *Service) makeToken(user interfaces.User) (tokenStr string, err error) {
 	token := jwt.NewWithClaims(svc.jwtSigningMethod, jwt.MapClaims{
 		"id":       user.GetId(),
