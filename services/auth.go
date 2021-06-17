@@ -1,19 +1,1 @@
 package services
-
-import (
-	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-)
-
-func GetAuthQuery(query bson.M, c *gin.Context) bson.M {
-	user := GetCurrentUser(c)
-	if user.Role == constants.RoleAdmin {
-		// 获得所有数据
-		return query
-	} else {
-		// 只获取自己的数据
-		query["user_id"] = user.Id
-		return query
-	}
-}

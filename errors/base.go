@@ -17,6 +17,7 @@ const (
 	ErrorPrefixFs         = "fs"
 	ErrorPrefixTask       = "task"
 	ErrorPrefixSchedule   = "schedule"
+	ErrorPrefixUser       = "user"
 )
 
 type ErrorPrefix string
