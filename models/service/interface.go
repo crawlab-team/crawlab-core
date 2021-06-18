@@ -36,6 +36,7 @@ type ModelService interface {
 	GetUser(query bson.M, opts *mongo.FindOptions) (res *models.User, err error)
 	GetUserList(query bson.M, opts *mongo.FindOptions) (res []models.User, err error)
 	GetUserByUsername(username string, opts *mongo.FindOptions) (res *models.User, err error)
+	GetUserByUsernameWithPassword(username string, opts *mongo.FindOptions) (res *models.User, err error)
 	GetSettingById(id primitive.ObjectID) (res *models.Setting, err error)
 	GetSetting(query bson.M, opts *mongo.FindOptions) (res *models.Setting, err error)
 	GetSettingList(query bson.M, opts *mongo.FindOptions) (res []models.Setting, err error)
@@ -73,5 +74,8 @@ type ModelService interface {
 	GetDataCollection(query bson.M, opts *mongo.FindOptions) (res *models.DataCollection, err error)
 	GetDataCollectionList(query bson.M, opts *mongo.FindOptions) (res []models.DataCollection, err error)
 	GetDataCollectionByName(name string, opts *mongo.FindOptions) (res *models.DataCollection, err error)
+	GetPasswordById(id primitive.ObjectID) (res *models.Password, err error)
+	GetPassword(query bson.M, opts *mongo.FindOptions) (res *models.Password, err error)
+	GetPasswordList(query bson.M, opts *mongo.FindOptions) (res []models.Password, err error)
 	DropAll() (err error)
 }

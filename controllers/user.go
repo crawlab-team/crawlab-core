@@ -60,16 +60,21 @@ func (ctx *userContext) changePassword(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	var payload models.User
+	var payload map[string]string
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	if len(payload.Password) < 6 {
+	password, ok := payload["password"]
+	if !ok {
+		HandleErrorBadRequest(c, errors.ErrorUserMissingRequiredFields)
+		return
+	}
+	if len(password) < 6 {
 		HandleErrorBadRequest(c, errors.ErrorUserInvalidPassword)
 		return
 	}
-	if err := ctx.userSvc.ChangePassword(id, payload.Password); err != nil {
+	if err := ctx.userSvc.ChangePassword(id, password); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/utils"
+	mongo2 "github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -49,25 +50,44 @@ func (svc *Service) SetJwtSigningMethod(method jwt.SigningMethod) {
 }
 
 func (svc *Service) Create(opts *interfaces.UserCreateOptions) (err error) {
+	// validate options
 	if opts.Username == "" || opts.Password == "" {
 		return trace.TraceError(errors.ErrorUserMissingRequiredFields)
 	}
+
+	// normalize options
 	if opts.Role == "" {
 		opts.Role = constants.RoleNormal
 	}
+
+	// check if user exists
 	if _, err := svc.modelSvc.GetUserByUsername(opts.Username, nil); err == nil {
 		return trace.TraceError(errors.ErrorUserAlreadyExists)
 	}
-	u := &models.User{
-		Username: opts.Username,
-		Password: utils.EncryptPassword(opts.Password),
-		Role:     opts.Role,
-		Email:    opts.Email,
-	}
-	if err := delegate.NewModelDelegate(u).Add(); err != nil {
-		return err
-	}
-	return nil
+
+	// transaction
+	return mongo2.RunTransaction(func(ctx mongo.SessionContext) error {
+		// add user
+		u := &models.User{
+			Username: opts.Username,
+			Role:     opts.Role,
+			Email:    opts.Email,
+		}
+		if err := delegate.NewModelDelegate(u).Add(); err != nil {
+			return err
+		}
+
+		// add password
+		p := &models.Password{
+			Id:       u.Id,
+			Password: utils.EncryptPassword(opts.Password),
+		}
+		if err := delegate.NewModelDelegate(p).Add(); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (svc *Service) Login(opts *interfaces.UserLoginOptions) (token string, u interfaces.User, err error) {
@@ -75,7 +95,11 @@ func (svc *Service) Login(opts *interfaces.UserLoginOptions) (token string, u in
 	if err != nil {
 		return "", nil, err
 	}
-	if u.GetPassword() != utils.EncryptPassword(opts.Password) {
+	p, err := svc.modelSvc.GetPasswordById(u.GetId())
+	if err != nil {
+		return "", nil, err
+	}
+	if p.Password != utils.EncryptPassword(opts.Password) {
 		return "", nil, errors.ErrorUserMismatch
 	}
 	token, err = svc.makeToken(u)
@@ -90,12 +114,12 @@ func (svc *Service) CheckToken(tokenStr string) (u interfaces.User, err error) {
 }
 
 func (svc *Service) ChangePassword(id primitive.ObjectID, password string) (err error) {
-	u, err := svc.modelSvc.GetUserById(id)
+	p, err := svc.modelSvc.GetPasswordById(id)
 	if err != nil {
 		return err
 	}
-	u.Password = utils.EncryptPassword(password)
-	if err := delegate.NewModelDelegate(u).Save(); err != nil {
+	p.Password = utils.EncryptPassword(password)
+	if err := delegate.NewModelDelegate(p).Save(); err != nil {
 		return err
 	}
 	return nil

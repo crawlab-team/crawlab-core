@@ -39,7 +39,7 @@ func (t *Test) Setup(t2 *testing.T) {
 }
 
 func (t *Test) Cleanup() {
-	_ = t.modelSvc.GetBaseService(interfaces.ModelIdUser).Delete(nil)
+	_ = t.modelSvc.GetBaseService(interfaces.ModelIdUser).DeleteList(nil)
 }
 
 func NewTest() (t *Test, err error) {

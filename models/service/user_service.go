@@ -39,3 +39,16 @@ func (svc *Service) GetUserByUsername(username string, opts *mongo.FindOptions) 
 	query := bson.M{"username": username}
 	return svc.GetUser(query, opts)
 }
+
+func (svc *Service) GetUserByUsernameWithPassword(username string, opts *mongo.FindOptions) (res *models2.User, err error) {
+	u, err := svc.GetUserByUsername(username, opts)
+	if err != nil {
+		return nil, err
+	}
+	p, err := svc.GetPasswordById(u.Id)
+	if err != nil {
+		return nil, err
+	}
+	u.Password = p.Password
+	return u, nil
+}

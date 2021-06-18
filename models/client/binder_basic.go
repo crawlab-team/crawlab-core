@@ -63,6 +63,8 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 		return b.Process(&m.DataCollection)
 	case interfaces.ModelIdResult:
 		return b.Process(&m.Result)
+	case interfaces.ModelIdPassword:
+		return b.Process(&m.Password)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

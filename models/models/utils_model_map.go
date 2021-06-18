@@ -20,6 +20,7 @@ type ModelMap struct {
 	DataSource     DataSource
 	DataCollection DataCollection
 	Result         Result
+	Password       Password
 }
 
 type ModelListMap struct {
@@ -42,6 +43,7 @@ type ModelListMap struct {
 	DataSources     []DataSource
 	DataCollections []DataCollection
 	Results         []Result
+	Passwords       []Password
 }
 
 func NewModelMap() (m *ModelMap) {

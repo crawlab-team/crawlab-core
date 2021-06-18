@@ -53,6 +53,8 @@ func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 		return newModelDelegate(interfaces.ModelIdDataCollection, doc)
 	case *models.Result:
 		return newModelDelegate(interfaces.ModelIdResult, doc)
+	case *models.Password:
+		return newModelDelegate(interfaces.ModelIdPassword, doc)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
@@ -341,7 +343,9 @@ func (d *ModelDelegate) _skip() (ok bool) {
 		interfaces.ModelIdArtifact,
 		interfaces.ModelIdTaskQueue,
 		interfaces.ModelIdTaskStat,
-		interfaces.ModelIdSpiderStat:
+		interfaces.ModelIdSpiderStat,
+		interfaces.ModelIdResult,
+		interfaces.ModelIdPassword:
 		return true
 	default:
 		return false
