@@ -12,7 +12,7 @@ type RouterGroups struct {
 
 func NewRouterGroups(app *gin.Engine) (groups *RouterGroups) {
 	return &RouterGroups{
-		AuthGroup:      app.Group("/"),
-		AnonymousGroup: app.Group("/", middlewares.AuthorizationMiddleware()),
+		AuthGroup:      app.Group("/", middlewares.AuthorizationMiddleware()),
+		AnonymousGroup: app.Group("/"),
 	}
 }

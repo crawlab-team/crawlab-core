@@ -54,6 +54,9 @@ func (svc *Service) Create(opts *interfaces.UserCreateOptions) (err error) {
 	if opts.Username == "" || opts.Password == "" {
 		return trace.TraceError(errors.ErrorUserMissingRequiredFields)
 	}
+	if len(opts.Password) < 5 {
+		return trace.TraceError(errors.ErrorUserInvalidPassword)
+	}
 
 	// normalize options
 	if opts.Role == "" {

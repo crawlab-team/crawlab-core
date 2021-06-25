@@ -12,5 +12,5 @@ var (
 	ErrorUserMismatch              = NewUserError("mismatch")
 	ErrorUserMissingRequiredFields = NewUserError("missing required fields")
 	ErrorUserUnauthorized          = NewUserError("unauthorized")
-	ErrorUserInvalidPassword       = NewUserError("invalid password")
+	ErrorUserInvalidPassword       = NewUserError("invalid password (length must be no less than 5)")
 )
