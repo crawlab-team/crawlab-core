@@ -121,5 +121,8 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// schedule
 	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/schedules", controllers.ScheduleController)
 
+	// stats
+	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/stats", controllers.StatsController)
+
 	return nil
 }

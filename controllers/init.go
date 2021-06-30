@@ -23,6 +23,7 @@ func InitControllers() (err error) {
 	DataCollectionController = NewListControllerDelegate(ControllerIdDataCollection, modelSvc.GetBaseService(interfaces.ModelIdDataCollection))
 	ResultController = NewActionControllerDelegate(ControllerIdResult, ResultActions)
 	ScheduleController = newScheduleController()
+	StatsController = NewActionControllerDelegate(ControllerIdStats, StatsActions)
 
 	return nil
 }

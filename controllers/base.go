@@ -20,6 +20,7 @@ const (
 	ControllerIdDataSource
 	ControllerIdDataCollection
 	ControllerIdResult
+	ControllerIdStats
 )
 
 type ControllerId int
