@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"reflect"
 	"strings"
 )
 
@@ -22,12 +23,38 @@ func GetFilter(c *gin.Context) (f *entity.Filter, err error) {
 
 	// attempt to convert object id
 	for i, cond := range conditions {
-		switch cond.Value.(type) {
-		case string:
-			id, err := primitive.ObjectIDFromHex(cond.Value.(string))
+		v := reflect.ValueOf(cond.Value)
+		switch v.Kind() {
+		case reflect.String:
+			item := cond.Value.(string)
+			id, err := primitive.ObjectIDFromHex(item)
 			if err == nil {
 				conditions[i].Value = id
+			} else {
+				conditions[i].Value = item
 			}
+		case reflect.Slice, reflect.Array:
+			var items []interface{}
+			for i := 0; i < v.Len(); i++ {
+				vItem := v.Index(i)
+				item := vItem.Interface()
+
+				// string
+				stringItem, ok := item.(string)
+				if ok {
+					id, err := primitive.ObjectIDFromHex(stringItem)
+					if err == nil {
+						items = append(items, id)
+					} else {
+						items = append(items, stringItem)
+					}
+					continue
+				}
+
+				// default
+				items = append(items, item)
+			}
+			conditions[i].Value = items
 		}
 	}
 
@@ -73,7 +100,7 @@ func FilterToQuery(f *entity.Filter) (q bson.M, err error) {
 		case constants.FilterOpNotEqual:
 			q[cond.Key] = bson.M{"$ne": cond.Value}
 		case constants.FilterOpContains, constants.FilterOpRegex, constants.FilterOpSearch:
-			q[cond.Key] = bson.M{"$regex": cond.Value}
+			q[cond.Key] = bson.M{"$regex": cond.Value, "$options": "i"}
 		case constants.FilterOpNotContains:
 			q[cond.Key] = bson.M{"$not": bson.M{"$regex": cond.Value}}
 		case constants.FilterOpIn:
