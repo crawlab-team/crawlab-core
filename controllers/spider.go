@@ -585,6 +585,9 @@ func (ctx *spiderContext) _upsertDataCollection(s *models.Spider) (err error) {
 			}
 		}
 		s.ColId = dc.Id
+
+		// create index
+		_ = mongo.GetMongoCol(dc.Name).CreateIndex(mongo2.IndexModel{Keys: bson.M{"_tid": 1}})
 	} else {
 		// with id
 		dc, err := ctx.modelSvc.GetDataCollectionById(s.ColId)

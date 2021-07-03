@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/common"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
@@ -46,6 +47,9 @@ func (svc *MasterService) Init() (err error) {
 }
 
 func (svc *MasterService) Start() {
+	// create indexes
+	common.CreateIndexes()
+
 	// start grpc server
 	if err := svc.server.Start(); err != nil {
 		panic(err)
