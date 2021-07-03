@@ -185,10 +185,11 @@ func (d *ListControllerDelegate) getList(c *gin.Context) (list arraylist.List, t
 	// params
 	pagination := MustGetPagination(c)
 	query := MustGetFilterQuery(c)
+	sort := MustGetSortOption(c)
 
 	// get list
 	list, err = d.svc.GetList(query, &mongo.FindOptions{
-		Sort:  bson.D{{"_id", -1}},
+		Sort:  sort,
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
 	})

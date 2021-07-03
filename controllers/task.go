@@ -223,10 +223,11 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 	// params
 	pagination := MustGetPagination(c)
 	query := MustGetFilterQuery(c)
+	sort := MustGetSortOption(c)
 
 	// get list
 	list, err := ctx.modelTaskSvc.GetList(query, &mongo.FindOptions{
-		Sort:  bson.D{{"_id", -1}},
+		Sort:  sort,
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
 	})
