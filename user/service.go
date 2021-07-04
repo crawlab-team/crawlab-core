@@ -11,6 +11,7 @@ import (
 	mongo2 "github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
@@ -126,6 +127,23 @@ func (svc *Service) ChangePassword(id primitive.ObjectID, password string) (err 
 		return err
 	}
 	return nil
+}
+
+func (svc *Service) MakeToken(user interfaces.User) (tokenStr string, err error) {
+	return svc.makeToken(user)
+}
+
+func (svc *Service) GetCurrentUser(c *gin.Context) (user interfaces.User, err error) {
+	// token string
+	tokenStr := c.GetHeader("Authorization")
+
+	// user
+	u, err := userSvc.CheckToken(tokenStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
 }
 
 func (svc *Service) makeToken(user interfaces.User) (tokenStr string, err error) {

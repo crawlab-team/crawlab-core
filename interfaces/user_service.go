@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -13,4 +14,6 @@ type UserService interface {
 	Login(opts *UserLoginOptions) (token string, u User, err error)
 	CheckToken(token string) (u User, err error)
 	ChangePassword(id primitive.ObjectID, password string) (err error)
+	MakeToken(user User) (tokenStr string, err error)
+	GetCurrentUser(c *gin.Context) (u User, err error)
 }
