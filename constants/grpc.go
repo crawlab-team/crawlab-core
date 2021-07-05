@@ -5,9 +5,9 @@ const (
 	DefaultGrpcServerPort       = "9666"
 	DefaultGrpcClientRemoteHost = "localhost"
 	DefaultGrpcClientRemotePort = DefaultGrpcServerPort
+	DefaultGrpcAuthKey          = "Crawlab2021!"
 )
 
 const (
-	GrpcSuccess = "success"
-	GrpcError   = "error"
+	GrpcHeaderAuthorization = "authorization"
 )

@@ -15,4 +15,5 @@ var (
 	ErrorGrpcSubscribeNotExists   = NewGrpcError("subscribe not exists")
 	ErrorGrpcStreamNotFound       = NewGrpcError("stream not found")
 	ErrorGrpcInvalidCode          = NewGrpcError("invalid code")
+	ErrorGrpcUnauthorized         = NewGrpcError("unauthorized")
 )

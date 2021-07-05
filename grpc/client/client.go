@@ -9,6 +9,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/grpc/middlewares"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -226,6 +227,8 @@ func (c *Client) _connect() (err error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 	opts = append(opts, grpc.WithBlock())
+	opts = append(opts, grpc.WithChainUnaryInterceptor(middlewares.GetAuthTokenUnaryChainInterceptor(c.nodeCfgSvc)))
+	opts = append(opts, grpc.WithChainStreamInterceptor(middlewares.GetAuthTokenStreamChainInterceptor(c.nodeCfgSvc)))
 	c.conn, err = grpc.DialContext(ctx, address, opts...)
 	if err != nil {
 		_ = trace.TraceError(err)

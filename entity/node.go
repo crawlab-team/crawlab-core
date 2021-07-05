@@ -8,6 +8,7 @@ type NodeInfo struct {
 	Mac         string `json:"mac"`
 	Hostname    string `json:"hostname"`
 	Description string `json:"description"`
+	AuthKey     string `json:"auth_key"`
 }
 
 func (n NodeInfo) Value() interface{} {

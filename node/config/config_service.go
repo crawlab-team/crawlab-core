@@ -70,6 +70,10 @@ func (svc *Service) IsMaster() (res bool) {
 	return svc.cfg.IsMaster
 }
 
+func (svc *Service) GetAuthKey() (res string) {
+	return svc.cfg.AuthKey
+}
+
 func (svc *Service) GetConfigPath() (path string) {
 	return svc.path
 }

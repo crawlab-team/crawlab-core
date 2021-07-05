@@ -7,11 +7,13 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/grpc/middlewares"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"go.uber.org/dig"
 	"go/types"
@@ -187,14 +189,6 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 			Host: constants.DefaultGrpcServerHost,
 			Port: constants.DefaultGrpcServerPort,
 		}),
-		svr: grpc.NewServer(
-			grpc_middleware.WithUnaryServerChain(
-				grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
-			),
-			grpc_middleware.WithStreamServerChain(
-				grpc_recovery.StreamServerInterceptor(recoveryOpts...),
-			),
-		),
 	}
 
 	// options
@@ -234,6 +228,18 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	}); err != nil {
 		return nil, err
 	}
+
+	// grpc server
+	svr.svr = grpc.NewServer(
+		grpc_middleware.WithUnaryServerChain(
+			grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
+			grpc_auth.UnaryServerInterceptor(middlewares.GetAuthTokenFunc(svr.nodeCfgSvc)),
+		),
+		grpc_middleware.WithStreamServerChain(
+			grpc_recovery.StreamServerInterceptor(recoveryOpts...),
+			grpc_auth.StreamServerInterceptor(middlewares.GetAuthTokenFunc(svr.nodeCfgSvc)),
+		),
+	)
 
 	// initialize
 	if err := svr.Init(); err != nil {

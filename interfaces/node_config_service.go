@@ -7,4 +7,5 @@ type NodeConfigService interface {
 	GetBasicNodeInfo() Entity
 	GetNodeKey() string
 	IsMaster() bool
+	GetAuthKey() string
 }
