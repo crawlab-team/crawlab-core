@@ -15,6 +15,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/spf13/viper"
 	"go.uber.org/dig"
 	"go/types"
 	"google.golang.org/grpc"
@@ -266,6 +267,16 @@ func GetServer(path string, opts ...Option) (svr interfaces.GrpcServer, err erro
 		path = config2.DefaultConfigPath
 	}
 	opts = append(opts, WithConfigPath(path))
+
+	viperServerAddress := viper.GetString("grpc.server.address")
+	if viperServerAddress != "" {
+		address, err := entity.NewAddressFromString(viperServerAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, WithAddress(address))
+	}
+
 	res, ok := serverStore.Load(path)
 	if ok {
 		svr, ok = res.(interfaces.GrpcServer)

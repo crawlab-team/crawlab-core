@@ -11,6 +11,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
@@ -191,6 +192,13 @@ func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, 
 }
 
 func ProvideSpiderAdminService(path string, opts ...Option) func() (svc interfaces.SpiderAdminService, err error) {
+	if path != "" || path == config2.DefaultConfigPath {
+		if viper.GetString("config.path") != "" {
+			path = viper.GetString("config.path")
+		} else {
+			path = config2.DefaultConfigPath
+		}
+	}
 	opts = append(opts, WithConfigPath(path))
 	return func() (svc interfaces.SpiderAdminService, err error) {
 		return NewSpiderAdminService(opts...)

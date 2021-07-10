@@ -57,10 +57,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 	// find in db
 	node, err := svr.modelSvc.GetNodeByKey(nodeKey, nil)
 	if err == nil {
-		if node.Status != constants.NodeStatusUnregistered {
-			// error: already exists
-			return HandleError(errors.ErrorModelAlreadyExists)
-		} else if node.IsMaster {
+		if node.IsMaster {
 			// error: cannot register master node
 			return HandleError(errors.ErrorGrpcNotAllowed)
 		} else {

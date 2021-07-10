@@ -393,9 +393,9 @@ func ForceGetClient(path string, opts ...Option) (p interfaces.GrpcClient, err e
 }
 
 func createClient(path string, opts ...Option) (client2 interfaces.GrpcClient, err error) {
-	viperClientAddress := viper.GetString("grpc.client.address")
-	if viperClientAddress != "" {
-		address, err := entity.NewAddressFromString(viperClientAddress)
+	viperAddress := viper.GetString("grpc.address")
+	if viperAddress != "" {
+		address, err := entity.NewAddressFromString(viperAddress)
 		if err != nil {
 			return nil, err
 		}

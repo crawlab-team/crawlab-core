@@ -185,7 +185,7 @@ func (svc *MasterService) monitor() (err error) {
 	}
 
 	// all worker nodes
-	nodes, err := svc.modelSvc.GetNodeList(bson.M{"is_master": false}, nil)
+	nodes, err := svc.modelSvc.GetNodeList(bson.M{}, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			return nil
