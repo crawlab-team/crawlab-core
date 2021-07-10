@@ -16,7 +16,7 @@ type Options struct {
 
 var DefaultConfigOptions = &Options{
 	Key:      utils.NewUUIDString(),
-	IsMaster: false,
+	IsMaster: true,
 	AuthKey:  constants.DefaultGrpcAuthKey,
 }
 

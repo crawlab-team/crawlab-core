@@ -59,6 +59,7 @@ func (svc *Service) GetBasicNodeInfo() (res interfaces.Entity) {
 	return &entity.NodeInfo{
 		Key:      svc.GetNodeKey(),
 		IsMaster: svc.IsMaster(),
+		AuthKey:  svc.GetAuthKey(),
 	}
 }
 
