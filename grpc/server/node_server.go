@@ -137,6 +137,11 @@ func (svr NodeServer) SendHeartbeat(ctx context.Context, req *grpc.Request) (res
 	return HandleSuccessWithData(node)
 }
 
+// Ping from worker to master
+func (svr NodeServer) Ping(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
+	return HandleSuccess()
+}
+
 func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_SubscribeServer) (err error) {
 	log.Infof("master received subscribe request from node[%s]", request.NodeKey)
 

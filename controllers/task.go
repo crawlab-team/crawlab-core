@@ -24,32 +24,35 @@ import (
 
 var TaskController *taskController
 
-var TaskActions = []Action{
-	{
-		Method:      http.MethodPut,
-		Path:        "/run",
-		HandlerFunc: taskCtx.run,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/restart",
-		HandlerFunc: taskCtx.restart,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/cancel",
-		HandlerFunc: taskCtx.cancel,
-	},
-	{
-		Method:      http.MethodGet,
-		Path:        "/:id/logs",
-		HandlerFunc: taskCtx.getLogs,
-	},
-	{
-		Method:      http.MethodGet,
-		Path:        "/:id/data",
-		HandlerFunc: taskCtx.getData,
-	},
+func getTaskActions() []Action {
+	taskCtx := newTaskContext()
+	return []Action{
+		{
+			Method:      http.MethodPut,
+			Path:        "/run",
+			HandlerFunc: taskCtx.run,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/restart",
+			HandlerFunc: taskCtx.restart,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/cancel",
+			HandlerFunc: taskCtx.cancel,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/:id/logs",
+			HandlerFunc: taskCtx.getLogs,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/:id/data",
+			HandlerFunc: taskCtx.getData,
+		},
+	}
 }
 
 type taskController struct {
@@ -375,8 +378,6 @@ func (ctx *taskContext) _getLogDriver(id primitive.ObjectID) (l clog.Driver, err
 	return l, nil
 }
 
-var taskCtx = newTaskContext()
-
 func newTaskContext() *taskContext {
 	// context
 	ctx := &taskContext{
@@ -413,13 +414,14 @@ func newTaskContext() *taskContext {
 }
 
 func newTaskController() *taskController {
+	actions := getTaskActions()
 	modelSvc, err := service.GetService()
 	if err != nil {
 		panic(err)
 	}
 
-	ctr := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.GetBaseService(interfaces.ModelIdTask), TaskActions)
-	d := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.GetBaseService(interfaces.ModelIdTask), TaskActions)
+	ctr := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.GetBaseService(interfaces.ModelIdTask), actions)
+	d := NewListPostActionControllerDelegate(ControllerIdTask, modelSvc.GetBaseService(interfaces.ModelIdTask), actions)
 	ctx := newTaskContext()
 
 	return &taskController{

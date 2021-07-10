@@ -16,17 +16,20 @@ import (
 
 var ScheduleController *scheduleController
 
-var ScheduleActions = []Action{
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/enable",
-		HandlerFunc: scheduleCtx.enable,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/disable",
-		HandlerFunc: scheduleCtx.disable,
-	},
+func getScheduleActions() []Action {
+	scheduleCtx := newScheduleContext()
+	return []Action{
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/enable",
+			HandlerFunc: scheduleCtx.enable,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/disable",
+			HandlerFunc: scheduleCtx.disable,
+		},
+	}
 }
 
 type scheduleController struct {
@@ -104,8 +107,6 @@ func (ctr *scheduleController) DeleteList(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-var scheduleCtx = newScheduleContext()
-
 func (ctx *scheduleContext) enable(c *gin.Context) {
 	s, err := ctx._getSchedule(c)
 	if err != nil {
@@ -177,13 +178,14 @@ func newScheduleContext() *scheduleContext {
 }
 
 func newScheduleController() *scheduleController {
+	actions := getScheduleActions()
 	modelSvc, err := service.GetService()
 	if err != nil {
 		panic(err)
 	}
 
-	ctr := NewListPostActionControllerDelegate(ControllerIdSchedule, modelSvc.GetBaseService(interfaces.ModelIdSchedule), ScheduleActions)
-	d := NewListPostActionControllerDelegate(ControllerIdSchedule, modelSvc.GetBaseService(interfaces.ModelIdSchedule), ScheduleActions)
+	ctr := NewListPostActionControllerDelegate(ControllerIdSchedule, modelSvc.GetBaseService(interfaces.ModelIdSchedule), actions)
+	d := NewListPostActionControllerDelegate(ControllerIdSchedule, modelSvc.GetBaseService(interfaces.ModelIdSchedule), actions)
 	ctx := newScheduleContext()
 
 	return &scheduleController{

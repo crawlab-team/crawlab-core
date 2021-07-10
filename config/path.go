@@ -1,6 +1,9 @@
 package config
 
-import "github.com/crawlab-team/crawlab-core/interfaces"
+import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/spf13/viper"
+)
 
 type PathService struct {
 	cfgPath string
@@ -15,5 +18,11 @@ func (svc *PathService) SetConfigPath(path string) {
 }
 
 func NewConfigPathService() (svc interfaces.WithConfigPath) {
-	return &PathService{}
+	svc = &PathService{}
+	if viper.GetString("config.path") != "" {
+		svc.SetConfigPath(viper.GetString("config.path"))
+	} else {
+		svc.SetConfigPath(DefaultConfigPath)
+	}
+	return svc
 }

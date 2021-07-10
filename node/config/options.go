@@ -1,6 +1,8 @@
 package config
 
-import "github.com/crawlab-team/crawlab-core/interfaces"
+import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
+)
 
 type Option func(svc interfaces.NodeConfigService)
 

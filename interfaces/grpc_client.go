@@ -23,4 +23,5 @@ type GrpcClient interface {
 	NewModelBaseServiceRequest(ModelId, GrpcBaseServiceParams) (*grpc.Request, error)
 	IsStarted() bool
 	IsClosed() bool
+	Err() error
 }

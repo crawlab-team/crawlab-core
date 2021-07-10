@@ -15,6 +15,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc2 "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"go.uber.org/dig"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -36,6 +37,7 @@ type Client struct {
 	conn   *grpc.ClientConn
 	stream grpc2.NodeService_SubscribeClient
 	msgCh  chan *grpc2.StreamMessage
+	err    error
 
 	// grpc clients
 	ModelDelegateClient    grpc2.ModelDelegateClient
@@ -210,6 +212,10 @@ func (c *Client) IsClosed() (res bool) {
 	return false
 }
 
+func (c *Client) Err() (err error) {
+	return c.err
+}
+
 func (c *Client) connect() (err error) {
 	return backoff.RetryNotify(c._connect, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("grpc client connect"))
 }
@@ -283,6 +289,9 @@ func (c *Client) handleStreamMessage() {
 		// receive stream message
 		msg, err := c.stream.Recv()
 		if err != nil {
+			// set error
+			c.err = err
+
 			// end
 			if err == io.EOF {
 				log.Infof("received EOF signal, disconnecting")
@@ -303,6 +312,9 @@ func (c *Client) handleStreamMessage() {
 
 		// send stream message to channel
 		c.msgCh <- msg
+
+		// reset error
+		c.err = nil
 	}
 }
 
@@ -320,7 +332,6 @@ func (c *Client) needRestart() bool {
 func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 	// client
 	client := &Client{
-		cfgPath: config2.DefaultConfigPath,
 		address: entity.NewAddress(&entity.AddressOptions{
 			Host: constants.DefaultGrpcClientRemoteHost,
 			Port: constants.DefaultGrpcClientRemotePort,
@@ -382,6 +393,20 @@ func ForceGetClient(path string, opts ...Option) (p interfaces.GrpcClient, err e
 }
 
 func createClient(path string, opts ...Option) (client2 interfaces.GrpcClient, err error) {
+	viperClientAddress := viper.GetString("grpc.client.address")
+	if viperClientAddress != "" {
+		address, err := entity.NewAddressFromString(viperClientAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, WithAddress(address))
+	}
+
+	viperCfgPath := viper.GetString("config.path")
+	if viperCfgPath != "" {
+		opts = append(opts, WithConfigPath(viperCfgPath))
+	}
+
 	c := dig.New()
 	if err := c.Provide(ProvideClient(path, opts...)); err != nil {
 		return nil, trace.TraceError(err)

@@ -258,7 +258,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 		opt(svc)
 	}
 
-	// dependency options
+	// server options
 	var serverOpts []server.Option
 	if svc.address != nil {
 		serverOpts = append(serverOpts, server.WithAddress(svc.address))

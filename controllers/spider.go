@@ -28,57 +28,60 @@ import (
 
 var SpiderController *spiderController
 
-var SpiderActions = []Action{
-	{
-		Method:      http.MethodGet,
-		Path:        "/:id/files/list",
-		HandlerFunc: spiderCtx.listDir,
-	},
-	{
-		Method:      http.MethodGet,
-		Path:        "/:id/files/get",
-		HandlerFunc: spiderCtx.getFile,
-	},
-	{
-		Method:      http.MethodGet,
-		Path:        "/:id/files/info",
-		HandlerFunc: spiderCtx.getFileInfo,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/files/save",
-		HandlerFunc: spiderCtx.saveFile,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/files/save/dir",
-		HandlerFunc: spiderCtx.saveDir,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/files/rename",
-		HandlerFunc: spiderCtx.renameFile,
-	},
-	{
-		Method:      http.MethodDelete,
-		Path:        "/:id/files/delete",
-		HandlerFunc: spiderCtx.delete,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/files/copy",
-		HandlerFunc: spiderCtx.copyFile,
-	},
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/run",
-		HandlerFunc: spiderCtx.run,
-	},
-	//{
-	//	Method:      http.MethodPost,
-	//	Path:        "/:id/clone",
-	//	HandlerFunc: spiderCtx.clone,
-	//},
+func getSpiderActions() []Action {
+	spiderCtx := newSpiderContext()
+	return []Action{
+		{
+			Method:      http.MethodGet,
+			Path:        "/:id/files/list",
+			HandlerFunc: spiderCtx.listDir,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/:id/files/get",
+			HandlerFunc: spiderCtx.getFile,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/:id/files/info",
+			HandlerFunc: spiderCtx.getFileInfo,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/files/save",
+			HandlerFunc: spiderCtx.saveFile,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/files/save/dir",
+			HandlerFunc: spiderCtx.saveDir,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/files/rename",
+			HandlerFunc: spiderCtx.renameFile,
+		},
+		{
+			Method:      http.MethodDelete,
+			Path:        "/:id/files/delete",
+			HandlerFunc: spiderCtx.delete,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/files/copy",
+			HandlerFunc: spiderCtx.copyFile,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/run",
+			HandlerFunc: spiderCtx.run,
+		},
+		//{
+		//	Method:      http.MethodPost,
+		//	Path:        "/:id/clone",
+		//	HandlerFunc: spiderCtx.clone,
+		//},
+	}
 }
 
 type spiderController struct {
@@ -526,7 +529,7 @@ func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id
 	}
 
 	// fs service
-	fsSvc, err = spiderCtx.syncSvc.GetFsService(id)
+	fsSvc, err = newSpiderContext().syncSvc.GetFsService(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -599,9 +602,13 @@ func (ctx *spiderContext) _upsertDataCollection(s *models.Spider) (err error) {
 	return nil
 }
 
-var spiderCtx = newSpiderContext()
+var _spiderCtx *spiderContext
 
 func newSpiderContext() *spiderContext {
+	if _spiderCtx != nil {
+		return _spiderCtx
+	}
+
 	// context
 	ctx := &spiderContext{}
 
@@ -631,17 +638,20 @@ func newSpiderContext() *spiderContext {
 	// model spider service
 	ctx.modelSpiderSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdSpider)
 
+	_spiderCtx = ctx
+
 	return ctx
 }
 
 func newSpiderController() *spiderController {
+	actions := getSpiderActions()
 	modelSvc, err := service.GetService()
 	if err != nil {
 		panic(err)
 	}
 
-	ctr := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.GetBaseService(interfaces.ModelIdSpider), SpiderActions)
-	d := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.GetBaseService(interfaces.ModelIdSpider), SpiderActions)
+	ctr := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.GetBaseService(interfaces.ModelIdSpider), actions)
+	d := NewListPostActionControllerDelegate(ControllerIdSpider, modelSvc.GetBaseService(interfaces.ModelIdSpider), actions)
 	ctx := newSpiderContext()
 
 	return &spiderController{

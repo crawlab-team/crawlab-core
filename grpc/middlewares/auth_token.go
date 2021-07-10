@@ -29,7 +29,8 @@ func GetAuthTokenFunc(nodeCfgSvc interfaces.NodeConfigService) grpc_auth.AuthFun
 		authKey := res[0]
 
 		// validate
-		if authKey != nodeCfgSvc.GetAuthKey() {
+		svrAuthKey := nodeCfgSvc.GetAuthKey()
+		if authKey != svrAuthKey {
 			return ctx, errors.ErrorGrpcUnauthorized
 		}
 
@@ -39,22 +40,24 @@ func GetAuthTokenFunc(nodeCfgSvc interfaces.NodeConfigService) grpc_auth.AuthFun
 
 func GetAuthTokenUnaryChainInterceptor(nodeCfgSvc interfaces.NodeConfigService) grpc.UnaryClientInterceptor {
 	// set auth key
-	header := metadata.MD{}
-	header[constants.GrpcHeaderAuthorization] = []string{nodeCfgSvc.GetAuthKey()}
-
+	md := metadata.Pairs(constants.GrpcHeaderAuthorization, nodeCfgSvc.GetAuthKey())
+	//header := metadata.MD{}
+	//header[constants.GrpcHeaderAuthorization] = []string{nodeCfgSvc.GetAuthKey()}
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		opts = append(opts, grpc.Header(&header))
+		ctx = metadata.NewOutgoingContext(context.Background(), md)
+		//opts = append(opts, grpc.Header(&header))
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
 
 func GetAuthTokenStreamChainInterceptor(nodeCfgSvc interfaces.NodeConfigService) grpc.StreamClientInterceptor {
 	// set auth key
-	header := metadata.MD{}
-	header[constants.GrpcHeaderAuthorization] = []string{nodeCfgSvc.GetAuthKey()}
-
+	md := metadata.Pairs(constants.GrpcHeaderAuthorization, nodeCfgSvc.GetAuthKey())
+	//header := metadata.MD{}
+	//header[constants.GrpcHeaderAuthorization] = []string{nodeCfgSvc.GetAuthKey()}
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-		opts = append(opts, grpc.Header(&header))
+		ctx = metadata.NewOutgoingContext(context.Background(), md)
+		//opts = append(opts, grpc.Header(&header))
 		s, err := streamer(ctx, desc, cc, method, opts...)
 		if err != nil {
 			return nil, err

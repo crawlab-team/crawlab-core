@@ -1,11 +1,13 @@
 package test
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -18,6 +20,9 @@ func TestAuthToken(t *testing.T) {
 
 	// auth key
 	authKey := "test-auth-key"
+
+	// auth key (invalid)
+	authKeyInvalid := "test-auth-key-invalid"
 
 	// tmp dir
 	tmpDir := os.TempDir()
@@ -49,7 +54,7 @@ func TestAuthToken(t *testing.T) {
 	workerInvalidConfig := config.Config{
 		Key:      "worker",
 		IsMaster: false,
-		AuthKey:  authKey,
+		AuthKey:  authKeyInvalid,
 	}
 	workerInvalidConfigData, err := json.Marshal(&workerInvalidConfig)
 	require.Nil(t, err)
@@ -75,4 +80,17 @@ func TestAuthToken(t *testing.T) {
 	require.Nil(t, err)
 	err = c.Start()
 	require.Nil(t, err)
+	_, err = c.GetNodeClient().Ping(context.Background(), &grpc.Request{NodeKey: workerConfig.Key})
+	require.Nil(t, err)
+
+	// client (invalid)
+	ci, err := client.GetClient(workerInvalidConfigPath, client.WithAddress(entity.NewAddress(&entity.AddressOptions{
+		Host: "localhost",
+		Port: "9999",
+	})))
+	require.Nil(t, err)
+	err = ci.Start()
+	require.Nil(t, err)
+	_, err = ci.GetNodeClient().Ping(context.Background(), &grpc.Request{NodeKey: workerInvalidConfig.Key})
+	require.NotNil(t, err)
 }
