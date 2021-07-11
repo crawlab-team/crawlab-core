@@ -32,7 +32,7 @@ type Service struct {
 	clientModelTaskStatSvc interfaces.GrpcClientModelTaskStatService
 
 	// settings
-	maxRunners        int
+	//maxRunners        int
 	exitWatchDuration time.Duration
 	reportInterval    time.Duration
 
@@ -48,8 +48,14 @@ func (svc *Service) Start() {
 }
 
 func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
+	// current node
+	n, err := svc.GetCurrentNode()
+	if err != nil {
+		return err
+	}
+
 	// validate if there are available runners
-	if svc.getRunnerCount() >= svc.maxRunners {
+	if svc.getRunnerCount() >= n.GetMaxRunners() {
 		return trace.TraceError(errors.ErrorTaskNoAvailableRunners)
 	}
 
@@ -139,13 +145,13 @@ func (svc *Service) UnlockSync(spiderId primitive.ObjectID) {
 	svc.syncLocks.Delete(spiderId)
 }
 
-func (svc *Service) GetMaxRunners() (maxRunners int) {
-	return svc.maxRunners
-}
-
-func (svc *Service) SetMaxRunners(maxRunners int) {
-	svc.maxRunners = maxRunners
-}
+//func (svc *Service) GetMaxRunners() (maxRunners int) {
+//	return svc.maxRunners
+//}
+//
+//func (svc *Service) SetMaxRunners(maxRunners int) {
+//	svc.maxRunners = maxRunners
+//}
 
 func (svc *Service) GetExitWatchDuration() (duration time.Duration) {
 	return svc.exitWatchDuration
@@ -177,6 +183,53 @@ func (svc *Service) GetModelTaskService() (modelTaskSvc interfaces.GrpcClientMod
 
 func (svc *Service) GetModelTaskStatService() (modelTaskSvc interfaces.GrpcClientModelTaskStatService) {
 	return svc.clientModelTaskStatSvc
+}
+
+func (svc *Service) GetNodeConfigService() (cfgSvc interfaces.NodeConfigService) {
+	return svc.cfgSvc
+}
+
+func (svc *Service) GetCurrentNode() (n interfaces.Node, err error) {
+	// node key
+	nodeKey := svc.cfgSvc.GetNodeKey()
+
+	// current node
+	if svc.cfgSvc.IsMaster() {
+		n, err = svc.modelSvc.GetNodeByKey(nodeKey, nil)
+	} else {
+		n, err = svc.clientModelNodeSvc.GetNodeByKey(nodeKey)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
+func (svc *Service) GetTaskById(id primitive.ObjectID) (t interfaces.Task, err error) {
+	if svc.cfgSvc.IsMaster() {
+		t, err = svc.modelSvc.GetTaskById(id)
+	} else {
+		t, err = svc.clientModelTaskSvc.GetTaskById(id)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func (svc *Service) GetSpiderById(id primitive.ObjectID) (s interfaces.Spider, err error) {
+	if svc.cfgSvc.IsMaster() {
+		s, err = svc.modelSvc.GetSpiderById(id)
+	} else {
+		s, err = svc.clientModelSpiderSvc.GetSpiderById(id)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func (svc *Service) getRunnerCount() (n int) {
@@ -247,30 +300,21 @@ func (svc *Service) saveTask(t interfaces.Task, status string) (err error) {
 }
 
 func (svc *Service) reportStatus() (err error) {
-	// node key
-	nodeKey := svc.cfgSvc.GetNodeKey()
-
 	// current node
-	var n interfaces.Node
-	if svc.cfgSvc.IsMaster() {
-		n, err = svc.modelSvc.GetNodeByKey(nodeKey, nil)
-	} else {
-		n, err = svc.clientModelNodeSvc.GetNodeByKey(nodeKey)
-	}
+	n, err := svc.GetCurrentNode()
 	if err != nil {
 		return err
 	}
 
 	// update node
-	ar := svc.maxRunners - svc.getRunnerCount()
+	ar := n.GetMaxRunners() - svc.getRunnerCount()
 	n.SetAvailableRunners(ar)
-	n.SetMaxRunners(svc.maxRunners)
 
 	// save node
 	if svc.cfgSvc.IsMaster() {
-		err = client.NewModelDelegate(n, client.WithDelegateConfigPath(svc.GetConfigPath())).Save()
-	} else {
 		err = delegate.NewModelDelegate(n).Save()
+	} else {
+		err = client.NewModelDelegate(n, client.WithDelegateConfigPath(svc.GetConfigPath())).Save()
 	}
 	if err != nil {
 		return err
@@ -289,9 +333,8 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	// service
 	svc := &Service{
 		TaskBaseService:   baseSvc,
-		maxRunners:        8,
 		exitWatchDuration: 60 * time.Second,
-		reportInterval:    60 * time.Second,
+		reportInterval:    5 * time.Second,
 		mu:                sync.Mutex{},
 		runners:           sync.Map{},
 		syncLocks:         sync.Map{},
@@ -379,12 +422,6 @@ func GetTaskHandlerService(path string, opts ...Option) (svr interfaces.TaskHand
 }
 
 func ProvideGetTaskHandlerService(path string, opts ...Option) func() (svr interfaces.TaskHandlerService, err error) {
-	// max runners
-	maxRunners := viper.GetInt("task.handler.maxRunners")
-	if maxRunners > 0 {
-		opts = append(opts, WithMaxRunners(maxRunners))
-	}
-
 	// report interval
 	reportIntervalSeconds := viper.GetInt("task.handler.reportInterval")
 	if reportIntervalSeconds > 0 {

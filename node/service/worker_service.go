@@ -53,6 +53,9 @@ func (svc *WorkerService) Start() {
 	// start sending heartbeat to master
 	go svc.ReportStatus()
 
+	// start handler
+	go svc.taskHandlerSvc.Start()
+
 	// wait for quit signal
 	svc.Wait()
 
@@ -139,7 +142,7 @@ func (svc *WorkerService) ReportStatus() {
 		svc.reportStatus()
 
 		// sleep
-		time.Sleep(svc.heartbeatInterval * time.Second)
+		time.Sleep(svc.heartbeatInterval)
 	}
 }
 

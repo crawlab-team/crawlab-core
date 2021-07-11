@@ -83,6 +83,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 			Ip:          nodeInfo.Ip,
 			Hostname:    nodeInfo.Hostname,
 			Description: nodeInfo.Description,
+			MaxRunners:  nodeInfo.MaxRunners,
 			Status:      constants.NodeStatusRegistered,
 			Active:      true,
 		}

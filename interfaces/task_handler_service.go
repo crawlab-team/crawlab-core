@@ -21,10 +21,6 @@ type TaskHandlerService interface {
 	LockSync(spiderId primitive.ObjectID)
 	// UnlockSync unlock files sync for given spider
 	UnlockSync(spiderId primitive.ObjectID)
-	// GetMaxRunners get max runners
-	GetMaxRunners() (maxRunners int)
-	// SetMaxRunners set max runners
-	SetMaxRunners(maxRunners int)
 	// GetExitWatchDuration get max runners
 	GetExitWatchDuration() (duration time.Duration)
 	// SetExitWatchDuration set max runners
@@ -41,4 +37,12 @@ type TaskHandlerService interface {
 	GetModelTaskService() (modelTaskSvc GrpcClientModelTaskService)
 	// GetModelTaskStatService get model task stat service
 	GetModelTaskStatService() (modelTaskStatSvc GrpcClientModelTaskStatService)
+	// GetNodeConfigService get node config service
+	GetNodeConfigService() (cfgSvc NodeConfigService)
+	// GetCurrentNode get node of the handler
+	GetCurrentNode() (n Node, err error)
+	// GetTaskById get task by id
+	GetTaskById(id primitive.ObjectID) (t Task, err error)
+	// GetSpiderById get task by id
+	GetSpiderById(id primitive.ObjectID) (t Spider, err error)
 }

@@ -13,6 +13,7 @@ import (
 	gclient "github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
+	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/services/sys_exec"
 	"github.com/crawlab-team/crawlab-core/spider/fs"
@@ -62,6 +63,11 @@ func (r *Runner) Init() (err error) {
 	// update task
 	if err := r.updateTask("", nil); err != nil {
 		return err
+	}
+
+	// start grpc client
+	if !r.c.IsStarted() {
+		r.c.Start()
 	}
 
 	// working directory
@@ -344,8 +350,11 @@ func (r *Runner) configureEnv() (err error) {
 	// default results collection
 	//col := utils.GetSpiderCol(r.s.Col, r.s.Name)
 
-	// 默认环境变量
+	// default envs
 	r.cmd.Env = append(os.Environ(), "CRAWLAB_TASK_ID="+r.tid.Hex())
+	if viper.GetString("grpc.address") != "" {
+		r.cmd.Env = append(r.cmd.Env, "CRAWLAB_GRPC_ADDRESS"+viper.GetString("grpc.address"))
+	}
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_COLLECTION="+col)
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_HOST="+viper.GetString("mongo.host"))
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_PORT="+viper.GetString("mongo.port"))
@@ -423,8 +432,14 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 		if e != nil {
 			r.t.SetError(e.Error())
 		}
-		if err := client.NewModelDelegate(r.t, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
-			return err
+		if r.svc.GetNodeConfigService().IsMaster() {
+			if err := delegate.NewModelDelegate(r.t).Save(); err != nil {
+				return err
+			}
+		} else {
+			if err := client.NewModelDelegate(r.t, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
+				return err
+			}
 		}
 
 		// update stats
@@ -435,7 +450,7 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 	}
 
 	// get task
-	r.t, err = r.svc.GetModelTaskService().GetTaskById(r.tid)
+	r.t, err = r.svc.GetTaskById(r.tid)
 	if err != nil {
 		return err
 	}
@@ -503,9 +518,16 @@ func (r *Runner) _updateTaskStat(status string) {
 		ts.SetRuntimeDuration(ts.GetEndTs().Sub(ts.GetStartTs()).Milliseconds())
 		ts.SetTotalDuration(ts.GetEndTs().Sub(ts.GetCreateTs()).Milliseconds())
 	}
-	if err := client.NewModelDelegate(ts, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
-		trace.PrintError(err)
-		return
+	if r.svc.GetNodeConfigService().IsMaster() {
+		if err := delegate.NewModelDelegate(ts).Save(); err != nil {
+			trace.PrintError(err)
+			return
+		}
+	} else {
+		if err := client.NewModelDelegate(ts, client.WithDelegateConfigPath(r.svc.GetConfigPath())).Save(); err != nil {
+			trace.PrintError(err)
+			return
+		}
 	}
 }
 
@@ -559,13 +581,13 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 	}
 
 	// task
-	r.t, err = r.svc.GetModelTaskService().GetTaskById(id)
+	r.t, err = svc.GetTaskById(id)
 	if err != nil {
 		return nil, err
 	}
 
 	// spider
-	r.s, err = r.svc.GetModelSpiderService().GetSpiderById(r.t.GetSpiderId())
+	r.s, err = svc.GetSpiderById(r.t.GetSpiderId())
 	if err != nil {
 		return nil, err
 	}

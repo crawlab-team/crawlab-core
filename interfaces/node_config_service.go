@@ -8,4 +8,5 @@ type NodeConfigService interface {
 	GetNodeKey() string
 	IsMaster() bool
 	GetAuthKey() string
+	GetMaxRunners() int
 }

@@ -184,8 +184,8 @@ func (svc *MasterService) monitor() (err error) {
 		return err
 	}
 
-	// all worker nodes
-	nodes, err := svc.modelSvc.GetNodeList(bson.M{}, nil)
+	// all worker nodes (except self)
+	nodes, err := svc.modelSvc.GetNodeList(bson.M{"k": bson.M{"$ne": svc.cfgSvc.GetNodeKey()}}, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			return nil
@@ -210,10 +210,7 @@ func (svc *MasterService) monitor() (err error) {
 		}
 
 		// PING client
-		if err := svc.server.SendStreamMessage(
-			svc.GetConfigService().GetNodeKey(),
-			grpc.StreamMessageCode_PING,
-		); err != nil {
+		if err := svc.server.SendStreamMessage(n.GetKey(), grpc.StreamMessageCode_PING); err != nil {
 			log.Errorf("cannot ping worker[%s]: %v", n.GetKey(), err)
 			trace.PrintError(err)
 			isErr = true
@@ -249,7 +246,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	// master service
 	svc := &MasterService{
 		cfgPath:         config2.DefaultConfigPath,
-		monitorInterval: 60 * time.Second,
+		monitorInterval: 15 * time.Second,
 		stopOnError:     false,
 	}
 

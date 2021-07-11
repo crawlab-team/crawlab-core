@@ -214,18 +214,36 @@ func (svc *Service) Schedule(tasks []interfaces.Task) (err error) {
 func (svc *Service) Cancel(id primitive.ObjectID) (err error) {
 	if svc.nodeCfgSvc.IsMaster() {
 		// cancel task on master
-		return svc.handlerSvc.Cancel(id)
+		if err := svc.handlerSvc.Cancel(id); err != nil {
+			// cancel failed, force to set status as "cancelled"
+			t, err := svc.modelSvc.GetTaskById(id)
+			if err != nil {
+				return err
+			}
+			t.Status = constants.TaskStatusCancelled
+			return delegate.NewModelDelegate(t).Save()
+		}
+		// cancel success
+		return nil
 	} else {
 		// send to cancel task on worker nodes
 		t, err := svc.modelSvc.GetTaskById(id)
 		if err != nil {
 			return err
 		}
+		// node
 		n, err := svc.modelSvc.GetNodeById(t.GetNodeId())
 		if err != nil {
 			return err
 		}
-		return svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t)
+		// attempt to cancel on worker
+		if err := svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t); err != nil {
+			// cancel failed, force to set status as "cancelled"
+			t.Status = constants.TaskStatusCancelled
+			return delegate.NewModelDelegate(t).Save()
+		}
+		// cancel success
+		return nil
 	}
 }
 

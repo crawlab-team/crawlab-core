@@ -13,12 +13,6 @@ func WithConfigPath(path string) Option {
 	}
 }
 
-func WithMaxRunners(maxRunners int) Option {
-	return func(svc interfaces.TaskHandlerService) {
-		svc.SetMaxRunners(maxRunners)
-	}
-}
-
 func WithExitWatchDuration(duration time.Duration) Option {
 	return func(svc interfaces.TaskHandlerService) {
 		svc.SetExitWatchDuration(duration)

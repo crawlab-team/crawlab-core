@@ -58,9 +58,10 @@ func (svc *Service) Reload() (err error) {
 
 func (svc *Service) GetBasicNodeInfo() (res interfaces.Entity) {
 	return &entity.NodeInfo{
-		Key:      svc.GetNodeKey(),
-		IsMaster: svc.IsMaster(),
-		AuthKey:  svc.GetAuthKey(),
+		Key:        svc.GetNodeKey(),
+		IsMaster:   svc.IsMaster(),
+		AuthKey:    svc.GetAuthKey(),
+		MaxRunners: svc.GetMaxRunners(),
 	}
 }
 
@@ -74,6 +75,10 @@ func (svc *Service) IsMaster() (res bool) {
 
 func (svc *Service) GetAuthKey() (res string) {
 	return svc.cfg.AuthKey
+}
+
+func (svc *Service) GetMaxRunners() (res int) {
+	return svc.cfg.MaxRunners
 }
 
 func (svc *Service) GetConfigPath() (path string) {

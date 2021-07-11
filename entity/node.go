@@ -9,6 +9,7 @@ type NodeInfo struct {
 	Hostname    string `json:"hostname"`
 	Description string `json:"description"`
 	AuthKey     string `json:"auth_key"`
+	MaxRunners  int    `json:"max_runners"`
 }
 
 func (n NodeInfo) Value() interface{} {

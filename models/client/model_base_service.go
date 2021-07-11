@@ -3,10 +3,12 @@ package client
 import (
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/entity"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
+	"github.com/crawlab-team/go-trace"
 	"github.com/emirpasic/gods/lists/arraylist"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -42,9 +44,13 @@ func (d *BaseServiceDelegate) GetById(id primitive.ObjectID) (doc interfaces.Mod
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id})
-	res, err := d.c.GetModelBaseServiceClient().GetById(ctx, req)
+	c := d.c.GetModelBaseServiceClient()
+	if c == nil {
+		return nil, trace.TraceError(errors.ErrorModelNilPointer)
+	}
+	res, err := c.GetById(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, trace.TraceError(err)
 	}
 	return NewBasicBinder(d.id, res).Bind()
 }
