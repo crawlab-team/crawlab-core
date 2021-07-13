@@ -21,10 +21,10 @@ func GetAuthTokenFunc(nodeCfgSvc interfaces.NodeConfigService) grpc_auth.AuthFun
 		// auth key from incoming context
 		res, ok := md[constants.GrpcHeaderAuthorization]
 		if !ok {
-			return nil, errors.ErrorGrpcUnauthorized
+			return ctx, errors.ErrorGrpcUnauthorized
 		}
 		if len(res) != 1 {
-			return nil, errors.ErrorGrpcUnauthorized
+			return ctx, errors.ErrorGrpcUnauthorized
 		}
 		authKey := res[0]
 

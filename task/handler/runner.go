@@ -353,7 +353,12 @@ func (r *Runner) configureEnv() (err error) {
 	// default envs
 	r.cmd.Env = append(os.Environ(), "CRAWLAB_TASK_ID="+r.tid.Hex())
 	if viper.GetString("grpc.address") != "" {
-		r.cmd.Env = append(r.cmd.Env, "CRAWLAB_GRPC_ADDRESS"+viper.GetString("grpc.address"))
+		r.cmd.Env = append(r.cmd.Env, "CRAWLAB_GRPC_ADDRESS="+viper.GetString("grpc.address"))
+	}
+	if viper.GetString("grpc.authKey") != "" {
+		r.cmd.Env = append(r.cmd.Env, "CRAWLAB_GRPC_AUTH_KEY="+viper.GetString("grpc.authKey"))
+	} else {
+		r.cmd.Env = append(r.cmd.Env, "CRAWLAB_GRPC_AUTH_KEY="+constants.DefaultGrpcAuthKey)
 	}
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_COLLECTION="+col)
 	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_HOST="+viper.GetString("mongo.host"))

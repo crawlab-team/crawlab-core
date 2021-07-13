@@ -21,6 +21,7 @@ const (
 	ControllerIdDataCollection
 	ControllerIdResult
 	ControllerIdStats
+	ControllerIdFiler
 )
 
 type ControllerId int

@@ -103,9 +103,6 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// tag
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tags", controllers.TagController)
 
-	// login
-	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
-
 	// color
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/colors", controllers.ColorController)
 
@@ -126,6 +123,12 @@ func InitRoutes(app *gin.Engine) (err error) {
 
 	// token
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tokens", controllers.TokenController)
+
+	// login
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
+
+	// filer
+	svc.RegisterActionControllerToGroup(groups.FilerGroup, "", controllers.FilerController)
 
 	return nil
 }

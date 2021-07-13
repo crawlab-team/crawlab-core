@@ -25,6 +25,7 @@ func InitControllers() (err error) {
 	ScheduleController = newScheduleController()
 	StatsController = NewActionControllerDelegate(ControllerIdStats, StatsActions)
 	TokenController = newTokenController()
+	FilerController = NewActionControllerDelegate(ControllerIdFiler, getFilerActions())
 
 	return nil
 }
