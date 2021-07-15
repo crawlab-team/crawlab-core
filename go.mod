@@ -2,33 +2,25 @@ module github.com/crawlab-team/crawlab-core
 
 go 1.15
 
-replace (
-	github.com/crawlab-team/crawlab-db => /Users/marvzhang/projects/crawlab-team/crawlab-db
-	github.com/crawlab-team/crawlab-fs => /Users/marvzhang/projects/crawlab-team/crawlab-fs
-	github.com/crawlab-team/crawlab-grpc => /Users/marvzhang/projects/crawlab-team/crawlab-grpc/dist/go
-	github.com/crawlab-team/crawlab-log => /Users/marvzhang/projects/crawlab-team/crawlab-log
-	github.com/crawlab-team/crawlab-vcs => /Users/marvzhang/projects/crawlab-team/crawlab-vcs
-	github.com/crawlab-team/go-trace => /Users/marvzhang/projects/crawlab-team/go-trace
-	github.com/crawlab-team/goseaweedfs => /Users/marvzhang/projects/crawlab-team/goseaweedfs
-)
-
 require (
+	github.com/StackExchange/wmi v1.2.0 // indirect
 	github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da // indirect
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/crawlab-team/crawlab-db v0.0.0
-	github.com/crawlab-team/crawlab-fs v0.0.0
-	github.com/crawlab-team/crawlab-grpc v0.0.0
-	github.com/crawlab-team/crawlab-log v0.0.0
-	github.com/crawlab-team/crawlab-vcs v0.0.0
+	github.com/crawlab-team/crawlab-db v0.1.0
+	github.com/crawlab-team/crawlab-fs v0.1.0
+	github.com/crawlab-team/crawlab-grpc v0.1.0
+	github.com/crawlab-team/crawlab-log v0.1.0
+	github.com/crawlab-team/crawlab-vcs v0.1.0
 	github.com/crawlab-team/go-trace v0.1.0
-	github.com/crawlab-team/goseaweedfs v0.1.6
+	github.com/crawlab-team/goseaweedfs v0.2.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gamexg/proxyclient v0.0.0-20210207161252-499908056324 // indirect
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-playground/validator/v10 v10.3.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.1.2
