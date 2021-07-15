@@ -70,7 +70,7 @@ func (ctx *userContext) changePassword(c *gin.Context) {
 		HandleErrorBadRequest(c, errors.ErrorUserMissingRequiredFields)
 		return
 	}
-	if len(password) < 6 {
+	if len(password) < 5 {
 		HandleErrorBadRequest(c, errors.ErrorUserInvalidPassword)
 		return
 	}
