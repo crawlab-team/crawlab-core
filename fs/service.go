@@ -11,6 +11,7 @@ import (
 	cfs "github.com/crawlab-team/crawlab-fs"
 	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"github.com/ztrue/tracerr"
 	"go.uber.org/dig"
 	"os"
@@ -612,13 +613,22 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	if err := c.Provide(config.ProvideConfigService(svc.cfgPath)); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(cfs.NewSeaweedFsManager); err != nil {
+	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService) {
+		svc.nodeCfgSvc = nodeCfgSvc
+	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, fs cfs.Manager) {
-		svc.nodeCfgSvc = nodeCfgSvc
-		svc.fs = fs
-	}); err != nil {
+
+	// fs manager
+	var fsOpts []cfs.Option
+	if viper.GetString("fs.filer.url") != "" {
+		fsOpts = append(fsOpts, cfs.WithFilerUrl(viper.GetString("fs.filer.url")))
+	}
+	if viper.GetString("fs.filer.authKey") != "" {
+		fsOpts = append(fsOpts, cfs.WithFilerAuthKey(viper.GetString("fs.filer.authKey")))
+	}
+	svc.fs, err = cfs.NewSeaweedFsManager(fsOpts...)
+	if err != nil {
 		return nil, trace.TraceError(err)
 	}
 

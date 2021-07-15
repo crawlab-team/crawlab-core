@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/imroc/req"
@@ -16,24 +17,24 @@ func getFilerActions() []Action {
 	return []Action{
 		{
 			Method:      http.MethodGet,
-			Path:        "",
-			HandlerFunc: filerCtx.get,
+			Path:        "*path",
+			HandlerFunc: filerCtx.do,
 		},
-		//{
-		//	Method:      http.MethodPost,
-		//	Path:        "",
-		//	HandlerFunc: filerCtx.post,
-		//},
-		//{
-		//	Method:      http.MethodPut,
-		//	Path:        "",
-		//	HandlerFunc: filerCtx.put,
-		//},
-		//{
-		//	Method:      http.MethodDelete,
-		//	Path:        "",
-		//	HandlerFunc: filerCtx.del,
-		//},
+		{
+			Method:      http.MethodPost,
+			Path:        "*path",
+			HandlerFunc: filerCtx.do,
+		},
+		{
+			Method:      http.MethodPut,
+			Path:        "*path",
+			HandlerFunc: filerCtx.do,
+		},
+		{
+			Method:      http.MethodDelete,
+			Path:        "*path",
+			HandlerFunc: filerCtx.do,
+		},
 	}
 }
 
@@ -41,19 +42,63 @@ type filerContext struct {
 	endpoint string
 }
 
-func (ctx *filerContext) get(c *gin.Context) {
-	requestPath := strings.Replace(c.Request.URL.Path, "/filer", "/", 1)
+func (ctx *filerContext) do(c *gin.Context) {
+	// request path
+	requestPath := strings.Replace(c.Request.URL.Path, "/filer", "", 1)
+
+	// request url
 	requestUrl := fmt.Sprintf("%s%s", ctx.endpoint, requestPath)
 	if c.Request.URL.RawQuery != "" {
 		requestUrl += "?" + c.Request.URL.RawQuery
 	}
-	res, err := req.Get(requestUrl)
+
+	// request body
+	bufR := bufio.NewScanner(c.Request.Body)
+	requestBody := req.BodyJSON(bufR.Bytes())
+
+	// request file uploads
+	var requestFileUploads []req.FileUpload
+	form, err := c.MultipartForm()
+	if err == nil {
+		for k, v := range form.File {
+			for _, fh := range v {
+				f, err := fh.Open()
+				if err != nil {
+					HandleErrorInternalServerError(c, err)
+					return
+				}
+				requestFileUploads = append(requestFileUploads, req.FileUpload{
+					FileName:  fh.Filename,
+					FieldName: k,
+					File:      f,
+				})
+			}
+		}
+	}
+
+	// request header
+	requestHeader := req.Header{}
+	for k, v := range c.Request.Header {
+		if len(v) > 0 {
+			requestHeader[k] = v[0]
+		}
+	}
+
+	// perform request
+	res, err := req.Do(c.Request.Method, requestUrl, requestHeader, requestBody, requestFileUploads)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	c.Request.Response = res.Response()
-	c.AbortWithStatus(http.StatusOK)
+
+	// response
+	for k, v := range res.Response().Header {
+		if len(v) > 0 {
+			c.Header(k, v[0])
+		}
+	}
+	_, _ = c.Writer.Write(res.Bytes())
+	c.AbortWithStatus(res.Response().StatusCode)
 }
 
 var _filerCtx *filerContext

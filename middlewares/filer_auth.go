@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
@@ -15,8 +14,11 @@ func FilerAuthorizationMiddleware() gin.HandlerFunc {
 
 		// server auth key
 		svrAuthKey := viper.GetString("fs.filer.authKey")
+
+		// skip to next if no server auth key is provided
 		if svrAuthKey == "" {
-			svrAuthKey = constants.DefaultFilerAuthKey
+			c.Next()
+			return
 		}
 
 		// validate
