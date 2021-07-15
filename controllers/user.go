@@ -1,13 +1,18 @@
 package controllers
 
 import (
+	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/user"
+	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/go-trace"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"net/http"
@@ -44,6 +49,68 @@ func (ctr *userController) Put(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
+	HandleSuccess(c)
+}
+
+func (ctr *userController) PostList(c *gin.Context) {
+	// payload
+	var payload entity.BatchRequestPayloadWithStringData
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// doc to update
+	var doc models.User
+	if err := json.Unmarshal([]byte(payload.Data), &doc); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// query
+	query := bson.M{
+		"_id": bson.M{
+			"$in": payload.Ids,
+		},
+	}
+
+	// update users
+	if err := ctr.ctx.modelSvc.GetBaseService(interfaces.ModelIdUser).UpdateDoc(query, &doc, payload.Fields); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// update passwords
+	if utils.Contains(payload.Fields, "password") {
+		for _, id := range payload.Ids {
+			if err := ctr.ctx.userSvc.ChangePassword(id, doc.Password); err != nil {
+				trace.PrintError(err)
+			}
+		}
+	}
+
+	HandleSuccess(c)
+}
+
+func (ctr *userController) PutList(c *gin.Context) {
+	// users
+	var users []models.User
+	if err := c.ShouldBindJSON(&users); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	for _, u := range users {
+		if err := ctr.ctx.userSvc.Create(&interfaces.UserCreateOptions{
+			Username: u.Username,
+			Password: u.Password,
+			Email:    u.Email,
+			Role:     u.Role,
+		}); err != nil {
+			trace.TraceError(err)
+		}
+	}
+
 	HandleSuccess(c)
 }
 
