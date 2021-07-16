@@ -218,6 +218,8 @@ github.com/crawlab-team/crawlab-core v0.0.1/go.mod h1:6dJHMvrmIJbfYHhYNeGZkGOLEB
 github.com/crawlab-team/crawlab-db v0.0.2/go.mod h1:o7o4rbcyAWlFGHg9VS7V7tM/GqRq+N2mnAXO71cZA78=
 github.com/crawlab-team/crawlab-db v0.1.0 h1:6dTVNb5+7cDkH8fkKOkFALk8laWNOuorYm3ZEKsvFLI=
 github.com/crawlab-team/crawlab-db v0.1.0/go.mod h1:t0VidSjXKzQgACqNSQV5wusXncFtL6lGEiQTbLfNR04=
+github.com/crawlab-team/crawlab-db v0.1.1 h1:156h2fbbFKXAHs1mxprqRFC8zs2nrdyaG9JKG7patVw=
+github.com/crawlab-team/crawlab-db v0.1.1/go.mod h1:t0VidSjXKzQgACqNSQV5wusXncFtL6lGEiQTbLfNR04=
 github.com/crawlab-team/crawlab-fs v0.0.0/go.mod h1:k2VXprQspLAmbgO5sSpqMjg/xP4iKDkW4RyTWY8eTZM=
 github.com/crawlab-team/crawlab-fs v0.1.0 h1:iKSJJY4Wvea8Qss+zC/tLiZ371VeV75Z3cuqlsxydzY=
 github.com/crawlab-team/crawlab-fs v0.1.0/go.mod h1:dOE0TeWPDz9krwzt1H72rjj0Fn/aHe53yn7GoOZHD0s=
