@@ -107,17 +107,17 @@ type ModelDelegate struct {
 
 func (d *ModelDelegate) Add() (err error) {
 	_, err = d.do(interfaces.ModelDelegateMethodAdd)
-	return trace.TraceError(err)
+	return err
 }
 
 func (d *ModelDelegate) Save() (err error) {
 	_, err = d.do(interfaces.ModelDelegateMethodSave)
-	return trace.TraceError(err)
+	return err
 }
 
 func (d *ModelDelegate) Delete() (err error) {
 	_, err = d.do(interfaces.ModelDelegateMethodDelete)
-	return trace.TraceError(err)
+	return err
 }
 
 func (d *ModelDelegate) GetArtifact() (res interfaces.ModelArtifact, err error) {
