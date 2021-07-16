@@ -18,49 +18,73 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 	// nodes
 	stats["nodes"], err = mongo.GetMongoCol(interfaces.ModelColNameNode).Count(bson.M{"a": true})
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["nodes"] = bson.M{}
 	}
 
 	// projects
 	stats["projects"], err = mongo.GetMongoCol(interfaces.ModelColNameProject).Count(nil)
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["projects"] = bson.M{}
 	}
 
 	// spiders
 	stats["spiders"], err = mongo.GetMongoCol(interfaces.ModelColNameSpider).Count(nil)
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["spiders"] = bson.M{}
 	}
 
 	// schedules
 	stats["schedules"], err = mongo.GetMongoCol(interfaces.ModelColNameSchedule).Count(nil)
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["schedules"] = bson.M{}
 	}
 
 	// tasks
 	stats["tasks"], err = mongo.GetMongoCol(interfaces.ModelColNameTask).Count(nil)
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["tasks"] = bson.M{}
 	}
 
 	// error tasks
 	stats["error_tasks"], err = mongo.GetMongoCol(interfaces.ModelColNameTask).Count(bson.M{"status": constants.TaskStatusError})
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["error_tasks"] = bson.M{}
 	}
 
 	// results
 	stats["results"], err = svc.getOverviewResults(query)
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["results"] = bson.M{}
 	}
 
 	// users
 	stats["users"], err = mongo.GetMongoCol(interfaces.ModelColNameUser).Count(nil)
 	if err != nil {
-		return nil, err
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			return nil, err
+		}
+		stats["users"] = bson.M{}
 	}
 
 	return stats, nil
