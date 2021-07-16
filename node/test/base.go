@@ -7,7 +7,6 @@ import (
 	service2 "github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
-	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.uber.org/dig"
 	"io/ioutil"
 	"os"
@@ -17,7 +16,6 @@ import (
 )
 
 func init() {
-	_ = mongo.InitMongo()
 	var err error
 	T, err = NewTest()
 	if err != nil {

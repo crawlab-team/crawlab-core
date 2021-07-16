@@ -353,11 +353,6 @@ func (svc *BaseService) _getUpdateArtifactUpdate() (res bson.M) {
 }
 
 func NewBaseService(id interfaces.ModelId, opts ...BaseServiceOption) (svc2 interfaces.ModelBaseService) {
-	// initialize mongo client
-	if mongo.Client == nil {
-		_ = mongo.InitMongo()
-	}
-
 	// service
 	svc := &BaseService{
 		id: id,

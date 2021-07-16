@@ -191,11 +191,6 @@ func (d *BaseServiceDelegate) mustNewRequest(params *entity.GrpcBaseServiceParam
 }
 
 func NewBaseServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 interfaces.GrpcClientModelBaseService, err error) {
-	// mongo
-	if mongo.Client == nil {
-		_ = mongo.InitMongo()
-	}
-
 	// base service
 	svc := &BaseServiceDelegate{}
 

@@ -9,9 +9,6 @@ import (
 )
 
 func SetupTest(t *testing.T) {
-	if err := mongo.InitMongo(); err != nil {
-		panic(err)
-	}
 	CleanupTest()
 	t.Cleanup(CleanupTest)
 }

@@ -7,7 +7,7 @@ require (
 	github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da // indirect
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/crawlab-team/crawlab-db v0.1.0
+	github.com/crawlab-team/crawlab-db v0.1.1
 	github.com/crawlab-team/crawlab-fs v0.1.0
 	github.com/crawlab-team/crawlab-grpc v0.1.0
 	github.com/crawlab-team/crawlab-log v0.1.0
