@@ -21,7 +21,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["nodes"] = bson.M{}
+		stats["nodes"] = 0
 	}
 
 	// projects
@@ -30,7 +30,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["projects"] = bson.M{}
+		stats["projects"] = 0
 	}
 
 	// spiders
@@ -39,7 +39,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["spiders"] = bson.M{}
+		stats["spiders"] = 0
 	}
 
 	// schedules
@@ -48,7 +48,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["schedules"] = bson.M{}
+		stats["schedules"] = 0
 	}
 
 	// tasks
@@ -57,7 +57,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["tasks"] = bson.M{}
+		stats["tasks"] = 0
 	}
 
 	// error tasks
@@ -66,7 +66,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["error_tasks"] = bson.M{}
+		stats["error_tasks"] = 0
 	}
 
 	// results
@@ -75,7 +75,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["results"] = bson.M{}
+		stats["results"] = 0
 	}
 
 	// users
@@ -84,7 +84,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err
 		}
-		stats["users"] = bson.M{}
+		stats["users"] = 0
 	}
 
 	return stats, nil

@@ -305,6 +305,12 @@ func (svc *Service) matchResources(tqList []models.TaskQueueItem) (tasks []inter
 	if resources == nil || len(resources) == 0 {
 		return nil, nil, nil
 	}
+	// TODO: shuffle resources
+	//var resourcesShuffled []models.Node
+	//rand.Seed(time.Now().Unix())
+	//rand.Shuffle(len(resources), func(i, j int) {
+	//	resources[i], resources[j] = resources[j], resources[i]
+	//})
 	for _, tq := range tqList {
 		t, err := svc.modelSvc.GetTaskById(tq.GetId())
 		if err != nil {

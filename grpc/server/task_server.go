@@ -9,6 +9,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task/stats"
+	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,6 +33,7 @@ type TaskServer struct {
 func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err error) {
 	for {
 		msg, err := stream.Recv()
+		utils.LogDebug(msg.String())
 		if err == io.EOF {
 			return nil
 		}
@@ -50,6 +52,10 @@ func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err er
 		default:
 			err = errors.ErrorGrpcInvalidCode
 			log.Errorf("invalid stream message code: %d", msg.Code)
+			continue
+		}
+		if err != nil {
+			log.Errorf("grpc error[%d]: %v", msg.Code, err)
 		}
 	}
 }
