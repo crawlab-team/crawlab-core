@@ -235,6 +235,8 @@ github.com/crawlab-team/goseaweedfs v0.1.6 h1:4Qmz75e65h4gbj0/sTM7pPVFwVJl8MihXf
 github.com/crawlab-team/goseaweedfs v0.1.6/go.mod h1:u+rwfqb0rnYllTLjCctE/z1Yp+TC8L+CbbWH8E2NstA=
 github.com/crawlab-team/goseaweedfs v0.2.0 h1:9acRgmJVss+ghIqm/XMCNU0G2RUBAvvDaOOASvWNInc=
 github.com/crawlab-team/goseaweedfs v0.2.0/go.mod h1:u+rwfqb0rnYllTLjCctE/z1Yp+TC8L+CbbWH8E2NstA=
+github.com/crawlab-team/goseaweedfs v0.6.0-beta.20210725.1917 h1:Kb8AErE3357UO0jPf8Q2wqG/qcmL0hKDwPMaOZ/JjcY=
+github.com/crawlab-team/goseaweedfs v0.6.0-beta.20210725.1917/go.mod h1:u+rwfqb0rnYllTLjCctE/z1Yp+TC8L+CbbWH8E2NstA=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/cyphar/filepath-securejoin v0.2.2/go.mod h1:FpkQEhXnPnOthhzymB7CGsFk2G9VLXONKD9G7QGMM+4=

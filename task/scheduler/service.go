@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -267,9 +268,9 @@ func (svc *Service) getTaskQueueItems() (tqList []models.TaskQueueItem, err erro
 	return tqList, nil
 }
 
-func (svc *Service) getResourcesAndNodesMap() (resources map[string]interfaces.Node, nodesMap map[primitive.ObjectID]interfaces.Node, err error) {
-	nodesMap = map[primitive.ObjectID]interfaces.Node{}
-	resources = map[string]interfaces.Node{}
+func (svc *Service) getResourcesAndNodesMap() (resources map[string]models.Node, nodesMap map[primitive.ObjectID]models.Node, err error) {
+	nodesMap = map[primitive.ObjectID]models.Node{}
+	resources = map[string]models.Node{}
 	query := bson.M{
 		// enabled: true
 		"en": true,
@@ -288,16 +289,17 @@ func (svc *Service) getResourcesAndNodesMap() (resources map[string]interfaces.N
 		return nil, nil, err
 	}
 	for _, n := range nodes {
-		nodesMap[n.Id] = &n
+		nodesMap[n.Id] = n
 		for i := 0; i < n.AvailableRunners; i++ {
 			key := fmt.Sprintf("%s:%d", n.Id.Hex(), i)
-			resources[key] = &n
+			resources[key] = n
 		}
 	}
 	return resources, nodesMap, nil
 }
 
-func (svc *Service) matchResources(tqList []models.TaskQueueItem) (tasks []interfaces.Task, nodesMap map[primitive.ObjectID]interfaces.Node, err error) {
+func (svc *Service) matchResources(tqList []models.TaskQueueItem) (tasks []interfaces.Task, nodesMap map[primitive.ObjectID]models.Node, err error) {
+	// get resources and nodes map
 	resources, nodesMap, err := svc.getResourcesAndNodesMap()
 	if err != nil {
 		return nil, nil, err
@@ -305,26 +307,47 @@ func (svc *Service) matchResources(tqList []models.TaskQueueItem) (tasks []inter
 	if resources == nil || len(resources) == 0 {
 		return nil, nil, nil
 	}
-	// TODO: shuffle resources
-	//var resourcesShuffled []models.Node
-	//rand.Seed(time.Now().Unix())
-	//rand.Shuffle(len(resources), func(i, j int) {
-	//	resources[i], resources[j] = resources[j], resources[i]
-	//})
+
+	// resources list
+	var resourcesList []models.Node
+	for _, r := range resources {
+		resourcesList = append(resourcesList, r)
+	}
+
+	// shuffle resources list
+	rand.Seed(time.Now().Unix())
+	rand.Shuffle(len(resourcesList), func(i, j int) {
+		resourcesList[i], resourcesList[j] = resourcesList[j], resourcesList[i]
+	})
+
+	// iterate task queue items
 	for _, tq := range tqList {
+		// task
 		t, err := svc.modelSvc.GetTaskById(tq.GetId())
 		if err != nil {
 			return nil, nil, err
 		}
-		for key, r := range resources {
+
+		// iterate shuffled resources to match a resource
+		for i, r := range resourcesList {
+			// If node id is unset or node id of task matches with resource id (node id),
+			// assign corresponding resource id to the task
 			if t.GetNodeId().IsZero() ||
 				t.GetNodeId() == r.GetId() {
+				// assign resource id
 				t.NodeId = r.GetId()
-				tasks = append(tasks, t)
-				delete(resources, key)
 
+				// append to tasks
+				tasks = append(tasks, t)
+
+				// delete from resources list
+				resourcesList = append(resourcesList[:i], resourcesList[(i+1):]...)
+
+				// decrement available runners
 				n := nodesMap[r.GetId()]
 				n.DecrementAvailableRunners()
+
+				// break loop
 				break
 			}
 		}
@@ -333,9 +356,9 @@ func (svc *Service) matchResources(tqList []models.TaskQueueItem) (tasks []inter
 	return tasks, nodesMap, nil
 }
 
-func (svc *Service) updateResources(nodesMap map[primitive.ObjectID]interfaces.Node) (err error) {
+func (svc *Service) updateResources(nodesMap map[primitive.ObjectID]models.Node) (err error) {
 	for _, n := range nodesMap {
-		if err := delegate.NewModelNodeDelegate(n).Save(); err != nil {
+		if err := delegate.NewModelNodeDelegate(&n).Save(); err != nil {
 			return err
 		}
 	}

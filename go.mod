@@ -13,7 +13,7 @@ require (
 	github.com/crawlab-team/crawlab-log v0.1.0
 	github.com/crawlab-team/crawlab-vcs v0.1.0
 	github.com/crawlab-team/go-trace v0.1.0
-	github.com/crawlab-team/goseaweedfs v0.2.0
+	github.com/crawlab-team/goseaweedfs v0.6.0-beta.20210725.1917
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.9
@@ -21,17 +21,17 @@ require (
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-ole/go-ole v1.2.5 // indirect
-	github.com/go-playground/validator/v10 v10.3.0
+	github.com/go-playground/validator/v10 v10.3.0 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
-	github.com/hashicorp/go-sockaddr v1.0.0
+	github.com/hashicorp/go-sockaddr v1.0.0 // indirect
 	github.com/imroc/req v0.3.0
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901
-	github.com/matcornic/hermes v1.2.0
+	github.com/matcornic/hermes v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olivere/elastic/v7 v7.0.15
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/common v0.4.0
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/robfig/cron/v3 v3.0.0
@@ -43,10 +43,10 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.4.5
-	go.uber.org/atomic v1.6.0
+	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/dig v1.10.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	google.golang.org/grpc v1.34.0
-	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
+	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
 )

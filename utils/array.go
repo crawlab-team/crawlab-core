@@ -2,7 +2,9 @@ package utils
 
 import (
 	"errors"
+	"math/rand"
 	"reflect"
+	"time"
 )
 
 func StringArrayContains(arr []string, str string) bool {
@@ -29,4 +31,16 @@ func GetArrayItems(array interface{}) (res []interface{}, err error) {
 		return nil, errors.New("invalid type")
 	}
 	return res, nil
+}
+
+func ShuffleArray(slice []interface{}) (err error) {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	for len(slice) > 0 {
+		n := len(slice)
+		randIndex := r.Intn(n)
+		slice[n-1], slice[randIndex] = slice[randIndex], slice[n-1]
+		slice = slice[:n-1]
+	}
+
+	return nil
 }
