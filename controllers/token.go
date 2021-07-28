@@ -44,8 +44,6 @@ func (ctr *tokenController) Put(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-var tokenCtx = newTokenContext()
-
 type tokenContext struct {
 	modelSvc service.ModelService
 	userSvc  interfaces.UserService

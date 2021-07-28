@@ -13,12 +13,15 @@ import (
 
 var ResultController ActionController
 
-var ResultActions = []Action{
-	{
-		Method:      http.MethodGet,
-		Path:        "/:id",
-		HandlerFunc: resultCtx.getList,
-	},
+func getResultActions() []Action {
+	var resultCtx = newResultContext()
+	return []Action{
+		{
+			Method:      http.MethodGet,
+			Path:        "/:id",
+			HandlerFunc: resultCtx.getList,
+		},
+	}
 }
 
 type resultContext struct {
@@ -78,8 +81,6 @@ func (ctx *resultContext) getList(c *gin.Context) {
 func (ctx *resultContext) _getSvc(id primitive.ObjectID) (svc interfaces.ResultService, err error) {
 	return result.GetResultService(id)
 }
-
-var resultCtx = newResultContext()
 
 func newResultContext() *resultContext {
 	// context

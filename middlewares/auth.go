@@ -8,9 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var userSvc, _ = user.GetUserService()
-
 func AuthorizationMiddleware() gin.HandlerFunc {
+	userSvc, _ := user.GetUserService()
 	return func(c *gin.Context) {
 		// token string
 		tokenStr := c.GetHeader("Authorization")

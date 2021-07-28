@@ -12,22 +12,25 @@ import (
 
 var StatsController ActionController
 
-var StatsActions = []Action{
-	{
-		Method:      http.MethodGet,
-		Path:        "/overview",
-		HandlerFunc: statsCtx.getOverview,
-	},
-	{
-		Method:      http.MethodGet,
-		Path:        "/daily",
-		HandlerFunc: statsCtx.getDaily,
-	},
-	{
-		Method:      http.MethodGet,
-		Path:        "/tasks",
-		HandlerFunc: statsCtx.getTasks,
-	},
+func getStatsActions() []Action {
+	statsCtx := newStatsContext()
+	return []Action{
+		{
+			Method:      http.MethodGet,
+			Path:        "/overview",
+			HandlerFunc: statsCtx.getOverview,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/daily",
+			HandlerFunc: statsCtx.getDaily,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/tasks",
+			HandlerFunc: statsCtx.getTasks,
+		},
+	}
 }
 
 type statsContext struct {
@@ -60,8 +63,6 @@ func (svc *statsContext) getTasks(c *gin.Context) {
 	}
 	HandleSuccessWithData(c, data)
 }
-
-var statsCtx = newStatsContext()
 
 func newStatsContext() *statsContext {
 	// context

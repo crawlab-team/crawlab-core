@@ -14,9 +14,6 @@ import (
 )
 
 func init() {
-	if err := controllers.InitControllers(); err != nil {
-		panic(err)
-	}
 	var err error
 	T, err = NewTest()
 	if err != nil {
@@ -34,6 +31,9 @@ type Test struct {
 }
 
 func (t *Test) Setup(t2 *testing.T) {
+	if err := controllers.InitControllers(); err != nil {
+		panic(err)
+	}
 	t2.Cleanup(t.Cleanup)
 }
 

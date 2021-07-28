@@ -20,12 +20,15 @@ import (
 
 var UserController *userController
 
-var UserActions = []Action{
-	{
-		Method:      http.MethodPost,
-		Path:        "/:id/change-password",
-		HandlerFunc: userCtx.changePassword,
-	},
+func getUserActions() []Action {
+	userCtx := newUserContext()
+	return []Action{
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/change-password",
+			HandlerFunc: userCtx.changePassword,
+		},
+	}
 }
 
 type userController struct {
@@ -114,8 +117,6 @@ func (ctr *userController) PutList(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-var userCtx = newUserContext()
-
 type userContext struct {
 	modelSvc service.ModelService
 	userSvc  interfaces.UserService
@@ -193,8 +194,8 @@ func newUserController() *userController {
 		panic(err)
 	}
 
-	ctr := NewListPostActionControllerDelegate(ControllerIdUser, modelSvc.GetBaseService(interfaces.ModelIdUser), UserActions)
-	d := NewListPostActionControllerDelegate(ControllerIdUser, modelSvc.GetBaseService(interfaces.ModelIdUser), UserActions)
+	ctr := NewListPostActionControllerDelegate(ControllerIdUser, modelSvc.GetBaseService(interfaces.ModelIdUser), getUserActions())
+	d := NewListPostActionControllerDelegate(ControllerIdUser, modelSvc.GetBaseService(interfaces.ModelIdUser), getUserActions())
 	ctx := newUserContext()
 
 	return &userController{

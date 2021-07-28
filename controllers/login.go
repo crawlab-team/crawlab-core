@@ -13,9 +13,12 @@ import (
 
 var LoginController ActionController
 
-var LoginActions = []Action{
-	{Method: http.MethodPost, Path: "/login", HandlerFunc: loginCtx.login},
-	{Method: http.MethodPost, Path: "/logout", HandlerFunc: loginCtx.logout},
+func getLoginActions() []Action {
+	loginCtx := newLoginContext()
+	return []Action{
+		{Method: http.MethodPost, Path: "/login", HandlerFunc: loginCtx.login},
+		{Method: http.MethodPost, Path: "/logout", HandlerFunc: loginCtx.logout},
+	}
 }
 
 type loginContext struct {
@@ -44,8 +47,6 @@ func (ctx *loginContext) logout(c *gin.Context) {
 	c.Set(constants.UserContextKey, nil)
 	HandleSuccess(c)
 }
-
-var loginCtx = newLoginContext()
 
 func newLoginContext() *loginContext {
 	// context

@@ -10,8 +10,10 @@ func GetColorList(c *gin.Context) {
 	panic(errors.ErrorControllerNotImplemented)
 }
 
-var ColorActions = []Action{
-	{Method: http.MethodGet, Path: "", HandlerFunc: GetColorList},
+func getColorActions() []Action {
+	return []Action{
+		{Method: http.MethodGet, Path: "", HandlerFunc: GetColorList},
+	}
 }
 
 var ColorController ActionController
