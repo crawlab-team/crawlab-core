@@ -5,11 +5,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/fs"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/models"
-	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/dig"
 	"os"
 	"path"
 	"sync"
@@ -25,12 +22,10 @@ type Service struct {
 	repoPathBase      string
 
 	// dependencies
-	modelSvc service.ModelService
-	fsSvc    interfaces.FsService
+	fsSvc interfaces.FsService
 
 	// internals
 	id primitive.ObjectID
-	s  *models.Spider
 }
 
 func (svc *Service) Init() (err error) {
@@ -137,23 +132,6 @@ func NewSpiderFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.
 	// validate
 	if svc.id.IsZero() {
 		return nil, trace.TraceError(errors.ErrorSpiderMissingRequiredOption)
-	}
-
-	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(modelSvc service.ModelService) {
-		svc.modelSvc = modelSvc
-	}); err != nil {
-		return nil, trace.TraceError(err)
-	}
-
-	// spider
-	svc.s, err = svc.modelSvc.GetSpiderById(svc.id)
-	if err != nil {
-		return nil, err
 	}
 
 	// fs service
