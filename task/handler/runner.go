@@ -559,10 +559,26 @@ func (r *Runner) _updateSpiderStat() {
 	}
 
 	// perform update
-	if err := mongo.GetMongoCol(interfaces.ModelColNameSpiderStat).UpdateId(r.s.GetId(), update); err != nil {
-		trace.PrintError(err)
-		return
+	if r.svc.GetNodeConfigService().IsMaster() {
+		if err := mongo.GetMongoCol(interfaces.ModelColNameSpiderStat).UpdateId(r.s.GetId(), update); err != nil {
+			trace.PrintError(err)
+			return
+		}
+	} else {
+		modelSvc, err := client.NewBaseServiceDelegate(
+			client.WithBaseServiceModelId(interfaces.ModelIdSpiderStat),
+			client.WithBaseServiceConfigPath(r.svc.GetConfigPath()),
+		)
+		if err != nil {
+			trace.PrintError(err)
+			return
+		}
+		if err := modelSvc.UpdateById(r.s.GetId(), update); err != nil {
+			trace.PrintError(err)
+			return
+		}
 	}
+
 }
 
 func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opts ...RunnerOption) (r2 interfaces.TaskRunner, err error) {
