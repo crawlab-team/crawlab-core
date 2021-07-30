@@ -18,6 +18,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
@@ -138,13 +139,17 @@ func (svc *MasterService) Register() (err error) {
 		// not exists
 		log.Infof("master[%s] does not exist in db", nodeKey)
 		node := &models.Node{
-			Key:      nodeKey,
-			Name:     nodeKey,
-			IsMaster: true,
-			Status:   constants.NodeStatusOnline,
-			Enabled:  true,
-			Active:   true,
-			ActiveTs: time.Now(),
+			Key:        nodeKey,
+			Name:       nodeKey,
+			MaxRunners: config.DefaultConfigOptions.MaxRunners,
+			IsMaster:   true,
+			Status:     constants.NodeStatusOnline,
+			Enabled:    true,
+			Active:     true,
+			ActiveTs:   time.Now(),
+		}
+		if viper.GetInt("task.handler.maxRunners") > 0 {
+			node.MaxRunners = viper.GetInt("task.handler.maxRunners")
 		}
 		nodeD := delegate.NewModelNodeDelegate(node)
 		if err := nodeD.Add(); err != nil {

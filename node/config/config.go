@@ -27,6 +27,11 @@ func NewConfig(opts *Options) (cfg *Config) {
 	if opts == nil {
 		opts = DefaultConfigOptions
 	}
+	if viper.GetString("node.master") != "Y" {
+		opts.IsMaster = true
+	} else {
+		opts.IsMaster = false
+	}
 	if opts.Key == "" {
 		if viper.GetString("node.key") != "" {
 			opts.Key = viper.GetString("node.key")
