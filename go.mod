@@ -4,7 +4,6 @@ go 1.15
 
 require (
 	github.com/StackExchange/wmi v1.2.0 // indirect
-	github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da // indirect
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.1.1
@@ -17,7 +16,6 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/gamexg/proxyclient v0.0.0-20210207161252-499908056324 // indirect
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-ole/go-ole v1.2.5 // indirect
@@ -33,10 +31,8 @@ require (
 	github.com/olivere/elastic/v7 v7.0.15
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/common v0.4.0
-	github.com/robfig/cron v1.2.0 // indirect
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/shadowsocks/shadowsocks-go v0.0.0-20200409064450-3e585ff90601 // indirect
 	github.com/shirou/gopsutil v3.20.11+incompatible
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/viper v1.7.1
