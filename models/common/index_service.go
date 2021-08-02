@@ -54,6 +54,7 @@ func CreateIndexes() {
 		{Keys: bson.M{"mode": 1}},
 		{Keys: bson.M{"priority": 1}},
 		{Keys: bson.M{"parent_id": 1}},
+		{Keys: bson.M{"has_sub": 1}},
 	})
 
 	// schedules

@@ -5,7 +5,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
@@ -74,9 +73,11 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 
 	if svc.isMultiTask(opts) {
 		// multi tasks
-		if err := delegate.NewModelDelegate(mainTask).Add(); err != nil {
-			return err
-		}
+		// TODO: implement associated tasks
+		//mainTask.HasSub = true
+		//if err := delegate.NewModelDelegate(mainTask).Add(); err != nil {
+		//	return err
+		//}
 		nodeIds, err := svc.getNodeIds(opts)
 		if err != nil {
 			return err
@@ -84,7 +85,8 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 		for _, nodeId := range nodeIds {
 			t := &models.Task{
 				SpiderId: s.Id,
-				ParentId: mainTask.Id,
+				// TODO: implement associated tasks
+				//ParentId: mainTask.Id,
 				Mode:     opts.Mode,
 				Cmd:      s.Cmd,
 				Param:    opts.Param,
@@ -115,9 +117,9 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 func (svc *Service) getNodeIds(opts *interfaces.SpiderRunOptions) (nodeIds []primitive.ObjectID, err error) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		query := bson.M{
-			"active":  true,
-			"enabled": true,
-			"status":  constants.NodeStatusOnline,
+			"a":  true,
+			"en": true,
+			"s":  constants.NodeStatusOnline,
 		}
 		nodes, err := svc.modelSvc.GetNodeList(query, nil)
 		if err != nil {
@@ -135,9 +137,9 @@ func (svc *Service) getNodeIds(opts *interfaces.SpiderRunOptions) (nodeIds []pri
 func (svc *Service) isMultiTask(opts *interfaces.SpiderRunOptions) (res bool) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		query := bson.M{
-			"active":  true,
-			"enabled": true,
-			"status":  constants.NodeStatusOnline,
+			"a":  true,
+			"en": true,
+			"s":  constants.NodeStatusOnline,
 		}
 		nodes, err := svc.modelSvc.GetNodeList(query, nil)
 		if err != nil {

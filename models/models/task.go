@@ -21,6 +21,8 @@ type Task struct {
 	ParentId   primitive.ObjectID   `json:"parent_id" bson:"parent_id"` // parent Task.Id if it'Spider a sub-task
 	Priority   int                  `json:"priority" bson:"priority"`
 	Stat       *TaskStat            `json:"stat,omitempty" bson:"-"`
+	HasSub     bool                 `json:"has_sub" json:"has_sub"` // whether to have sub-tasks
+	SubTasks   []Task               `json:"sub_tasks,omitempty" bson:"-"`
 }
 
 func (t *Task) GetId() (id primitive.ObjectID) {
