@@ -26,6 +26,7 @@ func InitControllers() (err error) {
 	StatsController = NewActionControllerDelegate(ControllerIdStats, getStatsActions())
 	TokenController = newTokenController()
 	FilerController = NewActionControllerDelegate(ControllerIdFiler, getFilerActions())
+	PluginProxyController = NewActionControllerDelegate(ControllerIdPluginDo, getPluginProxyActions())
 
 	return nil
 }

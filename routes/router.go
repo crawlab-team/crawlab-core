@@ -124,6 +124,9 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// token
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tokens", controllers.TokenController)
 
+	// plugin do
+	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/plugin-proxy", controllers.PluginProxyController)
+
 	// login
 	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
 

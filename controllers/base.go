@@ -22,6 +22,7 @@ const (
 	ControllerIdResult
 	ControllerIdStats
 	ControllerIdFiler
+	ControllerIdPluginDo
 )
 
 type ControllerId int

@@ -204,7 +204,7 @@ func (svc *MasterService) monitor() (err error) {
 	// iterate all nodes
 	for _, n := range nodes {
 		// subscribe
-		_, err := svc.server.GetSubscribe(n.GetKey())
+		_, err := svc.server.GetSubscribe("node:" + n.GetKey())
 		if err != nil {
 			trace.PrintError(err)
 			isErr = true

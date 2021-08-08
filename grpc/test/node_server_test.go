@@ -91,7 +91,7 @@ func TestGrpcServer_Subscribe(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// server PING client
-	sub, err := T.Server.GetSubscribe(T.WorkerNodeInfo.Key)
+	sub, err := T.Server.GetSubscribe("node:" + T.WorkerNodeInfo.Key)
 	require.Nil(t, err)
 	require.NotNil(t, sub)
 	err = sub.GetStream().Send(&grpc.StreamMessage{

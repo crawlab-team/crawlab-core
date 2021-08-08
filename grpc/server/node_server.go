@@ -147,7 +147,7 @@ func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_S
 	finished := make(chan bool)
 
 	// set subscribe
-	svr.server.SetSubscribe(request.NodeKey, &entity.GrpcSubscribe{
+	svr.server.SetSubscribe("node:"+request.NodeKey, &entity.GrpcSubscribe{
 		Stream:   stream,
 		Finished: finished,
 	})
@@ -169,7 +169,7 @@ func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_S
 }
 
 func (svr NodeServer) Unsubscribe(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	sub, err := svr.server.GetSubscribe(req.NodeKey)
+	sub, err := svr.server.GetSubscribe("node:" + req.NodeKey)
 	if err != nil {
 		return nil, errors.ErrorGrpcSubscribeNotExists
 	}

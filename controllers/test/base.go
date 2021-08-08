@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/dig"
 	"net/http/httptest"
 	"testing"
@@ -28,6 +29,11 @@ type Test struct {
 	// internals
 	app *gin.Engine
 	svr *httptest.Server
+
+	// test data
+	TestUsername string
+	TestPassword string
+	TestToken    string
 }
 
 func (t *Test) Setup(t2 *testing.T) {
@@ -43,7 +49,18 @@ func (t *Test) Cleanup() {
 }
 
 func (t *Test) NewExpect(t2 *testing.T) (e *httpexpect.Expect) {
-	return httpexpect.New(t2, t.svr.URL)
+	e = httpexpect.New(t2, t.svr.URL)
+	res := e.POST("/login").WithJSON(map[string]string{
+		"username": t.TestUsername,
+		"password": t.TestPassword,
+	}).Expect().JSON().Object()
+	t.TestToken = res.Path("$.data").String().Raw()
+	require.NotEmpty(t2, t.TestToken)
+	return e
+}
+
+func (t *Test) WithAuth(req *httpexpect.Request) *httpexpect.Request {
+	return req.WithHeader("Authorization", t.TestToken)
 }
 
 var T *Test
@@ -57,6 +74,11 @@ func NewTest() (res *Test, err error) {
 
 	// http test server
 	t.svr = httptest.NewServer(t.app)
+
+	// init controllers
+	if err := controllers.InitControllers(); err != nil {
+		return nil, err
+	}
 
 	// init routes
 	if err := routes.InitRoutes(t.app); err != nil {
@@ -73,6 +95,10 @@ func NewTest() (res *Test, err error) {
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
+
+	// test data
+	t.TestUsername = "admin"
+	t.TestPassword = "admin"
 
 	return t, nil
 }

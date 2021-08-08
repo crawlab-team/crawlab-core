@@ -2,13 +2,15 @@ module github.com/crawlab-team/crawlab-core
 
 go 1.15
 
+replace github.com/crawlab-team/crawlab-grpc => /Users/marvzhang/projects/crawlab-team/crawlab-grpc
+
 require (
 	github.com/StackExchange/wmi v1.2.0 // indirect
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.1.1
 	github.com/crawlab-team/crawlab-fs v0.1.0
-	github.com/crawlab-team/crawlab-grpc v0.1.0
+	github.com/crawlab-team/crawlab-grpc v0.1.0-local
 	github.com/crawlab-team/crawlab-log v0.1.0
 	github.com/crawlab-team/crawlab-vcs v0.1.0
 	github.com/crawlab-team/go-trace v0.1.0

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -24,12 +25,37 @@ type PluginServer struct {
 	server interfaces.GrpcServer
 }
 
-func (svr PluginServer) Register(ctx context.Context, in *grpc.Request) (res *grpc.Response, err error) {
+func (svr PluginServer) Register(ctx context.Context, in *grpc.PluginRequest) (res *grpc.Response, err error) {
 	panic("implement me")
 }
 
-func (svr PluginServer) Subscribe(stream grpc.PluginService_SubscribeServer) (err error) {
-	panic("implement me")
+func (svr PluginServer) Subscribe(request *grpc.PluginRequest, stream grpc.PluginService_SubscribeServer) (err error) {
+	log.Infof("master received subscribe request from plugin[%s]", request.Name)
+
+	// finished channel
+	finished := make(chan bool)
+
+	// set subscribe
+	svr.server.SetSubscribe("plugin:"+request.Name, &entity.GrpcSubscribe{
+		Stream:   stream,
+		Finished: finished,
+	})
+	ctx := stream.Context()
+
+	log.Infof("master subscribed plugin[%s]", request.Name)
+
+	// Keep this scope alive because once this scope exits - the stream is closed
+	for {
+		select {
+		case <-finished:
+			log.Infof("closing stream for plugin[%s]", request.Name)
+			return nil
+		case <-ctx.Done():
+			log.Infof("plugin[%s] has disconnected", request.Name)
+			return nil
+		}
+
+	}
 }
 
 func (svr PluginServer) deserialize(msg *grpc.StreamMessage) (data entity.StreamMessageTaskData, err error) {
