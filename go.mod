@@ -8,7 +8,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.1.1
 	github.com/crawlab-team/crawlab-fs v0.1.0
-	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210811.1546
+	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210811.1628
 	github.com/crawlab-team/crawlab-log v0.1.0
 	github.com/crawlab-team/crawlab-vcs v0.1.0
 	github.com/crawlab-team/go-trace v0.1.0
