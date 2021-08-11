@@ -22,3 +22,11 @@ func (p *Plugin) GetId() (id primitive.ObjectID) {
 func (p *Plugin) SetId(id primitive.ObjectID) {
 	p.Id = id
 }
+
+func (p *Plugin) GetName() (name string) {
+	return p.Name
+}
+
+func (p *Plugin) SetName(name string) {
+	p.Name = name
+}

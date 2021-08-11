@@ -79,6 +79,10 @@ func (s *Spider) SetTags(tags []interfaces.Tag) {
 	s.Tags = convertInterfacesToTags(tags)
 }
 
+func (s *Spider) GetName() (n string) {
+	return s.Name
+}
+
 func (s *Spider) GetType() (ty string) {
 	return s.Type
 }

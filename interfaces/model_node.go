@@ -4,6 +4,7 @@ import "time"
 
 type Node interface {
 	ModelWithTags
+	GetName() (name string)
 	GetKey() (key string)
 	GetIsMaster() (ok bool)
 	SetActive(active bool)

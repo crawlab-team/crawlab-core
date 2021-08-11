@@ -16,8 +16,10 @@ type GrpcClient interface {
 	GetPluginClient() grpc.PluginServiceClient
 	SetAddress(Address)
 	SetTimeout(time.Duration)
+	SetSubscribeType(string)
 	Context() (context.Context, context.CancelFunc)
 	NewRequest(interface{}) *grpc.Request
+	NewPluginRequest(interface{}) *grpc.PluginRequest
 	GetMessageChannel() chan *grpc.StreamMessage
 	Restart() error
 	NewModelBaseServiceRequest(ModelId, GrpcBaseServiceParams) (*grpc.Request, error)

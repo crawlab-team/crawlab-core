@@ -4,6 +4,7 @@ import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type Spider interface {
 	Model
+	GetName() (n string)
 	GetType() (ty string)
 	GetMode() (mode string)
 	SetMode(mode string)

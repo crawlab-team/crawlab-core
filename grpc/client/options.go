@@ -24,6 +24,12 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
+func WithSubscribeType(subscribeType string) Option {
+	return func(c interfaces.GrpcClient) {
+		c.SetSubscribeType(subscribeType)
+	}
+}
+
 type PoolOption func(p interfaces.GrpcClientPool)
 
 func WithPoolConfigPath(path string) PoolOption {

@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"io"
+	"os"
 	"sync"
 	"time"
 )
@@ -29,9 +30,10 @@ type Client struct {
 	nodeCfgSvc interfaces.NodeConfigService
 
 	// settings
-	cfgPath string
-	address interfaces.Address
-	timeout time.Duration
+	cfgPath       string
+	address       interfaces.Address
+	timeout       time.Duration
+	subscribeType string
 
 	// internals
 	conn   *grpc.ClientConn
@@ -148,25 +150,25 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }
 
+func (c *Client) SetSubscribeType(value string) {
+	c.subscribeType = value
+}
+
 func (c *Client) Context() (ctx context.Context, cancel context.CancelFunc) {
 	return context.WithTimeout(context.Background(), c.timeout)
 }
 
 func (c *Client) NewRequest(d interface{}) (req *grpc2.Request) {
-	var data []byte
-	switch d.(type) {
-	case []byte:
-		data = d.([]byte)
-	default:
-		var err error
-		data, err = json.Marshal(d)
-		if err != nil {
-			panic(err)
-		}
-	}
 	return &grpc2.Request{
 		NodeKey: c.nodeCfgSvc.GetNodeKey(),
-		Data:    data,
+		Data:    c.getRequestData(d),
+	}
+}
+
+func (c *Client) NewPluginRequest(d interface{}) (req *grpc2.PluginRequest) {
+	return &grpc2.PluginRequest{
+		Name: os.Getenv("CRAWLAB_PLUGIN_NAME"),
+		Data: c.getRequestData(d),
 	}
 }
 
@@ -246,15 +248,37 @@ func (c *Client) _connect() (err error) {
 }
 
 func (c *Client) subscribe() (err error) {
-	return backoff.RetryNotify(c._subscribe, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("grpc client subscribe"))
+	var op func() error
+	switch c.subscribeType {
+	case constants.GrpcSubscribeTypeNode:
+		op = c._subscribeNode
+	case constants.GrpcSubscribeTypePlugin:
+		op = c._subscribePlugin
+	default:
+		return errors.ErrorGrpcInvalidType
+	}
+	return backoff.RetryNotify(op, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("grpc client subscribe"))
 }
 
-func (c *Client) _subscribe() (err error) {
+func (c *Client) _subscribeNode() (err error) {
 	req := c.NewRequest(&entity.NodeInfo{
 		Key:      c.nodeCfgSvc.GetNodeKey(),
 		IsMaster: false,
 	})
 	c.stream, err = c.GetNodeClient().Subscribe(context.Background(), req)
+	if err != nil {
+		return trace.TraceError(err)
+	}
+
+	// log
+	log.Infof("grpc client subscribed to remote server")
+
+	return nil
+}
+
+func (c *Client) _subscribePlugin() (err error) {
+	req := c.NewPluginRequest(nil)
+	c.stream, err = c.GetPluginClient().Subscribe(context.Background(), req)
 	if err != nil {
 		return trace.TraceError(err)
 	}
@@ -329,6 +353,23 @@ func (c *Client) needRestart() bool {
 	}
 }
 
+func (c *Client) getRequestData(d interface{}) (data []byte) {
+	if d == nil {
+		return data
+	}
+	switch d.(type) {
+	case []byte:
+		data = d.([]byte)
+	default:
+		var err error
+		data, err = json.Marshal(d)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return data
+}
+
 func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 	// client
 	client := &Client{
@@ -336,8 +377,9 @@ func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 			Host: constants.DefaultGrpcClientRemoteHost,
 			Port: constants.DefaultGrpcClientRemotePort,
 		}),
-		timeout: 10 * time.Second,
-		msgCh:   make(chan *grpc2.StreamMessage),
+		timeout:       10 * time.Second,
+		msgCh:         make(chan *grpc2.StreamMessage),
+		subscribeType: constants.GrpcSubscribeTypeNode,
 	}
 
 	// apply options

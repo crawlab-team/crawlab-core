@@ -41,6 +41,10 @@ func (n *Node) SetTags(tags []interfaces.Tag) {
 	n.Tags = convertInterfacesToTags(tags)
 }
 
+func (n *Node) GetName() (name string) {
+	return n.Name
+}
+
 func (n *Node) GetKey() (key string) {
 	return n.Key
 }
