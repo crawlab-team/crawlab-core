@@ -32,9 +32,9 @@ func NewAddress(opts *AddressOptions) (res *Address) {
 	if opts == nil {
 		opts = &AddressOptions{}
 	}
-	if opts.Host == "" {
-		opts.Host = "localhost"
-	}
+	//if opts.Host == "" {
+	//	opts.Host = "localhost"
+	//}
 	if opts.Port == "" {
 		opts.Port = "9666"
 	}

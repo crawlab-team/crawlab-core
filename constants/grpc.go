@@ -1,7 +1,7 @@
 package constants
 
 const (
-	DefaultGrpcServerHost       = "0.0.0.0"
+	DefaultGrpcServerHost       = ""
 	DefaultGrpcServerPort       = "9666"
 	DefaultGrpcClientRemoteHost = "localhost"
 	DefaultGrpcClientRemotePort = DefaultGrpcServerPort
