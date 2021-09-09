@@ -17,6 +17,14 @@ type projectController struct {
 }
 
 func (ctr *projectController) GetList(c *gin.Context) {
+	// get all if query field "all" is set true
+	all := MustGetFilterAll(c)
+	if all {
+		ctr.getAll(c)
+		return
+	}
+
+	// get list
 	list, total, err := ctr.getList(c)
 	if err != nil {
 		return

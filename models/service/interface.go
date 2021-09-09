@@ -77,5 +77,9 @@ type ModelService interface {
 	GetPasswordById(id primitive.ObjectID) (res *models.Password, err error)
 	GetPassword(query bson.M, opts *mongo.FindOptions) (res *models.Password, err error)
 	GetPasswordList(query bson.M, opts *mongo.FindOptions) (res []models.Password, err error)
+	GetExtraValueById(id primitive.ObjectID) (res *models.ExtraValue, err error)
+	GetExtraValue(query bson.M, opts *mongo.FindOptions) (res *models.ExtraValue, err error)
+	GetExtraValueList(query bson.M, opts *mongo.FindOptions) (res []models.ExtraValue, err error)
+	GetExtraValueByObjectIdModel(oid primitive.ObjectID, m string, opts *mongo.FindOptions) (res *models.ExtraValue, err error)
 	DropAll() (err error)
 }

@@ -69,6 +69,8 @@ func (b *ModelDelegateBinder) Bind() (res interface{}, err error) {
 		return b.process(&m.Result)
 	case interfaces.ModelIdPassword:
 		return b.process(&m.Password)
+	case interfaces.ModelIdExtraValue:
+		return b.process(&m.ExtraValue)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

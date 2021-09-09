@@ -50,6 +50,14 @@ func (d *ListControllerDelegate) Delete(c *gin.Context) {
 }
 
 func (d *ListControllerDelegate) GetList(c *gin.Context) {
+	// get all if query field "all" is set true
+	all := MustGetFilterAll(c)
+	if all {
+		d.getAll(c)
+		return
+	}
+
+	// get list and total
 	list, total, err := d.getList(c)
 	if err != nil {
 		return
@@ -175,13 +183,6 @@ func (d *ListControllerDelegate) getAll(c *gin.Context) {
 }
 
 func (d *ListControllerDelegate) getList(c *gin.Context) (list arraylist.List, total int, err error) {
-	// get all if query field "all" is set true
-	all := MustGetFilterAll(c)
-	if all {
-		d.getAll(c)
-		return
-	}
-
 	// params
 	pagination := MustGetPagination(c)
 	query := MustGetFilterQuery(c)

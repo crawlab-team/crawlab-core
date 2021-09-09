@@ -55,6 +55,8 @@ func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
 		return newModelDelegate(interfaces.ModelIdResult, doc)
 	case *models.Password:
 		return newModelDelegate(interfaces.ModelIdPassword, doc)
+	case *models.ExtraValue:
+		return newModelDelegate(interfaces.ModelIdExtraValue, doc)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil

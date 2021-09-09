@@ -16,6 +16,7 @@ import (
 	"go.uber.org/dig"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 var PluginProxyController ActionController
@@ -23,11 +24,11 @@ var PluginProxyController ActionController
 func getPluginProxyActions() []Action {
 	pluginDoCtx := newPluginProxyContext()
 	return []Action{
-		//{
-		//	Path:        "/:name",
-		//	Method:      http.MethodGet,
-		//	HandlerFunc: pluginDoCtx.info,
-		//},
+		{
+			Path:        "/:name/*path",
+			Method:      http.MethodGet,
+			HandlerFunc: pluginDoCtx.do,
+		},
 		{
 			Path:        "/:name",
 			Method:      http.MethodPost,
@@ -49,9 +50,6 @@ type pluginProxyContext struct {
 	server   interfaces.GrpcServer
 }
 
-func (ctx *pluginProxyContext) info(c *gin.Context) {
-}
-
 func (ctx *pluginProxyContext) do(c *gin.Context) {
 	// plugin name
 	name := c.Param("name")
@@ -64,10 +62,13 @@ func (ctx *pluginProxyContext) do(c *gin.Context) {
 	}
 
 	// body data
-	data, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
+	var data []byte
+	if c.Request.Method != http.MethodGet {
+		data, err = ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
 	}
 
 	switch p.Proto {
@@ -82,13 +83,20 @@ func (ctx *pluginProxyContext) do(c *gin.Context) {
 
 func (ctx *pluginProxyContext) _doHttp(c *gin.Context, p *models.Plugin, data []byte) {
 	path := c.Param("path")
-	url := fmt.Sprintf("%s%s", p.Endpoint, path)
-	res, err := req.Post(url, req.HeaderFromStruct(c.Request.Header), data)
+	var url string
+	if !strings.HasPrefix(p.Endpoint, "http://") && !strings.HasPrefix(p.Endpoint, "https://") {
+		url = fmt.Sprintf("http://%s%s", p.Endpoint, path)
+	} else {
+		url = fmt.Sprintf("%s%s", p.Endpoint, path)
+	}
+	res, err := req.Do(c.Request.Method, url, req.HeaderFromStruct(c.Request.Header), data)
 	if err != nil {
 		HandleError(res.Response().StatusCode, c, err)
 		return
 	}
-	c.Data(http.StatusOK, constants.HttpContentTypeApplicationJson, res.Bytes())
+	contentType := res.Response().Header.Get("Content-Type")
+	c.Data(http.StatusOK, contentType, res.Bytes())
+	//c.Data(http.StatusOK, constants.HttpContentTypeApplicationJson, res.Bytes())
 }
 
 func (ctx *pluginProxyContext) _doGrpc(c *gin.Context, p *models.Plugin, data []byte) {

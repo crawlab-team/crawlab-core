@@ -32,6 +32,7 @@ const (
 	ModelIdDataCollection
 	ModelIdResult
 	ModelIdPassword
+	ModelIdExtraValue
 )
 
 const (
@@ -54,6 +55,7 @@ const (
 	ModelColNameDataSource     = "data_sources"
 	ModelColNameDataCollection = "data_collections"
 	ModelColNamePasswords      = "passwords"
+	ModelColNameExtraValues    = "extra_values"
 )
 
 type ModelWithTags interface {

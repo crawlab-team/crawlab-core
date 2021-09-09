@@ -1,18 +1,21 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Plugin struct {
-	Id          primitive.ObjectID `json:"_id" bson:"_id"`
-	Name        string             `json:"name" bson:"name"`
-	Description string             `json:"description" bson:"description"`
-	Type        string             `json:"type" bson:"type"`
-	Proto       string             `json:"proto" bson:"proto"`
-	Active      bool               `json:"active" bson:"active"`
-	Endpoint    string             `json:"endpoint" bson:"endpoint"`
-	Cmd         string             `json:"cmd" bson:"cmd"`
+	Id            primitive.ObjectID         `json:"_id" bson:"_id"`
+	Name          string                     `json:"name" bson:"name"`
+	Description   string                     `json:"description" bson:"description"`
+	Type          string                     `json:"type" bson:"type"`
+	Proto         string                     `json:"proto" bson:"proto"`
+	Active        bool                       `json:"active" bson:"active"`
+	Endpoint      string                     `json:"endpoint" bson:"endpoint"`
+	Cmd           string                     `json:"cmd" bson:"cmd"`
+	UIComponents  []entity.PluginUIComponent `json:"ui_components" bson:"ui_components"`
+	UISidebarNavs []entity.PluginUINav       `json:"ui_sidebar_navs" bson:"ui_sidebar_navs"`
 }
 
 func (p *Plugin) GetId() (id primitive.ObjectID) {

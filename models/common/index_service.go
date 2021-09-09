@@ -100,4 +100,13 @@ func CreateIndexes() {
 	mongo.GetMongoCol(interfaces.ModelColNameDataCollection).MustCreateIndexes([]mongo2.IndexModel{
 		{Keys: bson.M{"name": 1}},
 	})
+
+	// extra values
+	mongo.GetMongoCol(interfaces.ModelColNameExtraValues).MustCreateIndexes([]mongo2.IndexModel{
+		{Keys: bson.M{"oid": 1}},
+		{Keys: bson.M{"m": 1}},
+		{Keys: bson.M{"t": 1}},
+		{Keys: bson.M{"m": 1, "t": 1}},
+		{Keys: bson.M{"oid": 1, "m": 1, "t": 1}},
+	})
 }

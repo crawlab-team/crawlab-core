@@ -189,8 +189,12 @@ func (svc *MasterService) monitor() (err error) {
 		return err
 	}
 
-	// all worker nodes (except self)
-	nodes, err := svc.modelSvc.GetNodeList(bson.M{"k": bson.M{"$ne": svc.cfgSvc.GetNodeKey()}}, nil)
+	// all worker nodes
+	query := bson.M{
+		"k": bson.M{"$ne": svc.cfgSvc.GetNodeKey()}, // not self
+		"a": true,                                   // active
+	}
+	nodes, err := svc.modelSvc.GetNodeList(query, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			return nil

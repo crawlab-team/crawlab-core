@@ -56,6 +56,8 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return interfaces.ModelColNameDataCollection, nil
 	case interfaces.ModelIdPassword:
 		return interfaces.ModelColNamePasswords, nil
+	case interfaces.ModelIdExtraValue:
+		return interfaces.ModelColNameExtraValues, nil
 
 	// invalid
 	default:
