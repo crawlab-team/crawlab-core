@@ -71,9 +71,11 @@ func (svr PluginServer) Subscribe(request *grpc.PluginRequest, stream grpc.Plugi
 		select {
 		case <-finished:
 			log.Infof("[PluginServer] closing stream for plugin[%s]", request.Name)
+			svr.eventSvc.Unregister(request.Name)
 			return nil
 		case <-ctx.Done():
 			log.Infof("[PluginServer] plugin[%s] has disconnected", request.Name)
+			svr.eventSvc.Unregister(request.Name)
 			return nil
 		}
 	}
