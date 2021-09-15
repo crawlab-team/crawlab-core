@@ -1,6 +1,6 @@
 package interfaces
 
-type ModelDelegateMethod int
+type ModelDelegateMethod string
 
 type ModelDelegate interface {
 	Add() error
@@ -12,9 +12,9 @@ type ModelDelegate interface {
 }
 
 const (
-	ModelDelegateMethodAdd = iota
-	ModelDelegateMethodSave
-	ModelDelegateMethodDelete
-	ModelDelegateMethodGetArtifact
-	ModelDelegateMethodRefresh
+	ModelDelegateMethodAdd         = "add"
+	ModelDelegateMethodSave        = "save"
+	ModelDelegateMethodDelete      = "delete"
+	ModelDelegateMethodGetArtifact = "get-artifact"
+	ModelDelegateMethodRefresh     = "refresh"
 )

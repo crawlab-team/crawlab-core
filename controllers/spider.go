@@ -317,13 +317,13 @@ func (ctx *spiderContext) _post(c *gin.Context) (s *models.Spider, err error) {
 	}
 
 	// upsert data collection
-	if err := ctx._upsertDataCollection(s); err != nil {
+	if err := ctx._upsertDataCollection(c, s); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return nil, err
 	}
 
 	// save
-	if err := delegate2.NewModelDelegate(s).Save(); err != nil {
+	if err := delegate2.NewModelDelegate(s, GetUserFromContext(c)).Save(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return nil, err
 	}
@@ -340,13 +340,13 @@ func (ctx *spiderContext) _put(c *gin.Context) (s *models.Spider, err error) {
 	}
 
 	// upsert data collection
-	if err := ctx._upsertDataCollection(s); err != nil {
+	if err := ctx._upsertDataCollection(c, s); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return nil, err
 	}
 
 	// add
-	if err := delegate2.NewModelDelegate(s).Add(); err != nil {
+	if err := delegate2.NewModelDelegate(s, GetUserFromContext(c)).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func (ctx *spiderContext) _put(c *gin.Context) (s *models.Spider, err error) {
 	st := &models.SpiderStat{
 		Id: s.GetId(),
 	}
-	if err := delegate2.NewModelDelegate(st).Add(); err != nil {
+	if err := delegate2.NewModelDelegate(st, GetUserFromContext(c)).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return nil, err
 	}
@@ -567,7 +567,7 @@ func (ctx *spiderContext) _processActionRequest(c *gin.Context) (id primitive.Ob
 	return
 }
 
-func (ctx *spiderContext) _upsertDataCollection(s *models.Spider) (err error) {
+func (ctx *spiderContext) _upsertDataCollection(c *gin.Context, s *models.Spider) (err error) {
 	if s.ColId.IsZero() {
 		// validate
 		if s.ColName == "" {
@@ -579,7 +579,7 @@ func (ctx *spiderContext) _upsertDataCollection(s *models.Spider) (err error) {
 			if err == mongo2.ErrNoDocuments {
 				// not exists, add new
 				dc = &models.DataCollection{Name: s.ColName}
-				if err := delegate2.NewModelDelegate(dc).Add(); err != nil {
+				if err := delegate2.NewModelDelegate(dc, GetUserFromContext(c)).Add(); err != nil {
 					return err
 				}
 			} else {

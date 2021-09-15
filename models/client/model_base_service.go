@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -77,10 +78,11 @@ func (d *BaseServiceDelegate) GetList(query bson.M, opts *mongo.FindOptions) (li
 	return NewListBinder(d.id, res).Bind()
 }
 
-func (d *BaseServiceDelegate) DeleteById(id primitive.ObjectID) (err error) {
+func (d *BaseServiceDelegate) DeleteById(id primitive.ObjectID, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id, User: u})
 	_, err = d.c.GetModelBaseServiceClient().DeleteById(ctx, req)
 	if err != nil {
 		return err
@@ -88,10 +90,11 @@ func (d *BaseServiceDelegate) DeleteById(id primitive.ObjectID) (err error) {
 	return nil
 }
 
-func (d *BaseServiceDelegate) Delete(query bson.M) (err error) {
+func (d *BaseServiceDelegate) Delete(query bson.M, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, User: u})
 	_, err = d.c.GetModelBaseServiceClient().Delete(ctx, req)
 	if err != nil {
 		return err
@@ -99,10 +102,11 @@ func (d *BaseServiceDelegate) Delete(query bson.M) (err error) {
 	return nil
 }
 
-func (d *BaseServiceDelegate) DeleteList(query bson.M) (err error) {
+func (d *BaseServiceDelegate) DeleteList(query bson.M, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, User: u})
 	_, err = d.c.GetModelBaseServiceClient().DeleteList(ctx, req)
 	if err != nil {
 		return err
@@ -110,10 +114,11 @@ func (d *BaseServiceDelegate) DeleteList(query bson.M) (err error) {
 	return nil
 }
 
-func (d *BaseServiceDelegate) ForceDeleteList(query bson.M) (err error) {
+func (d *BaseServiceDelegate) ForceDeleteList(query bson.M, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, User: u})
 	_, err = d.c.GetModelBaseServiceClient().ForceDeleteList(ctx, req)
 	if err != nil {
 		return err
@@ -121,10 +126,11 @@ func (d *BaseServiceDelegate) ForceDeleteList(query bson.M) (err error) {
 	return nil
 }
 
-func (d *BaseServiceDelegate) UpdateById(id primitive.ObjectID, update bson.M) (err error) {
+func (d *BaseServiceDelegate) UpdateById(id primitive.ObjectID, update bson.M, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id, Update: update})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id, Update: update, User: u})
 	_, err = d.c.GetModelBaseServiceClient().UpdateById(ctx, req)
 	if err != nil {
 		return err
@@ -132,10 +138,11 @@ func (d *BaseServiceDelegate) UpdateById(id primitive.ObjectID, update bson.M) (
 	return nil
 }
 
-func (d *BaseServiceDelegate) Update(query bson.M, update bson.M, fields []string) (err error) {
+func (d *BaseServiceDelegate) Update(query bson.M, update bson.M, fields []string, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, Update: update, Fields: fields})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, Update: update, Fields: fields, User: u})
 	_, err = d.c.GetModelBaseServiceClient().Update(ctx, req)
 	if err != nil {
 		return err
@@ -143,10 +150,11 @@ func (d *BaseServiceDelegate) Update(query bson.M, update bson.M, fields []strin
 	return nil
 }
 
-func (d *BaseServiceDelegate) UpdateDoc(query bson.M, doc interfaces.Model, fields []string) (err error) {
+func (d *BaseServiceDelegate) UpdateDoc(query bson.M, doc interfaces.Model, fields []string, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, Doc: doc, Fields: fields})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, Doc: doc, Fields: fields, User: u})
 	_, err = d.c.GetModelBaseServiceClient().UpdateDoc(ctx, req)
 	if err != nil {
 		return err
@@ -154,10 +162,10 @@ func (d *BaseServiceDelegate) UpdateDoc(query bson.M, doc interfaces.Model, fiel
 	return nil
 }
 
-func (d *BaseServiceDelegate) Insert(docs ...interface{}) (err error) {
+func (d *BaseServiceDelegate) Insert(u interfaces.User, docs ...interface{}) (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Docs: docs})
+	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Docs: docs, User: u})
 	_, err = d.c.GetModelBaseServiceClient().Insert(ctx, req)
 	if err != nil {
 		return err
@@ -182,6 +190,7 @@ func (d *BaseServiceDelegate) Count(query bson.M) (total int, err error) {
 func (d *BaseServiceDelegate) newRequest(params interfaces.GrpcBaseServiceParams) (req *grpc.Request, err error) {
 	return d.c.NewModelBaseServiceRequest(d.id, params)
 }
+
 func (d *BaseServiceDelegate) mustNewRequest(params *entity.GrpcBaseServiceParams) (req *grpc.Request) {
 	req, err := d.newRequest(params)
 	if err != nil {

@@ -10,7 +10,7 @@ type User struct {
 	Password string             `json:"password,omitempty" bson:"-"`
 	Role     string             `json:"role" bson:"role"`
 	Email    string             `json:"email" bson:"email"`
-	Setting  UserSetting        `json:"setting" bson:"setting"`
+	//Setting  UserSetting        `json:"setting" bson:"setting"`
 }
 
 func (u *User) GetId() (id primitive.ObjectID) {
@@ -37,12 +37,12 @@ func (u *User) GetEmail() (email string) {
 	return u.Email
 }
 
-type UserSetting struct {
-	NotificationTrigger  string   `json:"notification_trigger" bson:"notification_trigger"`
-	DingTalkRobotWebhook string   `json:"ding_talk_robot_webhook" bson:"ding_talk_robot_webhook"`
-	WechatRobotWebhook   string   `json:"wechat_robot_webhook" bson:"wechat_robot_webhook"`
-	EnabledNotifications []string `json:"enabled_notifications" bson:"enabled_notifications"`
-	ErrorRegexPattern    string   `json:"error_regex_pattern" bson:"error_regex_pattern"`
-	MaxErrorLog          int      `json:"max_error_log" bson:"max_error_log"`
-	LogExpireDuration    int64    `json:"log_expire_duration" bson:"log_expire_duration"`
-}
+//type UserSetting struct {
+//	NotificationTrigger  string   `json:"notification_trigger" bson:"notification_trigger"`
+//	DingTalkRobotWebhook string   `json:"ding_talk_robot_webhook" bson:"ding_talk_robot_webhook"`
+//	WechatRobotWebhook   string   `json:"wechat_robot_webhook" bson:"wechat_robot_webhook"`
+//	EnabledNotifications []string `json:"enabled_notifications" bson:"enabled_notifications"`
+//	ErrorRegexPattern    string   `json:"error_regex_pattern" bson:"error_regex_pattern"`
+//	MaxErrorLog          int      `json:"max_error_log" bson:"max_error_log"`
+//	LogExpireDuration    int64    `json:"log_expire_duration" bson:"log_expire_duration"`
+//}

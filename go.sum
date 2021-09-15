@@ -227,6 +227,10 @@ github.com/crawlab-team/crawlab-grpc v0.1.0 h1:cCAvQMyXCuUumek2EmYBFRU4UwnC84454
 github.com/crawlab-team/crawlab-grpc v0.1.0/go.mod h1:W9Yee6xfesxoaqS5K1sF1I1zlH+i6xqwy4lyoBTOdkc=
 github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210811.1628 h1:VcW4n+EvmkbG1UMJ0xPDDyVS+lzKywIcrgFG+VJw1RA=
 github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210811.1628/go.mod h1:W9Yee6xfesxoaqS5K1sF1I1zlH+i6xqwy4lyoBTOdkc=
+github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210915.1320 h1:BLeMc701iY17rX/ezK/LfSOXyxxQtudt4ViY8407IRA=
+github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210915.1320/go.mod h1:W9Yee6xfesxoaqS5K1sF1I1zlH+i6xqwy4lyoBTOdkc=
+github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210915.1325 h1:oTtuqZcCpBm/IDuG569CTS2I7xg2A0Y0ZZAyuAIt464=
+github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210915.1325/go.mod h1:W9Yee6xfesxoaqS5K1sF1I1zlH+i6xqwy4lyoBTOdkc=
 github.com/crawlab-team/crawlab-log v0.1.0 h1:0t+lZEojs3Vqb/bMkk2qs3I+1+XdwKG3pMTfeK5PZWM=
 github.com/crawlab-team/crawlab-log v0.1.0/go.mod h1:N8nTTKEbr9ZQSlmw0+HNB4ZAMQF4yVMaJLx8YhXvhNo=
 github.com/crawlab-team/crawlab-vcs v0.1.0 h1:LjtKOOFzx1o7vvgGppC7jt/8lznyvFwwXBYggbSW9+4=
@@ -1016,6 +1020,8 @@ github.com/syndtr/gocapability v0.0.0-20170704070218-db04d3cc01c8/go.mod h1:hkRG
 github.com/tektoncd/pipeline v0.11.0/go.mod h1:hlkH32S92+/UODROH0dmxzyuMxfRFp/Nc3e29MewLn8=
 github.com/tektoncd/plumbing v0.0.0-20200217163359-cd0db6e567d2/go.mod h1:QZHgU07PRBTRF6N57w4+ApRu8OgfYLFNqCDlfEZaD9Y=
 github.com/tektoncd/plumbing/pipelinerun-logs v0.0.0-20191206114338-712d544c2c21/go.mod h1:S62EUWtqmejjJgUMOGB1CCCHRp6C706laH06BoALkzU=
+github.com/thoas/go-funk v0.9.1 h1:O549iLZqPpTUQ10ykd26sZhzD+rmR5pWhuElrhbC20M=
+github.com/thoas/go-funk v0.9.1/go.mod h1:+IWnUfUmFO1+WVYQWQtIJHeRRdaIyyYglZN7xzUPe4Q=
 github.com/tidwall/pretty v1.0.0 h1:HsD+QiTn7sK6flMKIvNmpqz1qrpP3Ps6jOKIKMooyg4=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tj/assert v0.0.0-20171129193455-018094318fb0/go.mod h1:mZ9/Rh9oLWpLLDRpvE+3b7gP/C2YyLFYxNmcLnPTMe0=

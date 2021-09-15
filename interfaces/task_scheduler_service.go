@@ -16,7 +16,7 @@ type TaskSchedulerService interface {
 	// Schedule task to corresponding node
 	Schedule(tasks []Task) (err error)
 	// Cancel task to corresponding node
-	Cancel(id primitive.ObjectID) (err error)
+	Cancel(id primitive.ObjectID, args ...interface{}) (err error)
 	// SetInterval set the interval or duration between two adjacent fetches
 	SetInterval(interval time.Duration)
 }

@@ -59,7 +59,7 @@ func (d *BasicControllerDelegate) Post(c *gin.Context) {
 		HandleErrorNotFound(c, err)
 		return
 	}
-	if err := delegate2.NewModelDelegate(doc).Save(); err != nil {
+	if err := delegate2.NewModelDelegate(doc, GetUserFromContext(c)).Save(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -72,7 +72,7 @@ func (d *BasicControllerDelegate) Put(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	if err := delegate2.NewModelDelegate(doc).Add(); err != nil {
+	if err := delegate2.NewModelDelegate(doc, GetUserFromContext(c)).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -91,7 +91,7 @@ func (d *BasicControllerDelegate) Delete(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	if err := delegate2.NewModelDelegate(doc).Delete(); err != nil {
+	if err := delegate2.NewModelDelegate(doc, GetUserFromContext(c)).Delete(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

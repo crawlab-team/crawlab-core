@@ -118,7 +118,7 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 				HandleErrorInternalServerError(c, errors.ErrorModelInvalidType)
 				return
 			}
-			if err := delegate.NewModelDelegate(doc).Add(); err != nil {
+			if err := delegate.NewModelDelegate(doc, GetUserFromContext(c)).Add(); err != nil {
 				_ = trace.TraceError(err)
 				continue
 			}

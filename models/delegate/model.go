@@ -1,10 +1,11 @@
 package delegate
 
 import (
-	"github.com/crawlab-team/crawlab-core/constants"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/event"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
@@ -13,68 +14,72 @@ import (
 	"time"
 )
 
-func NewModelDelegate(doc interfaces.Model) interfaces.ModelDelegate {
+func NewModelDelegate(doc interfaces.Model, args ...interface{}) interfaces.ModelDelegate {
 	switch doc.(type) {
 	case *models.Artifact:
-		return newModelDelegate(interfaces.ModelIdArtifact, doc)
+		return newModelDelegate(interfaces.ModelIdArtifact, doc, args...)
 	case *models.Tag:
-		return newModelDelegate(interfaces.ModelIdTag, doc)
+		return newModelDelegate(interfaces.ModelIdTag, doc, args...)
 	case *models.Node:
-		return newModelDelegate(interfaces.ModelIdNode, doc)
+		return newModelDelegate(interfaces.ModelIdNode, doc, args...)
 	case *models.Project:
-		return newModelDelegate(interfaces.ModelIdProject, doc)
+		return newModelDelegate(interfaces.ModelIdProject, doc, args...)
 	case *models.Spider:
-		return newModelDelegate(interfaces.ModelIdSpider, doc)
+		return newModelDelegate(interfaces.ModelIdSpider, doc, args...)
 	case *models.Task:
-		return newModelDelegate(interfaces.ModelIdTask, doc)
+		return newModelDelegate(interfaces.ModelIdTask, doc, args...)
 	case *models.Job:
-		return newModelDelegate(interfaces.ModelIdJob, doc)
+		return newModelDelegate(interfaces.ModelIdJob, doc, args...)
 	case *models.Schedule:
-		return newModelDelegate(interfaces.ModelIdSchedule, doc)
+		return newModelDelegate(interfaces.ModelIdSchedule, doc, args...)
 	case *models.User:
-		return newModelDelegate(interfaces.ModelIdUser, doc)
+		return newModelDelegate(interfaces.ModelIdUser, doc, args...)
 	case *models.Setting:
-		return newModelDelegate(interfaces.ModelIdSetting, doc)
+		return newModelDelegate(interfaces.ModelIdSetting, doc, args...)
 	case *models.Token:
-		return newModelDelegate(interfaces.ModelIdToken, doc)
+		return newModelDelegate(interfaces.ModelIdToken, doc, args...)
 	case *models.Variable:
-		return newModelDelegate(interfaces.ModelIdVariable, doc)
+		return newModelDelegate(interfaces.ModelIdVariable, doc, args...)
 	case *models.TaskQueueItem:
-		return newModelDelegate(interfaces.ModelIdTaskQueue, doc)
+		return newModelDelegate(interfaces.ModelIdTaskQueue, doc, args...)
 	case *models.TaskStat:
-		return newModelDelegate(interfaces.ModelIdTaskStat, doc)
+		return newModelDelegate(interfaces.ModelIdTaskStat, doc, args...)
 	case *models.Plugin:
-		return newModelDelegate(interfaces.ModelIdPlugin, doc)
+		return newModelDelegate(interfaces.ModelIdPlugin, doc, args...)
 	case *models.SpiderStat:
-		return newModelDelegate(interfaces.ModelIdSpiderStat, doc)
+		return newModelDelegate(interfaces.ModelIdSpiderStat, doc, args...)
 	case *models.DataSource:
-		return newModelDelegate(interfaces.ModelIdDataSource, doc)
+		return newModelDelegate(interfaces.ModelIdDataSource, doc, args...)
 	case *models.DataCollection:
-		return newModelDelegate(interfaces.ModelIdDataCollection, doc)
+		return newModelDelegate(interfaces.ModelIdDataCollection, doc, args...)
 	case *models.Result:
-		return newModelDelegate(interfaces.ModelIdResult, doc)
+		return newModelDelegate(interfaces.ModelIdResult, doc, args...)
 	case *models.Password:
-		return newModelDelegate(interfaces.ModelIdPassword, doc)
+		return newModelDelegate(interfaces.ModelIdPassword, doc, args...)
 	case *models.ExtraValue:
-		return newModelDelegate(interfaces.ModelIdExtraValue, doc)
+		return newModelDelegate(interfaces.ModelIdExtraValue, doc, args...)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
 	}
 }
 
-func newModelDelegate(id interfaces.ModelId, doc interfaces.Model) interfaces.ModelDelegate {
+func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, args ...interface{}) interfaces.ModelDelegate {
+	// user
+	u := utils.GetUserFromArgs(args...)
+
 	// collection name
 	colName := models.GetModelColName(id)
 
 	// model delegate
 	d := &ModelDelegate{
-		id:  id,
-		doc: doc,
+		id:      id,
+		colName: colName,
+		doc:     doc,
 		a: &models.Artifact{
 			Col: colName,
 		},
-		colName: colName,
+		u: u,
 	}
 
 	return d
@@ -85,6 +90,7 @@ type ModelDelegate struct {
 	colName string
 	doc     interfaces.Model
 	a       interfaces.ModelArtifact
+	u       interfaces.User
 }
 
 // Add model
@@ -124,16 +130,26 @@ func (d *ModelDelegate) GetModel() (res interfaces.Model) {
 func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (err error) {
 	switch method {
 	case interfaces.ModelDelegateMethodAdd:
-		return d.add()
+		err = d.add()
 	case interfaces.ModelDelegateMethodSave:
-		return d.save()
+		err = d.save()
 	case interfaces.ModelDelegateMethodDelete:
-		return d.delete()
+		err = d.delete()
 	case interfaces.ModelDelegateMethodGetArtifact, interfaces.ModelDelegateMethodRefresh:
-		return d.refresh()
+		err = d.refresh()
 	default:
 		return trace.TraceError(errors2.ErrorModelInvalidType)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	// trigger event
+	eventName := GetEventName(d, method)
+	go event.SendEvent(eventName, d.doc)
+
+	return nil
 }
 
 // add model
@@ -232,11 +248,6 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 	// mongo collection
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 
-	// context
-	// TODO: implement user
-	ctx := col.GetContext()
-	user, ok := ctx.Value(constants.UserContextKey).(*models.User)
-
 	// assign id to artifact
 	d.a.SetId(d.doc.GetId())
 
@@ -246,9 +257,9 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 			// new artifact
 			d.a.GetSys().SetCreateTs(time.Now())
 			d.a.GetSys().SetUpdateTs(time.Now())
-			if ok {
-				d.a.GetSys().SetCreateUid(user.Id)
-				d.a.GetSys().SetUpdateUid(user.Id)
+			if d.u != nil {
+				d.a.GetSys().SetCreateUid(d.u.GetId())
+				d.a.GetSys().SetUpdateUid(d.u.GetId())
 			}
 			_, err = col.Insert(d.a)
 			if err != nil {
@@ -263,8 +274,8 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 
 	// existing artifact
 	d.a.GetSys().SetUpdateTs(time.Now())
-	if ok {
-		d.a.GetSys().SetUpdateUid(user.Id)
+	if d.u != nil {
+		d.a.GetSys().SetUpdateUid(d.u.GetId())
 	}
 
 	// save new artifact
@@ -282,15 +293,12 @@ func (d *ModelDelegate) deleteArtifact() (err error) {
 		return trace.TraceError(errors.ErrMissingValue)
 	}
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
-	ctx := col.GetContext()
 	d.a.SetId(d.doc.GetId())
 	d.a.SetObj(d.doc)
 	d.a.SetDel(true)
 	d.a.GetSys().SetDeleteTs(time.Now())
-	// TODO: implement user
-	user, ok := ctx.Value(constants.UserContextKey).(*models.User)
-	if ok {
-		d.a.GetSys().SetDeleteUid(user.Id)
+	if d.u != nil {
+		d.a.GetSys().SetDeleteUid(d.u.GetId())
 	}
 	return col.ReplaceId(d.doc.GetId(), d.a)
 }

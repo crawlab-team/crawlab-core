@@ -50,7 +50,9 @@ func (svc *Service) SetJwtSigningMethod(method jwt.SigningMethod) {
 	svc.jwtSigningMethod = method
 }
 
-func (svc *Service) Create(opts *interfaces.UserCreateOptions) (err error) {
+func (svc *Service) Create(opts *interfaces.UserCreateOptions, args ...interface{}) (err error) {
+	actor := utils.GetUserFromArgs(args...)
+
 	// validate options
 	if opts.Username == "" || opts.Password == "" {
 		return trace.TraceError(errors.ErrorUserMissingRequiredFields)
@@ -77,7 +79,7 @@ func (svc *Service) Create(opts *interfaces.UserCreateOptions) (err error) {
 			Role:     opts.Role,
 			Email:    opts.Email,
 		}
-		if err := delegate.NewModelDelegate(u).Add(); err != nil {
+		if err := delegate.NewModelDelegate(u, actor).Add(); err != nil {
 			return err
 		}
 
@@ -86,7 +88,7 @@ func (svc *Service) Create(opts *interfaces.UserCreateOptions) (err error) {
 			Id:       u.Id,
 			Password: utils.EncryptPassword(opts.Password),
 		}
-		if err := delegate.NewModelDelegate(p).Add(); err != nil {
+		if err := delegate.NewModelDelegate(p, actor).Add(); err != nil {
 			return err
 		}
 
@@ -117,13 +119,15 @@ func (svc *Service) CheckToken(tokenStr string) (u interfaces.User, err error) {
 	return svc.checkToken(tokenStr)
 }
 
-func (svc *Service) ChangePassword(id primitive.ObjectID, password string) (err error) {
+func (svc *Service) ChangePassword(id primitive.ObjectID, password string, args ...interface{}) (err error) {
+	actor := utils.GetUserFromArgs(args...)
+
 	p, err := svc.modelSvc.GetPasswordById(id)
 	if err != nil {
 		return err
 	}
 	p.Password = utils.EncryptPassword(password)
-	if err := delegate.NewModelDelegate(p).Save(); err != nil {
+	if err := delegate.NewModelDelegate(p, actor).Save(); err != nil {
 		return err
 	}
 	return nil

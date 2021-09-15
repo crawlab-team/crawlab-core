@@ -12,7 +12,7 @@ type ModelDelegateServer struct {
 	grpc.UnimplementedModelDelegateServer
 }
 
-// Do and perform a RPC action of constants.Delegate
+// Do and perform an RPC action of constants.Delegate
 func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	// bind message
 	obj, msg, err := NewModelDelegateBinder(req).BindWithDelegateMessage()

@@ -25,7 +25,7 @@ func (ctr *nodeController) Put(c *gin.Context) {
 		return
 	}
 
-	if err := ctr._put(&n); err != nil {
+	if err := ctr._put(c, &n); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -46,7 +46,7 @@ func (ctr *nodeController) PutList(c *gin.Context) {
 
 	// iterate nodes
 	for _, n := range docs {
-		if err := ctr._put(&n); err != nil {
+		if err := ctr._put(c, &n); err != nil {
 			trace.PrintError(err)
 			continue
 		}
@@ -57,7 +57,7 @@ func (ctr *nodeController) PutList(c *gin.Context) {
 	HandleSuccessWithData(c, docs)
 }
 
-func (ctr *nodeController) _put(n *models.Node) (err error) {
+func (ctr *nodeController) _put(c *gin.Context, n *models.Node) (err error) {
 	// set default key
 	if n.Key == "" {
 		id, err := uuid.NewUUID()
@@ -73,7 +73,7 @@ func (ctr *nodeController) _put(n *models.Node) (err error) {
 	}
 
 	// add
-	if err := delegate.NewModelDelegate(n).Add(); err != nil {
+	if err := delegate.NewModelDelegate(n, GetUserFromContext(c)).Add(); err != nil {
 		return trace.TraceError(err)
 	}
 

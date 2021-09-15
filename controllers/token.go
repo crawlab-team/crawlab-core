@@ -37,7 +37,7 @@ func (ctr *tokenController) Put(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	if err := delegate.NewModelDelegate(&t).Add(); err != nil {
+	if err := delegate.NewModelDelegate(&t, GetUserFromContext(c)).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

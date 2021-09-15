@@ -19,6 +19,7 @@ const (
 	ErrorPrefixSchedule   = "schedule"
 	ErrorPrefixUser       = "user"
 	ErrorPrefixStats      = "stats"
+	ErrorPrefixEvent      = "event"
 )
 
 type ErrorPrefix string

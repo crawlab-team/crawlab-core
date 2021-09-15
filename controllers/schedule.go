@@ -44,12 +44,12 @@ func (ctr *scheduleController) Put(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	if err := delegate.NewModelDelegate(&s).Add(); err != nil {
+	if err := delegate.NewModelDelegate(&s, GetUserFromContext(c)).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 	if s.Enabled {
-		if err := ctr.ctx.scheduleSvc.Enable(&s); err != nil {
+		if err := ctr.ctx.scheduleSvc.Enable(&s, GetUserFromContext(c)); err != nil {
 			HandleErrorInternalServerError(c, err)
 			return
 		}
@@ -73,7 +73,7 @@ func (ctr *scheduleController) Delete(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	if err := delegate.NewModelDelegate(s).Delete(); err != nil {
+	if err := delegate.NewModelDelegate(s, GetUserFromContext(c)).Delete(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -112,7 +112,7 @@ func (ctx *scheduleContext) enable(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	if err := ctx.scheduleSvc.Enable(s); err != nil {
+	if err := ctx.scheduleSvc.Enable(s, GetUserFromContext(c)); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -124,7 +124,7 @@ func (ctx *scheduleContext) disable(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	if err := ctx.scheduleSvc.Disable(s); err != nil {
+	if err := ctx.scheduleSvc.Disable(s, GetUserFromContext(c)); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

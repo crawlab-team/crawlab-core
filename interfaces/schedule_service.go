@@ -16,8 +16,8 @@ type ScheduleService interface {
 	SetSkip(skip bool)
 	GetUpdateInterval() (interval time.Duration)
 	SetUpdateInterval(interval time.Duration)
-	Enable(s Schedule) (err error)
-	Disable(s Schedule) (err error)
+	Enable(s Schedule, args ...interface{}) (err error)
+	Disable(s Schedule, args ...interface{}) (err error)
 	Update()
 	GetCron() (c *cron.Cron)
 }

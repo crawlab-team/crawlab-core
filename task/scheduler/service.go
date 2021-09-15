@@ -14,6 +14,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/crawlab-core/task/handler"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -212,7 +213,8 @@ func (svc *Service) Schedule(tasks []interfaces.Task) (err error) {
 	return e.Err()
 }
 
-func (svc *Service) Cancel(id primitive.ObjectID) (err error) {
+func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err error) {
+	u := utils.GetUserFromArgs(args...)
 	if svc.nodeCfgSvc.IsMaster() {
 		// cancel task on master
 		if err := svc.handlerSvc.Cancel(id); err != nil {
@@ -222,7 +224,7 @@ func (svc *Service) Cancel(id primitive.ObjectID) (err error) {
 				return err
 			}
 			t.Status = constants.TaskStatusCancelled
-			return delegate.NewModelDelegate(t).Save()
+			return delegate.NewModelDelegate(t, u).Save()
 		}
 		// cancel success
 		return nil
@@ -241,7 +243,7 @@ func (svc *Service) Cancel(id primitive.ObjectID) (err error) {
 		if err := svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t); err != nil {
 			// cancel failed, force to set status as "cancelled"
 			t.Status = constants.TaskStatusCancelled
-			return delegate.NewModelDelegate(t).Save()
+			return delegate.NewModelDelegate(t, u).Save()
 		}
 		// cancel success
 		return nil

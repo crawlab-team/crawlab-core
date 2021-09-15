@@ -40,6 +40,7 @@ func (svc *BaseService) Stop() {
 	svc.stopped = true
 }
 
+// SaveTask deprecated
 func (svc *BaseService) SaveTask(t interfaces.Task, status string) (err error) {
 	// normalize status
 	if status == "" {

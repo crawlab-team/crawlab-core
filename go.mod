@@ -8,7 +8,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.1.1
 	github.com/crawlab-team/crawlab-fs v0.1.0
-	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210811.1628
+	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20210915.1325
 	github.com/crawlab-team/crawlab-log v0.1.0
 	github.com/crawlab-team/crawlab-vcs v0.1.0
 	github.com/crawlab-team/go-trace v0.1.0
@@ -37,6 +37,7 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
+	github.com/thoas/go-funk v0.9.1
 	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.4.5
 	go.uber.org/atomic v1.6.0 // indirect

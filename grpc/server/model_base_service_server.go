@@ -45,28 +45,28 @@ func (svr ModelBaseServiceServer) GetList(ctx context.Context, req *grpc.Request
 
 func (svr ModelBaseServiceServer) DeleteById(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.DeleteById(params.Id)
+		err := svc.DeleteById(params.Id, params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) Delete(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.Delete(params.Query)
+		err := svc.Delete(params.Query, params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) DeleteList(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.DeleteList(params.Query)
+		err := svc.DeleteList(params.Query, params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) ForceDeleteList(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.ForceDeleteList(params.Query)
+		err := svc.ForceDeleteList(params.Query, params.User)
 		return nil, err
 	})
 }
@@ -80,21 +80,21 @@ func (svr ModelBaseServiceServer) UpdateById(ctx context.Context, req *grpc.Requ
 
 func (svr ModelBaseServiceServer) Update(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.Update(params.Query, params.Update, params.Fields)
+		err := svc.Update(params.Query, params.Update, params.Fields, params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) UpdateDoc(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.UpdateDoc(params.Query, params.Doc, params.Fields)
+		err := svc.UpdateDoc(params.Query, params.Doc, params.Fields, params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) Insert(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.Insert(params.Docs...)
+		err := svc.Insert(params.User, params.Docs...)
 		return nil, err
 	})
 }

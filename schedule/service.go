@@ -88,7 +88,7 @@ func (svc *Service) Stop() {
 	svc.cron.Stop()
 }
 
-func (svc *Service) Enable(s interfaces.Schedule) (err error) {
+func (svc *Service) Enable(s interfaces.Schedule, args ...interface{}) (err error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -98,17 +98,19 @@ func (svc *Service) Enable(s interfaces.Schedule) (err error) {
 	}
 	s.SetEnabled(true)
 	s.SetEntryId(id)
-	return delegate.NewModelDelegate(s).Save()
+	u := utils.GetUserFromArgs(args...)
+	return delegate.NewModelDelegate(s, u).Save()
 }
 
-func (svc *Service) Disable(s interfaces.Schedule) (err error) {
+func (svc *Service) Disable(s interfaces.Schedule, args ...interface{}) (err error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
 	svc.cron.Remove(s.GetEntryId())
 	s.SetEnabled(false)
 	s.SetEntryId(-1)
-	return delegate.NewModelDelegate(s).Save()
+	u := utils.GetUserFromArgs(args...)
+	return delegate.NewModelDelegate(s, u).Save()
 }
 
 func (svc *Service) Update() {

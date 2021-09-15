@@ -15,6 +15,7 @@ type GrpcBaseServiceParams struct {
 	Fields      []string           `json:"f"`
 	FindOptions *mongo.FindOptions `json:"o"`
 	Docs        []interface{}      `json:"dl"`
+	User        interfaces.User    `json:"U"`
 }
 
 func (params *GrpcBaseServiceParams) Value() interface{} {

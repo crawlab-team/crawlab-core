@@ -26,4 +26,5 @@ type GrpcClient interface {
 	IsStarted() bool
 	IsClosed() bool
 	Err() error
+	GetStream() grpc.NodeService_SubscribeClient
 }

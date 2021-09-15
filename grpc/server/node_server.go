@@ -73,7 +73,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 			if !ok {
 				return HandleError(errors.ErrorGrpcInvalidType)
 			}
-			log.Infof("updated worker[%s] in db. id: %s", nodeKey, nodeD.GetModel().GetId().Hex())
+			log.Infof("[NodeServer] updated worker[%s] in db. id: %s", nodeKey, nodeD.GetModel().GetId().Hex())
 		}
 	} else if err == mongo.ErrNoDocuments {
 		// register new
@@ -99,13 +99,13 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 		if !ok {
 			return HandleError(errors.ErrorGrpcInvalidType)
 		}
-		log.Infof("added worker[%s] in db. id: %s", nodeKey, nodeD.GetModel().GetId().Hex())
+		log.Infof("[NodeServer] added worker[%s] in db. id: %s", nodeKey, nodeD.GetModel().GetId().Hex())
 	} else {
 		// error
 		return HandleError(err)
 	}
 
-	log.Infof("master registered worker[%s]", req.GetNodeKey())
+	log.Infof("[NodeServer] master registered worker[%s]", req.GetNodeKey())
 
 	return HandleSuccessWithData(node)
 }
@@ -141,7 +141,7 @@ func (svr NodeServer) Ping(ctx context.Context, req *grpc.Request) (res *grpc.Re
 }
 
 func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_SubscribeServer) (err error) {
-	log.Infof("master received subscribe request from node[%s]", request.NodeKey)
+	log.Infof("[NodeServer] master received subscribe request from node[%s]", request.NodeKey)
 
 	// finished channel
 	finished := make(chan bool)
@@ -153,16 +153,16 @@ func (svr NodeServer) Subscribe(request *grpc.Request, stream grpc.NodeService_S
 	})
 	ctx := stream.Context()
 
-	log.Infof("master subscribed node[%s]", request.NodeKey)
+	log.Infof("[NodeServer] master subscribed node[%s]", request.NodeKey)
 
 	// Keep this scope alive because once this scope exits - the stream is closed
 	for {
 		select {
 		case <-finished:
-			log.Infof("closing stream for node[%s]", request.NodeKey)
+			log.Infof("[NodeServer] closing stream for node[%s]", request.NodeKey)
 			return nil
 		case <-ctx.Done():
-			log.Infof("node[%s] has disconnected", request.NodeKey)
+			log.Infof("[NodeServer] node[%s] has disconnected", request.NodeKey)
 			return nil
 		}
 	}

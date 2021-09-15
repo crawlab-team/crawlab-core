@@ -218,6 +218,10 @@ func (c *Client) Err() (err error) {
 	return c.err
 }
 
+func (c *Client) GetStream() (stream grpc2.NodeService_SubscribeClient) {
+	return c.stream
+}
+
 func (c *Client) connect() (err error) {
 	return backoff.RetryNotify(c._connect, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("grpc client connect"))
 }
