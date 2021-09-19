@@ -42,7 +42,11 @@ func (svr PluginServer) Register(ctx context.Context, req *grpc.PluginRequest) (
 	switch msg.Type {
 	case constants.GrpcEventServiceTypeRegister:
 		ch := make(chan interfaces.EventData)
-		svr.eventSvc.Register(msg.Key, ch)
+		p, err := svr.modelSvc.GetPluginByName(req.Name)
+		if err != nil {
+			return nil, trace.TraceError(err)
+		}
+		svr.eventSvc.Register("plugin:"+req.Name, p.EventKey.Include, p.EventKey.Exclude, ch)
 		go svr.handleEvent(req.Name, ch)
 	default:
 		return nil, trace.TraceError(errors.ErrorEventUnknownAction)
@@ -51,31 +55,31 @@ func (svr PluginServer) Register(ctx context.Context, req *grpc.PluginRequest) (
 	return HandleSuccess()
 }
 
-func (svr PluginServer) Subscribe(request *grpc.PluginRequest, stream grpc.PluginService_SubscribeServer) (err error) {
-	log.Infof("[PluginServer] master received subscribe request from plugin[%s]", request.Name)
+func (svr PluginServer) Subscribe(req *grpc.PluginRequest, stream grpc.PluginService_SubscribeServer) (err error) {
+	log.Infof("[PluginServer] master received subscribe req from plugin[%s]", req.Name)
 
 	// finished channel
 	finished := make(chan bool)
 
 	// set subscribe
-	svr.server.SetSubscribe("plugin:"+request.Name, &entity.GrpcSubscribe{
+	svr.server.SetSubscribe("plugin:"+req.Name, &entity.GrpcSubscribe{
 		Stream:   stream,
 		Finished: finished,
 	})
 	ctx := stream.Context()
 
-	log.Infof("[PluginServer] master subscribed plugin[%s]", request.Name)
+	log.Infof("[PluginServer] master subscribed plugin[%s]", req.Name)
 
 	// Keep this scope alive because once this scope exits - the stream is closed
 	for {
 		select {
 		case <-finished:
-			log.Infof("[PluginServer] closing stream for plugin[%s]", request.Name)
-			svr.eventSvc.Unregister(request.Name)
+			log.Infof("[PluginServer] closing stream for plugin[%s]", req.Name)
+			svr.eventSvc.Unregister("plugin:" + req.Name)
 			return nil
 		case <-ctx.Done():
-			log.Infof("[PluginServer] plugin[%s] has disconnected", request.Name)
-			svr.eventSvc.Unregister(request.Name)
+			log.Infof("[PluginServer] plugin[%s] has disconnected", req.Name)
+			svr.eventSvc.Unregister("plugin:" + req.Name)
 			return nil
 		}
 	}

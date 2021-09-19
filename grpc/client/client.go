@@ -34,6 +34,7 @@ type Client struct {
 	address       interfaces.Address
 	timeout       time.Duration
 	subscribeType string
+	handleMessage bool
 
 	// internals
 	conn   *grpc.ClientConn
@@ -71,7 +72,9 @@ func (c *Client) Start() (err error) {
 	}
 
 	// handle stream message
-	go c.handleStreamMessage()
+	if c.handleMessage {
+		go c.handleStreamMessage()
+	}
 
 	return nil
 }
@@ -152,6 +155,10 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 
 func (c *Client) SetSubscribeType(value string) {
 	c.subscribeType = value
+}
+
+func (c *Client) SetHandleMessage(handleMessage bool) {
+	c.handleMessage = handleMessage
 }
 
 func (c *Client) Context() (ctx context.Context, cancel context.CancelFunc) {
@@ -384,6 +391,7 @@ func NewClient(opts ...Option) (res interfaces.GrpcClient, err error) {
 		timeout:       10 * time.Second,
 		msgCh:         make(chan *grpc2.StreamMessage),
 		subscribeType: constants.GrpcSubscribeTypeNode,
+		handleMessage: true,
 	}
 
 	// apply options

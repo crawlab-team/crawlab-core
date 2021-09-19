@@ -14,9 +14,10 @@ type Plugin struct {
 	Active        bool                       `json:"active" bson:"active"`
 	Endpoint      string                     `json:"endpoint" bson:"endpoint"`
 	Cmd           string                     `json:"cmd" bson:"cmd"`
-	EventKey      string                     `json:"event_key" bson:"event_key"`
+	EventKey      entity.PluginEventKey      `json:"event_key" bson:"event_key"`
 	UIComponents  []entity.PluginUIComponent `json:"ui_components" bson:"ui_components"`
 	UISidebarNavs []entity.PluginUINav       `json:"ui_sidebar_navs" bson:"ui_sidebar_navs"`
+	UIAssets      []entity.PluginUIAsset     `json:"ui_assets" bson:"ui_assets"`
 }
 
 func (p *Plugin) GetId() (id primitive.ObjectID) {

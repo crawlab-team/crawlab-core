@@ -23,6 +23,7 @@ type Task struct {
 	Stat       *TaskStat            `json:"stat,omitempty" bson:"-"`
 	HasSub     bool                 `json:"has_sub" json:"has_sub"` // whether to have sub-tasks
 	SubTasks   []Task               `json:"sub_tasks,omitempty" bson:"-"`
+	UserId     primitive.ObjectID   `json:"-" bson:"-"`
 }
 
 func (t *Task) GetId() (id primitive.ObjectID) {
@@ -83,6 +84,14 @@ func (t *Task) GetParam() (param string) {
 
 func (t *Task) GetPriority() (p int) {
 	return t.Priority
+}
+
+func (t *Task) GetUserId() (id primitive.ObjectID) {
+	return t.UserId
+}
+
+func (t *Task) SetUserId(id primitive.ObjectID) {
+	t.UserId = id
 }
 
 type TaskDailyItem struct {

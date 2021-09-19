@@ -51,8 +51,14 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 	// set task status
 	t.SetStatus(constants.TaskStatusPending)
 
+	// user
+	var u *models.User
+	if !t.GetUserId().IsZero() {
+		u, _ = svc.modelSvc.GetUserById(t.GetUserId())
+	}
+
 	// add task
-	if err = delegate.NewModelDelegate(t).Add(); err != nil {
+	if err = delegate.NewModelDelegate(t, u).Add(); err != nil {
 		return err
 	}
 
@@ -275,11 +281,11 @@ func (svc *Service) getResourcesAndNodesMap() (resources map[string]models.Node,
 	resources = map[string]models.Node{}
 	query := bson.M{
 		// enabled: true
-		"en": true,
+		"enabled": true,
 		// active: true
-		"a": true,
+		"active": true,
 		// available_runners > 0
-		"ar": bson.M{
+		"available_runners": bson.M{
 			"$gt": 0,
 		},
 	}

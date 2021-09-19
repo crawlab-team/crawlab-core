@@ -250,17 +250,25 @@ func (ctx *spiderContext) copyFile(c *gin.Context) {
 }
 
 func (ctx *spiderContext) run(c *gin.Context) {
+	// spider id
 	id, err := ctx._processActionRequest(c)
 	if err != nil {
 		return
 	}
 
+	// options
 	var opts interfaces.SpiderRunOptions
 	if err := c.ShouldBindJSON(&opts); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 
+	// user
+	if u := GetUserFromContext(c); u != nil {
+		opts.UserId = u.GetId()
+	}
+
+	// schedule
 	if err := ctx.adminSvc.Schedule(id, &opts); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return

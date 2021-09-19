@@ -36,6 +36,6 @@ func (svc *Service) GetNodeList(query bson.M, opts *mongo.FindOptions) (res []mo
 }
 
 func (svc *Service) GetNodeByKey(key string, opts *mongo.FindOptions) (res *models2.Node, err error) {
-	query := bson.M{"k": key}
+	query := bson.M{"key": key}
 	return svc.GetNode(query, opts)
 }

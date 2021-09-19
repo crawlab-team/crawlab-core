@@ -69,6 +69,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 		Param:      opts.Param,
 		ScheduleId: opts.ScheduleId,
 		Priority:   opts.Priority,
+		UserId:     opts.UserId,
 	}
 
 	if svc.isMultiTask(opts) {
@@ -92,6 +93,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 				Param:    opts.Param,
 				NodeId:   nodeId,
 				Priority: opts.Priority,
+				UserId:   opts.UserId,
 			}
 			if err := svc.schedulerSvc.Enqueue(t); err != nil {
 				return err
@@ -117,9 +119,9 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 func (svc *Service) getNodeIds(opts *interfaces.SpiderRunOptions) (nodeIds []primitive.ObjectID, err error) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		query := bson.M{
-			"a":  true,
-			"en": true,
-			"s":  constants.NodeStatusOnline,
+			"active":  true,
+			"enabled": true,
+			"status":  constants.NodeStatusOnline,
 		}
 		nodes, err := svc.modelSvc.GetNodeList(query, nil)
 		if err != nil {
@@ -137,9 +139,9 @@ func (svc *Service) getNodeIds(opts *interfaces.SpiderRunOptions) (nodeIds []pri
 func (svc *Service) isMultiTask(opts *interfaces.SpiderRunOptions) (res bool) {
 	if opts.Mode == constants.RunTypeAllNodes {
 		query := bson.M{
-			"a":  true,
-			"en": true,
-			"s":  constants.NodeStatusOnline,
+			"active":  true,
+			"enabled": true,
+			"status":  constants.NodeStatusOnline,
 		}
 		nodes, err := svc.modelSvc.GetNodeList(query, nil)
 		if err != nil {

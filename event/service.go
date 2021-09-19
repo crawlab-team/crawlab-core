@@ -1,8 +1,11 @@
 package event
 
 import (
+	"fmt"
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"github.com/thoas/go-funk"
 	"regexp"
@@ -11,37 +14,61 @@ import (
 var S interfaces.EventService
 
 type Service struct {
-	chs  []chan interfaces.EventData
-	keys []string
+	keys     []string
+	includes []string
+	excludes []string
+	chs      []chan interfaces.EventData
 }
 
-func (svc *Service) Register(key string, ch chan interfaces.EventData) {
-	svc.chs = append(svc.chs, ch)
+func (svc *Service) Register(key, include, exclude string, ch chan interfaces.EventData) {
 	svc.keys = append(svc.keys, key)
+	svc.includes = append(svc.includes, include)
+	svc.excludes = append(svc.excludes, exclude)
+	svc.chs = append(svc.chs, ch)
 }
 
 func (svc *Service) Unregister(key string) {
 	idx := funk.IndexOfString(svc.keys, key)
 	if idx != -1 {
-		svc.chs = append(svc.chs[:idx], svc.chs[(idx+1):]...)
 		svc.keys = append(svc.keys[:idx], svc.keys[(idx+1):]...)
+		svc.includes = append(svc.includes[:idx], svc.includes[(idx+1):]...)
+		svc.excludes = append(svc.excludes[:idx], svc.excludes[(idx+1):]...)
+		svc.chs = append(svc.chs[:idx], svc.chs[(idx+1):]...)
+		log.Infof("[EventService] unregistered %s", key)
 	}
 }
 
 func (svc *Service) SendEvent(eventName string, data ...interface{}) {
 	for i, key := range svc.keys {
-		matched, err := regexp.MatchString(key, eventName)
+		// include
+		include := svc.includes[i]
+		matchedInclude, err := regexp.MatchString(include, eventName)
 		if err != nil {
 			trace.PrintError(err)
 			continue
 		}
-		if matched {
-			ch := svc.chs[i]
-			for _, d := range data {
-				ch <- &entity.EventData{
-					Event: eventName,
-					Data:  d,
-				}
+		if !matchedInclude {
+			return
+		}
+
+		// exclude
+		exclude := svc.excludes[i]
+		matchedExclude, err := regexp.MatchString(exclude, eventName)
+		if err != nil {
+			trace.PrintError(err)
+			continue
+		}
+		if matchedExclude {
+			return
+		}
+
+		// send event
+		utils.LogDebug(fmt.Sprintf("key %s matches event %s", key, eventName))
+		ch := svc.chs[i]
+		for _, d := range data {
+			ch <- &entity.EventData{
+				Event: eventName,
+				Data:  d,
 			}
 		}
 	}

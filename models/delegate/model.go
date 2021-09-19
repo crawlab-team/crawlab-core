@@ -9,6 +9,7 @@ import (
 	"github.com/crawlab-team/crawlab-db/errors"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"time"
@@ -88,9 +89,11 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, args ...inter
 type ModelDelegate struct {
 	id      interfaces.ModelId
 	colName string
-	doc     interfaces.Model
-	a       interfaces.ModelArtifact
-	u       interfaces.User
+	doc     interfaces.Model         // doc to delegate
+	cd      bson.M                   // current doc
+	od      bson.M                   // original doc
+	a       interfaces.ModelArtifact // artifact
+	u       interfaces.User          // user
 }
 
 // Add model
@@ -176,20 +179,44 @@ func (d *ModelDelegate) add() (err error) {
 
 // save model
 func (d *ModelDelegate) save() (err error) {
+	// validate
 	if d.doc == nil || d.doc.GetId().IsZero() {
 		return trace.TraceError(errors.ErrMissingValue)
 	}
+
+	// collection
 	col := mongo.GetMongoCol(d.colName)
+
+	// current doc
+	docData, err := bson.Marshal(d.doc)
+	if err != nil {
+		trace.PrintError(err)
+	} else {
+		if err := bson.Unmarshal(docData, &d.cd); err != nil {
+			trace.PrintError(err)
+		}
+	}
+
+	// original doc
+	if err := col.FindId(d.doc.GetId()).One(&d.od); err != nil {
+		trace.PrintError(err)
+	}
+
+	// replace
 	if err := col.ReplaceId(d.doc.GetId(), d.doc); err != nil {
 		return trace.TraceError(err)
 	}
+
+	// upsert artifact
 	if err := d.upsertArtifact(); err != nil {
 		return trace.TraceError(err)
 	}
+
 	// TODO: implement with alternative
 	//if err := d.updateTags(); err != nil {
 	//	return trace.TraceError(err)
 	//}
+
 	return d.refresh()
 }
 
@@ -345,6 +372,10 @@ func (d *ModelDelegate) updateTags() (err error) {
 	// update tag ids
 	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
 	return col.ReplaceId(d.a.GetId(), d.a)
+}
+
+func (d *ModelDelegate) hasChange() (ok bool) {
+	return !utils.BsonMEqual(d.cd, d.od)
 }
 
 func (d *ModelDelegate) _skip() (ok bool) {

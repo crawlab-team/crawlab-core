@@ -37,7 +37,7 @@ func (svc *NodeServiceDelegate) GetNode(query bson.M, opts *mongo.FindOptions) (
 }
 
 func (svc *NodeServiceDelegate) GetNodeByKey(key string) (n interfaces.Node, err error) {
-	return svc.GetNode(bson.M{"k": key}, nil)
+	return svc.GetNode(bson.M{"key": key}, nil)
 }
 
 func (svc *NodeServiceDelegate) GetNodeList(query bson.M, opts *mongo.FindOptions) (res []interfaces.Node, err error) {

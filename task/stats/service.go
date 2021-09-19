@@ -117,7 +117,7 @@ func (svc *Service) getLogDriver(id primitive.ObjectID) (l clog.Driver, err erro
 func (svc *Service) updateTaskStats(id primitive.ObjectID, resultCount int) {
 	_ = mongo.GetMongoCol(interfaces.ModelColNameTaskStat).UpdateId(id, bson.M{
 		"$inc": bson.M{
-			"rc": resultCount,
+			"result_count": resultCount,
 		},
 	})
 }

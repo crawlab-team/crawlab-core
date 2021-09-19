@@ -191,8 +191,8 @@ func (svc *MasterService) monitor() (err error) {
 
 	// all worker nodes
 	query := bson.M{
-		"k": bson.M{"$ne": svc.cfgSvc.GetNodeKey()}, // not self
-		"a": true,                                   // active
+		"key":    bson.M{"$ne": svc.cfgSvc.GetNodeKey()}, // not self
+		"active": true,                                   // active
 	}
 	nodes, err := svc.modelSvc.GetNodeList(query, nil)
 	if err != nil {

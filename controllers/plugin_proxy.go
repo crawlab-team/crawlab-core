@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
+	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -91,6 +92,10 @@ func (ctx *pluginProxyContext) _doHttp(c *gin.Context, p *models.Plugin, data []
 	}
 	res, err := req.Do(c.Request.Method, url, req.HeaderFromStruct(c.Request.Header), data)
 	if err != nil {
+		if res == nil {
+			HandleErrorInternalServerError(c, errors2.ErrorControllerEmptyResponse)
+			return
+		}
 		HandleError(res.Response().StatusCode, c, err)
 		return
 	}

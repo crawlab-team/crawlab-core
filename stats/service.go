@@ -16,7 +16,7 @@ func (svc *Service) GetOverviewStats(query bson.M) (data interface{}, err error)
 	stats := bson.M{}
 
 	// nodes
-	stats["nodes"], err = mongo.GetMongoCol(interfaces.ModelColNameNode).Count(bson.M{"a": true})
+	stats["nodes"], err = mongo.GetMongoCol(interfaces.ModelColNameNode).Count(bson.M{"active": true})
 	if err != nil {
 		if err.Error() != mongo2.ErrNoDocuments.Error() {
 			return nil, err

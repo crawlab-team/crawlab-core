@@ -204,6 +204,7 @@ func (svc *Service) schedule(id primitive.ObjectID) (fn func()) {
 			Param:      s.GetParam(),
 			Priority:   s.GetPriority(),
 			ScheduleId: s.GetId(),
+			UserId:     s.UserId,
 		}
 
 		// normalize options

@@ -550,11 +550,11 @@ func (r *Runner) _updateSpiderStat() {
 			"ltid": r.tid,
 		},
 		"$inc": bson.M{
-			"t":  1,                              // tasks
-			"r":  ts.GetResultCount(),            // results
-			"wd": ts.GetWaitDuration() / 1000,    // wait duration
-			"rd": ts.GetRuntimeDuration() / 1000, // runtime duration
-			"td": ts.GetTotalDuration() / 1000,   // total duration
+			"tasks":            1,                              // tasks
+			"results":          ts.GetResultCount(),            // results
+			"wait_duration":    ts.GetWaitDuration() / 1000,    // wait duration
+			"runtime_duration": ts.GetRuntimeDuration() / 1000, // runtime duration
+			"total_duration":   ts.GetTotalDuration() / 1000,   // total duration
 		},
 	}
 

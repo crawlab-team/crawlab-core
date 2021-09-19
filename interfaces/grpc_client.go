@@ -17,6 +17,7 @@ type GrpcClient interface {
 	SetAddress(Address)
 	SetTimeout(time.Duration)
 	SetSubscribeType(string)
+	SetHandleMessage(bool)
 	Context() (context.Context, context.CancelFunc)
 	NewRequest(interface{}) *grpc.Request
 	NewPluginRequest(interface{}) *grpc.PluginRequest

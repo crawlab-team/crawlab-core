@@ -23,12 +23,12 @@ func CreateIndexes() {
 
 	// nodes
 	mongo.GetMongoCol(interfaces.ModelColNameNode).MustCreateIndexes([]mongo2.IndexModel{
-		{Keys: bson.M{"k": 1}},  // key
-		{Keys: bson.M{"n": 1}},  // name
-		{Keys: bson.M{"im": 1}}, // is_master
-		{Keys: bson.M{"s": 1}},  // status
-		{Keys: bson.M{"en": 1}}, // enabled
-		{Keys: bson.M{"a": 1}},  // active
+		{Keys: bson.M{"key": 1}},       // key
+		{Keys: bson.M{"name": 1}},      // name
+		{Keys: bson.M{"is_master": 1}}, // is_master
+		{Keys: bson.M{"status": 1}},    // status
+		{Keys: bson.M{"enabled": 1}},   // enabled
+		{Keys: bson.M{"active": 1}},    // active
 	})
 
 	// projects

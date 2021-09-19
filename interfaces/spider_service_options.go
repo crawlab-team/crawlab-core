@@ -10,6 +10,7 @@ type SpiderRunOptions struct {
 	Param      string               `json:"param"`
 	ScheduleId primitive.ObjectID   `json:"schedule_id"`
 	Priority   int                  `json:"priority"`
+	UserId     primitive.ObjectID   `json:"-"`
 }
 
 type SpiderCloneOptions struct {

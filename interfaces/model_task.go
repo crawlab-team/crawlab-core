@@ -17,4 +17,6 @@ type Task interface {
 	GetCmd() (cmd string)
 	GetParam() (param string)
 	GetPriority() (p int)
+	GetUserId() (id primitive.ObjectID)
+	SetUserId(id primitive.ObjectID)
 }

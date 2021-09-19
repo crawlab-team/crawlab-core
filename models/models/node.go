@@ -8,20 +8,20 @@ import (
 
 type Node struct {
 	Id               primitive.ObjectID `json:"_id" bson:"_id"`
-	Key              string             `json:"key" bson:"k"`
-	Name             string             `json:"name" bson:"n"`
+	Key              string             `json:"key" bson:"key"`
+	Name             string             `json:"name" bson:"name"`
 	Ip               string             `json:"ip" bson:"ip"`
-	Port             string             `json:"port" bson:"p"`
-	Mac              string             `json:"mac" bson:"m"`
-	Hostname         string             `json:"hostname" bson:"h"`
-	Description      string             `json:"description" bson:"d"`
-	IsMaster         bool               `json:"is_master" bson:"im"`
-	Status           string             `json:"status" bson:"s"`
-	Enabled          bool               `json:"enabled" bson:"en"`
-	Active           bool               `json:"active" bson:"a"`
-	ActiveTs         time.Time          `json:"active_ts" bson:"at"`
-	AvailableRunners int                `json:"available_runners" bson:"ar"`
-	MaxRunners       int                `json:"max_runners" bson:"mr"`
+	Port             string             `json:"port" bson:"port"`
+	Mac              string             `json:"mac" bson:"mac"`
+	Hostname         string             `json:"hostname" bson:"hostname"`
+	Description      string             `json:"description" bson:"description"`
+	IsMaster         bool               `json:"is_master" bson:"is_master"`
+	Status           string             `json:"status" bson:"status"`
+	Enabled          bool               `json:"enabled" bson:"enabled"`
+	Active           bool               `json:"active" bson:"active"`
+	ActiveTs         time.Time          `json:"active_ts" bson:"active_ts"`
+	AvailableRunners int                `json:"available_runners" bson:"available_runners"`
+	MaxRunners       int                `json:"max_runners" bson:"max_runners"`
 	Tags             []Tag              `json:"tags" bson:"-"`
 }
 

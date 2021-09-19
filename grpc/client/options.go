@@ -30,6 +30,12 @@ func WithSubscribeType(subscribeType string) Option {
 	}
 }
 
+func WithHandleMessage(handleMessage bool) Option {
+	return func(c interfaces.GrpcClient) {
+		c.SetHandleMessage(handleMessage)
+	}
+}
+
 type PoolOption func(p interfaces.GrpcClientPool)
 
 func WithPoolConfigPath(path string) PoolOption {

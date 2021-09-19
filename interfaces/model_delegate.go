@@ -17,4 +17,5 @@ const (
 	ModelDelegateMethodDelete      = "delete"
 	ModelDelegateMethodGetArtifact = "get-artifact"
 	ModelDelegateMethodRefresh     = "refresh"
+	ModelDelegateMethodChange      = "change"
 )

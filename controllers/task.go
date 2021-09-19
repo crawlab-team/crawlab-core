@@ -110,6 +110,11 @@ func (ctx *taskContext) run(c *gin.Context) {
 		Priority: t.Priority,
 	}
 
+	// user
+	if u := GetUserFromContext(c); u != nil {
+		opts.UserId = u.GetId()
+	}
+
 	// run
 	if err := ctx.adminSvc.Schedule(s.GetId(), opts); err != nil {
 		HandleErrorInternalServerError(c, err)
@@ -140,6 +145,11 @@ func (ctx *taskContext) restart(c *gin.Context) {
 		NodeIds:  t.NodeIds,
 		Param:    t.Param,
 		Priority: t.Priority,
+	}
+
+	// user
+	if u := GetUserFromContext(c); u != nil {
+		opts.UserId = u.GetId()
 	}
 
 	// run

@@ -15,3 +15,4 @@ var ErrorControllerRequestPayloadInvalid = NewControllerError("request payload i
 var ErrorControllerMissingInCache = NewControllerError("missing in cache")
 var ErrorControllerNotCancellable = NewControllerError("not cancellable")
 var ErrorControllerMissingRequestFields = NewControllerError("missing request fields")
+var ErrorControllerEmptyResponse = NewControllerError("empty response")
