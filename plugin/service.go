@@ -148,7 +148,7 @@ func (svc *Service) installFile(p interfaces.Plugin) (err error) {
 	if err != nil {
 		return err
 	}
-	if err := fsSvc.GetFsService().SyncToFs(interfaces.WithOnlyFromWorkspace()); err != nil {
+	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
 		return err
 	}
 
