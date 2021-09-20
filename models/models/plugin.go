@@ -9,12 +9,13 @@ type Plugin struct {
 	Id            primitive.ObjectID         `json:"_id" bson:"_id"`
 	Name          string                     `json:"name" bson:"name"`
 	Description   string                     `json:"description" bson:"description"`
-	Type          string                     `json:"type" bson:"type"`
 	Proto         string                     `json:"proto" bson:"proto"`
 	Active        bool                       `json:"active" bson:"active"`
 	Endpoint      string                     `json:"endpoint" bson:"endpoint"`
 	Cmd           string                     `json:"cmd" bson:"cmd"`
 	EventKey      entity.PluginEventKey      `json:"event_key" bson:"event_key"`
+	InstallUrl    string                     `json:"install_url" bson:"install_url"`
+	DeployMode    string                     `json:"deploy_mode" bson:"deploy_mode"`
 	UIComponents  []entity.PluginUIComponent `json:"ui_components" bson:"ui_components"`
 	UISidebarNavs []entity.PluginUINav       `json:"ui_sidebar_navs" bson:"ui_sidebar_navs"`
 	UIAssets      []entity.PluginUIAsset     `json:"ui_assets" bson:"ui_assets"`
@@ -34,4 +35,12 @@ func (p *Plugin) GetName() (name string) {
 
 func (p *Plugin) SetName(name string) {
 	p.Name = name
+}
+
+func (p *Plugin) GetInstallUrl() (url string) {
+	return p.InstallUrl
+}
+
+func (p *Plugin) SetInstallUrl(url string) {
+	p.InstallUrl = url
 }

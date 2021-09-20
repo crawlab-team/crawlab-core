@@ -19,7 +19,7 @@ func InitControllers() (err error) {
 	TagController = NewListControllerDelegate(ControllerIdTag, modelSvc.GetBaseService(interfaces.ModelIdTag))
 	LoginController = NewActionControllerDelegate(ControllerIdLogin, getLoginActions())
 	ColorController = NewActionControllerDelegate(ControllerIdColor, getColorActions())
-	PluginController = NewListControllerDelegate(ControllerIdPlugin, modelSvc.GetBaseService(interfaces.ModelIdPlugin))
+	PluginController = newPluginController()
 	DataCollectionController = NewListControllerDelegate(ControllerIdDataCollection, modelSvc.GetBaseService(interfaces.ModelIdDataCollection))
 	ResultController = NewActionControllerDelegate(ControllerIdResult, getResultActions())
 	ScheduleController = newScheduleController()

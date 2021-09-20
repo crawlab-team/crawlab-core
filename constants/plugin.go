@@ -15,3 +15,16 @@ const (
 	PluginUIComponentTypeView = "view"
 	PluginUIComponentTypeTab  = "tab"
 )
+
+const (
+	PluginDeployModeMaster = "master"
+	PluginDeployModeAll    = "all"
+)
+
+const (
+	PluginInstallUrlTypePluginName = "plugin_name"
+	PluginInstallUrlTypeGithub     = "github"
+	PluginInstallUrlTypeGitee      = "gitee"
+	PluginInstallUrlTypeFile       = "file"
+	PluginInstallUrlTypeGeneralUrl = "general_url"
+)

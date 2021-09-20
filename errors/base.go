@@ -20,6 +20,7 @@ const (
 	ErrorPrefixUser       = "user"
 	ErrorPrefixStats      = "stats"
 	ErrorPrefixEvent      = "event"
+	ErrorPrefixPlugin     = "plugin"
 )
 
 type ErrorPrefix string

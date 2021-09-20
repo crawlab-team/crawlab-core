@@ -78,7 +78,7 @@ func (ctx *pluginProxyContext) do(c *gin.Context) {
 	case constants.PluginProtoGrpc:
 		ctx._doGrpc(c, p, data)
 	default:
-		HandleErrorInternalServerError(c, errors.New("not implemented"))
+		HandleErrorInternalServerError(c, errors.New(fmt.Sprintf("%s is not implemented", p.Proto)))
 	}
 }
 

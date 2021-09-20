@@ -1,17 +1,40 @@
 package plugin
 
-import "github.com/crawlab-team/crawlab-core/interfaces"
+import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Option func(svc interfaces.PluginService)
-
-func WithDirPath(path string) Option {
-	return func(svc interfaces.PluginService) {
-		svc.SetDirPath(path)
-	}
-}
 
 func WithFsPathBase(path string) Option {
 	return func(svc interfaces.PluginService) {
 		svc.SetFsPathBase(path)
+	}
+}
+
+type FsOption func(svc interfaces.PluginFsService)
+
+func WithFsConfigPath(path string) FsOption {
+	return func(svc interfaces.PluginFsService) {
+		svc.SetConfigPath(path)
+	}
+}
+
+func WithFsId(id primitive.ObjectID) FsOption {
+	return func(fsSvc interfaces.PluginFsService) {
+		fsSvc.SetId(id)
+	}
+}
+
+func WithFsFsPathBase(path string) FsOption {
+	return func(svc interfaces.PluginFsService) {
+		svc.SetFsPathBase(path)
+	}
+}
+
+func WithFsWorkspacePathBase(path string) FsOption {
+	return func(svc interfaces.PluginFsService) {
+		svc.SetWorkspacePathBase(path)
 	}
 }
