@@ -28,3 +28,9 @@ const (
 	PluginInstallUrlTypeFile       = "file"
 	PluginInstallUrlTypeGeneralUrl = "general_url"
 )
+
+const (
+	PluginStatusStopped = "stopped"
+	PluginStatusRunning = "running"
+	PluginStatusError   = "error"
+)

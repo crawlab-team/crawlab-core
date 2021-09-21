@@ -19,6 +19,10 @@ type Plugin struct {
 	UIComponents  []entity.PluginUIComponent `json:"ui_components" bson:"ui_components"`
 	UISidebarNavs []entity.PluginUINav       `json:"ui_sidebar_navs" bson:"ui_sidebar_navs"`
 	UIAssets      []entity.PluginUIAsset     `json:"ui_assets" bson:"ui_assets"`
+	Status        string                     `json:"status" bson:"status"`
+	Pid           int                        `json:"pid,omitempty" bson:"pid,omitempty"`
+	Error         string                     `json:"error,omitempty" bson:"error,omitempty"`
+	Restart       bool                       `json:"restart" bson:"restart"`
 }
 
 func (p *Plugin) GetId() (id primitive.ObjectID) {

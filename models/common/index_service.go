@@ -89,6 +89,7 @@ func CreateIndexes() {
 	// plugins
 	mongo.GetMongoCol(interfaces.ModelColNamePlugin).MustCreateIndexes([]mongo2.IndexModel{
 		{Keys: bson.M{"name": 1}},
+		{Keys: bson.M{"status": 1}},
 	})
 
 	// data sources

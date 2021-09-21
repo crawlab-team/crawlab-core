@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
@@ -9,12 +10,17 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/process"
+	"github.com/crawlab-team/crawlab-core/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -26,22 +32,25 @@ type Service struct {
 
 	// dependencies
 	modelSvc service.ModelService
+
+	// internals
+	daemonMap sync.Map
 }
 
 func (svc *Service) Init() (err error) {
+	plugins, err := svc.modelSvc.GetPluginList(bson.M{"status": constants.PluginStatusRunning}, nil)
+	if err != nil {
+		return err
+	}
+	for _, p := range plugins {
+		p.Error = errors2.ErrorPluginMissingProcess.Error()
+		p.Pid = 0
+		p.Status = constants.PluginStatusError
+		if err := delegate.NewModelDelegate(&p).Save(); err != nil {
+			return err
+		}
+	}
 	return nil
-}
-
-func (svc *Service) Start() {
-	// do nothing
-}
-
-func (svc *Service) Wait() {
-	utils.DefaultWait()
-}
-
-func (svc *Service) Stop() {
-	// do nothing
 }
 
 func (svc *Service) SetFsPathBase(path string) {
@@ -81,13 +90,83 @@ func (svc *Service) UninstallPlugin(id primitive.ObjectID) (err error) {
 }
 
 func (svc *Service) RunPlugin(id primitive.ObjectID) (err error) {
-	// TODO: implement
-	panic("implement me")
+	// plugin
+	p, err := svc.modelSvc.GetPluginById(id)
+	if err != nil {
+		return err
+	}
+
+	// save pid
+	p.Pid = 0
+	p.Status = constants.PluginStatusRunning
+	_ = delegate.NewModelDelegate(p).Save()
+
+	// fs service
+	fsSvc, err := NewPluginFsService(id)
+	if err != nil {
+		return err
+	}
+
+	// sync to workspace
+	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+		return err
+	}
+
+	// process daemon
+	d := process.NewProcessDaemon(svc.getNewCmdFn(p, fsSvc))
+
+	// add to daemon map
+	svc.addDaemon(id, d)
+
+	// run (async)
+	go func() {
+		// start (async)
+		go func() {
+			if err := d.Start(); err != nil {
+				svc.handleCmdError(p, err)
+				return
+			}
+		}()
+
+		// listening to signal from daemon
+		stopped := false
+		for {
+			if stopped {
+				break
+			}
+			ch := d.GetCh()
+			sig := <-ch
+			switch sig {
+			case process.SignalStart:
+				// save pid
+				p.Pid = d.GetCmd().Process.Pid
+				_ = delegate.NewModelDelegate(p).Save()
+			case process.SignalStopped, process.SignalReachedMaxErrors:
+				// break for loop
+				stopped = true
+			default:
+				continue
+			}
+		}
+
+		// stopped
+		p.Status = constants.PluginStatusStopped
+		p.Pid = 0
+		p.Error = ""
+		_ = delegate.NewModelDelegate(p).Save()
+	}()
+
+	return nil
 }
 
 func (svc *Service) StopPlugin(id primitive.ObjectID) (err error) {
-	// TODO: implement
-	panic("implement me")
+	var d interfaces.ProcessDaemon
+	if d = svc.getDaemon(id); d == nil {
+		return trace.TraceError(errors2.ErrorPluginNotExists)
+	}
+	d.Stop()
+	svc.deleteDaemon(id)
+	return nil
 }
 
 func (svc *Service) getInstallUrlType(p interfaces.Plugin) (installUrlType string) {
@@ -167,24 +246,103 @@ func (svc *Service) installGeneralUrl(p interfaces.Plugin) (err error) {
 	panic("not implemented")
 }
 
-func (svc *Service) _addPluginToDb(p *models.Plugin) (err error) {
-	_, err = svc.modelSvc.GetPluginByName(p.Name)
-	if err != nil {
-		if err.Error() == mongo.ErrNoDocuments.Error() {
-			// not exists, add new
-			return delegate.NewModelDelegate(p).Add()
-		}
-		return err
-	} else {
-		// exists
+func (svc *Service) getDaemon(id primitive.ObjectID) (d interfaces.ProcessDaemon) {
+	res, ok := svc.daemonMap.Load(id)
+	if !ok {
 		return nil
 	}
+	d, ok = res.(interfaces.ProcessDaemon)
+	if !ok {
+		return nil
+	}
+	return d
+}
+
+func (svc *Service) addDaemon(id primitive.ObjectID, d interfaces.ProcessDaemon) {
+	svc.daemonMap.Store(id, d)
+}
+
+func (svc *Service) deleteDaemon(id primitive.ObjectID) {
+	svc.daemonMap.Delete(id)
+}
+
+func (svc *Service) handleCmdError(p *models.Plugin, err error) {
+	trace.PrintError(err)
+	p.Status = constants.PluginStatusError
+	p.Pid = 0
+	p.Error = err.Error()
+	_ = delegate.NewModelDelegate(p).Save()
+	svc.deleteDaemon(p.Id)
+}
+
+func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsService) func() (cmd *exec.Cmd) {
+	return func() (cmd *exec.Cmd) {
+		// command
+		cmd = sys_exec.BuildCmd(p.Cmd)
+
+		// working directory
+		cmd.Dir = fsSvc.GetWorkspacePath()
+
+		// inherit system envs
+		for _, env := range os.Environ() {
+			cmd.Env = append(cmd.Env, env)
+		}
+
+		// bind all viper keys to envs
+		for _, key := range viper.AllKeys() {
+			value := viper.Get(key)
+			_, ok := value.(string)
+			if !ok {
+				continue
+			}
+			envName := fmt.Sprintf("%s_%s", "CRAWLAB", strings.ReplaceAll(strings.ToUpper(key), ".", "_"))
+			envValue := viper.GetString(key)
+			env := fmt.Sprintf("%s=%s", envName, envValue)
+			cmd.Env = append(cmd.Env, env)
+		}
+
+		// logging
+		stdout, _ := cmd.StdoutPipe()
+		stderr, _ := cmd.StderrPipe()
+		scannerStdout := bufio.NewScanner(stdout)
+		scannerStderr := bufio.NewScanner(stderr)
+		go func() {
+			for scannerStdout.Scan() {
+				line := fmt.Sprintf("[Plugin-%s] %s\n", p.GetName(), scannerStdout.Text())
+				_, _ = os.Stdout.WriteString(line)
+			}
+		}()
+		go func() {
+			for scannerStderr.Scan() {
+				line := fmt.Sprintf("[PLUGIN-%s] %s\n", p.GetName(), scannerStderr.Text())
+				_, _ = os.Stderr.WriteString(line)
+			}
+		}()
+
+		return cmd
+	}
+}
+
+func (svc *Service) monitorCmd() {
+	//for {
+	//	plugins, err := svc.modelSvc.GetPluginList(nil, nil)
+	//	if err != nil {
+	//		trace.PrintError(err)
+	//		continue
+	//	}
+	//	for _, p := range plugins {
+	//		if p.Status == constants.PluginStatusRunning {
+	//		} else {
+	//		}
+	//	}
+	//}
 }
 
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {
 	// service
 	svc := &Service{
 		fsPathBase: DefaultPluginFsPathBase,
+		daemonMap:  sync.Map{},
 	}
 
 	// apply options

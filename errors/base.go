@@ -21,6 +21,7 @@ const (
 	ErrorPrefixStats      = "stats"
 	ErrorPrefixEvent      = "event"
 	ErrorPrefixPlugin     = "plugin"
+	ErrorPrefixProcess    = "process"
 )
 
 type ErrorPrefix string
