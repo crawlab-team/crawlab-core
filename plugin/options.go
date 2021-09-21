@@ -3,6 +3,7 @@ package plugin
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type Option func(svc interfaces.PluginService)
@@ -10,6 +11,12 @@ type Option func(svc interfaces.PluginService)
 func WithFsPathBase(path string) Option {
 	return func(svc interfaces.PluginService) {
 		svc.SetFsPathBase(path)
+	}
+}
+
+func WithMonitorInterval(interval time.Duration) Option {
+	return func(svc interfaces.PluginService) {
+		svc.SetMonitorInterval(interval)
 	}
 }
 

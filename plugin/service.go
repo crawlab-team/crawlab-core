@@ -15,7 +15,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"io/ioutil"
@@ -24,37 +23,44 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Service struct {
 	// settings variables
-	fsPathBase string
+	fsPathBase      string
+	monitorInterval time.Duration
 
 	// dependencies
 	modelSvc service.ModelService
 
 	// internals
 	daemonMap sync.Map
+	stopped   bool
 }
 
 func (svc *Service) Init() (err error) {
-	plugins, err := svc.modelSvc.GetPluginList(bson.M{"status": constants.PluginStatusRunning}, nil)
-	if err != nil {
-		return err
-	}
-	for _, p := range plugins {
-		p.Error = errors2.ErrorPluginMissingProcess.Error()
-		p.Pid = 0
-		p.Status = constants.PluginStatusError
-		if err := delegate.NewModelDelegate(&p).Save(); err != nil {
-			return err
-		}
-	}
 	return nil
+}
+
+func (svc *Service) Start() {
+	svc.initPlugins()
+}
+
+func (svc *Service) Wait() {
+	utils.DefaultWait()
+}
+
+func (svc *Service) Stop() {
+	// do nothing
 }
 
 func (svc *Service) SetFsPathBase(path string) {
 	svc.fsPathBase = path
+}
+
+func (svc *Service) SetMonitorInterval(interval time.Duration) {
+	svc.monitorInterval = interval
 }
 
 func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
@@ -323,26 +329,35 @@ func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsServi
 	}
 }
 
-func (svc *Service) monitorCmd() {
-	//for {
-	//	plugins, err := svc.modelSvc.GetPluginList(nil, nil)
-	//	if err != nil {
-	//		trace.PrintError(err)
-	//		continue
-	//	}
-	//	for _, p := range plugins {
-	//		if p.Status == constants.PluginStatusRunning {
-	//		} else {
-	//		}
-	//	}
-	//}
+func (svc *Service) initPlugins() {
+	plugins, err := svc.modelSvc.GetPluginList(nil, nil)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+	for _, p := range plugins {
+		if p.Restart {
+			if err := svc.RunPlugin(p.Id); err != nil {
+				trace.PrintError(err)
+				continue
+			}
+		} else {
+			if p.Status == constants.PluginStatusRunning {
+				p.Error = errors2.ErrorPluginMissingProcess.Error()
+				p.Pid = 0
+				p.Status = constants.PluginStatusError
+				_ = delegate.NewModelDelegate(&p).Save()
+			}
+		}
+	}
 }
 
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {
 	// service
 	svc := &Service{
-		fsPathBase: DefaultPluginFsPathBase,
-		daemonMap:  sync.Map{},
+		fsPathBase:      DefaultPluginFsPathBase,
+		monitorInterval: 15 * time.Second,
+		daemonMap:       sync.Map{},
 	}
 
 	// apply options
