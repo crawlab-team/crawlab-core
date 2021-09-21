@@ -22,15 +22,15 @@ const (
 )
 
 const (
-	PluginInstallUrlTypePluginName = "plugin_name"
-	PluginInstallUrlTypeGithub     = "github"
-	PluginInstallUrlTypeGitee      = "gitee"
-	PluginInstallUrlTypeFile       = "file"
-	PluginInstallUrlTypeGeneralUrl = "general_url"
+	PluginInstallTypeName  = "name"
+	PluginInstallTypeGit   = "git"
+	PluginInstallTypeLocal = "local"
 )
 
 const (
-	PluginStatusStopped = "stopped"
-	PluginStatusRunning = "running"
-	PluginStatusError   = "error"
+	PluginStatusInstalling   = "installing"
+	PluginStatusInstallError = "install_error"
+	PluginStatusStopped      = "stopped"
+	PluginStatusRunning      = "running"
+	PluginStatusError        = "error"
 )

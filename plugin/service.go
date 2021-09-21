@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -13,7 +14,9 @@ import (
 	"github.com/crawlab-team/crawlab-core/process"
 	"github.com/crawlab-team/crawlab-core/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
+	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/crawlab-team/go-trace"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
@@ -30,6 +33,7 @@ type Service struct {
 	// settings variables
 	fsPathBase      string
 	monitorInterval time.Duration
+	pluginBaseUrl   string
 
 	// dependencies
 	modelSvc service.ModelService
@@ -63,6 +67,10 @@ func (svc *Service) SetMonitorInterval(interval time.Duration) {
 	svc.monitorInterval = interval
 }
 
+func (svc *Service) SetPluginBaseUrl(baseUrl string) {
+	svc.pluginBaseUrl = baseUrl
+}
+
 func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 	// plugin
 	p, err := svc.modelSvc.GetPluginById(id)
@@ -70,24 +78,34 @@ func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 		return err
 	}
 
-	// install url type
-	installUrlType := svc.getInstallUrlType(p)
+	// save status (installing)
+	p.Status = constants.PluginStatusInstalling
+	p.Error = ""
+	_ = delegate.NewModelDelegate(p).Save()
 
 	// install
-	switch installUrlType {
-	case constants.PluginInstallUrlTypePluginName:
-		return svc.installPluginName(p)
-	case constants.PluginInstallUrlTypeGithub:
-		return svc.installGithub(p)
-	case constants.PluginInstallUrlTypeGitee:
-		return svc.installGitee(p)
-	case constants.PluginInstallUrlTypeFile:
-		return svc.installFile(p)
-	case constants.PluginInstallUrlTypeGeneralUrl:
-		return svc.installGeneralUrl(p)
+	switch p.InstallType {
+	case constants.PluginInstallTypeName:
+		p, err = svc.installName(p)
+	case constants.PluginInstallTypeGit:
+		p, err = svc.installGit(p)
+	case constants.PluginInstallTypeLocal:
+		p, err = svc.installLocal(p)
 	default:
-		return trace.TraceError(errors2.ErrorPluginNotImplemented)
+		err = errors2.ErrorPluginNotImplemented
 	}
+	if err != nil {
+		p.Status = constants.PluginStatusInstallError
+		p.Error = err.Error()
+		return trace.TraceError(err)
+	}
+
+	// save status (stopped)
+	p.Status = constants.PluginStatusStopped
+	p.Error = ""
+	_ = delegate.NewModelDelegate(p).Save()
+
+	return nil
 }
 
 func (svc *Service) UninstallPlugin(id primitive.ObjectID) (err error) {
@@ -175,81 +193,88 @@ func (svc *Service) StopPlugin(id primitive.ObjectID) (err error) {
 	return nil
 }
 
-func (svc *Service) getInstallUrlType(p interfaces.Plugin) (installUrlType string) {
-	if p.GetName() != "" {
-		return constants.PluginInstallUrlTypePluginName
-	}
-
-	url := p.GetInstallUrl()
-	if strings.Contains(url, "github.com") {
-		return constants.PluginInstallUrlTypeGithub
-	} else if strings.Contains(url, "gitee.com") {
-		return constants.PluginInstallUrlTypeGitee
-	} else if strings.HasPrefix(url, "file:///") {
-		return constants.PluginInstallUrlTypeFile
-	} else {
-		return constants.PluginInstallUrlTypeGeneralUrl
-	}
+func (svc *Service) installName(p interfaces.Plugin) (_p *models.Plugin, err error) {
+	p.SetInstallUrl(fmt.Sprintf("%s%s", svc.pluginBaseUrl, p.GetName()))
+	return svc.installGit(p)
 }
 
-func (svc *Service) installPluginName(p interfaces.Plugin) (err error) {
-	p.SetInstallUrl(fmt.Sprintf("https://github.com/crawlab-team/plugin-%s", p.GetName()))
-	return svc.installGithub(p)
-}
+func (svc *Service) installGit(p interfaces.Plugin) (_p *models.Plugin, err error) {
+	log.Infof("git installing %s", p.GetInstallUrl())
 
-func (svc *Service) installGithub(p interfaces.Plugin) (err error) {
-	// TODO: implement
-	panic("not implemented")
-}
-
-func (svc *Service) installGitee(p interfaces.Plugin) (err error) {
-	// TODO: implement
-	panic("not implemented")
-}
-
-func (svc *Service) installFile(p interfaces.Plugin) (err error) {
-	// plugin path
-	pluginPath := strings.Replace(p.GetInstallUrl(), "file://", "", 1)
-	if !utils.Exists(pluginPath) {
-		return trace.TraceError(errors2.ErrorPluginPathNotExists)
-	}
-
-	// plugin.json
-	pluginJsonPath := filepath.Join(pluginPath, "plugin.json")
-	if !utils.Exists(pluginJsonPath) {
-		return trace.TraceError(errors2.ErrorPluginPluginJsonNotExists)
-	}
-	pluginJsonData, err := ioutil.ReadFile(pluginJsonPath)
+	// git clone to temporary directory
+	pluginPath := filepath.Join(os.TempDir(), uuid.New().String())
+	gitClient, err := vcs.CloneGitRepo(pluginPath, p.GetInstallUrl())
 	if err != nil {
-		return trace.TraceError(err)
-	}
-	var _p models.Plugin
-	if err := json.Unmarshal(pluginJsonData, &_p); err != nil {
-		return trace.TraceError(err)
+		return nil, err
 	}
 
 	// sync to fs
 	fsSvc, err := GetPluginFsService(p.GetId())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
-		return err
+		return nil, err
+	}
+
+	// plugin.json
+	_p, err = svc.getPluginFromJson(pluginPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// fill plugin data and save to db
+	_p.SetId(p.GetId())
+	if err := delegate.NewModelDelegate(_p).Save(); err != nil {
+		return nil, err
+	}
+
+	// dispose temporary directory
+	if err := gitClient.Dispose(); err != nil {
+		return nil, err
+	}
+
+	log.Infof("git installed %s", p.GetInstallUrl())
+	return _p, nil
+}
+
+func (svc *Service) installLocal(p interfaces.Plugin) (_p *models.Plugin, err error) {
+	log.Infof("local installing %s", p.GetInstallUrl())
+
+	// plugin path
+	var pluginPath string
+	if strings.HasPrefix(p.GetInstallUrl(), "file://") {
+		pluginPath = strings.Replace(p.GetInstallUrl(), "file://", "", 1)
+		if !utils.Exists(pluginPath) {
+			return nil, trace.TraceError(errors2.ErrorPluginPathNotExists)
+		}
+	}
+
+	// plugin.json
+	_p, err = svc.getPluginFromJson(pluginPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// sync to fs
+	fsSvc, err := GetPluginFsService(p.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
+		return nil, err
 	}
 
 	// fill plugin data and save to db
 	_p.SetId(p.GetId())
 	_p.SetInstallUrl(p.GetInstallUrl())
-	if err := delegate.NewModelDelegate(&_p).Save(); err != nil {
-		return err
+	if err := delegate.NewModelDelegate(_p).Save(); err != nil {
+		return nil, err
 	}
 
-	return nil
-}
+	log.Infof("local installed %s", p.GetInstallUrl())
 
-func (svc *Service) installGeneralUrl(p interfaces.Plugin) (err error) {
-	// TODO: implement
-	panic("not implemented")
+	return _p, nil
 }
 
 func (svc *Service) getDaemon(id primitive.ObjectID) (d interfaces.ProcessDaemon) {
@@ -352,11 +377,28 @@ func (svc *Service) initPlugins() {
 	}
 }
 
+func (svc *Service) getPluginFromJson(pluginPath string) (p *models.Plugin, err error) {
+	pluginJsonPath := filepath.Join(pluginPath, "plugin.json")
+	if !utils.Exists(pluginJsonPath) {
+		return nil, trace.TraceError(errors2.ErrorPluginPluginJsonNotExists)
+	}
+	pluginJsonData, err := ioutil.ReadFile(pluginJsonPath)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	var _p models.Plugin
+	if err := json.Unmarshal(pluginJsonData, &_p); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	return &_p, nil
+}
+
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {
 	// service
 	svc := &Service{
 		fsPathBase:      DefaultPluginFsPathBase,
 		monitorInterval: 15 * time.Second,
+		pluginBaseUrl:   "https://github.com/crawlab-team/plugin-",
 		daemonMap:       sync.Map{},
 	}
 
@@ -389,6 +431,7 @@ func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error)
 var store = sync.Map{}
 
 func GetPluginService(path string, opts ...Option) (svc interfaces.PluginService, err error) {
+	// return if service exists
 	res, ok := store.Load(path)
 	if ok {
 		svc, ok = res.(interfaces.PluginService)
@@ -396,11 +439,22 @@ func GetPluginService(path string, opts ...Option) (svc interfaces.PluginService
 			return svc, nil
 		}
 	}
+
+	// plugin name base url
+	pluginBaseUrl := viper.GetString("plugin.baseUrl")
+	if pluginBaseUrl != "" {
+		opts = append(opts, WithPluginBaseUrl(pluginBaseUrl))
+	}
+
+	// service
 	svc, err = NewPluginService(opts...)
 	if err != nil {
 		return nil, err
 	}
+
+	// save to cache
 	store.Store(path, svc)
+
 	return svc, nil
 }
 

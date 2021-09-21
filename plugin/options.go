@@ -20,6 +20,12 @@ func WithMonitorInterval(interval time.Duration) Option {
 	}
 }
 
+func WithPluginBaseUrl(baseUrl string) Option {
+	return func(svc interfaces.PluginService) {
+		svc.SetPluginBaseUrl(baseUrl)
+	}
+}
+
 type FsOption func(svc interfaces.PluginFsService)
 
 func WithFsConfigPath(path string) FsOption {

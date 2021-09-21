@@ -14,6 +14,7 @@ type Plugin struct {
 	Endpoint      string                     `json:"endpoint" bson:"endpoint"`
 	Cmd           string                     `json:"cmd" bson:"cmd"`
 	EventKey      entity.PluginEventKey      `json:"event_key" bson:"event_key"`
+	InstallType   string                     `json:"install_type" bson:"install_type"`
 	InstallUrl    string                     `json:"install_url" bson:"install_url"`
 	DeployMode    string                     `json:"deploy_mode" bson:"deploy_mode"`
 	UIComponents  []entity.PluginUIComponent `json:"ui_components" bson:"ui_components"`

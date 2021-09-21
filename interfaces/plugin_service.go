@@ -9,6 +9,7 @@ type PluginService interface {
 	Module
 	SetFsPathBase(path string)
 	SetMonitorInterval(interval time.Duration)
+	SetPluginBaseUrl(baseUrl string)
 	InstallPlugin(id primitive.ObjectID) (err error)
 	UninstallPlugin(id primitive.ObjectID) (err error)
 	RunPlugin(id primitive.ObjectID) (err error)

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
@@ -106,18 +107,13 @@ func (ctx *pluginContext) _put(c *gin.Context) (p *models.Plugin, err error) {
 		return nil, err
 	}
 
-	// install
-	if err := ctx.pluginSvc.InstallPlugin(p.GetId()); err != nil {
-		_ = delegate2.NewModelDelegate(p).Delete()
-		HandleErrorInternalServerError(c, err)
-		return nil, err
-	}
+	go func() {
+		// install
+		_ = ctx.pluginSvc.InstallPlugin(p.GetId())
 
-	// run
-	if err := ctx.pluginSvc.RunPlugin(p.GetId()); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return nil, err
-	}
+		// run
+		_ = ctx.pluginSvc.RunPlugin(p.GetId())
+	}()
 
 	return p, nil
 }
@@ -173,7 +169,7 @@ func newPluginContext() *pluginContext {
 	if err := c.Provide(service.NewService); err != nil {
 		panic(err)
 	}
-	if err := c.Provide(plugin.NewPluginService); err != nil {
+	if err := c.Provide(plugin.ProvideGetPluginService(config.DefaultConfigPath)); err != nil {
 		panic(err)
 	}
 	if err := c.Invoke(func(
