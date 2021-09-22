@@ -147,11 +147,14 @@ func (ctx *pluginContext) _delete(c *gin.Context) (p *models.Plugin, err error) 
 		}
 	}
 
-	// TODO: uninstall
-	//if err := ctx.pluginSvc.UninstallPlugin(p.GetId()); err != nil {
-	//	HandleErrorInternalServerError(c, err)
-	//	return nil, err
-	//}
+	// uninstall
+	if p.Status != constants.PluginStatusInstalling &&
+		p.Status != constants.PluginStatusInstallError {
+		if err := ctx.pluginSvc.UninstallPlugin(p.GetId()); err != nil {
+			HandleErrorInternalServerError(c, err)
+			return nil, err
+		}
+	}
 
 	return p, nil
 }

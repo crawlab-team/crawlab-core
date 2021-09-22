@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"io/ioutil"
 	"os"
@@ -109,8 +110,25 @@ func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 }
 
 func (svc *Service) UninstallPlugin(id primitive.ObjectID) (err error) {
-	// TODO: implement
-	panic("implement me")
+	// plugin
+	_, err = svc.modelSvc.GetPluginById(id)
+	if err != nil {
+		return err
+	}
+
+	// fs service
+	fsSvc, err := NewPluginFsService(id)
+	if err != nil {
+		return err
+	}
+
+	// delete fs
+	fsPath := fsSvc.GetFsPath()
+	if err := fsSvc.GetFsService().Delete(fsPath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (svc *Service) RunPlugin(id primitive.ObjectID) (err error) {
@@ -177,6 +195,12 @@ func (svc *Service) RunPlugin(id primitive.ObjectID) (err error) {
 		p.Status = constants.PluginStatusStopped
 		p.Pid = 0
 		p.Error = ""
+		if _, err := svc.modelSvc.GetPluginById(p.GetId()); err != nil {
+			if err.Error() != mongo.ErrNoDocuments.Error() {
+				trace.PrintError(err)
+			}
+			return
+		}
 		_ = delegate.NewModelDelegate(p).Save()
 	}()
 
@@ -242,7 +266,7 @@ func (svc *Service) installLocal(p interfaces.Plugin) (_p *models.Plugin, err er
 	log.Infof("local installing %s", p.GetInstallUrl())
 
 	// plugin path
-	var pluginPath string
+	pluginPath := p.GetInstallUrl()
 	if strings.HasPrefix(p.GetInstallUrl(), "file://") {
 		pluginPath = strings.Replace(p.GetInstallUrl(), "file://", "", 1)
 		if !utils.Exists(pluginPath) {
