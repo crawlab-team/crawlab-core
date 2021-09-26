@@ -5,6 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func CreateIndexes() {
@@ -109,5 +110,12 @@ func CreateIndexes() {
 		{Keys: bson.M{"t": 1}},
 		{Keys: bson.M{"m": 1, "t": 1}},
 		{Keys: bson.M{"oid": 1, "m": 1, "t": 1}},
+	})
+
+	// plugin status
+	mongo.GetMongoCol(interfaces.ModelColNamePluginStatus).MustCreateIndexes([]mongo2.IndexModel{
+		{Keys: bson.M{"plugin_id": 1}},
+		{Keys: bson.M{"node_id": 1}},
+		{Keys: bson.D{{"plugin_id", 1}, {"node_id", 1}}, Options: options.Index().SetUnique(true)},
 	})
 }

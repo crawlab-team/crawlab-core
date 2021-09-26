@@ -1,6 +1,7 @@
 package delegate
 
 import (
+	"encoding/json"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/event"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -59,6 +60,8 @@ func NewModelDelegate(doc interfaces.Model, args ...interface{}) interfaces.Mode
 		return newModelDelegate(interfaces.ModelIdPassword, doc, args...)
 	case *models.ExtraValue:
 		return newModelDelegate(interfaces.ModelIdExtraValue, doc, args...)
+	case *models.PluginStatus:
+		return newModelDelegate(interfaces.ModelIdPluginStatus, doc, args...)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
@@ -127,6 +130,13 @@ func (d *ModelDelegate) Refresh() (err error) {
 // GetModel return model
 func (d *ModelDelegate) GetModel() (res interfaces.Model) {
 	return d.doc
+}
+
+func (d *ModelDelegate) ToBytes(m interface{}) (bytes []byte, err error) {
+	if m != nil {
+		return utils.JsonToBytes(m)
+	}
+	return json.Marshal(d.doc)
 }
 
 // do action given the model delegate method

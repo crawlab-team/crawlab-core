@@ -81,5 +81,8 @@ type ModelService interface {
 	GetExtraValue(query bson.M, opts *mongo.FindOptions) (res *models.ExtraValue, err error)
 	GetExtraValueList(query bson.M, opts *mongo.FindOptions) (res []models.ExtraValue, err error)
 	GetExtraValueByObjectIdModel(oid primitive.ObjectID, m string, opts *mongo.FindOptions) (res *models.ExtraValue, err error)
+	GetPluginStatusById(id primitive.ObjectID) (res *models.PluginStatus, err error)
+	GetPluginStatus(query bson.M, opts *mongo.FindOptions) (res *models.PluginStatus, err error)
+	GetPluginStatusList(query bson.M, opts *mongo.FindOptions) (res []models.PluginStatus, err error)
 	DropAll() (err error)
 }

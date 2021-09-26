@@ -9,6 +9,7 @@ type ModelDelegate interface {
 	GetArtifact() (ModelArtifact, error)
 	GetModel() Model
 	Refresh() error
+	ToBytes(interface{}) ([]byte, error)
 }
 
 const (

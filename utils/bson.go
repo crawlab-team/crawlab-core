@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/emirpasic/gods/sets/hashset"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 )
 
@@ -81,4 +82,19 @@ func bsonMEqual(v1, v2 bson.M) (ok bool) {
 	}
 
 	return true
+}
+
+func NormalizeBsonMObjectId(m bson.M) (res bson.M) {
+	for k, v := range m {
+		switch v.(type) {
+		case string:
+			oid, err := primitive.ObjectIDFromHex(v.(string))
+			if err == nil {
+				m[k] = oid
+			}
+		case bson.M:
+			m[k] = NormalizeBsonMObjectId(v.(bson.M))
+		}
+	}
+	return m
 }

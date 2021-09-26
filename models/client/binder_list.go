@@ -69,6 +69,8 @@ func (b *ListBinder) Bind() (list arraylist.List, err error) {
 		return b.Process(&m.Passwords)
 	case interfaces.ModelIdExtraValue:
 		return b.Process(&m.ExtraValues)
+	case interfaces.ModelIdPluginStatus:
+		return b.Process(&m.PluginStatus)
 	default:
 		return list, errors.ErrorModelInvalidModelId
 	}

@@ -6,4 +6,6 @@ type Plugin interface {
 	SetName(name string)
 	GetInstallUrl() (url string)
 	SetInstallUrl(url string)
+	GetInstallType() (t string)
+	SetInstallType(t string)
 }

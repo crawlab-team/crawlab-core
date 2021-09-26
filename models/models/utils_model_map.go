@@ -22,6 +22,7 @@ type ModelMap struct {
 	Result         Result
 	Password       Password
 	ExtraValue     ExtraValue
+	PluginStatus   PluginStatus
 }
 
 type ModelListMap struct {
@@ -46,6 +47,7 @@ type ModelListMap struct {
 	Results         []Result
 	Passwords       []Password
 	ExtraValues     []ExtraValue
+	PluginStatus    []PluginStatus
 }
 
 func NewModelMap() (m *ModelMap) {

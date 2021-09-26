@@ -9,6 +9,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/plugin"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
@@ -19,9 +20,10 @@ import (
 
 type WorkerService struct {
 	// dependencies
-	cfgSvc         interfaces.NodeConfigService
-	client         interfaces.GrpcClient
-	taskHandlerSvc interfaces.TaskHandlerService
+	cfgSvc     interfaces.NodeConfigService
+	client     interfaces.GrpcClient
+	handlerSvc interfaces.TaskHandlerService
+	pluginSvc  interfaces.PluginService
 
 	// settings
 	cfgPath           string
@@ -54,7 +56,10 @@ func (svc *WorkerService) Start() {
 	go svc.ReportStatus()
 
 	// start handler
-	go svc.taskHandlerSvc.Start()
+	go svc.handlerSvc.Start()
+
+	// start plugin service
+	go svc.pluginSvc.Start()
 
 	// wait for quit signal
 	svc.Wait()
@@ -116,7 +121,7 @@ func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err erro
 		if err := json.Unmarshal(msg.Data, &t); err != nil {
 			return trace.TraceError(err)
 		}
-		if err := svc.taskHandlerSvc.Run(t.Id); err != nil {
+		if err := svc.handlerSvc.Run(t.Id); err != nil {
 			return trace.TraceError(err)
 		}
 	case grpc.StreamMessageCode_CANCEL_TASK:
@@ -124,10 +129,43 @@ func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err erro
 		if err := json.Unmarshal(msg.Data, &t); err != nil {
 			return trace.TraceError(err)
 		}
-		if err := svc.taskHandlerSvc.Cancel(t.Id); err != nil {
+		if err := svc.handlerSvc.Cancel(t.Id); err != nil {
+			return trace.TraceError(err)
+		}
+	case grpc.StreamMessageCode_INSTALL_PLUGIN:
+		var p models.Plugin
+		if err := json.Unmarshal(msg.Data, &p); err != nil {
+			return trace.TraceError(err)
+		}
+		if err := svc.pluginSvc.InstallPlugin(p.Id); err != nil {
+			return trace.TraceError(err)
+		}
+	case grpc.StreamMessageCode_UNINSTALL_PLUGIN:
+		var p models.Plugin
+		if err := json.Unmarshal(msg.Data, &p); err != nil {
+			return trace.TraceError(err)
+		}
+		if err := svc.pluginSvc.UninstallPlugin(p.Id); err != nil {
+			return trace.TraceError(err)
+		}
+	case grpc.StreamMessageCode_START_PLUGIN:
+		var p models.Plugin
+		if err := json.Unmarshal(msg.Data, &p); err != nil {
+			return trace.TraceError(err)
+		}
+		if err := svc.pluginSvc.StartPlugin(p.Id); err != nil {
+			return trace.TraceError(err)
+		}
+	case grpc.StreamMessageCode_STOP_PLUGIN:
+		var p models.Plugin
+		if err := json.Unmarshal(msg.Data, &p); err != nil {
+			return trace.TraceError(err)
+		}
+		if err := svc.pluginSvc.StopPlugin(p.Id); err != nil {
 			return trace.TraceError(err)
 		}
 	}
+
 	return nil
 }
 
@@ -210,10 +248,19 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
-	if err := c.Invoke(func(cfgSvc interfaces.NodeConfigService, client interfaces.GrpcClient, taskHandlerSvc interfaces.TaskHandlerService) {
+	if err := c.Provide(plugin.ProvideGetPluginService(svc.cfgPath)); err != nil {
+		return nil, err
+	}
+	if err := c.Invoke(func(
+		cfgSvc interfaces.NodeConfigService,
+		client interfaces.GrpcClient,
+		taskHandlerSvc interfaces.TaskHandlerService,
+		pluginSvc interfaces.PluginService,
+	) {
 		svc.cfgSvc = cfgSvc
 		svc.client = client
-		svc.taskHandlerSvc = taskHandlerSvc
+		svc.handlerSvc = taskHandlerSvc
+		svc.pluginSvc = pluginSvc
 	}); err != nil {
 		return nil, err
 	}

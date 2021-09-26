@@ -2,6 +2,10 @@ module github.com/crawlab-team/crawlab-core
 
 go 1.15
 
+replace (
+	github.com/crawlab-team/crawlab-grpc => /Users/marvzhang/projects/crawlab-team/crawlab-grpc
+)
+
 require (
 	github.com/StackExchange/wmi v1.2.0 // indirect
 	github.com/apex/log v1.9.0

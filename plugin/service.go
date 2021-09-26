@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/process"
 	"github.com/crawlab-team/crawlab-core/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -18,6 +21,7 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
@@ -37,11 +41,17 @@ type Service struct {
 	pluginBaseUrl   string
 
 	// dependencies
-	modelSvc service.ModelService
+	cfgSvc                     interfaces.NodeConfigService
+	modelSvc                   service.ModelService
+	clientModelSvc             interfaces.GrpcClientModelService
+	clientModelNodeSvc         interfaces.GrpcClientModelNodeService
+	clientModelPluginSvc       interfaces.GrpcClientModelPluginService
+	clientModelPluginStatusSvc interfaces.GrpcClientModelPluginStatusService
 
 	// internals
 	daemonMap sync.Map
 	stopped   bool
+	n         *models.Node
 }
 
 func (svc *Service) Init() (err error) {
@@ -49,6 +59,9 @@ func (svc *Service) Init() (err error) {
 }
 
 func (svc *Service) Start() {
+	if err := svc.getNode(); err != nil {
+		panic(err)
+	}
 	svc.initPlugins()
 }
 
@@ -74,74 +87,120 @@ func (svc *Service) SetPluginBaseUrl(baseUrl string) {
 
 func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 	// plugin
-	p, err := svc.modelSvc.GetPluginById(id)
+	p, err := svc.getPluginById(id)
+	if err != nil {
+		return err
+	}
+
+	// plugin status
+	ps, err := svc.getPluginStatus(id)
 	if err != nil {
 		return err
 	}
 
 	// save status (installing)
-	p.Status = constants.PluginStatusInstalling
-	p.Error = ""
-	_ = delegate.NewModelDelegate(p).Save()
+	ps.Status = constants.PluginStatusInstalling
+	ps.Error = ""
+	_ = svc.savePluginStatus(ps)
 
 	// install
 	switch p.InstallType {
 	case constants.PluginInstallTypeName:
-		p, err = svc.installName(p)
+		err = svc.installName(p)
 	case constants.PluginInstallTypeGit:
-		p, err = svc.installGit(p)
+		err = svc.installGit(p)
 	case constants.PluginInstallTypeLocal:
-		p, err = svc.installLocal(p)
+		err = svc.installLocal(p)
 	default:
 		err = errors2.ErrorPluginNotImplemented
 	}
 	if err != nil {
-		p.Status = constants.PluginStatusInstallError
-		p.Error = err.Error()
+		ps.Status = constants.PluginStatusInstallError
+		ps.Error = err.Error()
 		return trace.TraceError(err)
 	}
 
-	// save status (stopped)
-	p.Status = constants.PluginStatusStopped
-	p.Error = ""
-	_ = delegate.NewModelDelegate(p).Save()
+	// wait
+	for i := 0; i < 10; i++ {
+		query := bson.M{
+			"plugin_id": id,
+			"node_id":   svc.n.Id,
+		}
+		ps, err = svc.modelSvc.GetPluginStatus(query, nil)
+		if err == nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	if p.AutoStart {
+		// start plugin
+		_ = svc.StartPlugin(p.Id)
+	} else {
+		// save status (stopped)
+		ps.Status = constants.PluginStatusStopped
+		ps.Error = ""
+		_ = svc.savePluginStatus(ps)
+	}
 
 	return nil
 }
 
 func (svc *Service) UninstallPlugin(id primitive.ObjectID) (err error) {
 	// plugin
-	_, err = svc.modelSvc.GetPluginById(id)
+	_, err = svc.getPluginById(id)
 	if err != nil {
 		return err
 	}
 
-	// fs service
-	fsSvc, err := NewPluginFsService(id)
+	// plugin status
+	ps, err := svc.getPluginStatus(id)
 	if err != nil {
 		return err
 	}
 
-	// delete fs
-	fsPath := fsSvc.GetFsPath()
-	if err := fsSvc.GetFsService().Delete(fsPath); err != nil {
-		return err
+	// stop
+	if ps.Status == constants.PluginStatusRunning {
+		if err := svc.StopPlugin(id); err != nil {
+			return err
+		}
+	}
+
+	// delete fs (master)
+	if svc.cfgSvc.IsMaster() {
+		// fs service
+		fsSvc, err := NewPluginFsService(id)
+		if err != nil {
+			return err
+		}
+
+		// delete fs
+		fsPath := fsSvc.GetFsPath()
+		if err := fsSvc.GetFsService().Delete(fsPath); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (svc *Service) RunPlugin(id primitive.ObjectID) (err error) {
+func (svc *Service) StartPlugin(id primitive.ObjectID) (err error) {
 	// plugin
-	p, err := svc.modelSvc.GetPluginById(id)
+	p, err := svc.getPluginById(id)
+	if err != nil {
+		return err
+	}
+
+	// plugin status
+	ps, err := svc.getPluginStatus(id)
 	if err != nil {
 		return err
 	}
 
 	// save pid
-	p.Pid = 0
-	p.Status = constants.PluginStatusRunning
-	_ = delegate.NewModelDelegate(p).Save()
+	ps.Pid = 0
+	ps.Status = constants.PluginStatusRunning
+	_ = svc.savePluginStatus(ps)
 
 	// fs service
 	fsSvc, err := NewPluginFsService(id)
@@ -165,7 +224,7 @@ func (svc *Service) RunPlugin(id primitive.ObjectID) (err error) {
 		// start (async)
 		go func() {
 			if err := d.Start(); err != nil {
-				svc.handleCmdError(p, err)
+				svc.handleCmdError(p, ps, err)
 				return
 			}
 		}()
@@ -181,8 +240,8 @@ func (svc *Service) RunPlugin(id primitive.ObjectID) (err error) {
 			switch sig {
 			case process.SignalStart:
 				// save pid
-				p.Pid = d.GetCmd().Process.Pid
-				_ = delegate.NewModelDelegate(p).Save()
+				ps.Pid = d.GetCmd().Process.Pid
+				_ = svc.savePluginStatus(ps)
 			case process.SignalStopped, process.SignalReachedMaxErrors:
 				// break for loop
 				stopped = true
@@ -192,16 +251,16 @@ func (svc *Service) RunPlugin(id primitive.ObjectID) (err error) {
 		}
 
 		// stopped
-		p.Status = constants.PluginStatusStopped
-		p.Pid = 0
-		p.Error = ""
-		if _, err := svc.modelSvc.GetPluginById(p.GetId()); err != nil {
+		ps.Status = constants.PluginStatusStopped
+		ps.Pid = 0
+		ps.Error = ""
+		if _, err := svc.getPluginStatus(p.GetId()); err != nil {
 			if err.Error() != mongo.ErrNoDocuments.Error() {
 				trace.PrintError(err)
 			}
 			return
 		}
-		_ = delegate.NewModelDelegate(p).Save()
+		_ = svc.savePluginStatus(ps)
 	}()
 
 	return nil
@@ -217,52 +276,54 @@ func (svc *Service) StopPlugin(id primitive.ObjectID) (err error) {
 	return nil
 }
 
-func (svc *Service) installName(p interfaces.Plugin) (_p *models.Plugin, err error) {
+func (svc *Service) installName(p interfaces.Plugin) (err error) {
 	p.SetInstallUrl(fmt.Sprintf("%s%s", svc.pluginBaseUrl, p.GetName()))
 	return svc.installGit(p)
 }
 
-func (svc *Service) installGit(p interfaces.Plugin) (_p *models.Plugin, err error) {
+func (svc *Service) installGit(p interfaces.Plugin) (err error) {
 	log.Infof("git installing %s", p.GetInstallUrl())
 
 	// git clone to temporary directory
 	pluginPath := filepath.Join(os.TempDir(), uuid.New().String())
 	gitClient, err := vcs.CloneGitRepo(pluginPath, p.GetInstallUrl())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// sync to fs
 	fsSvc, err := GetPluginFsService(p.GetId())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
-		return nil, err
+		return err
 	}
 
 	// plugin.json
-	_p, err = svc.getPluginFromJson(pluginPath)
+	_p, err := svc.getPluginFromJson(pluginPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// fill plugin data and save to db
-	_p.SetId(p.GetId())
-	if err := delegate.NewModelDelegate(_p).Save(); err != nil {
-		return nil, err
+	if svc.cfgSvc.IsMaster() {
+		_p.SetId(p.GetId())
+		if err := svc.savePlugin(_p); err != nil {
+			return err
+		}
 	}
 
 	// dispose temporary directory
 	if err := gitClient.Dispose(); err != nil {
-		return nil, err
+		return err
 	}
 
 	log.Infof("git installed %s", p.GetInstallUrl())
-	return _p, nil
+	return nil
 }
 
-func (svc *Service) installLocal(p interfaces.Plugin) (_p *models.Plugin, err error) {
+func (svc *Service) installLocal(p interfaces.Plugin) (err error) {
 	log.Infof("local installing %s", p.GetInstallUrl())
 
 	// plugin path
@@ -270,35 +331,38 @@ func (svc *Service) installLocal(p interfaces.Plugin) (_p *models.Plugin, err er
 	if strings.HasPrefix(p.GetInstallUrl(), "file://") {
 		pluginPath = strings.Replace(p.GetInstallUrl(), "file://", "", 1)
 		if !utils.Exists(pluginPath) {
-			return nil, trace.TraceError(errors2.ErrorPluginPathNotExists)
+			return trace.TraceError(errors2.ErrorPluginPathNotExists)
 		}
 	}
 
 	// plugin.json
-	_p, err = svc.getPluginFromJson(pluginPath)
+	_p, err := svc.getPluginFromJson(pluginPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// sync to fs
 	fsSvc, err := GetPluginFsService(p.GetId())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
-		return nil, err
+		return err
 	}
 
 	// fill plugin data and save to db
-	_p.SetId(p.GetId())
-	_p.SetInstallUrl(p.GetInstallUrl())
-	if err := delegate.NewModelDelegate(_p).Save(); err != nil {
-		return nil, err
+	if svc.cfgSvc.IsMaster() {
+		_p.SetId(p.GetId())
+		_p.SetInstallUrl(p.GetInstallUrl())
+		_p.SetInstallType(p.GetInstallType())
+		if err := svc.savePlugin(_p); err != nil {
+			return err
+		}
 	}
 
 	log.Infof("local installed %s", p.GetInstallUrl())
 
-	return _p, nil
+	return nil
 }
 
 func (svc *Service) getDaemon(id primitive.ObjectID) (d interfaces.ProcessDaemon) {
@@ -321,12 +385,12 @@ func (svc *Service) deleteDaemon(id primitive.ObjectID) {
 	svc.daemonMap.Delete(id)
 }
 
-func (svc *Service) handleCmdError(p *models.Plugin, err error) {
+func (svc *Service) handleCmdError(p *models.Plugin, ps *models.PluginStatus, err error) {
 	trace.PrintError(err)
-	p.Status = constants.PluginStatusError
-	p.Pid = 0
-	p.Error = err.Error()
-	_ = delegate.NewModelDelegate(p).Save()
+	ps.Status = constants.PluginStatusError
+	ps.Pid = 0
+	ps.Error = err.Error()
+	_ = svc.savePluginStatus(ps)
 	svc.deleteDaemon(p.Id)
 }
 
@@ -379,23 +443,30 @@ func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsServi
 }
 
 func (svc *Service) initPlugins() {
+	// reset plugin status
+	psList, err := svc.modelSvc.GetPluginStatusList(nil, nil)
+	for _, ps := range psList {
+		if ps.Status == constants.PluginStatusRunning {
+			ps.Status = constants.PluginStatusError
+			ps.Error = errors2.ErrorPluginMissingProcess.Error()
+			ps.Pid = 0
+			_ = svc.savePluginStatus(&ps)
+		}
+	}
+
+	// plugins
 	plugins, err := svc.modelSvc.GetPluginList(nil, nil)
 	if err != nil {
 		trace.PrintError(err)
 		return
 	}
+
+	// restart plugins that need restart
 	for _, p := range plugins {
-		if p.Restart {
-			if err := svc.RunPlugin(p.Id); err != nil {
+		if p.AutoStart {
+			if err := svc.StartPlugin(p.Id); err != nil {
 				trace.PrintError(err)
 				continue
-			}
-		} else {
-			if p.Status == constants.PluginStatusRunning {
-				p.Error = errors2.ErrorPluginMissingProcess.Error()
-				p.Pid = 0
-				p.Status = constants.PluginStatusError
-				_ = delegate.NewModelDelegate(&p).Save()
 			}
 		}
 	}
@@ -417,6 +488,120 @@ func (svc *Service) getPluginFromJson(pluginPath string) (p *models.Plugin, err 
 	return &_p, nil
 }
 
+func (svc *Service) getPluginById(id primitive.ObjectID) (p *models.Plugin, err error) {
+	if svc.cfgSvc.IsMaster() {
+		p, err = svc.modelSvc.GetPluginById(id)
+		if err != nil {
+			return nil, err
+		}
+		return p, nil
+	} else {
+		_p, err := svc.clientModelPluginSvc.GetPluginById(id)
+		if err != nil {
+			return nil, err
+		}
+		p, ok := _p.(*models.Plugin)
+		if !ok {
+			return nil, trace.TraceError(errors2.ErrorPluginInvalidType)
+		}
+		return p, nil
+	}
+}
+
+func (svc *Service) getPluginStatus(pluginId primitive.ObjectID) (ps *models.PluginStatus, err error) {
+	if svc.cfgSvc.IsMaster() {
+		ps, err = svc.modelSvc.GetPluginStatus(bson.M{
+			"plugin_id": pluginId,
+			"node_id":   svc.n.Id,
+		}, nil)
+		if err != nil {
+			// add if not exists
+			if strings.Contains(err.Error(), mongo.ErrNoDocuments.Error()) {
+				return svc.addPluginStatus(pluginId, svc.n.Id)
+			}
+
+			// error
+			return nil, err
+		}
+		return ps, nil
+	} else {
+		_ps, err := svc.clientModelPluginStatusSvc.GetPluginStatus(bson.M{
+			"plugin_id": pluginId,
+			"node_id":   svc.n.Id,
+		}, nil)
+		if err != nil {
+			// add if not exists
+			if strings.Contains(err.Error(), mongo.ErrNoDocuments.Error()) {
+				return svc.addPluginStatus(pluginId, svc.n.Id)
+			}
+		}
+		ps, ok := _ps.(*models.PluginStatus)
+		if !ok {
+			return nil, trace.TraceError(errors2.ErrorPluginInvalidType)
+		}
+		return ps, nil
+	}
+}
+
+func (svc *Service) savePlugin(p *models.Plugin) (err error) {
+	if svc.cfgSvc.IsMaster() {
+		return delegate.NewModelDelegate(p).Save()
+	} else {
+		return client.NewModelDelegate(p).Save()
+	}
+}
+
+func (svc *Service) savePluginStatus(ps interfaces.PluginStatus) (err error) {
+	if svc.cfgSvc.IsMaster() {
+		return delegate.NewModelDelegate(ps).Save()
+	} else {
+		return client.NewModelDelegate(ps).Save()
+	}
+}
+
+func (svc *Service) addPluginStatus(pid primitive.ObjectID, nid primitive.ObjectID) (ps *models.PluginStatus, err error) {
+	ps = &models.PluginStatus{
+		PluginId: pid,
+		NodeId:   nid,
+	}
+	if svc.cfgSvc.IsMaster() {
+		if err := delegate.NewModelDelegate(ps).Add(); err != nil {
+			return nil, err
+		}
+	} else {
+		psD := client.NewModelDelegate(ps)
+		if err := psD.Add(); err != nil {
+			return nil, err
+		}
+		ps = psD.GetModel().(*models.PluginStatus)
+	}
+	return ps, nil
+}
+
+func (svc *Service) getNode() (err error) {
+	return backoff.RetryNotify(svc._getNode, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("plugin service get node"))
+}
+
+func (svc *Service) _getNode() (err error) {
+	if svc.cfgSvc.IsMaster() {
+		svc.n, err = svc.modelSvc.GetNodeByKey(svc.cfgSvc.GetNodeKey(), nil)
+		if err != nil {
+			return err
+		}
+	} else {
+		_n, err := svc.clientModelNodeSvc.GetNodeByKey(svc.cfgSvc.GetNodeKey())
+		if err != nil {
+			return err
+		}
+		n, ok := _n.(*models.Node)
+		if !ok {
+			return trace.TraceError(errors2.ErrorPluginInvalidType)
+		}
+		svc.n = n
+	}
+	return nil
+}
+
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {
 	// service
 	svc := &Service{
@@ -433,13 +618,33 @@ func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error)
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, err
+	if err := c.Provide(config.NewNodeConfigService); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Provide(service.GetService); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Provide(client.NewNodeServiceDelegate); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Provide(client.NewPluginServiceDelegate); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := c.Provide(client.NewPluginStatusServiceDelegate); err != nil {
+		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(
+		cfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
+		clientModelNodeSvc interfaces.GrpcClientModelNodeService,
+		clientModelPluginSvc interfaces.GrpcClientModelPluginService,
+		clientModelPluginStatusSvc interfaces.GrpcClientModelPluginStatusService,
 	) {
+		svc.cfgSvc = cfgSvc
 		svc.modelSvc = modelSvc
+		svc.clientModelNodeSvc = clientModelNodeSvc
+		svc.clientModelPluginSvc = clientModelPluginSvc
+		svc.clientModelPluginStatusSvc = clientModelPluginStatusSvc
 	}); err != nil {
 		return nil, err
 	}

@@ -8,8 +8,8 @@ import (
 
 type GrpcClientModelPluginService interface {
 	ModelBaseService
-	GetPluginById(id primitive.ObjectID) (n Plugin, err error)
-	GetPlugin(query bson.M, opts *mongo.FindOptions) (n Plugin, err error)
-	GetPluginByName(name string) (n Plugin, err error)
+	GetPluginById(id primitive.ObjectID) (p Plugin, err error)
+	GetPlugin(query bson.M, opts *mongo.FindOptions) (p Plugin, err error)
+	GetPluginByName(name string) (p Plugin, err error)
 	GetPluginList(query bson.M, opts *mongo.FindOptions) (res []Plugin, err error)
 }

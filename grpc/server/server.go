@@ -162,7 +162,7 @@ func (svr *Server) SendStreamMessageWithData(nodeKey string, code grpc2.StreamMe
 			panic(err)
 		}
 	}
-	sub, err := svr.GetSubscribe(nodeKey)
+	sub, err := svr.GetSubscribe("node:" + nodeKey)
 	if err != nil {
 		return err
 	}

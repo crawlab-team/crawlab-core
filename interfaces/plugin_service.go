@@ -12,6 +12,6 @@ type PluginService interface {
 	SetPluginBaseUrl(baseUrl string)
 	InstallPlugin(id primitive.ObjectID) (err error)
 	UninstallPlugin(id primitive.ObjectID) (err error)
-	RunPlugin(id primitive.ObjectID) (err error)
+	StartPlugin(id primitive.ObjectID) (err error)
 	StopPlugin(id primitive.ObjectID) (err error)
 }

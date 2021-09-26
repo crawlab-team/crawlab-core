@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/fs"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"os"
 	"path"
@@ -122,6 +123,16 @@ func NewSpiderFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.
 		workspacePathBase: fs.DefaultWorkspacePath,
 		repoPathBase:      fs.DefaultRepoPath,
 		id:                id,
+	}
+
+	// workspace path
+	if viper.GetString("fs.workspace.path") != "" {
+		svc.workspacePathBase = viper.GetString("fs.workspace.path")
+	}
+
+	// repo path
+	if viper.GetString("fs.repo.path") != "" {
+		svc.repoPathBase = viper.GetString("fs.repo.path")
 	}
 
 	// apply options

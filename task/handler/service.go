@@ -350,7 +350,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	if err := c.Provide(config.ProvideConfigService(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(service.NewService); err != nil {
+	if err := c.Provide(service.GetService); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Provide(client.ProvideServiceDelegate(svc.GetConfigPath())); err != nil {
@@ -402,6 +402,9 @@ func ProvideTaskHandlerService(path string, opts ...Option) func() (svc interfac
 var store = sync.Map{}
 
 func GetTaskHandlerService(path string, opts ...Option) (svr interfaces.TaskHandlerService, err error) {
+	if path == "" {
+		path = viper.GetString("config.path")
+	}
 	if path == "" {
 		path = config2.DefaultConfigPath
 	}

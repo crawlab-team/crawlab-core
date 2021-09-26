@@ -11,6 +11,7 @@ import (
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/emirpasic/gods/lists/arraylist"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
@@ -206,6 +207,11 @@ func NewBaseServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 interf
 	// apply options
 	for _, opt := range opts {
 		opt(svc)
+	}
+
+	// config path
+	if viper.GetString("config.path") != "" {
+		svc.cfgPath = viper.GetString("config.path")
 	}
 
 	// dependency injection

@@ -17,13 +17,11 @@ type Plugin struct {
 	InstallType   string                     `json:"install_type" bson:"install_type"`
 	InstallUrl    string                     `json:"install_url" bson:"install_url"`
 	DeployMode    string                     `json:"deploy_mode" bson:"deploy_mode"`
+	AutoStart     bool                       `json:"auto_start" bson:"auto_start"`
 	UIComponents  []entity.PluginUIComponent `json:"ui_components" bson:"ui_components"`
 	UISidebarNavs []entity.PluginUINav       `json:"ui_sidebar_navs" bson:"ui_sidebar_navs"`
 	UIAssets      []entity.PluginUIAsset     `json:"ui_assets" bson:"ui_assets"`
-	Status        string                     `json:"status" bson:"status"`
-	Pid           int                        `json:"pid,omitempty" bson:"pid,omitempty"`
-	Error         string                     `json:"error,omitempty" bson:"error,omitempty"`
-	Restart       bool                       `json:"restart" bson:"restart"`
+	Status        []PluginStatus             `json:"status" bson:"-"`
 }
 
 func (p *Plugin) GetId() (id primitive.ObjectID) {
@@ -48,4 +46,12 @@ func (p *Plugin) GetInstallUrl() (url string) {
 
 func (p *Plugin) SetInstallUrl(url string) {
 	p.InstallUrl = url
+}
+
+func (p *Plugin) GetInstallType() (t string) {
+	return p.InstallType
+}
+
+func (p *Plugin) SetInstallType(t string) {
+	p.InstallType = t
 }

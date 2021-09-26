@@ -396,7 +396,7 @@ func newTaskContext() *taskContext {
 
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
+	if err := c.Provide(service.GetService); err != nil {
 		panic(err)
 	}
 	if err := c.Provide(admin.NewSpiderAdminService); err != nil {

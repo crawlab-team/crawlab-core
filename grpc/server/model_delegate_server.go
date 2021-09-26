@@ -29,9 +29,6 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 	// model delegate
 	d := delegate.NewModelDelegate(doc)
 
-	// declare artifact
-	var a interfaces.ModelArtifact
-
 	// apply method
 	switch msg.GetMethod() {
 	case interfaces.ModelDelegateMethodAdd:
@@ -40,16 +37,29 @@ func (svr ModelDelegateServer) Do(ctx context.Context, req *grpc.Request) (res *
 		err = d.Save()
 	case interfaces.ModelDelegateMethodDelete:
 		err = d.Delete()
-	case interfaces.ModelDelegateMethodGetArtifact:
-		a, err = d.GetArtifact()
-	case interfaces.ModelDelegateMethodRefresh:
-		// TODO: implement
+	case interfaces.ModelDelegateMethodGetArtifact, interfaces.ModelDelegateMethodRefresh:
+		err = d.Refresh()
 	}
 	if err != nil {
 		return HandleError(err)
 	}
 
-	return HandleSuccessWithData(a)
+	// model
+	m := d.GetModel()
+	if msg.GetMethod() == interfaces.ModelDelegateMethodGetArtifact {
+		m, err = d.GetArtifact()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// json bytes
+	data, err := d.ToBytes(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return HandleSuccessWithData(data)
 }
 
 func NewModelDelegateServer() (svr *ModelDelegateServer) {

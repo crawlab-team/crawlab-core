@@ -8,7 +8,10 @@ import (
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/utils"
+	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 )
 
 func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfaces.GrpcClientModelDelegate {
@@ -55,6 +58,8 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 		return newModelDelegate(interfaces.ModelIdPassword, doc, opts...)
 	case *models.ExtraValue:
 		return newModelDelegate(interfaces.ModelIdExtraValue, doc, opts...)
+	case *models.PluginStatus:
+		return newModelDelegate(interfaces.ModelIdPluginStatus, doc, opts...)
 	default:
 		_ = trace.TraceError(errors.ErrorModelInvalidType)
 		return nil
@@ -64,11 +69,23 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...ModelDelegateOption) interfaces.GrpcClientModelDelegate {
 	var err error
 
+	// collection name
+	colName := models.GetModelColName(id)
+
 	// model delegate
 	d := &ModelDelegate{
 		id:      id,
+		colName: colName,
 		doc:     doc,
 		cfgPath: config2.DefaultConfigPath,
+		a: &models.Artifact{
+			Col: colName,
+		},
+	}
+
+	// config path
+	if viper.GetString("config.path") != "" {
+		d.cfgPath = viper.GetString("config.path")
 	}
 
 	// apply options
@@ -102,28 +119,30 @@ type ModelDelegate struct {
 	cfgPath string
 
 	// internals
-	id  interfaces.ModelId
-	c   interfaces.GrpcClient
-	doc interfaces.Model
+	id      interfaces.ModelId
+	colName string
+	c       interfaces.GrpcClient
+	doc     interfaces.Model
+	a       interfaces.ModelArtifact
 }
 
 func (d *ModelDelegate) Add() (err error) {
-	_, err = d.do(interfaces.ModelDelegateMethodAdd)
-	return err
+	return d.do(interfaces.ModelDelegateMethodAdd)
 }
 
 func (d *ModelDelegate) Save() (err error) {
-	_, err = d.do(interfaces.ModelDelegateMethodSave)
-	return err
+	return d.do(interfaces.ModelDelegateMethodSave)
 }
 
 func (d *ModelDelegate) Delete() (err error) {
-	_, err = d.do(interfaces.ModelDelegateMethodDelete)
-	return err
+	return d.do(interfaces.ModelDelegateMethodDelete)
 }
 
 func (d *ModelDelegate) GetArtifact() (res interfaces.ModelArtifact, err error) {
-	return d.do(interfaces.ModelDelegateMethodGetArtifact)
+	if err := d.do(interfaces.ModelDelegateMethodGetArtifact); err != nil {
+		return nil, err
+	}
+	return d.a, nil
 }
 
 func (d *ModelDelegate) GetModel() (res interfaces.Model) {
@@ -146,78 +165,127 @@ func (d *ModelDelegate) Close() (err error) {
 	return d.c.Stop()
 }
 
-func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (a interfaces.ModelArtifact, err error) {
+func (d *ModelDelegate) ToBytes(m interface{}) (bytes []byte, err error) {
+	if m != nil {
+		return utils.JsonToBytes(m)
+	}
+	return json.Marshal(d.doc)
+}
+
+func (d *ModelDelegate) do(method interfaces.ModelDelegateMethod) (err error) {
 	switch method {
 	case interfaces.ModelDelegateMethodAdd:
-		return nil, d.add()
+		err = d.add()
 	case interfaces.ModelDelegateMethodSave:
-		return nil, d.save()
+		err = d.save()
 	case interfaces.ModelDelegateMethodDelete:
-		return nil, d.delete()
-	case interfaces.ModelDelegateMethodGetArtifact:
-		return d.getArtifact()
+		err = d.delete()
+	case interfaces.ModelDelegateMethodGetArtifact, interfaces.ModelDelegateMethodRefresh:
+		return d.refresh()
 	default:
-		return nil, trace.TraceError(errors.ErrorModelInvalidType)
+		return trace.TraceError(errors.ErrorModelInvalidType)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *ModelDelegate) add() (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
+	method := interfaces.ModelDelegateMethod(interfaces.ModelDelegateMethodAdd)
+	res, err := d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
-		Method:  interfaces.ModelDelegateMethodAdd,
+		Method:  method,
 		Data:    d.mustGetData(),
 	}))
-	return err
+	if err != nil {
+		return err
+	}
+	if err := d.deserialize(res, method); err != nil {
+		return err
+	}
+	return d.refreshArtifact()
 }
 
 func (d *ModelDelegate) save() (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
+	method := interfaces.ModelDelegateMethod(interfaces.ModelDelegateMethodSave)
+	res, err := d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
-		Method:  interfaces.ModelDelegateMethodSave,
+		Method:  method,
 		Data:    d.mustGetData(),
 	}))
-	return err
+	if err != nil {
+		return err
+	}
+	if err := d.deserialize(res, method); err != nil {
+		return err
+	}
+	return d.refreshArtifact()
 }
 
 func (d *ModelDelegate) delete() (err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
-	_, err = d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
+	method := interfaces.ModelDelegateMethod(interfaces.ModelDelegateMethodDelete)
+	res, err := d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
-		Method:  interfaces.ModelDelegateMethodDelete,
+		Method:  method,
 		Data:    d.mustGetData(),
 	}))
+	if err != nil {
+		return err
+	}
+	if err := d.deserialize(res, method); err != nil {
+		return err
+	}
+	return d.refreshArtifact()
+}
+
+func (d *ModelDelegate) refresh() (err error) {
+	ctx, cancel := d.c.Context()
+	defer cancel()
+	method := interfaces.ModelDelegateMethod(interfaces.ModelDelegateMethodRefresh)
+	res, err := d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
+		ModelId: d.id,
+		Method:  method,
+		Data:    d.mustGetData(),
+	}))
+	if err != nil {
+		return err
+	}
+	if err := d.deserialize(res, method); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *ModelDelegate) refreshArtifact() (err error) {
+	_, err = d.getArtifact()
 	return err
 }
 
 func (d *ModelDelegate) getArtifact() (res2 interfaces.ModelArtifact, err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
+	method := interfaces.ModelDelegateMethod(interfaces.ModelDelegateMethodGetArtifact)
 	res, err := d.c.GetModelDelegateClient().Do(ctx, d.c.NewRequest(entity.GrpcDelegateMessage{
 		ModelId: d.id,
-		Method:  interfaces.ModelDelegateMethodGetArtifact,
+		Method:  method,
 		Data:    d.mustGetData(),
 	}))
 	if err != nil {
 		return nil, err
 	}
-	var a models.Artifact
-	if err := json.Unmarshal(res.Data, &a); err != nil {
+	if err := d.deserialize(res, method); err != nil {
 		return nil, err
 	}
-	return &a, nil
-}
-
-func (d *ModelDelegate) refresh() (err error) {
-	if d.doc.GetId().IsZero() {
-		return trace.TraceError(errors.ErrorModelMissingId)
-	}
-	// TODO: implement
-	return nil
+	return d.a, nil
 }
 
 func (d *ModelDelegate) mustGetData() (data []byte) {
@@ -230,4 +298,24 @@ func (d *ModelDelegate) mustGetData() (data []byte) {
 
 func (d *ModelDelegate) getData() (data []byte, err error) {
 	return json.Marshal(d.doc)
+}
+
+func (d *ModelDelegate) deserialize(res *grpc.Response, method interfaces.ModelDelegateMethod) (err error) {
+	if method == interfaces.ModelDelegateMethodGetArtifact {
+		res, err := NewBasicBinder(interfaces.ModelIdArtifact, res).Bind()
+		if err != nil {
+			return err
+		}
+		a, ok := res.(interfaces.ModelArtifact)
+		if !ok {
+			return trace.TraceError(errors.ErrorModelInvalidType)
+		}
+		d.a = a
+	} else {
+		d.doc, err = NewBasicBinder(d.id, res).Bind()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
@@ -25,13 +26,13 @@ func (svr ModelBaseServiceServer) GetById(ctx context.Context, req *grpc.Request
 
 func (svr ModelBaseServiceServer) Get(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		return svc.Get(params.Query, params.FindOptions)
+		return svc.Get(utils.NormalizeBsonMObjectId(params.Query), params.FindOptions)
 	})
 }
 
 func (svr ModelBaseServiceServer) GetList(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		list, err := svc.GetList(params.Query, params.FindOptions)
+		list, err := svc.GetList(utils.NormalizeBsonMObjectId(params.Query), params.FindOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -52,21 +53,21 @@ func (svr ModelBaseServiceServer) DeleteById(ctx context.Context, req *grpc.Requ
 
 func (svr ModelBaseServiceServer) Delete(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.Delete(params.Query, params.User)
+		err := svc.Delete(utils.NormalizeBsonMObjectId(params.Query), params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) DeleteList(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.DeleteList(params.Query, params.User)
+		err := svc.DeleteList(utils.NormalizeBsonMObjectId(params.Query), params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) ForceDeleteList(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.ForceDeleteList(params.Query, params.User)
+		err := svc.ForceDeleteList(utils.NormalizeBsonMObjectId(params.Query), params.User)
 		return nil, err
 	})
 }
@@ -80,14 +81,14 @@ func (svr ModelBaseServiceServer) UpdateById(ctx context.Context, req *grpc.Requ
 
 func (svr ModelBaseServiceServer) Update(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.Update(params.Query, params.Update, params.Fields, params.User)
+		err := svc.Update(utils.NormalizeBsonMObjectId(params.Query), params.Update, params.Fields, params.User)
 		return nil, err
 	})
 }
 
 func (svr ModelBaseServiceServer) UpdateDoc(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		err := svc.UpdateDoc(params.Query, params.Doc, params.Fields, params.User)
+		err := svc.UpdateDoc(utils.NormalizeBsonMObjectId(params.Query), params.Doc, params.Fields, params.User)
 		return nil, err
 	})
 }
@@ -101,7 +102,7 @@ func (svr ModelBaseServiceServer) Insert(ctx context.Context, req *grpc.Request)
 
 func (svr ModelBaseServiceServer) Count(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	return svr.handleRequest(req, func(params *entity.GrpcBaseServiceParams, svc interfaces.ModelBaseService) (interface{}, error) {
-		return svc.Count(params.Query)
+		return svc.Count(utils.NormalizeBsonMObjectId(params.Query))
 	})
 }
 
