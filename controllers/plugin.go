@@ -114,7 +114,7 @@ func (ctx *pluginContext) start(c *gin.Context) {
 
 			// start on each worker node
 			for _, n := range nodes {
-				_ = ctx.svr.SendStreamMessageWithData(n.Key, grpc.StreamMessageCode_START_PLUGIN, p)
+				_ = ctx.svr.SendStreamMessageWithData("node:"+n.Key, grpc.StreamMessageCode_START_PLUGIN, p)
 			}
 		}()
 	}
@@ -156,7 +156,7 @@ func (ctx *pluginContext) stop(c *gin.Context) {
 
 			// stop on each worker node
 			for _, n := range nodes {
-				_ = ctx.svr.SendStreamMessageWithData(n.Key, grpc.StreamMessageCode_STOP_PLUGIN, p)
+				_ = ctx.svr.SendStreamMessageWithData("node:"+n.Key, grpc.StreamMessageCode_STOP_PLUGIN, p)
 			}
 		}()
 	}
@@ -205,7 +205,7 @@ func (ctx *pluginContext) put(c *gin.Context) (p *models.Plugin, err error) {
 
 			// install on each worker node
 			for _, n := range nodes {
-				if err := ctx.svr.SendStreamMessageWithData(n.Key, grpc.StreamMessageCode_INSTALL_PLUGIN, p); err != nil {
+				if err := ctx.svr.SendStreamMessageWithData("node:"+n.Key, grpc.StreamMessageCode_INSTALL_PLUGIN, p); err != nil {
 					trace.PrintError(err)
 				}
 			}
@@ -249,7 +249,7 @@ func (ctx *pluginContext) delete(c *gin.Context) (p *models.Plugin, err error) {
 
 			// uninstall on each worker node
 			for _, n := range nodes {
-				_ = ctx.svr.SendStreamMessageWithData(n.Key, grpc.StreamMessageCode_UNINSTALL_PLUGIN, p)
+				_ = ctx.svr.SendStreamMessageWithData("node:"+n.Key, grpc.StreamMessageCode_UNINSTALL_PLUGIN, p)
 			}
 		}()
 	}

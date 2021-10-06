@@ -31,6 +31,7 @@ type Server struct {
 	nodeSvr             *NodeServer
 	taskSvr             *TaskServer
 	pluginSvr           *PluginServer
+	messageSvr          *MessageServer
 	modelDelegateSvr    *ModelDelegateServer
 	modelBaseServiceSvr *ModelBaseServiceServer
 
@@ -108,6 +109,7 @@ func (svr *Server) Register() (err error) {
 	grpc2.RegisterNodeServiceServer(svr.svr, *svr.nodeSvr)                  // node service
 	grpc2.RegisterTaskServiceServer(svr.svr, *svr.taskSvr)                  // task service
 	grpc2.RegisterPluginServiceServer(svr.svr, *svr.pluginSvr)              // plugin service
+	grpc2.RegisterMessageServiceServer(svr.svr, *svr.messageSvr)            // message service
 
 	return nil
 }
@@ -144,11 +146,11 @@ func (svr *Server) DeleteSubscribe(key string) {
 	subs.Delete(key)
 }
 
-func (svr *Server) SendStreamMessage(nodeKey string, code grpc2.StreamMessageCode) (err error) {
-	return svr.SendStreamMessageWithData(nodeKey, code, nil)
+func (svr *Server) SendStreamMessage(key string, code grpc2.StreamMessageCode) (err error) {
+	return svr.SendStreamMessageWithData(key, code, nil)
 }
 
-func (svr *Server) SendStreamMessageWithData(nodeKey string, code grpc2.StreamMessageCode, d interface{}) (err error) {
+func (svr *Server) SendStreamMessageWithData(key string, code grpc2.StreamMessageCode, d interface{}) (err error) {
 	var data []byte
 	switch d.(type) {
 	case types.Nil:
@@ -162,14 +164,14 @@ func (svr *Server) SendStreamMessageWithData(nodeKey string, code grpc2.StreamMe
 			panic(err)
 		}
 	}
-	sub, err := svr.GetSubscribe("node:" + nodeKey)
+	sub, err := svr.GetSubscribe(key)
 	if err != nil {
 		return err
 	}
 	msg := &grpc2.StreamMessage{
-		Code:    code,
-		NodeKey: svr.nodeCfgSvc.GetNodeKey(),
-		Data:    data,
+		Code: code,
+		Key:  svr.nodeCfgSvc.GetNodeKey(),
+		Data: data,
 	}
 	return sub.GetStream().Send(msg)
 }
@@ -219,6 +221,9 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	if err := c.Provide(ProvidePluginServer(svr)); err != nil {
 		return nil, err
 	}
+	if err := c.Provide(ProvideMessageServer(svr)); err != nil {
+		return nil, err
+	}
 	if err := c.Invoke(func(
 		nodeCfgSvc interfaces.NodeConfigService,
 		modelDelegateSvr *ModelDelegateServer,
@@ -226,6 +231,7 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 		nodeSvr *NodeServer,
 		taskSvr *TaskServer,
 		pluginSvr *PluginServer,
+		messageSvr *MessageServer,
 	) {
 		svr.nodeCfgSvc = nodeCfgSvc
 		svr.modelDelegateSvr = modelDelegateSvr
@@ -233,6 +239,7 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 		svr.nodeSvr = nodeSvr
 		svr.taskSvr = taskSvr
 		svr.pluginSvr = pluginSvr
+		svr.messageSvr = messageSvr
 	}); err != nil {
 		return nil, err
 	}

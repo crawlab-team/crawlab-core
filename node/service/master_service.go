@@ -220,7 +220,7 @@ func (svc *MasterService) monitor() (err error) {
 		}
 
 		// PING client
-		if err := svc.server.SendStreamMessage(n.GetKey(), grpc.StreamMessageCode_PING); err != nil {
+		if err := svc.server.SendStreamMessage("node:"+n.GetKey(), grpc.StreamMessageCode_PING); err != nil {
 			log.Errorf("cannot ping worker[%s]: %v", n.GetKey(), err)
 			trace.PrintError(err)
 			isErr = true

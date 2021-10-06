@@ -93,6 +93,10 @@ func (b *ListBinder) Process(d interface{}) (list arraylist.List, err error) {
 
 func (b *ListBinder) convertToList(d interface{}) (list arraylist.List, err error) {
 	vList := reflect.ValueOf(d)
+	if vList.Kind() == reflect.Ptr {
+		v := vList.Elem().Interface()
+		return b.convertToList(v)
+	}
 	if vList.Kind() != reflect.Array &&
 		vList.Kind() != reflect.Slice {
 		return list, errors.ErrorModelInvalidType
@@ -100,11 +104,7 @@ func (b *ListBinder) convertToList(d interface{}) (list arraylist.List, err erro
 	for i := 0; i < vList.Len(); i++ {
 		vItem := vList.Index(i)
 		item := vItem.Interface()
-		doc, ok := item.(interfaces.Model)
-		if !ok {
-			return list, errors.ErrorModelInvalidType
-		}
-		list.Add(doc)
+		list.Add(item)
 	}
 	return list, nil
 }

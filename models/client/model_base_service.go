@@ -72,7 +72,7 @@ func (d *BaseServiceDelegate) GetList(query bson.M, opts *mongo.FindOptions) (li
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, FindOptions: opts})
-	res, err := d.c.GetModelBaseServiceClient().Get(ctx, req)
+	res, err := d.c.GetModelBaseServiceClient().GetList(ctx, req)
 	if err != nil {
 		return list, err
 	}

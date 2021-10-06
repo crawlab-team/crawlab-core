@@ -41,3 +41,11 @@ func WithServerPluginServerService(server interfaces.GrpcServer) PluginServerOpt
 		svr.server = server
 	}
 }
+
+type MessageServerOption func(svr *MessageServer)
+
+func WithServerMessageServerService(server interfaces.GrpcServer) MessageServerOption {
+	return func(svr *MessageServer) {
+		svr.server = server
+	}
+}

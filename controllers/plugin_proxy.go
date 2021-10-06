@@ -84,11 +84,17 @@ func (ctx *pluginProxyContext) do(c *gin.Context) {
 
 func (ctx *pluginProxyContext) _doHttp(c *gin.Context, p *models.Plugin, data []byte) {
 	path := c.Param("path")
+	query := ""
+	if c.Request.URL.RawQuery == "" {
+		query = ""
+	} else {
+		query = "?" + c.Request.URL.RawQuery
+	}
 	var url string
 	if !strings.HasPrefix(p.Endpoint, "http://") && !strings.HasPrefix(p.Endpoint, "https://") {
-		url = fmt.Sprintf("http://%s%s", p.Endpoint, path)
+		url = fmt.Sprintf("http://%s%s%s", p.Endpoint, path, query)
 	} else {
-		url = fmt.Sprintf("%s%s", p.Endpoint, path)
+		url = fmt.Sprintf("%s%s%s", p.Endpoint, path, query)
 	}
 	res, err := req.Do(c.Request.Method, url, req.HeaderFromStruct(c.Request.Header), data)
 	if err != nil {
@@ -100,7 +106,7 @@ func (ctx *pluginProxyContext) _doHttp(c *gin.Context, p *models.Plugin, data []
 		return
 	}
 	contentType := res.Response().Header.Get("Content-Type")
-	c.Data(http.StatusOK, contentType, res.Bytes())
+	c.Data(res.Response().StatusCode, contentType, res.Bytes())
 	//c.Data(http.StatusOK, constants.HttpContentTypeApplicationJson, res.Bytes())
 }
 
@@ -113,6 +119,7 @@ func (ctx *pluginProxyContext) _doGrpc(c *gin.Context, p *models.Plugin, data []
 	}
 
 	// subscribe
+	// TODO: node key
 	sub, err := ctx.server.GetSubscribe("plugin:" + p.Name)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
@@ -123,7 +130,7 @@ func (ctx *pluginProxyContext) _doGrpc(c *gin.Context, p *models.Plugin, data []
 	msg := &grpc.StreamMessage{Data: data}
 
 	// send
-	sub.GetStream().Send(msg)
+	_ = sub.GetStream().Send(msg)
 }
 
 func newPluginProxyContext() *pluginProxyContext {

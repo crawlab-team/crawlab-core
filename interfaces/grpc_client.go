@@ -14,6 +14,7 @@ type GrpcClient interface {
 	GetNodeClient() grpc.NodeServiceClient
 	GetTaskClient() grpc.TaskServiceClient
 	GetPluginClient() grpc.PluginServiceClient
+	GetMessageClient() grpc.MessageServiceClient
 	SetAddress(Address)
 	SetTimeout(time.Duration)
 	SetSubscribeType(string)

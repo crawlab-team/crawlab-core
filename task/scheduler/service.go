@@ -199,7 +199,7 @@ func (svc *Service) Schedule(tasks []interfaces.Task) (err error) {
 				err = svc.handlerSvc.Run(t.GetId())
 			} else {
 				// send to execute task on worker nodes
-				err = svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_RUN_TASK, t)
+				err = svc.svr.SendStreamMessageWithData("node:"+n.GetKey(), grpc.StreamMessageCode_RUN_TASK, t)
 			}
 			if err != nil {
 				e = append(e, err)
@@ -246,7 +246,7 @@ func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err erro
 			return err
 		}
 		// attempt to cancel on worker
-		if err := svc.svr.SendStreamMessageWithData(n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t); err != nil {
+		if err := svc.svr.SendStreamMessageWithData("node:"+n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t); err != nil {
 			// cancel failed, force to set status as "cancelled"
 			t.Status = constants.TaskStatusCancelled
 			return delegate.NewModelDelegate(t, u).Save()

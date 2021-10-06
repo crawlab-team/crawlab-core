@@ -2,9 +2,7 @@ module github.com/crawlab-team/crawlab-core
 
 go 1.15
 
-replace (
-	github.com/crawlab-team/crawlab-grpc => /Users/marvzhang/projects/crawlab-team/crawlab-grpc
-)
+replace github.com/crawlab-team/crawlab-grpc => /Users/marvzhang/projects/crawlab-team/crawlab-grpc
 
 require (
 	github.com/StackExchange/wmi v1.2.0 // indirect
@@ -47,7 +45,9 @@ require (
 	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/dig v1.10.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/grpc v1.34.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
 )

@@ -48,6 +48,7 @@ type Client struct {
 	NodeClient             grpc2.NodeServiceClient
 	TaskClient             grpc2.TaskServiceClient
 	PluginClient           grpc2.PluginServiceClient
+	MessageClient          grpc2.MessageServiceClient
 }
 
 func (c *Client) Init() (err error) {
@@ -119,6 +120,9 @@ func (c *Client) Register() (err error) {
 	// plugin
 	c.PluginClient = grpc2.NewPluginServiceClient(c.conn)
 
+	// message
+	c.MessageClient = grpc2.NewMessageServiceClient(c.conn)
+
 	// log
 	log.Infof("grpc client registered client services")
 
@@ -143,6 +147,10 @@ func (c *Client) GetTaskClient() grpc2.TaskServiceClient {
 
 func (c *Client) GetPluginClient() grpc2.PluginServiceClient {
 	return c.PluginClient
+}
+
+func (c *Client) GetMessageClient() grpc2.MessageServiceClient {
+	return c.MessageClient
 }
 
 func (c *Client) SetAddress(address interfaces.Address) {
@@ -174,8 +182,9 @@ func (c *Client) NewRequest(d interface{}) (req *grpc2.Request) {
 
 func (c *Client) NewPluginRequest(d interface{}) (req *grpc2.PluginRequest) {
 	return &grpc2.PluginRequest{
-		Name: os.Getenv("CRAWLAB_PLUGIN_NAME"),
-		Data: c.getRequestData(d),
+		Name:    os.Getenv("CRAWLAB_PLUGIN_NAME"),
+		NodeKey: c.nodeCfgSvc.GetNodeKey(),
+		Data:    c.getRequestData(d),
 	}
 }
 

@@ -12,9 +12,10 @@ type PluginUIComponent struct {
 }
 
 type PluginUINav struct {
-	Path  string   `json:"path" bson:"path"`
-	Title string   `json:"title" bson:"title"`
-	Icon  []string `json:"icon" bson:"icon"`
+	Path     string        `json:"path" bson:"path"`
+	Title    string        `json:"title" bson:"title"`
+	Icon     []string      `json:"icon" bson:"icon"`
+	Children []PluginUINav `json:"children,omitempty" bson:"children,omitempty"`
 }
 
 type PluginUIAsset struct {

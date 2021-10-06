@@ -55,5 +55,28 @@ func NewModelMap() (m *ModelMap) {
 }
 
 func NewModelListMap() (m *ModelListMap) {
-	return &ModelListMap{}
+	return &ModelListMap{
+		Artifacts:       []Artifact{},
+		Tags:            []Tag{},
+		Nodes:           []Node{},
+		Projects:        []Project{},
+		Spiders:         []Spider{},
+		Tasks:           []Task{},
+		Jobs:            []Job{},
+		Schedules:       []Schedule{},
+		Users:           []User{},
+		Settings:        []Setting{},
+		Tokens:          []Token{},
+		Variables:       []Variable{},
+		TaskQueueItems:  []TaskQueueItem{},
+		TaskStats:       []TaskStat{},
+		Plugins:         []Plugin{},
+		SpiderStats:     []SpiderStat{},
+		DataSources:     []DataSource{},
+		DataCollections: []DataCollection{},
+		Results:         []Result{},
+		Passwords:       []Password{},
+		ExtraValues:     []ExtraValue{},
+		PluginStatus:    []PluginStatus{},
+	}
 }

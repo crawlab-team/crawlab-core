@@ -16,6 +16,7 @@ import (
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
+	"io"
 )
 
 type PluginServer struct {
@@ -46,8 +47,8 @@ func (svr PluginServer) Register(ctx context.Context, req *grpc.PluginRequest) (
 		if err != nil {
 			return nil, trace.TraceError(err)
 		}
-		svr.eventSvc.Register("plugin:"+req.Name, p.EventKey.Include, p.EventKey.Exclude, ch)
-		go svr.handleEvent(req.Name, ch)
+		svr.eventSvc.Register("plugin:"+req.Name+":"+req.NodeKey, p.EventKey.Include, p.EventKey.Exclude, ch)
+		go svr.handleEvent(req.Name, req.NodeKey, ch)
 	default:
 		return nil, trace.TraceError(errors.ErrorEventUnknownAction)
 	}
@@ -62,7 +63,7 @@ func (svr PluginServer) Subscribe(req *grpc.PluginRequest, stream grpc.PluginSer
 	finished := make(chan bool)
 
 	// set subscribe
-	svr.server.SetSubscribe("plugin:"+req.Name, &entity.GrpcSubscribe{
+	svr.server.SetSubscribe("plugin:"+req.Name+":"+req.NodeKey, &entity.GrpcSubscribe{
 		Stream:   stream,
 		Finished: finished,
 	})
@@ -85,6 +86,26 @@ func (svr PluginServer) Subscribe(req *grpc.PluginRequest, stream grpc.PluginSer
 	}
 }
 
+func (svr PluginServer) Poll(stream grpc.PluginService_PollServer) (err error) {
+	finished := make(chan bool)
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		switch msg.Code {
+		case grpc.StreamMessageCode_CONNECT:
+			svr.server.SetSubscribe("plugin:"+":"+msg.NodeKey, &entity.GrpcSubscribe{
+				Stream:   stream,
+				Finished: finished,
+			})
+		}
+	}
+}
+
 func (svr PluginServer) deserialize(msg *grpc.StreamMessage) (data entity.StreamMessageTaskData, err error) {
 	if err := json.Unmarshal(msg.Data, &data); err != nil {
 		return data, trace.TraceError(err)
@@ -95,8 +116,9 @@ func (svr PluginServer) deserialize(msg *grpc.StreamMessage) (data entity.Stream
 	return data, nil
 }
 
-func (svr PluginServer) handleEvent(pluginName string, ch chan interfaces.EventData) {
-	sub, err := svr.server.GetSubscribe("plugin:" + pluginName)
+// handleEvent receives events from channel and send to plugins
+func (svr PluginServer) handleEvent(pluginName, nodeKey string, ch chan interfaces.EventData) {
+	sub, err := svr.server.GetSubscribe("plugin:" + pluginName + ":" + nodeKey)
 	if err != nil {
 		return
 	}
