@@ -7,6 +7,7 @@ type Node interface {
 	GetName() (name string)
 	GetKey() (key string)
 	GetIsMaster() (ok bool)
+	GetActive() (active bool)
 	SetActive(active bool)
 	SetActiveTs(activeTs time.Time)
 	GetStatus() (status string)
