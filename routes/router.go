@@ -103,6 +103,9 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// tag
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tags", controllers.TagController)
 
+	// setting
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/settings", controllers.SettingController)
+
 	// color
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/colors", controllers.ColorController)
 

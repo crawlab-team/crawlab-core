@@ -17,6 +17,7 @@ func InitControllers() (err error) {
 	TaskController = newTaskController()
 	UserController = newUserController()
 	TagController = NewListControllerDelegate(ControllerIdTag, modelSvc.GetBaseService(interfaces.ModelIdTag))
+	SettingController = newSettingController()
 	LoginController = NewActionControllerDelegate(ControllerIdLogin, getLoginActions())
 	ColorController = NewActionControllerDelegate(ControllerIdColor, getColorActions())
 	PluginController = newPluginController()

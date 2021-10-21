@@ -51,7 +51,7 @@ type Service struct {
 	// internals
 	daemonMap sync.Map
 	stopped   bool
-	n         *models.Node
+	n         *models.Node // current node
 }
 
 func (svc *Service) Init() (err error) {
@@ -59,9 +59,16 @@ func (svc *Service) Init() (err error) {
 }
 
 func (svc *Service) Start() {
-	if err := svc.getNode(); err != nil {
+	// get current node
+	if err := svc.getCurrentNode(); err != nil {
 		panic(err)
 	}
+
+	// get global settings
+	if err := svc.getPluginBaseUrl(); err != nil {
+		panic(err)
+	}
+
 	svc.initPlugins()
 }
 
@@ -578,7 +585,7 @@ func (svc *Service) addPluginStatus(pid primitive.ObjectID, nid primitive.Object
 	return ps, nil
 }
 
-func (svc *Service) getNode() (err error) {
+func (svc *Service) getCurrentNode() (err error) {
 	return backoff.RetryNotify(svc._getNode, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("plugin service get node"))
 }
 
@@ -600,6 +607,47 @@ func (svc *Service) _getNode() (err error) {
 		svc.n = n
 	}
 	return nil
+}
+
+func (svc *Service) getPluginBaseUrl() (err error) {
+	return backoff.RetryNotify(svc._getPluginBaseUrl, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("plugin service get global settings"))
+}
+
+func (svc *Service) _getPluginBaseUrl() (err error) {
+	if svc.cfgSvc.IsMaster() {
+		s, err := svc.modelSvc.GetSettingByKey(constants.SettingPluginBaseUrl, nil)
+		if err != nil {
+			if err.Error() == mongo.ErrNoDocuments.Error() {
+				s := &models.Setting{
+					Key:   constants.SettingPluginBaseUrl,
+					Value: constants.DefaultSettingPluginBaseUrl,
+				}
+				if err := delegate.NewModelDelegate(s).Add(); err != nil {
+					return err
+				}
+				svc.pluginBaseUrl = s.Value
+				return nil
+			}
+			return err
+		}
+		svc.pluginBaseUrl = s.Value
+		return nil
+	} else {
+		settingModelSvc, err := svc.clientModelSvc.NewBaseServiceDelegate(interfaces.ModelIdSetting)
+		if err != nil {
+			return err
+		}
+		_s, err := settingModelSvc.Get(bson.M{"key": constants.SettingPluginBaseUrl}, nil)
+		if err != nil {
+			return err
+		}
+		s, ok := _s.(*models.Setting)
+		if !ok {
+			return trace.TraceError(errors2.ErrorPluginInvalidType)
+		}
+		svc.pluginBaseUrl = s.Value
+		return nil
+	}
 }
 
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {

@@ -329,15 +329,19 @@ func (ctx *pluginContext) getListWithStatus(c *gin.Context) {
 	}
 
 	// nodes
-	query = bson.M{
-		"_id": bson.M{
-			"$in": nodeIds,
-		},
-	}
-	nodes, err := ctx.modelSvc.GetNodeList(query, nil)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
+	var nodes []models.Node
+	if nodeIds != nil {
+		// nodes
+		query = bson.M{
+			"_id": bson.M{
+				"$in": nodeIds,
+			},
+		}
+		nodes, err = ctx.modelSvc.GetNodeList(query, nil)
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
 	}
 
 	// nodes dict
@@ -356,7 +360,7 @@ func (ctx *pluginContext) getListWithStatus(c *gin.Context) {
 		dict[ps.GetPluginId()] = append(dict[ps.GetPluginId()], ps)
 	}
 
-	// iterate list again
+	// data
 	var data []interface{}
 	for _, d := range list.Values() {
 		p := d.(*models.Plugin)
