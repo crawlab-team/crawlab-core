@@ -547,7 +547,7 @@ func (r *Runner) _updateSpiderStat() {
 	// update
 	update := bson.M{
 		"$set": bson.M{
-			"ltid": r.tid,
+			"last_task_id": r.tid,
 		},
 		"$inc": bson.M{
 			"tasks":            1,                              // tasks
