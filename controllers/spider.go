@@ -76,6 +76,11 @@ func getSpiderActions() []Action {
 			Path:        "/:id/run",
 			HandlerFunc: spiderCtx.run,
 		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/:id/git",
+			HandlerFunc: spiderCtx.getGit,
+		},
 		//{
 		//	Method:      http.MethodPost,
 		//	Path:        "/:id/clone",
@@ -275,6 +280,49 @@ func (ctx *spiderContext) run(c *gin.Context) {
 	}
 
 	HandleSuccess(c)
+}
+
+func (ctx *spiderContext) getGit(c *gin.Context) {
+	// spider id
+	id, err := ctx._processActionRequest(c)
+	if err != nil {
+		return
+	}
+
+	// spider fs service
+	fsSvc, err := ctx.syncSvc.GetFsService(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// git client
+	gitClient := fsSvc.GetFsService().GetGitClient()
+
+	// current branch
+	currentBranch, err := gitClient.GetCurrentBranch()
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// branches
+	branches, err := gitClient.GetBranches()
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	if branches == nil || len(branches) == 0 && currentBranch != "" {
+		branches = []string{currentBranch}
+	}
+
+	// response
+	res := bson.M{
+		"current_branch": currentBranch,
+		"branches":       branches,
+	}
+
+	HandleSuccessWithData(c, res)
 }
 
 func (ctx *spiderContext) _get(c *gin.Context) {

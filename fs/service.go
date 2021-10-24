@@ -31,7 +31,7 @@ type Service struct {
 	fs         cfs.Manager
 
 	// internals
-	w *vcs.GitClient // workspace git client (only for master)
+	gitClient *vcs.GitClient // workspace git client (only for master)
 }
 
 func (svc *Service) List(path string, opts ...interfaces.ServiceCrudOption) (files []interfaces.FsFileInfo, err error) {
@@ -287,12 +287,12 @@ func (svc *Service) Commit(msg string) (err error) {
 	//}
 
 	// commit
-	if err := svc.w.CommitAll(msg); err != nil {
+	if err := svc.gitClient.CommitAll(msg); err != nil {
 		return trace.TraceError(err)
 	}
 
 	// push to repo
-	if err := svc.w.Push(vcs.WithRemoteNamePush(vcs.GitDefaultRemoteName)); err != nil {
+	if err := svc.gitClient.Push(vcs.WithRemoteNamePush(vcs.GitDefaultRemoteName)); err != nil {
 		return trace.TraceError(err)
 	}
 
@@ -383,6 +383,10 @@ func (svc *Service) SetConfigPath(path string) {
 
 func (svc *Service) GetFs() (fs cfs.Manager) {
 	return svc.fs
+}
+
+func (svc *Service) GetGitClient() (c *vcs.GitClient) {
+	return svc.gitClient
 }
 
 func (svc *Service) saveFs(path string, data []byte, opts ...interfaces.ServiceCrudOption) (err error) {
@@ -563,7 +567,7 @@ func (svc *Service) copyFsDir(path, newPath string, opts ...interfaces.ServiceCr
 
 func (svc *Service) syncFromRepoToWorkspace() (err error) {
 	// TODO: specify remote
-	return svc.w.Reset()
+	return svc.gitClient.Reset()
 }
 
 func (svc *Service) getRemotePath(path string, o *interfaces.ServiceCrudOptions) (remotePath string) {
@@ -655,7 +659,7 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 			vcs.WithPath(svc.GetWorkspacePath()),
 			vcs.WithRemoteUrl(svc.GetRepoPath()),
 		}
-		svc.w, err = vcs.NewGitClient(gitOpts...)
+		svc.gitClient, err = vcs.NewGitClient(gitOpts...)
 		if err != nil {
 			return nil, err
 		}
