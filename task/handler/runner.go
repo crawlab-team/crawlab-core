@@ -429,7 +429,7 @@ func (r *Runner) wait() {
 	r.ch <- constants.TaskSignalFinish
 }
 
-// update and get updated info of task (Runner.t)
+// updateTask update and get updated info of task (Runner.t)
 func (r *Runner) updateTask(status string, e error) (err error) {
 	if r.t != nil && status != "" {
 		// update task status
@@ -450,7 +450,7 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 		// update stats
 		go func() {
 			r._updateTaskStat(status)
-			r._updateSpiderStat()
+			r._updateSpiderStat(status)
 		}()
 	}
 
@@ -536,7 +536,7 @@ func (r *Runner) _updateTaskStat(status string) {
 	}
 }
 
-func (r *Runner) _updateSpiderStat() {
+func (r *Runner) _updateSpiderStat(status string) {
 	// task stat
 	ts, err := r.svc.GetModelTaskStatService().GetTaskStatById(r.tid)
 	if err != nil {
@@ -545,17 +545,29 @@ func (r *Runner) _updateSpiderStat() {
 	}
 
 	// update
-	update := bson.M{
-		"$set": bson.M{
-			"last_task_id": r.tid,
-		},
-		"$inc": bson.M{
-			"tasks":            1,                              // tasks
-			"results":          ts.GetResultCount(),            // results
-			"wait_duration":    ts.GetWaitDuration() / 1000,    // wait duration
-			"runtime_duration": ts.GetRuntimeDuration() / 1000, // runtime duration
-			"total_duration":   ts.GetTotalDuration() / 1000,   // total duration
-		},
+	var update bson.M
+	switch status {
+	case constants.TaskStatusPending, constants.TaskStatusRunning:
+		update = bson.M{
+			"$set": bson.M{
+				"last_task_id": r.tid, // last task id
+			},
+			"$inc": bson.M{
+				"tasks":         1,                    // task count
+				"wait_duration": ts.GetWaitDuration(), // wait duration
+			},
+		}
+	case constants.TaskStatusFinished, constants.TaskStatusError, constants.TaskStatusCancelled:
+		update = bson.M{
+			"$inc": bson.M{
+				"results":          ts.GetResultCount(),            // results
+				"runtime_duration": ts.GetRuntimeDuration() / 1000, // runtime duration
+				"total_duration":   ts.GetTotalDuration() / 1000,   // total duration
+			},
+		}
+	default:
+		trace.PrintError(errors.ErrorTaskInvalidType)
+		return
 	}
 
 	// perform update
