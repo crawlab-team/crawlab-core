@@ -21,8 +21,10 @@ import (
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
+	"path"
 	"strings"
 )
 
@@ -80,6 +82,11 @@ func getSpiderActions() []Action {
 			Method:      http.MethodGet,
 			Path:        "/:id/git",
 			HandlerFunc: spiderCtx.getGit,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/git/commit",
+			HandlerFunc: spiderCtx.gitCommit,
 		},
 		//{
 		//	Method:      http.MethodPost,
@@ -296,6 +303,12 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		return
 	}
 
+	// sync from remote to workspace
+	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
 	// git client
 	gitClient := fsSvc.GetFsService().GetGitClient()
 
@@ -316,13 +329,90 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		branches = []string{currentBranch}
 	}
 
+	// changes
+	changes, err := gitClient.GetStatus()
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// changes
+	logs, err := gitClient.GetLogs()
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// ignore
+	ignore, err := ctx._getGitIgnore(fsSvc)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
 	// response
 	res := bson.M{
 		"current_branch": currentBranch,
 		"branches":       branches,
+		"changes":        changes,
+		"logs":           logs,
+		"ignore":         ignore,
 	}
 
 	HandleSuccessWithData(c, res)
+}
+
+func (ctx *spiderContext) gitCommit(c *gin.Context) {
+	// payload
+	var payload entity.GitPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// spider id
+	id, err := ctx._processActionRequest(c)
+	if err != nil {
+		return
+	}
+
+	// spider fs service
+	fsSvc, err := ctx.syncSvc.GetFsService(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// sync from remote to workspace
+	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// git client
+	gitClient := fsSvc.GetFsService().GetGitClient()
+
+	// add
+	for _, p := range payload.Paths {
+		if err := gitClient.Add(p); err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	}
+
+	// commit
+	if err := gitClient.Commit(payload.CommitMessage); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// push
+	if err := gitClient.Push(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
 }
 
 func (ctx *spiderContext) _get(c *gin.Context) {
@@ -656,6 +746,19 @@ func (ctx *spiderContext) _upsertDataCollection(c *gin.Context, s *models.Spider
 		s.ColId = dc.Id
 	}
 	return nil
+}
+
+func (ctx *spiderContext) _getGitIgnore(fsSvc interfaces.SpiderFsService) (ignore []string, err error) {
+	filePath := path.Join(fsSvc.GetWorkspacePath(), ".gitignore")
+	if !utils.Exists(filePath) {
+		return nil, nil
+	}
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	ignore = strings.Split(string(data), "\n")
+	return ignore, nil
 }
 
 var _spiderCtx *spiderContext
