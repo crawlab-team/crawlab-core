@@ -130,6 +130,9 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// plugin do
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/plugin-proxy", controllers.PluginProxyController)
 
+	// git
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/gits", controllers.GitController)
+
 	// login
 	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
 

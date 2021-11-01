@@ -73,6 +73,8 @@ func (b *ModelDelegateBinder) Bind() (res interface{}, err error) {
 		return b.process(&m.ExtraValue)
 	case interfaces.ModelIdPluginStatus:
 		return b.process(&m.PluginStatus)
+	case interfaces.ModelIdGit:
+		return b.process(&m.Git)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

@@ -84,5 +84,8 @@ type ModelService interface {
 	GetPluginStatusById(id primitive.ObjectID) (res *models.PluginStatus, err error)
 	GetPluginStatus(query bson.M, opts *mongo.FindOptions) (res *models.PluginStatus, err error)
 	GetPluginStatusList(query bson.M, opts *mongo.FindOptions) (res []models.PluginStatus, err error)
+	GetGitById(id primitive.ObjectID) (res *models.Git, err error)
+	GetGit(query bson.M, opts *mongo.FindOptions) (res *models.Git, err error)
+	GetGitList(query bson.M, opts *mongo.FindOptions) (res []models.Git, err error)
 	DropAll() (err error)
 }

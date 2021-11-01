@@ -62,6 +62,8 @@ func NewModelDelegate(doc interfaces.Model, args ...interface{}) interfaces.Mode
 		return newModelDelegate(interfaces.ModelIdExtraValue, doc, args...)
 	case *models.PluginStatus:
 		return newModelDelegate(interfaces.ModelIdPluginStatus, doc, args...)
+	case *models.Git:
+		return newModelDelegate(interfaces.ModelIdGit, doc, args...)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil

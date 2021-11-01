@@ -60,6 +60,9 @@ func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.Model, err error) {
 	case ControllerIdPlugin:
 		err = c.ShouldBindJSON(&m.Plugin)
 		return &m.Plugin, nil
+	case ControllerIdGit:
+		err = c.ShouldBindJSON(&m.Git)
+		return &m.Git, nil
 	default:
 		return nil, errors.ErrorControllerInvalidControllerId
 	}

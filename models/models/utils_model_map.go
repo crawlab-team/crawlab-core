@@ -23,6 +23,7 @@ type ModelMap struct {
 	Password       Password
 	ExtraValue     ExtraValue
 	PluginStatus   PluginStatus
+	Git            Git
 }
 
 type ModelListMap struct {
@@ -48,6 +49,7 @@ type ModelListMap struct {
 	Passwords       []Password
 	ExtraValues     []ExtraValue
 	PluginStatus    []PluginStatus
+	Gits            []Git
 }
 
 func NewModelMap() (m *ModelMap) {

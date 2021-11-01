@@ -23,6 +23,7 @@ const (
 	ControllerIdStats
 	ControllerIdFiler
 	ControllerIdPluginDo
+	ControllerIdGit
 )
 
 type ControllerId int

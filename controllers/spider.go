@@ -14,8 +14,12 @@ import (
 	"github.com/crawlab-team/crawlab-core/spider/sync"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/crawlab-team/go-trace"
 	"github.com/gin-gonic/gin"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
@@ -82,6 +86,11 @@ func getSpiderActions() []Action {
 			Method:      http.MethodGet,
 			Path:        "/:id/git",
 			HandlerFunc: spiderCtx.getGit,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/git/pull",
+			HandlerFunc: spiderCtx.gitPull,
 		},
 		{
 			Method:      http.MethodPost,
@@ -310,7 +319,11 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 	}
 
 	// git client
-	gitClient := fsSvc.GetFsService().GetGitClient()
+	gitClient, err := ctx._getGitClient(id, fsSvc)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
 
 	// current branch
 	currentBranch, err := gitClient.GetCurrentBranch()
@@ -336,7 +349,7 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		return
 	}
 
-	// changes
+	// logs
 	logs, err := gitClient.GetLogs()
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
@@ -350,6 +363,15 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		return
 	}
 
+	// git
+	_git, err := ctx.modelSvc.GetGitById(id)
+	if err != nil {
+		if err.Error() != mongo2.ErrNoDocuments.Error() {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	}
+
 	// response
 	res := bson.M{
 		"current_branch": currentBranch,
@@ -357,9 +379,98 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		"changes":        changes,
 		"logs":           logs,
 		"ignore":         ignore,
+		"git":            _git,
 	}
 
 	HandleSuccessWithData(c, res)
+}
+
+func (ctx *spiderContext) gitPull(c *gin.Context) {
+	// spider id
+	id, err := ctx._processActionRequest(c)
+	if err != nil {
+		return
+	}
+
+	// spider fs service
+	fsSvc, err := ctx.syncSvc.GetFsService(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// git
+	g, err := ctx.modelSvc.GetGitById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// git client
+	gitClient, err := ctx._getGitClient(id, fsSvc)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// set remote
+	r, err := gitClient.GetRemote(constants.GitRemoteNameUpstream)
+	if err != nil {
+		if err == git.ErrRemoteNotFound {
+			// create upstream remote if not exists
+			r, err = ctx._createGitRemote(gitClient, g)
+			if err != nil {
+				HandleErrorInternalServerError(c, err)
+				return
+			}
+		} else {
+			// error
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	} else {
+		// re-create upstream remote if remote urls not matched
+		if len(r.Config().URLs) == 0 || r.Config().URLs[0] != g.Url {
+			// delete existing upstream remote
+			if err := gitClient.DeleteRemote(constants.GitRemoteNameUpstream); err != nil {
+				HandleErrorInternalServerError(c, err)
+				return
+			}
+
+			// create upstream remote if not exists
+			r, err = ctx._createGitRemote(gitClient, g)
+			if err != nil {
+				HandleErrorInternalServerError(c, err)
+				return
+			}
+		}
+	}
+
+	// current branch
+	currentBranch, err := gitClient.GetCurrentBranch()
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// attempt to pull with current branch
+	if err := ctx._gitPull(gitClient, constants.GitRemoteNameUpstream, currentBranch); err != nil {
+		// if reference not found, attempt to pull with branch name "main" if current branch name is "master"
+		if err == plumbing.ErrReferenceNotFound && currentBranch == vcs.GitBranchNameMaster {
+			if err := ctx._gitPull(gitClient, constants.GitRemoteNameUpstream, vcs.GitBranchNameMain); err != nil {
+				HandleErrorInternalServerError(c, err)
+				return
+			}
+		}
+	}
+
+	// sync to fs
+	if err := fsSvc.GetFsService().SyncToFs(interfaces.WithOnlyFromWorkspace()); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
 }
 
 func (ctx *spiderContext) gitCommit(c *gin.Context) {
@@ -390,7 +501,11 @@ func (ctx *spiderContext) gitCommit(c *gin.Context) {
 	}
 
 	// git client
-	gitClient := fsSvc.GetFsService().GetGitClient()
+	gitClient, err := ctx._getGitClient(id, fsSvc)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
 
 	// add
 	for _, p := range payload.Paths {
@@ -759,6 +874,66 @@ func (ctx *spiderContext) _getGitIgnore(fsSvc interfaces.SpiderFsService) (ignor
 	}
 	ignore = strings.Split(string(data), "\n")
 	return ignore, nil
+}
+
+func (ctx *spiderContext) _createGitRemote(gitClient *vcs.GitClient, g *models.Git) (r *git.Remote, err error) {
+	r, err = gitClient.CreateRemote(&config.RemoteConfig{
+		Name: constants.GitRemoteNameUpstream,
+		URLs: []string{g.Url},
+	})
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	return r, nil
+}
+
+func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch string) (err error) {
+	// reset
+	_ = gitClient.Reset()
+
+	// checkout to current branch
+	_ = gitClient.CheckoutBranch(branch)
+
+	// pull
+	if err := gitClient.Pull(
+		vcs.WithRemoteNamePull(remote),
+		vcs.WithReferenceNamePull(branch),
+	); err != nil {
+		return trace.TraceError(err)
+	}
+
+	// reset
+	_ = gitClient.Reset()
+
+	return nil
+}
+
+func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.SpiderFsService) (gitClient *vcs.GitClient, err error) {
+	// git
+	g, err := ctx.modelSvc.GetGitById(id)
+	if err != nil {
+		if err != mongo2.ErrNoDocuments {
+			return nil, trace.TraceError(err)
+		}
+	}
+
+	// git client
+	gitClient = fsSvc.GetFsService().GetGitClient()
+
+	switch g.AuthType {
+	case constants.GitAuthTypeHttp:
+		gitClient.SetAuthType(vcs.GitAuthTypeHTTP)
+		gitClient.SetUsername(g.Username)
+		gitClient.SetPassword(g.Password)
+	case constants.GitAuthTypeSsh:
+		gitClient.SetAuthType(vcs.GitAuthTypeSSH)
+		gitClient.SetUsername(g.Username)
+		gitClient.SetPrivateKey(g.Password)
+	default:
+		return gitClient, nil
+	}
+
+	return gitClient, nil
 }
 
 var _spiderCtx *spiderContext

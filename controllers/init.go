@@ -28,6 +28,7 @@ func InitControllers() (err error) {
 	TokenController = newTokenController()
 	FilerController = NewActionControllerDelegate(ControllerIdFiler, getFilerActions())
 	PluginProxyController = NewActionControllerDelegate(ControllerIdPluginDo, getPluginProxyActions())
+	GitController = NewListControllerDelegate(ControllerIdGit, modelSvc.GetBaseService(interfaces.ModelIdGit))
 
 	return nil
 }

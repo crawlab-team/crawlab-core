@@ -11,17 +11,18 @@ require (
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.1.1
-	github.com/crawlab-team/crawlab-fs v0.1.0
+	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940
 	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211009.1455
 	github.com/crawlab-team/crawlab-log v0.1.0
-	github.com/crawlab-team/crawlab-vcs v0.1.0
+	github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211101.1939
 	github.com/crawlab-team/go-trace v0.1.0
-	github.com/crawlab-team/goseaweedfs v0.6.0-beta.20210725.1917
+	github.com/crawlab-team/goseaweedfs v0.6.0-beta.20211101.1936
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-git/go-git/v5 v5.2.0
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.1.2
@@ -30,7 +31,6 @@ require (
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olivere/elastic/v7 v7.0.15
-	github.com/prometheus/common v0.4.0
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil v3.20.11+incompatible

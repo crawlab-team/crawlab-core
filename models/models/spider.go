@@ -23,6 +23,7 @@ type Spider struct {
 	NodeTags    []string             `json:"node_tags" bson:"node_tags"`     // default Task.NodeTags
 	Tags        []Tag                `json:"tags" bson:"-"`                  // tags
 	Stat        *SpiderStat          `json:"stat,omitempty" bson:"-"`
+	GitId       primitive.ObjectID   `json:"git_id" bson:"git_id"`
 
 	IsPublic bool  `json:"is_public" bson:"is_public"` // 是否公开
 	Envs     []Env `json:"envs" bson:"envs"`           // 环境变量

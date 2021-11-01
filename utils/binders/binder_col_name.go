@@ -60,6 +60,8 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return interfaces.ModelColNameExtraValues, nil
 	case interfaces.ModelIdPluginStatus:
 		return interfaces.ModelColNamePluginStatus, nil
+	case interfaces.ModelIdGit:
+		return interfaces.ModelColNameGit, nil
 
 	// invalid
 	default:
