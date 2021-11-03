@@ -331,7 +331,7 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 	}
 
 	// current branch
-	currentBranch, err := gitClient.GetCurrentBranch()
+	currentBranch, err := ctx._getCurrentBranch(gitClient)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -587,7 +587,9 @@ func (ctx *spiderContext) gitCommit(c *gin.Context) {
 	}
 
 	// push
-	if err := gitClient.Push(); err != nil {
+	if err := gitClient.Push(
+		vcs.WithRemoteNamePush(vcs.GitRemoteNameUpstream),
+	); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -1019,6 +1021,58 @@ func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.
 	}
 
 	return gitClient, nil
+}
+
+func (ctx *spiderContext) _getCurrentBranch(gitClient *vcs.GitClient) (currentBranch string, err error) {
+	// current branch from repo
+	currentBranch, err = gitClient.GetCurrentBranch()
+	if err != nil {
+		return "", err
+	}
+
+	// remote refs
+	remoteRefs, err := gitClient.GetRemoteRefs(constants.GitRemoteNameUpstream)
+	if err != nil {
+		return currentBranch, err
+	}
+
+	// return if current branch is not default branch (master)
+	if currentBranch != vcs.GitDefaultBranchName {
+		return currentBranch, nil
+	}
+
+	// iterate remote refs and determine current branch
+	var hasMain bool
+	var mainRef *plumbing.Reference
+	for _, remoteRef := range remoteRefs {
+		// skip non-branch remote ref
+		if remoteRef.Type != vcs.GitRefTypeBranch {
+			continue
+		}
+
+		// return if current branch is in remote refs
+		if remoteRef.Name == currentBranch {
+			return currentBranch, nil
+		}
+
+		// set has main if any
+		if remoteRef.Name == vcs.GitBranchNameMain {
+			hasMain = true
+			mainRef = plumbing.NewHashReference(plumbing.NewBranchReferenceName(remoteRef.Name), plumbing.NewHash(remoteRef.Hash))
+		}
+	}
+
+	// error if no main branch found in remote refs
+	if !hasMain {
+		return "", trace.TraceError(errors.ErrorGitNoMainBranch)
+	}
+
+	// checkout to main branch
+	if err := gitClient.CheckoutBranchWithRemoteFromRef(vcs.GitBranchNameMain, constants.GitRemoteNameUpstream, mainRef); err != nil {
+		return "", trace.TraceError(err)
+	}
+
+	return vcs.GitBranchNameMain, nil
 }
 
 var _spiderCtx *spiderContext
