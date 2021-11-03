@@ -88,6 +88,11 @@ func getSpiderActions() []Action {
 			HandlerFunc: spiderCtx.getGit,
 		},
 		{
+			Method:      http.MethodGet,
+			Path:        "/:id/git/remote-refs",
+			HandlerFunc: spiderCtx.getGitRemoteRefs,
+		},
+		{
 			Method:      http.MethodPost,
 			Path:        "/:id/git/pull",
 			HandlerFunc: spiderCtx.gitPull,
@@ -339,7 +344,14 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		return
 	}
 	if branches == nil || len(branches) == 0 && currentBranch != "" {
-		branches = []string{currentBranch}
+		branches = []vcs.GitRef{{Name: currentBranch}}
+	}
+
+	// tags
+	tags, err := gitClient.GetTags()
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
 	}
 
 	// changes
@@ -350,7 +362,7 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 	}
 
 	// logs
-	logs, err := gitClient.GetLogs()
+	logs, err := gitClient.GetLogsWithRefs()
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -376,6 +388,7 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 	res := bson.M{
 		"current_branch": currentBranch,
 		"branches":       branches,
+		"tags":           tags,
 		"changes":        changes,
 		"logs":           logs,
 		"ignore":         ignore,
@@ -385,7 +398,57 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 	HandleSuccessWithData(c, res)
 }
 
+func (ctx *spiderContext) getGitRemoteRefs(c *gin.Context) {
+	// spider id
+	id, err := ctx._processActionRequest(c)
+	if err != nil {
+		return
+	}
+
+	// remote name
+	remoteName := c.Query("remote")
+	if remoteName == "" {
+		remoteName = vcs.GitRemoteNameUpstream
+	}
+
+	// spider fs service
+	fsSvc, err := ctx.syncSvc.GetFsService(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// sync from remote to workspace
+	//if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+	//	HandleErrorInternalServerError(c, err)
+	//	return
+	//}
+
+	// git client
+	gitClient, err := ctx._getGitClient(id, fsSvc)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// refs
+	refs, err := gitClient.GetRemoteRefs(remoteName)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccessWithData(c, refs)
+}
+
 func (ctx *spiderContext) gitPull(c *gin.Context) {
+	// payload
+	var payload entity.GitPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
 	// spider id
 	id, err := ctx._processActionRequest(c)
 	if err != nil {
@@ -446,22 +509,24 @@ func (ctx *spiderContext) gitPull(c *gin.Context) {
 		}
 	}
 
-	// current branch
-	currentBranch, err := gitClient.GetCurrentBranch()
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
+	// branch to pull
+	var branch string
+	if payload.Branch == "" {
+		// by default current branch
+		branch, err = gitClient.GetCurrentBranch()
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	} else {
+		// payload branch
+		branch = payload.Branch
 	}
 
-	// attempt to pull with current branch
-	if err := ctx._gitPull(gitClient, constants.GitRemoteNameUpstream, currentBranch); err != nil {
-		// if reference not found, attempt to pull with branch name "main" if current branch name is "master"
-		if err == plumbing.ErrReferenceNotFound && currentBranch == vcs.GitBranchNameMaster {
-			if err := ctx._gitPull(gitClient, constants.GitRemoteNameUpstream, vcs.GitBranchNameMain); err != nil {
-				HandleErrorInternalServerError(c, err)
-				return
-			}
-		}
+	// attempt to pull with target branch
+	if err := ctx._gitPull(gitClient, constants.GitRemoteNameUpstream, branch); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
 	}
 
 	// sync to fs
@@ -888,16 +953,31 @@ func (ctx *spiderContext) _createGitRemote(gitClient *vcs.GitClient, g *models.G
 }
 
 func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch string) (err error) {
+	// remote refs
+	remoteRefs, err := gitClient.GetRemoteRefs(remote)
+	if err != nil {
+		return err
+	}
+
+	// ref
+	var ref *plumbing.Reference
+	for _, remoteRef := range remoteRefs {
+		if remoteRef.Type == vcs.GitRefTypeBranch && remoteRef.Name == branch {
+			ref = plumbing.NewHashReference(plumbing.NewBranchReferenceName(branch), plumbing.NewHash(remoteRef.Hash))
+			break
+		}
+	}
+
 	// reset
 	_ = gitClient.Reset()
 
-	// checkout to current branch
-	_ = gitClient.CheckoutBranch(branch)
+	// checkout to target branch
+	_ = gitClient.CheckoutBranchWithRemoteFromRef(branch, remote, ref)
 
 	// pull
 	if err := gitClient.Pull(
 		vcs.WithRemoteNamePull(remote),
-		vcs.WithReferenceNamePull(branch),
+		vcs.WithBranchNamePull(branch),
 	); err != nil {
 		return trace.TraceError(err)
 	}
@@ -909,18 +989,23 @@ func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch stri
 }
 
 func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.SpiderFsService) (gitClient *vcs.GitClient, err error) {
+	// auth type
+	authType := ""
+
 	// git
 	g, err := ctx.modelSvc.GetGitById(id)
 	if err != nil {
 		if err != mongo2.ErrNoDocuments {
 			return nil, trace.TraceError(err)
 		}
+	} else {
+		authType = g.AuthType
 	}
 
 	// git client
 	gitClient = fsSvc.GetFsService().GetGitClient()
 
-	switch g.AuthType {
+	switch authType {
 	case constants.GitAuthTypeHttp:
 		gitClient.SetAuthType(vcs.GitAuthTypeHTTP)
 		gitClient.SetUsername(g.Username)
