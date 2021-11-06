@@ -110,6 +110,11 @@ func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 	ps.Error = ""
 	_ = svc.savePluginStatus(ps)
 
+	// get plugin base url
+	if err := svc.getPluginBaseUrl(); err != nil {
+		return err
+	}
+
 	// install
 	switch p.InstallType {
 	case constants.PluginInstallTypeName:
