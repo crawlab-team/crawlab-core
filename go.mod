@@ -10,7 +10,7 @@ require (
 	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940
 	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211009.1455
 	github.com/crawlab-team/crawlab-log v0.1.0
-	github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211103.2013
+	github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211113.2048
 	github.com/crawlab-team/go-trace v0.1.0
 	github.com/crawlab-team/goseaweedfs v0.6.0-beta.20211101.1936
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

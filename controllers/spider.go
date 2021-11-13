@@ -956,25 +956,25 @@ func (ctx *spiderContext) _createGitRemote(gitClient *vcs.GitClient, g *models.G
 
 func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch string) (err error) {
 	// remote refs
-	remoteRefs, err := gitClient.GetRemoteRefs(remote)
-	if err != nil {
-		return err
-	}
+	//remoteRefs, err := gitClient.GetRemoteRefs(remote)
+	//if err != nil {
+	//	return err
+	//}
 
 	// ref
-	var ref *plumbing.Reference
-	for _, remoteRef := range remoteRefs {
-		if remoteRef.Type == vcs.GitRefTypeBranch && remoteRef.Name == branch {
-			ref = plumbing.NewHashReference(plumbing.NewBranchReferenceName(branch), plumbing.NewHash(remoteRef.Hash))
-			break
-		}
-	}
+	//var ref *plumbing.Reference
+	//for _, remoteRef := range remoteRefs {
+	//	if remoteRef.Type == vcs.GitRefTypeBranch && remoteRef.Name == branch {
+	//		ref = plumbing.NewHashReference(plumbing.NewBranchReferenceName(branch), plumbing.NewHash(remoteRef.Hash))
+	//		break
+	//	}
+	//}
 
 	// reset
 	_ = gitClient.Reset()
 
 	// checkout to target branch
-	_ = gitClient.CheckoutBranchWithRemoteFromRef(branch, remote, ref)
+	//_ = gitClient.CheckoutBranchWithRemoteFromRef(branch, remote, ref)
 
 	// pull
 	if err := gitClient.Pull(
@@ -1034,6 +1034,11 @@ func (ctx *spiderContext) _getCurrentBranch(gitClient *vcs.GitClient) (currentBr
 	remoteRefs, err := gitClient.GetRemoteRefs(constants.GitRemoteNameUpstream)
 	if err != nil {
 		return currentBranch, err
+	}
+
+	// return if no remote refs found
+	if remoteRefs == nil {
+		return currentBranch, nil
 	}
 
 	// return if current branch is not default branch (master)
