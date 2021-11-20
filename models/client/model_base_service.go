@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
@@ -11,10 +12,12 @@ import (
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/emirpasic/gods/lists/arraylist"
+	errors2 "github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"time"
 )
 
 type BaseServiceDelegate struct {
@@ -46,7 +49,7 @@ func (d *BaseServiceDelegate) GetById(id primitive.ObjectID) (doc interfaces.Mod
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id})
-	c := d.c.GetModelBaseServiceClient()
+	c := d.getModelBaseServiceClient()
 	if c == nil {
 		return nil, trace.TraceError(errors.ErrorModelNilPointer)
 	}
@@ -61,7 +64,7 @@ func (d *BaseServiceDelegate) Get(query bson.M, opts *mongo.FindOptions) (doc in
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, FindOptions: opts})
-	res, err := d.c.GetModelBaseServiceClient().Get(ctx, req)
+	res, err := d.getModelBaseServiceClient().Get(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +75,7 @@ func (d *BaseServiceDelegate) GetList(query bson.M, opts *mongo.FindOptions) (li
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, FindOptions: opts})
-	res, err := d.c.GetModelBaseServiceClient().GetList(ctx, req)
+	res, err := d.getModelBaseServiceClient().GetList(ctx, req)
 	if err != nil {
 		return list, err
 	}
@@ -84,7 +87,7 @@ func (d *BaseServiceDelegate) DeleteById(id primitive.ObjectID, args ...interfac
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id, User: u})
-	_, err = d.c.GetModelBaseServiceClient().DeleteById(ctx, req)
+	_, err = d.getModelBaseServiceClient().DeleteById(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -96,7 +99,7 @@ func (d *BaseServiceDelegate) Delete(query bson.M, args ...interface{}) (err err
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, User: u})
-	_, err = d.c.GetModelBaseServiceClient().Delete(ctx, req)
+	_, err = d.getModelBaseServiceClient().Delete(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -108,7 +111,7 @@ func (d *BaseServiceDelegate) DeleteList(query bson.M, args ...interface{}) (err
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, User: u})
-	_, err = d.c.GetModelBaseServiceClient().DeleteList(ctx, req)
+	_, err = d.getModelBaseServiceClient().DeleteList(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -120,7 +123,7 @@ func (d *BaseServiceDelegate) ForceDeleteList(query bson.M, args ...interface{})
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, User: u})
-	_, err = d.c.GetModelBaseServiceClient().ForceDeleteList(ctx, req)
+	_, err = d.getModelBaseServiceClient().ForceDeleteList(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -132,7 +135,7 @@ func (d *BaseServiceDelegate) UpdateById(id primitive.ObjectID, update bson.M, a
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id, Update: update, User: u})
-	_, err = d.c.GetModelBaseServiceClient().UpdateById(ctx, req)
+	_, err = d.getModelBaseServiceClient().UpdateById(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -144,7 +147,7 @@ func (d *BaseServiceDelegate) Update(query bson.M, update bson.M, fields []strin
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, Update: update, Fields: fields, User: u})
-	_, err = d.c.GetModelBaseServiceClient().Update(ctx, req)
+	_, err = d.getModelBaseServiceClient().Update(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -156,7 +159,7 @@ func (d *BaseServiceDelegate) UpdateDoc(query bson.M, doc interfaces.Model, fiel
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, Doc: doc, Fields: fields, User: u})
-	_, err = d.c.GetModelBaseServiceClient().UpdateDoc(ctx, req)
+	_, err = d.getModelBaseServiceClient().UpdateDoc(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -167,7 +170,7 @@ func (d *BaseServiceDelegate) Insert(u interfaces.User, docs ...interface{}) (er
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Docs: docs, User: u})
-	_, err = d.c.GetModelBaseServiceClient().Insert(ctx, req)
+	_, err = d.getModelBaseServiceClient().Insert(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -178,7 +181,7 @@ func (d *BaseServiceDelegate) Count(query bson.M) (total int, err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query})
-	res, err := d.c.GetModelBaseServiceClient().Insert(ctx, req)
+	res, err := d.getModelBaseServiceClient().Insert(ctx, req)
 	if err != nil {
 		return total, err
 	}
@@ -198,6 +201,19 @@ func (d *BaseServiceDelegate) mustNewRequest(params *entity.GrpcBaseServiceParam
 		panic(err)
 	}
 	return req
+}
+
+func (d *BaseServiceDelegate) getModelBaseServiceClient() (c grpc.ModelBaseServiceClient) {
+	if err := backoff.Retry(func() (err error) {
+		c = d.c.GetModelBaseServiceClient()
+		if c == nil {
+			return errors2.New("unable to get model base service client")
+		}
+		return nil
+	}, backoff.NewConstantBackOff(1*time.Second)); err != nil {
+		trace.PrintError(err)
+	}
+	return c
 }
 
 func NewBaseServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 interfaces.GrpcClientModelBaseService, err error) {
