@@ -135,13 +135,14 @@ func (svc *MasterService) SetMonitorInterval(duration time.Duration) {
 
 func (svc *MasterService) Register() (err error) {
 	nodeKey := svc.GetConfigService().GetNodeKey()
+	nodeName := svc.GetConfigService().GetNodeName()
 	node, err := svc.modelSvc.GetNodeByKey(nodeKey, nil)
 	if err != nil && err.Error() == mongo2.ErrNoDocuments.Error() {
 		// not exists
 		log.Infof("master[%s] does not exist in db", nodeKey)
 		node := &models.Node{
 			Key:        nodeKey,
-			Name:       nodeKey,
+			Name:       nodeName,
 			MaxRunners: config.DefaultConfigOptions.MaxRunners,
 			IsMaster:   true,
 			Status:     constants.NodeStatusOnline,

@@ -11,6 +11,7 @@ type Config entity.NodeInfo
 
 type Options struct {
 	Key        string
+	Name       string
 	IsMaster   bool
 	AuthKey    string
 	MaxRunners int
@@ -39,6 +40,13 @@ func NewConfig(opts *Options) (cfg *Config) {
 			opts.Key = utils.NewUUIDString()
 		}
 	}
+	if opts.Name == "" {
+		if viper.GetString("node.name") != "" {
+			opts.Name = viper.GetString("node.name")
+		} else {
+			opts.Name = opts.Key
+		}
+	}
 	if opts.AuthKey == "" {
 		if viper.GetString("grpc.authKey") != "" {
 			opts.AuthKey = viper.GetString("grpc.authKey")
@@ -55,6 +63,7 @@ func NewConfig(opts *Options) (cfg *Config) {
 	}
 	return &Config{
 		Key:        opts.Key,
+		Name:       opts.Name,
 		IsMaster:   opts.IsMaster,
 		AuthKey:    opts.AuthKey,
 		MaxRunners: opts.MaxRunners,

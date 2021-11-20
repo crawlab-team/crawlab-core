@@ -86,6 +86,7 @@ func (svr NodeServer) Register(ctx context.Context, req *grpc.Request) (res *grp
 			MaxRunners:  nodeInfo.MaxRunners,
 			Status:      constants.NodeStatusRegistered,
 			Active:      true,
+			Enabled:     true,
 		}
 		if node.Name == "" {
 			node.Name = nodeKey
