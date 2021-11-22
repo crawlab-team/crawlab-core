@@ -17,7 +17,7 @@ require (
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gavv/httpexpect/v2 v2.2.0
-	github.com/gin-gonic/gin v1.6.3
+	github.com/gin-gonic/gin v1.7.1
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible

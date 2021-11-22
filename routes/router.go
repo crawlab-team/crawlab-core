@@ -136,6 +136,9 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// login
 	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
 
+	// version
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/version", controllers.VersionController)
+
 	// filer
 	svc.RegisterActionControllerToGroup(groups.FilerGroup, "", controllers.FilerController)
 

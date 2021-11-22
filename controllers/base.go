@@ -24,6 +24,7 @@ const (
 	ControllerIdFiler
 	ControllerIdPluginDo
 	ControllerIdGit
+	ControllerIdVersion
 )
 
 type ControllerId int
