@@ -36,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/thoas/go-funk v0.9.1
 	github.com/ztrue/tracerr v0.3.0
-	go.mongodb.org/mongo-driver v1.4.5
+	go.mongodb.org/mongo-driver v1.8.0
 	go.uber.org/dig v1.10.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b // indirect

@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 )
@@ -324,9 +325,11 @@ func (svc *BaseService) _getUpdateBsonM(update interface{}, fields []string) (re
 		}
 
 		// normalize update bson.M
-		if _, ok := updateBsonM["$set"]; !ok {
-			updateBsonM = bson.M{
-				"$set": updateBsonM,
+		if !svc._containsDollar(updateBsonM) {
+			if _, ok := updateBsonM["$set"]; !ok {
+				updateBsonM = bson.M{
+					"$set": updateBsonM,
+				}
 			}
 		}
 
@@ -361,6 +364,15 @@ func (svc *BaseService) _getUpdateArtifactUpdate(u interfaces.User) (res bson.M)
 
 func (svc *BaseService) _getUserFromArgs(args ...interface{}) (u interfaces.User) {
 	return utils.GetUserFromArgs(args...)
+}
+
+func (svc *BaseService) _containsDollar(updateBsonM bson.M) (ok bool) {
+	for k := range updateBsonM {
+		if strings.HasPrefix(k, "$") {
+			return true
+		}
+	}
+	return false
 }
 
 func NewBaseService(id interfaces.ModelId, opts ...BaseServiceOption) (svc2 interfaces.ModelBaseService) {

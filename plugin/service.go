@@ -3,6 +3,7 @@ package plugin
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
@@ -638,9 +639,18 @@ func (svc *Service) _getPluginBaseUrl() (err error) {
 		svc.pluginBaseUrl = s.Value
 		return nil
 	} else {
-		settingModelSvc, err := svc.clientModelSvc.NewBaseServiceDelegate(interfaces.ModelIdSetting)
-		if err != nil {
-			return err
+		var settingModelSvc interfaces.GrpcClientModelBaseService
+		if err := backoff.Retry(func() error {
+			if svc.clientModelSvc == nil {
+				return errors.New("clientModelSvc is nil")
+			}
+			settingModelSvc, err = svc.clientModelSvc.NewBaseServiceDelegate(interfaces.ModelIdSetting)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, backoff.NewConstantBackOff(1*time.Second)); err != nil {
+			return trace.TraceError(err)
 		}
 		_s, err := settingModelSvc.Get(bson.M{"key": constants.SettingPluginBaseUrl}, nil)
 		if err != nil {
