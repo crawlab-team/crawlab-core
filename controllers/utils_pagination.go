@@ -14,10 +14,11 @@ func GetDefaultPagination() (p *entity.Pagination) {
 }
 
 func GetPagination(c *gin.Context) (p *entity.Pagination, err error) {
-	if err := c.ShouldBindQuery(&p); err != nil {
+	var _p entity.Pagination
+	if err := c.ShouldBindQuery(&_p); err != nil {
 		return GetDefaultPagination(), err
 	}
-	return p, nil
+	return &_p, nil
 }
 
 func MustGetPagination(c *gin.Context) (p *entity.Pagination) {

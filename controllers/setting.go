@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/gin-gonic/gin"
 )
@@ -38,9 +39,9 @@ func (ctr *settingController) Post(c *gin.Context) {
 	// key
 	key := c.Param("id")
 
-	// value
-	var value string
-	if err := c.ShouldBindJSON(&value); err != nil {
+	// settings
+	var s models.Setting
+	if err := c.ShouldBindJSON(&s); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -53,15 +54,15 @@ func (ctr *settingController) Post(c *gin.Context) {
 	}
 
 	// setting
-	s, err := modelSvc.GetSettingByKey(key, nil)
+	_s, err := modelSvc.GetSettingByKey(key, nil)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 
 	// save
-	s.Value = value
-	if err := delegate.NewModelDelegate(s).Save(); err != nil {
+	_s.Value = s.Value
+	if err := delegate.NewModelDelegate(_s).Save(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

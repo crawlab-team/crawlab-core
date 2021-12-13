@@ -621,22 +621,27 @@ func (svc *Service) getPluginBaseUrl() (err error) {
 
 func (svc *Service) _getPluginBaseUrl() (err error) {
 	if svc.cfgSvc.IsMaster() {
-		s, err := svc.modelSvc.GetSettingByKey(constants.SettingPluginBaseUrl, nil)
+		s, err := svc.modelSvc.GetSettingByKey(constants.SettingPlugin, nil)
 		if err != nil {
 			if err.Error() == mongo.ErrNoDocuments.Error() {
+				value := bson.M{}
+				value[constants.SettingPluginBaseUrl] = constants.DefaultSettingPluginBaseUrl
 				s := &models.Setting{
-					Key:   constants.SettingPluginBaseUrl,
-					Value: constants.DefaultSettingPluginBaseUrl,
+					Key:   constants.SettingPlugin,
+					Value: value,
 				}
 				if err := delegate.NewModelDelegate(s).Add(); err != nil {
 					return err
 				}
-				svc.pluginBaseUrl = s.Value
+				svc.pluginBaseUrl = constants.DefaultSettingPluginBaseUrl
 				return nil
 			}
 			return err
 		}
-		svc.pluginBaseUrl = s.Value
+		res, ok := s.Value[constants.SettingPluginBaseUrl]
+		if ok {
+			svc.pluginBaseUrl, _ = res.(string)
+		}
 		return nil
 	} else {
 		var settingModelSvc interfaces.GrpcClientModelBaseService
@@ -660,7 +665,10 @@ func (svc *Service) _getPluginBaseUrl() (err error) {
 		if !ok {
 			return trace.TraceError(errors2.ErrorPluginInvalidType)
 		}
-		svc.pluginBaseUrl = s.Value
+		res, ok := s.Value[constants.SettingPluginBaseUrl]
+		if ok {
+			svc.pluginBaseUrl, _ = res.(string)
+		}
 		return nil
 	}
 }

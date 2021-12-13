@@ -1,6 +1,7 @@
 package constants
 
 const (
+	SettingPlugin        = "plugin"
 	SettingPluginBaseUrl = "plugin_base_url"
 )
 
