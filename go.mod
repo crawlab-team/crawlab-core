@@ -1,6 +1,6 @@
 module github.com/crawlab-team/crawlab-core
 
-go 1.15
+go 1.16
 
 require (
 	github.com/StackExchange/wmi v1.2.0 // indirect
