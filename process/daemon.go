@@ -22,7 +22,8 @@ const (
 
 type Daemon struct {
 	// settings
-	maxErrors int
+	maxErrors   int
+	exitTimeout time.Duration
 
 	// internals
 	errors   int
@@ -39,6 +40,14 @@ func (d *Daemon) GetMaxErrors() (maxErrors int) {
 
 func (d *Daemon) SetMaxErrors(maxErrors int) {
 	d.maxErrors = maxErrors
+}
+
+func (d *Daemon) GetExitTimeout() (timeout time.Duration) {
+	return d.exitTimeout
+}
+
+func (d *Daemon) SetExitTimeout(timeout time.Duration) {
+	d.exitTimeout = timeout
 }
 
 func (d *Daemon) GetCmd() (cmd *exec.Cmd) {
@@ -96,18 +105,19 @@ func (d *Daemon) Start() (err error) {
 
 func (d *Daemon) Stop() {
 	d.stopped = true
-	_ = sys_exec.KillProcess(d.cmd)
+	_ = sys_exec.KillProcessWithTimeout(d.cmd, d.exitTimeout)
 }
 
 func NewProcessDaemon(newCmdFn func() *exec.Cmd, opts ...DaemonOption) (d interfaces.ProcessDaemon) {
 	// daemon
 	d = &Daemon{
-		maxErrors: 5,
-		errors:    0,
-		errMsg:    "",
-		newCmdFn:  newCmdFn,
-		stopped:   false,
-		ch:        make(chan int),
+		maxErrors:   5,
+		exitTimeout: 15 * time.Second,
+		errors:      0,
+		errMsg:      "",
+		newCmdFn:    newCmdFn,
+		stopped:     false,
+		ch:          make(chan int),
 	}
 
 	// apply options
