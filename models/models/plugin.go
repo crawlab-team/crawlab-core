@@ -8,6 +8,7 @@ import (
 type Plugin struct {
 	Id            primitive.ObjectID         `json:"_id" bson:"_id"`
 	Name          string                     `json:"name" bson:"name"`
+	FullName      string                     `json:"full_name" bson:"full_name"`
 	Description   string                     `json:"description" bson:"description"`
 	Proto         string                     `json:"proto" bson:"proto"`
 	Active        bool                       `json:"active" bson:"active"`
@@ -39,6 +40,14 @@ func (p *Plugin) GetName() (name string) {
 
 func (p *Plugin) SetName(name string) {
 	p.Name = name
+}
+
+func (p *Plugin) GetFullName() (fullName string) {
+	return p.FullName
+}
+
+func (p *Plugin) SetFullName(fullName string) {
+	p.FullName = fullName
 }
 
 func (p *Plugin) GetInstallUrl() (url string) {

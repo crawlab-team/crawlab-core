@@ -36,6 +36,16 @@ func getPluginActions() []Action {
 			Path:        "/:id/stop",
 			HandlerFunc: pluginCtx.stop,
 		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/public",
+			HandlerFunc: pluginCtx.getPublicPluginList,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/public/info",
+			HandlerFunc: pluginCtx.getPublicPluginInfo,
+		},
 	}
 }
 
@@ -271,16 +281,22 @@ func (ctx *pluginContext) delete(c *gin.Context) (p *models.Plugin, err error) {
 
 func (ctx *pluginContext) getListWithStatus(c *gin.Context) {
 	// params
+	all := MustGetFilterAll(c)
 	pagination := MustGetPagination(c)
 	query := MustGetFilterQuery(c)
 	sort := MustGetSortOption(c)
 
+	// options
+	opts := &mongo.FindOptions{
+		Sort: sort,
+	}
+	if !all {
+		opts.Skip = pagination.Size * (pagination.Page - 1)
+		opts.Limit = pagination.Size
+	}
+
 	// get list
-	list, err := ctx.modelPluginSvc.GetList(query, &mongo.FindOptions{
-		Sort:  sort,
-		Skip:  pagination.Size * (pagination.Page - 1),
-		Limit: pagination.Size,
-	})
+	list, err := ctx.modelPluginSvc.GetList(query, opts)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			HandleErrorNotFound(c, err)
@@ -373,6 +389,25 @@ func (ctx *pluginContext) getListWithStatus(c *gin.Context) {
 
 	// response
 	HandleSuccessWithListData(c, data, total)
+}
+
+func (ctx *pluginContext) getPublicPluginList(c *gin.Context) {
+	data, err := ctx.pluginSvc.GetPublicPluginList()
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccessWithData(c, data)
+}
+
+func (ctx *pluginContext) getPublicPluginInfo(c *gin.Context) {
+	fullName := c.Query("full_name")
+	data, err := ctx.pluginSvc.GetPublicPluginInfo(fullName)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccessWithData(c, data)
 }
 
 func (ctx *pluginContext) _getWorkerNodes() (nodes []models.Node, err error) {

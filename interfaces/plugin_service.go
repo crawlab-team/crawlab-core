@@ -14,4 +14,6 @@ type PluginService interface {
 	UninstallPlugin(id primitive.ObjectID) (err error)
 	StartPlugin(id primitive.ObjectID) (err error)
 	StopPlugin(id primitive.ObjectID) (err error)
+	GetPublicPluginList() (res interface{}, err error)
+	GetPublicPluginInfo(fullName string) (res interface{}, err error)
 }

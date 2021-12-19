@@ -8,6 +8,7 @@ import (
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
@@ -21,6 +22,8 @@ import (
 	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/crawlab-team/go-trace"
 	"github.com/google/uuid"
+	"github.com/imroc/req"
+	"github.com/joeshaw/multierror"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,6 +43,8 @@ type Service struct {
 	fsPathBase      string
 	monitorInterval time.Duration
 	pluginBaseUrl   string
+	githubPublicOrg string
+	repoPrefix      string
 
 	// dependencies
 	cfgSvc                     interfaces.NodeConfigService
@@ -66,7 +71,7 @@ func (svc *Service) Start() {
 	}
 
 	// get global settings
-	if err := svc.getPluginBaseUrl(); err != nil {
+	if err := svc.getGlobalSettings(); err != nil {
 		panic(err)
 	}
 
@@ -112,14 +117,14 @@ func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 	_ = svc.savePluginStatus(ps)
 
 	// get plugin base url
-	if err := svc.getPluginBaseUrl(); err != nil {
+	if err := svc.getGlobalSettings(); err != nil {
 		return err
 	}
 
 	// install
 	switch p.InstallType {
-	case constants.PluginInstallTypeName:
-		err = svc.installName(p)
+	case constants.PluginInstallTypePublic:
+		err = svc.installPublic(p)
 	case constants.PluginInstallTypeGit:
 		err = svc.installGit(p)
 	case constants.PluginInstallTypeLocal:
@@ -144,6 +149,11 @@ func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 			break
 		}
 		time.Sleep(1 * time.Second)
+	}
+
+	// refresh plugin
+	if err := delegate.NewModelDelegate(p).Refresh(); err != nil {
+		trace.PrintError(err)
 	}
 
 	if p.AutoStart {
@@ -289,8 +299,44 @@ func (svc *Service) StopPlugin(id primitive.ObjectID) (err error) {
 	return nil
 }
 
-func (svc *Service) installName(p interfaces.Plugin) (err error) {
-	p.SetInstallUrl(fmt.Sprintf("%s%s", svc.pluginBaseUrl, p.GetName()))
+func (svc *Service) GetPublicPluginList() (res interface{}, err error) {
+	// get from db cache
+	fn := svc._getPublicPluginList
+	s, err := utils.GetFromDbCache(constants.CacheKeyPublicPlugins, fn)
+	if err != nil {
+		return nil, err
+	}
+
+	// deserialize
+	var repos []entity.PublicPlugin
+	if err := json.Unmarshal([]byte(s), &repos); err != nil {
+		return nil, err
+	}
+
+	return repos, nil
+}
+
+func (svc *Service) GetPublicPluginInfo(fullName string) (res interface{}, err error) {
+	// get from db cache
+	fn := func() (string, error) {
+		return svc._getPublicPluginInfo(fullName)
+	}
+	s, err := utils.GetFromDbCache(constants.CacheKeyPublicPluginInfo+":"+fullName, fn)
+	if err != nil {
+		return nil, err
+	}
+
+	// deserialize
+	var info bson.M
+	if err := json.Unmarshal([]byte(s), &info); err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}
+
+func (svc *Service) installPublic(p interfaces.Plugin) (err error) {
+	p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.pluginBaseUrl, p.GetFullName()))
 	return svc.installGit(p)
 }
 
@@ -317,6 +363,11 @@ func (svc *Service) installGit(p interfaces.Plugin) (err error) {
 	_p, err := svc.getPluginFromJson(pluginPath)
 	if err != nil {
 		return err
+	}
+
+	// set plugin name
+	if p.GetFullName() != "" && _p.GetFullName() == "" {
+		_p.SetFullName(p.GetFullName())
 	}
 
 	// fill plugin data and save to db
@@ -432,6 +483,9 @@ func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsServi
 			env := fmt.Sprintf("%s=%s", envName, envValue)
 			cmd.Env = append(cmd.Env, env)
 		}
+
+		// node key
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", "CRAWLAB_NODE_KEY", svc.cfgSvc.GetNodeKey()))
 
 		// logging
 		stdout, _ := cmd.StdoutPipe()
@@ -615,17 +669,70 @@ func (svc *Service) _getNode() (err error) {
 	return nil
 }
 
-func (svc *Service) getPluginBaseUrl() (err error) {
-	return backoff.RetryNotify(svc._getPluginBaseUrl, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("plugin service get global settings"))
+func (svc *Service) getGlobalSettings() (err error) {
+	return backoff.RetryNotify(svc._getGlobalSettings, backoff.NewExponentialBackOff(), utils.BackoffErrorNotify("plugin service get global settings"))
 }
 
-func (svc *Service) _getPluginBaseUrl() (err error) {
+func (svc *Service) getPublicPluginRepo(fullName string) (res bson.M, err error) {
+	// http request
+	url := fmt.Sprintf("https://api.github.com/repos/%s", fullName)
+	r, err := req.Get(url)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// deserialize
+	bytes := r.Bytes()
+	if err := json.Unmarshal(bytes, &res); err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	return res, nil
+}
+
+func (svc *Service) getPublicPluginPluginJson(fullName string) (res bson.M, err error) {
+	// http request
+	url := fmt.Sprintf("https://api.github.com/repos/%s/contents/plugin.json", fullName)
+	headers := req.Header{
+		"Accept": "application/vnd.github.VERSION.raw",
+	}
+	r, err := req.Get(url, headers)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// deserialize
+	bytes := r.Bytes()
+	if err := json.Unmarshal(bytes, &res); err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	return res, nil
+}
+
+func (svc *Service) getPublicPluginReadme(fullName string) (res string, err error) {
+	// http request
+	url := fmt.Sprintf("https://api.github.com/repos/%s/contents/README.md", fullName)
+	headers := req.Header{
+		"Accept": "application/vnd.github.VERSION.raw",
+	}
+	r, err := req.Get(url, headers)
+	if err != nil {
+		return "", trace.TraceError(err)
+	}
+
+	return r.String(), nil
+}
+
+func (svc *Service) _getGlobalSettings() (err error) {
 	if svc.cfgSvc.IsMaster() {
 		s, err := svc.modelSvc.GetSettingByKey(constants.SettingPlugin, nil)
 		if err != nil {
 			if err.Error() == mongo.ErrNoDocuments.Error() {
 				value := bson.M{}
 				value[constants.SettingPluginBaseUrl] = constants.DefaultSettingPluginBaseUrl
+				value[constants.SettingPluginGithubPublicOrg] = constants.DefaultSettingPluginGithubPublicOrg
+				value[constants.SettingPluginRepoPrefix] = constants.DefaultSettingPluginRepoPrefix
 				s := &models.Setting{
 					Key:   constants.SettingPlugin,
 					Value: value,
@@ -634,6 +741,8 @@ func (svc *Service) _getPluginBaseUrl() (err error) {
 					return err
 				}
 				svc.pluginBaseUrl = constants.DefaultSettingPluginBaseUrl
+				svc.githubPublicOrg = constants.DefaultSettingPluginGithubPublicOrg
+				svc.repoPrefix = constants.DefaultSettingPluginRepoPrefix
 				return nil
 			}
 			return err
@@ -641,6 +750,14 @@ func (svc *Service) _getPluginBaseUrl() (err error) {
 		res, ok := s.Value[constants.SettingPluginBaseUrl]
 		if ok {
 			svc.pluginBaseUrl, _ = res.(string)
+		}
+		res, ok = s.Value[constants.SettingPluginGithubPublicOrg]
+		if ok {
+			svc.githubPublicOrg, _ = res.(string)
+		}
+		res, ok = s.Value[constants.SettingPluginRepoPrefix]
+		if ok {
+			svc.repoPrefix, _ = res.(string)
 		}
 		return nil
 	} else {
@@ -657,7 +774,7 @@ func (svc *Service) _getPluginBaseUrl() (err error) {
 		}, backoff.NewConstantBackOff(1*time.Second)); err != nil {
 			return trace.TraceError(err)
 		}
-		_s, err := settingModelSvc.Get(bson.M{"key": constants.SettingPluginBaseUrl}, nil)
+		_s, err := settingModelSvc.Get(bson.M{"key": constants.SettingPlugin}, nil)
 		if err != nil {
 			return err
 		}
@@ -669,8 +786,117 @@ func (svc *Service) _getPluginBaseUrl() (err error) {
 		if ok {
 			svc.pluginBaseUrl, _ = res.(string)
 		}
+		res, ok = s.Value[constants.SettingPluginGithubPublicOrg]
+		if ok {
+			svc.githubPublicOrg, _ = res.(string)
+		}
+		res, ok = s.Value[constants.SettingPluginRepoPrefix]
+		if ok {
+			svc.repoPrefix, _ = res.(string)
+		}
 		return nil
 	}
+}
+
+func (svc *Service) _getPublicPluginList() (res string, err error) {
+	// http request
+	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos", svc.githubPublicOrg)
+	r, err := req.Get(url)
+	if err != nil {
+		return "", trace.TraceError(err)
+	}
+
+	// deserialize
+	var allRepos []entity.PublicPlugin
+	bytes := r.Bytes()
+	if err := json.Unmarshal(bytes, &allRepos); err != nil {
+		return "", trace.TraceError(err)
+	}
+
+	// filter
+	var repos []entity.PublicPlugin
+	for _, repo := range allRepos {
+		if strings.HasPrefix(repo.Name, svc.repoPrefix) {
+			repos = append(repos, repo)
+		}
+	}
+
+	// serialize
+	resBytes, err := json.Marshal(repos)
+	if err != nil {
+		return "", trace.TraceError(err)
+	}
+
+	return string(resBytes), nil
+}
+
+func (svc *Service) _getPublicPluginInfo(fullName string) (res string, err error) {
+	if err := svc.getGlobalSettings(); err != nil {
+		return "", err
+	}
+
+	// wait group
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+
+	// errors
+	var errs multierror.Errors
+
+	// repo
+	var repo interface{}
+	go func() {
+		var err error
+		repo, err = svc.getPublicPluginRepo(fullName)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		wg.Done()
+	}()
+
+	// plugin.json
+	var pluginJson interface{}
+	go func() {
+		var err error
+		pluginJson, err = svc.getPublicPluginPluginJson(fullName)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		wg.Done()
+	}()
+
+	// readme
+	var readme string
+	go func() {
+		var err error
+		readme, err = svc.getPublicPluginReadme(fullName)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		wg.Done()
+	}()
+
+	// wait
+	wg.Wait()
+
+	// has errors
+	if len(errs) > 0 {
+		return "", errs.Err()
+	}
+
+	// res data
+	resData := bson.M{
+		"repo":       repo,
+		"pluginJson": pluginJson,
+		"readme":     readme,
+	}
+
+	// serialize
+	resBytes, err := json.Marshal(resData)
+	if err != nil {
+		return "", err
+	}
+
+	return string(resBytes), nil
 }
 
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {
@@ -678,7 +904,7 @@ func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error)
 	svc := &Service{
 		fsPathBase:      DefaultPluginFsPathBase,
 		monitorInterval: 15 * time.Second,
-		pluginBaseUrl:   "https://github.com/crawlab-team/plugin-",
+		pluginBaseUrl:   "https://github.com/crawlab-team",
 		daemonMap:       sync.Map{},
 	}
 

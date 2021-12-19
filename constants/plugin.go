@@ -22,9 +22,9 @@ const (
 )
 
 const (
-	PluginInstallTypeName  = "name"
-	PluginInstallTypeGit   = "git"
-	PluginInstallTypeLocal = "local"
+	PluginInstallTypePublic = "public"
+	PluginInstallTypeGit    = "git"
+	PluginInstallTypeLocal  = "local"
 )
 
 const (

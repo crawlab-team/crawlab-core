@@ -17,10 +17,10 @@ type Service struct {
 	keys     []string
 	includes []string
 	excludes []string
-	chs      []chan interfaces.EventData
+	chs      []*chan interfaces.EventData
 }
 
-func (svc *Service) Register(key, include, exclude string, ch chan interfaces.EventData) {
+func (svc *Service) Register(key, include, exclude string, ch *chan interfaces.EventData) {
 	svc.keys = append(svc.keys, key)
 	svc.includes = append(svc.includes, include)
 	svc.excludes = append(svc.excludes, exclude)
@@ -48,7 +48,7 @@ func (svc *Service) SendEvent(eventName string, data ...interface{}) {
 			continue
 		}
 		if !matchedInclude {
-			return
+			continue
 		}
 
 		// exclude
@@ -59,18 +59,20 @@ func (svc *Service) SendEvent(eventName string, data ...interface{}) {
 			continue
 		}
 		if matchedExclude {
-			return
+			continue
 		}
 
 		// send event
 		utils.LogDebug(fmt.Sprintf("key %s matches event %s", key, eventName))
 		ch := svc.chs[i]
-		for _, d := range data {
-			ch <- &entity.EventData{
-				Event: eventName,
-				Data:  d,
+		go func(ch *chan interfaces.EventData) {
+			for _, d := range data {
+				*ch <- &entity.EventData{
+					Event: eventName,
+					Data:  d,
+				}
 			}
-		}
+		}(ch)
 	}
 }
 
@@ -80,7 +82,7 @@ func NewEventService() (svc interfaces.EventService) {
 	}
 
 	svc = &Service{
-		chs:  []chan interfaces.EventData{},
+		chs:  []*chan interfaces.EventData{},
 		keys: []string{},
 	}
 

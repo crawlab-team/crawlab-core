@@ -47,8 +47,8 @@ func (svr PluginServer) Register(ctx context.Context, req *grpc.PluginRequest) (
 		if err != nil {
 			return nil, trace.TraceError(err)
 		}
-		svr.eventSvc.Register("plugin:"+req.Name+":"+req.NodeKey, p.EventKey.Include, p.EventKey.Exclude, ch)
-		go svr.handleEvent(req.Name, req.NodeKey, ch)
+		svr.eventSvc.Register("plugin:"+req.Name+":"+req.NodeKey, p.EventKey.Include, p.EventKey.Exclude, &ch)
+		go svr.handleEvent(req.Name, req.NodeKey, &ch)
 	default:
 		return nil, trace.TraceError(errors.ErrorEventUnknownAction)
 	}
@@ -117,14 +117,15 @@ func (svr PluginServer) deserialize(msg *grpc.StreamMessage) (data entity.Stream
 }
 
 // handleEvent receives events from channel and send to plugins
-func (svr PluginServer) handleEvent(pluginName, nodeKey string, ch chan interfaces.EventData) {
+func (svr PluginServer) handleEvent(pluginName, nodeKey string, ch *chan interfaces.EventData) {
 	sub, err := svr.server.GetSubscribe("plugin:" + pluginName + ":" + nodeKey)
 	if err != nil {
+		trace.PrintError(err)
 		return
 	}
 	for {
 		// model data
-		eventData := <-ch
+		eventData := <-*ch
 		vData, err := json.Marshal(eventData.GetData())
 		if err != nil {
 			trace.PrintError(err)

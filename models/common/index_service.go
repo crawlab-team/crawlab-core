@@ -1,6 +1,7 @@
 package common
 
 import (
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -117,5 +118,13 @@ func CreateIndexes() {
 		{Keys: bson.M{"plugin_id": 1}},
 		{Keys: bson.M{"node_id": 1}},
 		{Keys: bson.D{{"plugin_id", 1}, {"node_id", 1}}, Options: options.Index().SetUnique(true)},
+	})
+
+	// cache
+	mongo.GetMongoCol(constants.CacheColName).MustCreateIndexes([]mongo2.IndexModel{
+		{
+			Keys:    bson.M{constants.CacheColTime: 1},
+			Options: options.Index().SetExpireAfterSeconds(3600 * 24),
+		},
 	})
 }

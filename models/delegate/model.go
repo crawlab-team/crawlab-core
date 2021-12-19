@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
+	"reflect"
 	"time"
 )
 
@@ -296,7 +297,7 @@ func (d *ModelDelegate) upsertArtifact() (err error) {
 			// new artifact
 			d.a.GetSys().SetCreateTs(time.Now())
 			d.a.GetSys().SetUpdateTs(time.Now())
-			if d.u != nil {
+			if d.u != nil && !reflect.ValueOf(d.u).IsZero() {
 				d.a.GetSys().SetCreateUid(d.u.GetId())
 				d.a.GetSys().SetUpdateUid(d.u.GetId())
 			}
