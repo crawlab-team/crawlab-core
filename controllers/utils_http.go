@@ -8,13 +8,23 @@ import (
 	"net/http"
 )
 
-func HandleError(statusCode int, c *gin.Context, err error) {
-	_ = trace.TraceError(err)
+func handleError(statusCode int, c *gin.Context, err error, print bool) {
+	if print {
+		trace.PrintError(err)
+	}
 	c.AbortWithStatusJSON(statusCode, entity.Response{
 		Status:  constants.HttpResponseStatusOk,
 		Message: constants.HttpResponseMessageError,
 		Error:   err.Error(),
 	})
+}
+
+func HandleError(statusCode int, c *gin.Context, err error) {
+	handleError(statusCode, c, err, true)
+}
+
+func HandleErrorNoPrint(statusCode int, c *gin.Context, err error) {
+	handleError(statusCode, c, err, false)
 }
 
 func HandleErrorBadRequest(c *gin.Context, err error) {
@@ -27,6 +37,10 @@ func HandleErrorUnauthorized(c *gin.Context, err error) {
 
 func HandleErrorNotFound(c *gin.Context, err error) {
 	HandleError(http.StatusNotFound, c, err)
+}
+
+func HandleErrorNotFoundNoPrint(c *gin.Context, err error) {
+	HandleErrorNoPrint(http.StatusNotFound, c, err)
 }
 
 func HandleErrorInternalServerError(c *gin.Context, err error) {

@@ -3,6 +3,7 @@ package controllers
 import (
 	"bufio"
 	"fmt"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/imroc/req"
 	"github.com/spf13/viper"
@@ -91,6 +92,13 @@ func (ctx *filerContext) do(c *gin.Context) {
 		return
 	}
 
+	// status code check
+	statusCode := res.Response().StatusCode
+	if statusCode == http.StatusNotFound {
+		HandleErrorNotFoundNoPrint(c, errors.ErrorControllerFilerNotFound)
+		return
+	}
+
 	// response
 	for k, v := range res.Response().Header {
 		if len(v) > 0 {
@@ -98,7 +106,7 @@ func (ctx *filerContext) do(c *gin.Context) {
 		}
 	}
 	_, _ = c.Writer.Write(res.Bytes())
-	c.AbortWithStatus(res.Response().StatusCode)
+	c.AbortWithStatus(statusCode)
 }
 
 var _filerCtx *filerContext
