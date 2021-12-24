@@ -129,11 +129,11 @@ func (svr *Server) SetConfigPath(path string) {
 func (svr *Server) GetSubscribe(key string) (sub interfaces.GrpcSubscribe, err error) {
 	res, ok := subs.Load(key)
 	if !ok {
-		return nil, errors.ErrorGrpcStreamNotFound
+		return nil, trace.TraceError(errors.ErrorGrpcStreamNotFound)
 	}
 	sub, ok = res.(interfaces.GrpcSubscribe)
 	if !ok {
-		return nil, errors.ErrorGrpcInvalidType
+		return nil, trace.TraceError(errors.ErrorGrpcInvalidType)
 	}
 	return sub, nil
 }

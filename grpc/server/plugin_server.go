@@ -17,6 +17,7 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.uber.org/dig"
 	"io"
+	"strings"
 )
 
 type PluginServer struct {
@@ -154,6 +155,9 @@ func (svr PluginServer) handleEvent(pluginName, nodeKey string, ch *chan interfa
 
 		// send
 		if err := sub.GetStream().Send(msg); err != nil {
+			if strings.HasSuffix(err.Error(), "transport is closing") {
+				return
+			}
 			trace.PrintError(err)
 		}
 		utils.LogDebug(fmt.Sprintf("msg: %v", msg))

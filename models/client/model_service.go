@@ -24,10 +24,12 @@ func (d *ServiceDelegate) SetConfigPath(path string) {
 }
 
 func (d *ServiceDelegate) NewBaseServiceDelegate(id interfaces.ModelId) (svc interfaces.GrpcClientModelBaseService, err error) {
-	return NewBaseServiceDelegate(
-		WithBaseServiceModelId(id),
-		WithBaseServiceConfigPath(d.cfgPath),
-	)
+	var opts []ModelBaseServiceDelegateOption
+	opts = append(opts, WithBaseServiceModelId(id))
+	if d.cfgPath != "" {
+		opts = append(opts, WithBaseServiceConfigPath(d.cfgPath))
+	}
+	return NewBaseServiceDelegate(opts...)
 }
 
 func NewServiceDelegate(opts ...ModelServiceDelegateOption) (svc2 interfaces.GrpcClientModelService, err error) {

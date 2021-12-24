@@ -10,6 +10,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
@@ -19,6 +20,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/process"
 	"github.com/crawlab-team/crawlab-core/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
+	grpc "github.com/crawlab-team/crawlab-grpc"
 	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/crawlab-team/go-trace"
 	"github.com/google/uuid"
@@ -42,9 +44,7 @@ type Service struct {
 	// settings variables
 	fsPathBase      string
 	monitorInterval time.Duration
-	pluginBaseUrl   string
-	githubPublicOrg string
-	repoPrefix      string
+	ps              entity.PluginSetting
 
 	// dependencies
 	cfgSvc                     interfaces.NodeConfigService
@@ -53,6 +53,7 @@ type Service struct {
 	clientModelNodeSvc         interfaces.GrpcClientModelNodeService
 	clientModelPluginSvc       interfaces.GrpcClientModelPluginService
 	clientModelPluginStatusSvc interfaces.GrpcClientModelPluginStatusService
+	svr                        interfaces.GrpcServer
 
 	// internals
 	daemonMap sync.Map
@@ -92,10 +93,6 @@ func (svc *Service) SetFsPathBase(path string) {
 
 func (svc *Service) SetMonitorInterval(interval time.Duration) {
 	svc.monitorInterval = interval
-}
-
-func (svc *Service) SetPluginBaseUrl(baseUrl string) {
-	svc.pluginBaseUrl = baseUrl
 }
 
 func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
@@ -159,6 +156,11 @@ func (svc *Service) InstallPlugin(id primitive.ObjectID) (err error) {
 	if p.AutoStart {
 		// start plugin
 		_ = svc.StartPlugin(p.Id)
+
+		// send start plugin messages to active worker nodes if deploy mode is all
+		if p.DeployMode == constants.PluginDeployModeAll {
+			_ = svc.sendStartPluginMessages(p)
+		}
 	} else {
 		// save status (stopped)
 		ps.Status = constants.PluginStatusStopped
@@ -208,10 +210,18 @@ func (svc *Service) UninstallPlugin(id primitive.ObjectID) (err error) {
 }
 
 func (svc *Service) StartPlugin(id primitive.ObjectID) (err error) {
+	log.Debugf("[PluginService] starting plugin[%s]", id.Hex())
+
 	// plugin
 	p, err := svc.getPluginById(id)
 	if err != nil {
 		return err
+	}
+
+	// check whether the plugin is allowed
+	if !svc.isAllowed(p) {
+		log.Debugf("[PluginService] plugin[%s] is not allowed", p.Id.Hex())
+		return
 	}
 
 	// plugin status
@@ -232,7 +242,7 @@ func (svc *Service) StartPlugin(id primitive.ObjectID) (err error) {
 	}
 
 	// sync to workspace
-	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+	if err := svc.syncToWorkspace(fsSvc); err != nil {
 		return err
 	}
 
@@ -336,7 +346,7 @@ func (svc *Service) GetPublicPluginInfo(fullName string) (res interface{}, err e
 }
 
 func (svc *Service) installPublic(p interfaces.Plugin) (err error) {
-	p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.pluginBaseUrl, p.GetFullName()))
+	p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetFullName()))
 	return svc.installGit(p)
 }
 
@@ -487,6 +497,11 @@ func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsServi
 		// node key
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", "CRAWLAB_NODE_KEY", svc.cfgSvc.GetNodeKey()))
 
+		// goproxy
+		if svc.ps.GoProxy != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", "GOPROXY", svc.ps.GoProxy))
+		}
+
 		// logging
 		stdout, _ := cmd.StdoutPipe()
 		stderr, _ := cmd.StderrPipe()
@@ -563,10 +578,12 @@ func (svc *Service) getPluginById(id primitive.ObjectID) (p *models.Plugin, err 
 		}
 		return p, nil
 	} else {
+		log.Debugf("[PluginService] get plugin by id[%s]", id.Hex())
 		_p, err := svc.clientModelPluginSvc.GetPluginById(id)
 		if err != nil {
-			return nil, err
+			return nil, trace.TraceError(err)
 		}
+		log.Debugf("[PluginService] plugin: %v", _p)
 		p, ok := _p.(*models.Plugin)
 		if !ok {
 			return nil, trace.TraceError(errors2.ErrorPluginInvalidType)
@@ -597,11 +614,13 @@ func (svc *Service) getPluginStatus(pluginId primitive.ObjectID) (ps *models.Plu
 			"node_id":   svc.n.Id,
 		}, nil)
 		if err != nil {
+			log.Debugf("[PluginService] error: %v", err)
 			// add if not exists
 			if strings.Contains(err.Error(), mongo.ErrNoDocuments.Error()) {
 				return svc.addPluginStatus(pluginId, svc.n.Id)
 			}
 		}
+		log.Debugf("[PluginService] plugin status: %v", _ps)
 		ps, ok := _ps.(*models.PluginStatus)
 		if !ok {
 			return nil, trace.TraceError(errors2.ErrorPluginInvalidType)
@@ -627,6 +646,7 @@ func (svc *Service) savePluginStatus(ps interfaces.PluginStatus) (err error) {
 }
 
 func (svc *Service) addPluginStatus(pid primitive.ObjectID, nid primitive.ObjectID) (ps *models.PluginStatus, err error) {
+	log.Debugf("[PluginService] add plugin status[pid: %s; nid: %s]", pid.Hex(), nid.Hex())
 	ps = &models.PluginStatus{
 		PluginId: pid,
 		NodeId:   nid,
@@ -729,36 +749,23 @@ func (svc *Service) _getGlobalSettings() (err error) {
 		s, err := svc.modelSvc.GetSettingByKey(constants.SettingPlugin, nil)
 		if err != nil {
 			if err.Error() == mongo.ErrNoDocuments.Error() {
-				value := bson.M{}
-				value[constants.SettingPluginBaseUrl] = constants.DefaultSettingPluginBaseUrl
-				value[constants.SettingPluginGithubPublicOrg] = constants.DefaultSettingPluginGithubPublicOrg
-				value[constants.SettingPluginRepoPrefix] = constants.DefaultSettingPluginRepoPrefix
+				svc.ps = entity.PluginSetting{
+					PluginBaseUrl:   constants.DefaultSettingPluginBaseUrl,
+					GithubPublicOrg: constants.DefaultSettingPluginGithubPublicOrg,
+					RepoPrefix:      constants.DefaultSettingPluginRepoPrefix,
+				}
 				s := &models.Setting{
 					Key:   constants.SettingPlugin,
-					Value: value,
+					Value: svc.ps.Value(),
 				}
 				if err := delegate.NewModelDelegate(s).Add(); err != nil {
 					return err
 				}
-				svc.pluginBaseUrl = constants.DefaultSettingPluginBaseUrl
-				svc.githubPublicOrg = constants.DefaultSettingPluginGithubPublicOrg
-				svc.repoPrefix = constants.DefaultSettingPluginRepoPrefix
 				return nil
 			}
 			return err
 		}
-		res, ok := s.Value[constants.SettingPluginBaseUrl]
-		if ok {
-			svc.pluginBaseUrl, _ = res.(string)
-		}
-		res, ok = s.Value[constants.SettingPluginGithubPublicOrg]
-		if ok {
-			svc.githubPublicOrg, _ = res.(string)
-		}
-		res, ok = s.Value[constants.SettingPluginRepoPrefix]
-		if ok {
-			svc.repoPrefix, _ = res.(string)
-		}
+		svc.ps = entity.NewPluginSetting(s.Value)
 		return nil
 	} else {
 		var settingModelSvc interfaces.GrpcClientModelBaseService
@@ -782,25 +789,14 @@ func (svc *Service) _getGlobalSettings() (err error) {
 		if !ok {
 			return trace.TraceError(errors2.ErrorPluginInvalidType)
 		}
-		res, ok := s.Value[constants.SettingPluginBaseUrl]
-		if ok {
-			svc.pluginBaseUrl, _ = res.(string)
-		}
-		res, ok = s.Value[constants.SettingPluginGithubPublicOrg]
-		if ok {
-			svc.githubPublicOrg, _ = res.(string)
-		}
-		res, ok = s.Value[constants.SettingPluginRepoPrefix]
-		if ok {
-			svc.repoPrefix, _ = res.(string)
-		}
+		svc.ps = entity.NewPluginSetting(s.Value)
 		return nil
 	}
 }
 
 func (svc *Service) _getPublicPluginList() (res string, err error) {
 	// http request
-	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos", svc.githubPublicOrg)
+	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos", svc.ps.GithubPublicOrg)
 	r, err := req.Get(url)
 	if err != nil {
 		return "", trace.TraceError(err)
@@ -816,7 +812,7 @@ func (svc *Service) _getPublicPluginList() (res string, err error) {
 	// filter
 	var repos []entity.PublicPlugin
 	for _, repo := range allRepos {
-		if strings.HasPrefix(repo.Name, svc.repoPrefix) {
+		if strings.HasPrefix(repo.Name, svc.ps.RepoPrefix) {
 			repos = append(repos, repo)
 		}
 	}
@@ -899,12 +895,52 @@ func (svc *Service) _getPublicPluginInfo(fullName string) (res string, err error
 	return string(resBytes), nil
 }
 
+func (svc *Service) sendStartPluginMessages(p *models.Plugin) (err error) {
+	if !svc.cfgSvc.IsMaster() || svc.svr == nil {
+		return trace.TraceError(errors2.ErrorPluginForbidden)
+	}
+	log.Infof("[PluginService] sending start plugin messages")
+	ns, err := svc.modelSvc.GetNodeList(bson.M{
+		"is_master": false,
+		"active":    true,
+	}, nil)
+	if err != nil {
+		return err
+	}
+	log.Infof(fmt.Sprintf("[PluginService] worker nodes: %d", len(ns)))
+	for _, n := range ns {
+		if err := svc.svr.SendStreamMessageWithData("node:"+n.Key, grpc.StreamMessageCode_START_PLUGIN, p); err != nil {
+			trace.PrintError(err)
+		}
+	}
+	return nil
+}
+
+func (svc *Service) syncToWorkspace(fsSvc interfaces.PluginFsService) (err error) {
+	op := func() error {
+		return svc._syncToWorkspace(fsSvc)
+	}
+	b := backoff.NewExponentialBackOff()
+	b.MaxElapsedTime = 5 * time.Minute
+	return backoff.Retry(op, b)
+}
+
+func (svc *Service) _syncToWorkspace(fsSvc interfaces.PluginFsService) (err error) {
+	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (svc *Service) isAllowed(p *models.Plugin) (ok bool) {
+	return p.DeployMode == constants.PluginDeployModeAll || svc.cfgSvc.IsMaster()
+}
+
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {
 	// service
 	svc := &Service{
 		fsPathBase:      DefaultPluginFsPathBase,
 		monitorInterval: 15 * time.Second,
-		pluginBaseUrl:   "https://github.com/crawlab-team",
 		daemonMap:       sync.Map{},
 	}
 
@@ -946,6 +982,14 @@ func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error)
 		return nil, err
 	}
 
+	// grpc server (master node only)
+	if svc.cfgSvc.IsMaster() {
+		svc.svr, err = server.GetServer(svc.cfgSvc.GetConfigPath())
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// initialize
 	if err := svc.Init(); err != nil {
 		return nil, err
@@ -964,12 +1008,6 @@ func GetPluginService(path string, opts ...Option) (svc interfaces.PluginService
 		if ok {
 			return svc, nil
 		}
-	}
-
-	// plugin name base url
-	pluginBaseUrl := viper.GetString("plugin.baseUrl")
-	if pluginBaseUrl != "" {
-		opts = append(opts, WithPluginBaseUrl(pluginBaseUrl))
 	}
 
 	// service

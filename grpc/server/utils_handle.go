@@ -7,7 +7,7 @@ import (
 )
 
 func HandleError(err error) (res *grpc.Response, err2 error) {
-	_ = trace.TraceError(err)
+	trace.PrintError(err)
 	return &grpc.Response{
 		Code:  grpc.ResponseCode_ERROR,
 		Error: err.Error(),

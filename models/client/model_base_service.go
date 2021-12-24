@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -46,6 +47,7 @@ func (d *BaseServiceDelegate) SetConfigPath(path string) {
 }
 
 func (d *BaseServiceDelegate) GetById(id primitive.ObjectID) (doc interfaces.Model, err error) {
+	log.Debugf("[BaseServiceDelegate] get by id[%s]", id.Hex())
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Id: id})
@@ -53,10 +55,12 @@ func (d *BaseServiceDelegate) GetById(id primitive.ObjectID) (doc interfaces.Mod
 	if c == nil {
 		return nil, trace.TraceError(errors.ErrorModelNilPointer)
 	}
+	log.Debugf("[BaseServiceDelegate] get by id[%s] req: %v", id.Hex(), req)
 	res, err := c.GetById(ctx, req)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
+	log.Debugf("[BaseServiceDelegate] get by id[%s] res: %v", id.Hex(), res)
 	return NewBasicBinder(d.id, res).Bind()
 }
 
@@ -207,7 +211,9 @@ func (d *BaseServiceDelegate) getModelBaseServiceClient() (c grpc.ModelBaseServi
 	if err := backoff.Retry(func() (err error) {
 		c = d.c.GetModelBaseServiceClient()
 		if c == nil {
-			return errors2.New("unable to get model base service client")
+			err = errors2.New("unable to get model base service client")
+			log.Debugf("[BaseServiceDelegate] err: %v", err)
+			return err
 		}
 		return nil
 	}, backoff.NewConstantBackOff(1*time.Second)); err != nil {

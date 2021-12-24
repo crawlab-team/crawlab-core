@@ -111,6 +111,7 @@ func (svc *WorkerService) Recv() {
 }
 
 func (svc *WorkerService) handleStreamMessage(msg *grpc.StreamMessage) (err error) {
+	log.Debugf("[WorkerService] handle msg: %v", msg)
 	switch msg.Code {
 	case grpc.StreamMessageCode_PING:
 		if _, err := svc.client.GetNodeClient().SendHeartbeat(context.Background(), svc.client.NewRequest(svc.cfgSvc.GetBasicNodeInfo())); err != nil {

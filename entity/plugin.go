@@ -1,6 +1,11 @@
 package entity
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"encoding/json"
+	"github.com/crawlab-team/crawlab-core/constants"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type PluginUIComponent struct {
 	Name        string   `json:"name" bson:"name"`
@@ -33,4 +38,33 @@ type PluginSubStatus struct {
 	Status string             `json:"status" bson:"status"`
 	Pid    int                `json:"pid" bson:"pid"`
 	Error  string             `json:"error" bson:"error"`
+}
+
+type PluginSetting struct {
+	PluginBaseUrl   string `json:"plugin_base_url"`
+	GithubPublicOrg string `json:"github_public_org"`
+	RepoPrefix      string `json:"repo_prefix"`
+	GoProxy         string `json:"go_proxy"`
+}
+
+func (ps *PluginSetting) Value() (value bson.M) {
+	data, _ := json.Marshal(ps)
+	_ = json.Unmarshal(data, &value)
+	return value
+}
+
+func NewPluginSetting(value bson.M) (ps PluginSetting) {
+	res, ok := value[constants.SettingPluginBaseUrl]
+	if ok {
+		ps.PluginBaseUrl, _ = res.(string)
+	}
+	res, ok = value[constants.SettingPluginGithubPublicOrg]
+	if ok {
+		ps.GithubPublicOrg, _ = res.(string)
+	}
+	res, ok = value[constants.SettingPluginRepoPrefix]
+	if ok {
+		ps.RepoPrefix, _ = res.(string)
+	}
+	return ps
 }

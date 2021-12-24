@@ -206,20 +206,20 @@ func (ctx *pluginContext) put(c *gin.Context) (p *models.Plugin, err error) {
 		}
 
 		// install on worker nodes if deploy mode is "all"
-		if p.DeployMode == constants.PluginDeployModeAll {
-			// active worker nodes
-			nodes, err := ctx._getWorkerNodes()
-			if err != nil {
-				return
-			}
-
-			// install on each worker node
-			for _, n := range nodes {
-				if err := ctx.svr.SendStreamMessageWithData("node:"+n.Key, grpc.StreamMessageCode_INSTALL_PLUGIN, p); err != nil {
-					trace.PrintError(err)
-				}
-			}
-		}
+		//if p.DeployMode == constants.PluginDeployModeAll {
+		//	// active worker nodes
+		//	nodes, err := ctx._getWorkerNodes()
+		//	if err != nil {
+		//		return
+		//	}
+		//
+		//	// install on each worker node
+		//	for _, n := range nodes {
+		//		if err := ctx.svr.SendStreamMessageWithData("node:"+n.Key, grpc.StreamMessageCode_INSTALL_PLUGIN, p); err != nil {
+		//			trace.PrintError(err)
+		//		}
+		//	}
+		//}
 	}()
 
 	return p, nil

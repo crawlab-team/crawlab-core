@@ -205,7 +205,7 @@ func (d *ModelDelegate) add() (err error) {
 		Data:    d.mustGetData(),
 	}))
 	if err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.deserialize(res, method); err != nil {
 		return err
@@ -223,7 +223,7 @@ func (d *ModelDelegate) save() (err error) {
 		Data:    d.mustGetData(),
 	}))
 	if err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.deserialize(res, method); err != nil {
 		return err
@@ -241,7 +241,7 @@ func (d *ModelDelegate) delete() (err error) {
 		Data:    d.mustGetData(),
 	}))
 	if err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.deserialize(res, method); err != nil {
 		return err
@@ -259,7 +259,7 @@ func (d *ModelDelegate) refresh() (err error) {
 		Data:    d.mustGetData(),
 	}))
 	if err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 	if err := d.deserialize(res, method); err != nil {
 		return err

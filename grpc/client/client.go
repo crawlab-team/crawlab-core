@@ -124,7 +124,13 @@ func (c *Client) Register() (err error) {
 	c.MessageClient = grpc2.NewMessageServiceClient(c.conn)
 
 	// log
-	log.Infof("grpc client registered client services")
+	log.Infof("[GrpcClient] grpc client registered client services")
+	log.Debugf("[GrpcClient] ModelDelegateClient: %v", c.ModelDelegateClient)
+	log.Debugf("[GrpcClient] ModelBaseServiceClient: %v", c.ModelBaseServiceClient)
+	log.Debugf("[GrpcClient] NodeClient: %v", c.NodeClient)
+	log.Debugf("[GrpcClient] TaskClient: %v", c.TaskClient)
+	log.Debugf("[GrpcClient] PluginClient: %v", c.PluginClient)
+	log.Debugf("[GrpcClient] MessageClient: %v", c.MessageClient)
 
 	return nil
 }
@@ -262,7 +268,7 @@ func (c *Client) _connect() (err error) {
 		_ = trace.TraceError(err)
 		return errors.ErrorGrpcClientFailedToStart
 	}
-	log.Infof("grpc client connected to %s", address)
+	log.Infof("[GrpcClient] grpc client connected to %s", address)
 
 	return nil
 }
@@ -291,7 +297,7 @@ func (c *Client) _subscribeNode() (err error) {
 	}
 
 	// log
-	log.Infof("grpc client subscribed to remote server")
+	log.Infof("[GrpcClient] grpc client subscribed to remote server")
 
 	return nil
 }
@@ -304,7 +310,7 @@ func (c *Client) _subscribePlugin() (err error) {
 	}
 
 	// log
-	log.Infof("grpc client subscribed to remote server")
+	log.Infof("[GrpcClient] grpc client subscribed to remote server")
 
 	return nil
 }
@@ -321,6 +327,7 @@ func (c *Client) unsubscribe() (err error) {
 }
 
 func (c *Client) handleStreamMessage() {
+	log.Infof("[GrpcClient] start handling stream message...")
 	for {
 		// resubscribe if stream is set to nil
 		if c.stream == nil {
@@ -332,13 +339,14 @@ func (c *Client) handleStreamMessage() {
 
 		// receive stream message
 		msg, err := c.stream.Recv()
+		log.Debugf("[GrpcClient] received message: %v", msg)
 		if err != nil {
 			// set error
 			c.err = err
 
 			// end
 			if err == io.EOF {
-				log.Infof("received EOF signal, disconnecting")
+				log.Infof("[GrpcClient] received EOF signal, disconnecting")
 				return
 			}
 
@@ -440,6 +448,12 @@ func ProvideClient(path string, opts ...Option) func() (res interfaces.GrpcClien
 var clientStore = sync.Map{}
 
 func GetClient(path string, opts ...Option) (c interfaces.GrpcClient, err error) {
+	// normalize path
+	if path == "" {
+		path = config2.DefaultConfigPath
+	}
+
+	log.Debugf("[GetClient] path: %s", path)
 	res, ok := clientStore.Load(path)
 	if !ok {
 		return createClient(path, opts...)
