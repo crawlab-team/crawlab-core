@@ -25,6 +25,12 @@ func WithReportInterval(interval time.Duration) Option {
 	}
 }
 
+func WithCancelTimeout(timeout time.Duration) Option {
+	return func(svc interfaces.TaskHandlerService) {
+		svc.SetCancelTimeout(timeout)
+	}
+}
+
 type RunnerOption func(r interfaces.TaskRunner)
 
 func WithLogDriverType(driverType string) RunnerOption {

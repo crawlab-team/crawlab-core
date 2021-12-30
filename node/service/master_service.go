@@ -324,9 +324,16 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 }
 
 func ProvideMasterService(path string, opts ...Option) func() (interfaces.NodeMasterService, error) {
-	if path != "" {
-		opts = append(opts, WithConfigPath(path))
+	// path
+	if path == "" || path == config2.DefaultConfigPath {
+		if viper.GetString("config.path") != "" {
+			path = viper.GetString("config.path")
+		} else {
+			path = config2.DefaultConfigPath
+		}
 	}
+	opts = append(opts, WithConfigPath(path))
+
 	return func() (interfaces.NodeMasterService, error) {
 		return NewMasterService(opts...)
 	}

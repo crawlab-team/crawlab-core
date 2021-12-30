@@ -14,6 +14,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"go.uber.org/dig"
 	"time"
 )
@@ -275,9 +276,16 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 }
 
 func ProvideWorkerService(path string, opts ...Option) func() (interfaces.NodeWorkerService, error) {
-	if path != "" {
-		opts = append(opts, WithConfigPath(path))
+	// path
+	if path == "" || path == config2.DefaultConfigPath {
+		if viper.GetString("config.path") != "" {
+			path = viper.GetString("config.path")
+		} else {
+			path = config2.DefaultConfigPath
+		}
 	}
+	opts = append(opts, WithConfigPath(path))
+
 	return func() (interfaces.NodeWorkerService, error) {
 		return NewWorkerService(opts...)
 	}

@@ -224,7 +224,8 @@ func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err erro
 	if svc.nodeCfgSvc.IsMaster() {
 		// cancel task on master
 		if err := svc.handlerSvc.Cancel(id); err != nil {
-			// cancel failed, force to set status as "cancelled"
+			// cancel failed, force status being set as "cancelled"
+			trace.PrintError(err)
 			t, err := svc.modelSvc.GetTaskById(id)
 			if err != nil {
 				return err
@@ -409,7 +410,7 @@ func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerServi
 	// service
 	svc := &Service{
 		TaskBaseService: baseSvc,
-		interval:        15 * time.Second,
+		interval:        5 * time.Second,
 	}
 
 	// apply options
@@ -422,6 +423,11 @@ func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerServi
 	if err := c.Provide(config.ProvideConfigService(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService) {
+		svc.nodeCfgSvc = nodeCfgSvc
+	}); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Provide(service.NewService); err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -432,12 +438,10 @@ func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerServi
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(
-		nodeCfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
 		svr interfaces.GrpcServer,
 		handlerSvc interfaces.TaskHandlerService,
 	) {
-		svc.nodeCfgSvc = nodeCfgSvc
 		svc.modelSvc = modelSvc
 		svc.svr = svr
 		svc.handlerSvc = handlerSvc
@@ -478,10 +482,22 @@ func GetTaskSchedulerService(path string, opts ...Option) (svr interfaces.TaskSc
 }
 
 func ProvideGetTaskSchedulerService(path string, opts ...Option) func() (svr interfaces.TaskSchedulerService, err error) {
+	// path
+	if path != "" || path == config2.DefaultConfigPath {
+		if viper.GetString("config.path") != "" {
+			path = viper.GetString("config.path")
+		} else {
+			path = config2.DefaultConfigPath
+		}
+	}
+	opts = append(opts, WithConfigPath(path))
+
+	// interval
 	intervalSeconds := viper.GetInt("task.scheduler.interval")
 	if intervalSeconds > 0 {
 		opts = append(opts, WithInterval(time.Duration(intervalSeconds)*time.Second))
 	}
+
 	return func() (svr interfaces.TaskSchedulerService, err error) {
 		return GetTaskSchedulerService(path, opts...)
 	}

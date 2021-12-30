@@ -171,7 +171,7 @@ func (r *Runner) Run() (err error) {
 
 func (r *Runner) Cancel() (err error) {
 	// kill process
-	if err := sys_exec.KillProcess(r.cmd); err != nil {
+	if err := sys_exec.KillProcessWithTimeout(r.cmd, r.svc.GetCancelTimeout()); err != nil {
 		return err
 	}
 

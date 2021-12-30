@@ -29,7 +29,7 @@ func KillProcess(cmd *exec.Cmd) error {
 	if cmd == nil || cmd.Process == nil {
 		return nil
 	}
-	return syscall.Kill(cmd.Process.Pid, syscall.SIGTERM)
+	return ForceKillProcess(cmd)
 }
 
 func KillProcessWithTimeout(cmd *exec.Cmd, timeout time.Duration) error {
