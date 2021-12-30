@@ -66,6 +66,14 @@ func (t *Task) SetError(error string) {
 	t.Error = error
 }
 
+func (t *Task) GetPid() (pid int) {
+	return t.Pid
+}
+
+func (t *Task) SetPid(pid int) {
+	t.Pid = pid
+}
+
 func (t *Task) GetSpiderId() (id primitive.ObjectID) {
 	return t.SpiderId
 }

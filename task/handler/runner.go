@@ -87,32 +87,21 @@ func (r *Runner) Init() (err error) {
 }
 
 func (r *Runner) Run() (err error) {
-	// update task status (processing)
-	if err := r.updateTask(constants.TaskStatusRunning, nil); err != nil {
-		return err
-	}
-
 	// log task started
 	log.Infof("task[%s] started", r.tid.Hex())
 
 	// configure cmd
-	if err := r.configureCmd(); err != nil {
-		return err
-	}
+	r.configureCmd()
 
 	// configure environment variables
-	if err := r.configureEnv(); err != nil {
-		return err
-	}
+	r.configureEnv()
 
 	// configure logging
-	if err := r.configureLogging(); err != nil {
-		return err
-	}
+	r.configureLogging()
 
 	// start process
 	if err := r.cmd.Start(); err != nil {
-		return err
+		return r.updateTask(constants.TaskStatusError, err)
 	}
 
 	// start logging
@@ -120,9 +109,15 @@ func (r *Runner) Run() (err error) {
 
 	// process id
 	if r.cmd.Process == nil {
-		return constants.ErrNotExists
+		return r.updateTask(constants.TaskStatusError, constants.ErrNotExists)
 	}
 	r.pid = r.cmd.Process.Pid
+	r.t.SetPid(r.pid)
+
+	// update task status (processing)
+	if err := r.updateTask(constants.TaskStatusRunning, nil); err != nil {
+		return err
+	}
 
 	// wait for process to finish
 	go r.wait()
@@ -171,7 +166,11 @@ func (r *Runner) Run() (err error) {
 
 func (r *Runner) Cancel() (err error) {
 	// kill process
-	if err := sys_exec.KillProcessWithTimeout(r.cmd, r.svc.GetCancelTimeout()); err != nil {
+	opts := &sys_exec.KillProcessOptions{
+		Timeout: r.svc.GetCancelTimeout(),
+		Force:   false,
+	}
+	if err := sys_exec.KillProcess(r.cmd, opts); err != nil {
 		return err
 	}
 
@@ -214,7 +213,7 @@ func (r *Runner) GetTaskId() (id primitive.ObjectID) {
 	return r.tid
 }
 
-func (r *Runner) configureCmd() (err error) {
+func (r *Runner) configureCmd() {
 	var cmdStr string
 	if r.t.GetType() == constants.TaskTypeSpider || r.t.GetType() == "" {
 		// spider task
@@ -242,9 +241,7 @@ func (r *Runner) configureCmd() (err error) {
 	r.cmd.Dir = r.cwd
 
 	// configure pgid to allow killing sub processes
-	sys_exec.Setpgid(r.cmd)
-
-	return nil
+	//sys_exec.SetPgid(r.cmd)
 }
 
 func (r *Runner) getLogDriver() (driver clog.Driver, err error) {
@@ -267,7 +264,7 @@ func (r *Runner) getLogDriverOptions() (options interface{}) {
 	return options
 }
 
-func (r *Runner) configureLogging() (err error) {
+func (r *Runner) configureLogging() {
 	// set stdout reader
 	stdout, _ := r.cmd.StdoutPipe()
 	r.scannerStdout = bufio.NewScanner(stdout)
@@ -275,8 +272,6 @@ func (r *Runner) configureLogging() (err error) {
 	// set stderr reader
 	stderr, _ := r.cmd.StderrPipe()
 	r.scannerStderr = bufio.NewScanner(stderr)
-
-	return nil
 }
 
 func (r *Runner) startLogging() {
@@ -321,7 +316,7 @@ func (r *Runner) startHealthCheck() {
 	}
 }
 
-func (r *Runner) configureEnv() (err error) {
+func (r *Runner) configureEnv() {
 	// TODO: refactor
 	//envs := r.s.Envs
 	//if r.s.Type == constants.Configurable {
@@ -399,7 +394,7 @@ func (r *Runner) configureEnv() (err error) {
 	//for _, variable := range variables {
 	//	r.cmd.Env = append(r.cmd.Env, variable.Key+"="+variable.Value)
 	//}
-	return nil
+	//return nil
 }
 
 // wait for process to finish and send task signal (constants.TaskSignal)

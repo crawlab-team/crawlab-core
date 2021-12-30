@@ -105,7 +105,11 @@ func (d *Daemon) Start() (err error) {
 
 func (d *Daemon) Stop() {
 	d.stopped = true
-	_ = sys_exec.KillProcessWithTimeout(d.cmd, d.exitTimeout)
+	opts := &sys_exec.KillProcessOptions{
+		Timeout: d.exitTimeout,
+		Force:   false,
+	}
+	_ = sys_exec.KillProcess(d.cmd, opts)
 }
 
 func NewProcessDaemon(newCmdFn func() *exec.Cmd, opts ...DaemonOption) (d interfaces.ProcessDaemon) {

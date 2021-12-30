@@ -12,6 +12,8 @@ type Task interface {
 	SetStatus(status string)
 	GetError() (error string)
 	SetError(error string)
+	GetPid() (pid int)
+	SetPid(pid int)
 	GetSpiderId() (id primitive.ObjectID)
 	GetType() (ty string)
 	GetCmd() (cmd string)
