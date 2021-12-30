@@ -13,4 +13,6 @@ var (
 	ErrorTaskForbidden          = NewTaskError("forbidden")
 	ErrorTaskNoAvailableRunners = NewTaskError("no available runner")
 	ErrorTaskEmptySpiderId      = NewTaskError("empty spider id")
+	ErrorTaskNoNodeId           = NewTaskError("no node id")
+	ErrorTaskNodeNotFound       = NewTaskError("node not found")
 )

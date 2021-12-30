@@ -42,6 +42,7 @@ type Service struct {
 }
 
 func (svc *Service) Start() {
+	go svc.initTaskStatus()
 	go svc.DequeueAndSchedule()
 	svc.Wait()
 	svc.Stop()
@@ -220,8 +221,42 @@ func (svc *Service) Schedule(tasks []interfaces.Task) (err error) {
 }
 
 func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err error) {
+	// user
 	u := utils.GetUserFromArgs(args...)
-	if svc.nodeCfgSvc.IsMaster() {
+
+	// task
+	t, err := svc.modelSvc.GetTaskById(id)
+	if err != nil {
+		return trace.TraceError(err)
+	}
+
+	// set status of pending tasks as "cancelled" and remove from task item queue
+	if t.Status == constants.TaskStatusPending {
+		// remove from task item queue
+		if err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).DeleteId(t.GetId()); err != nil {
+			trace.PrintError(err)
+		}
+
+		// set task status as "cancelled"
+		return svc.SaveTask(t, constants.TaskStatusCancelled)
+	}
+
+	// whether task is running on master node
+	isMasterTask, err := svc.isMasterNode(t)
+	if err != nil {
+		// when error, force status being set as "cancelled"
+		return svc.SaveTask(t, constants.TaskStatusCancelled)
+	}
+
+	// node
+	n, err := svc.modelSvc.GetNodeById(t.GetNodeId())
+	if err != nil {
+		// when error, force status being set as "cancelled"
+		trace.PrintError(err)
+		return svc.SaveTask(t, constants.TaskStatusCancelled)
+	}
+
+	if isMasterTask {
 		// cancel task on master
 		if err := svc.handlerSvc.Cancel(id); err != nil {
 			// cancel failed, force status being set as "cancelled"
@@ -237,18 +272,8 @@ func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err erro
 		return nil
 	} else {
 		// send to cancel task on worker nodes
-		t, err := svc.modelSvc.GetTaskById(id)
-		if err != nil {
-			return err
-		}
-		// node
-		n, err := svc.modelSvc.GetNodeById(t.GetNodeId())
-		if err != nil {
-			return err
-		}
-		// attempt to cancel on worker
 		if err := svc.svr.SendStreamMessageWithData("node:"+n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t); err != nil {
-			// cancel failed, force to set status as "cancelled"
+			// cancel failed, force status being set as "cancelled"
 			t.Status = constants.TaskStatusCancelled
 			return delegate.NewModelDelegate(t, u).Save()
 		}
@@ -398,6 +423,41 @@ func (svc *Service) handleTaskError(n interfaces.Node, t interfaces.Task, err er
 	} else {
 		_ = client.NewModelDelegate(t).Save()
 	}
+}
+
+// initTaskStatus initialize task status of existing tasks
+func (svc *Service) initTaskStatus() {
+	// set status of running tasks as TaskStatusAbnormal
+	runningTasks, err := svc.modelSvc.GetTaskList(bson.M{
+		"status": constants.TaskStatusRunning,
+	}, nil)
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			return
+		}
+		trace.PrintError(err)
+	}
+	for _, t := range runningTasks {
+		go func(t *models.Task) {
+			if err := svc.SaveTask(t, constants.TaskStatusAbnormal); err != nil {
+				trace.PrintError(err)
+			}
+		}(&t)
+	}
+}
+
+func (svc *Service) isMasterNode(t *models.Task) (ok bool, err error) {
+	if t.GetNodeId().IsZero() {
+		return false, trace.TraceError(errors.ErrorTaskNoNodeId)
+	}
+	n, err := svc.modelSvc.GetNodeById(t.GetNodeId())
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			return false, trace.TraceError(errors.ErrorTaskNodeNotFound)
+		}
+		return false, trace.TraceError(err)
+	}
+	return n.IsMaster, nil
 }
 
 func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerService, err error) {
