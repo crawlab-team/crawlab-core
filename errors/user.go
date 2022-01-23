@@ -8,6 +8,7 @@ var (
 	ErrorUserInvalidType           = NewUserError("invalid type")
 	ErrorUserInvalidToken          = NewUserError("invalid token")
 	ErrorUserNotExists             = NewUserError("not exists")
+	ErrorUserNotExistsInContext    = NewUserError("not exists in context")
 	ErrorUserAlreadyExists         = NewUserError("already exists")
 	ErrorUserMismatch              = NewUserError("mismatch")
 	ErrorUserMissingRequiredFields = NewUserError("missing required fields")

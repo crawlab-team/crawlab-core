@@ -23,7 +23,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 		}
 
 		// set user in context
-		c.Set(constants.ContextUser, u)
+		c.Set(constants.UserContextKey, u)
 
 		// validation success
 		c.Next()

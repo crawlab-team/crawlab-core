@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/user"
@@ -27,6 +28,16 @@ func getUserActions() []Action {
 			Method:      http.MethodPost,
 			Path:        "/:id/change-password",
 			HandlerFunc: userCtx.changePassword,
+		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/me",
+			HandlerFunc: userCtx.getMe,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/me",
+			HandlerFunc: userCtx.postMe,
 		},
 	}
 }
@@ -110,7 +121,7 @@ func (ctr *userController) PutList(c *gin.Context) {
 			Email:    u.Email,
 			Role:     u.Role,
 		}); err != nil {
-			trace.TraceError(err)
+			trace.PrintError(err)
 		}
 	}
 
@@ -149,18 +160,53 @@ func (ctx *userContext) changePassword(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-func (ctx *userContext) me(c *gin.Context) {
-	res, ok := c.Get(constants.UserContextKey)
-	if !ok {
-		HandleErrorUnauthorized(c, errors.ErrorUserUnauthorized)
-		return
-	}
-	u, ok := res.(interfaces.User)
-	if !ok {
+func (ctx *userContext) getMe(c *gin.Context) {
+	u, err := ctx._getMe(c)
+	if err != nil {
 		HandleErrorUnauthorized(c, errors.ErrorUserUnauthorized)
 		return
 	}
 	HandleSuccessWithData(c, u)
+}
+
+func (ctx *userContext) postMe(c *gin.Context) {
+	// current user
+	u, err := ctx._getMe(c)
+	if err != nil {
+		HandleErrorUnauthorized(c, errors.ErrorUserUnauthorized)
+		return
+	}
+
+	// payload
+	doc, err := NewJsonBinder(ControllerIdUser).Bind(c)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+	if doc.GetId() != u.GetId() {
+		HandleErrorBadRequest(c, errors.ErrorHttpBadRequest)
+		return
+	}
+
+	// save to db
+	if err := delegate2.NewModelDelegate(doc, GetUserFromContext(c)).Save(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccessWithData(c, doc)
+}
+
+func (ctx *userContext) _getMe(c *gin.Context) (u interfaces.User, err error) {
+	res, ok := c.Get(constants.UserContextKey)
+	if !ok {
+		return nil, trace.TraceError(errors.ErrorUserNotExistsInContext)
+	}
+	u, ok = res.(interfaces.User)
+	if !ok {
+		return nil, trace.TraceError(errors.ErrorUserInvalidType)
+	}
+	return u, nil
 }
 
 func newUserContext() *userContext {
