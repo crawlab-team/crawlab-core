@@ -17,6 +17,7 @@ type Plugin struct {
 	EventKey      entity.PluginEventKey      `json:"event_key" bson:"event_key"`
 	InstallType   string                     `json:"install_type" bson:"install_type"`
 	InstallUrl    string                     `json:"install_url" bson:"install_url"`
+	InstallCmd    string                     `json:"install_cmd" bson:"install_cmd"`
 	DeployMode    string                     `json:"deploy_mode" bson:"deploy_mode"`
 	AutoStart     bool                       `json:"auto_start" bson:"auto_start"`
 	UIComponents  []entity.PluginUIComponent `json:"ui_components" bson:"ui_components"`
@@ -64,4 +65,12 @@ func (p *Plugin) GetInstallType() (t string) {
 
 func (p *Plugin) SetInstallType(t string) {
 	p.InstallType = t
+}
+
+func (p *Plugin) GetInstallCmd() (cmd string) {
+	return p.InstallCmd
+}
+
+func (p *Plugin) SetInstallCmd(cmd string) {
+	p.InstallCmd = cmd
 }

@@ -10,4 +10,6 @@ type Plugin interface {
 	SetInstallUrl(url string)
 	GetInstallType() (t string)
 	SetInstallType(t string)
+	GetInstallCmd() (cmd string)
+	SetInstallCmd(cmd string)
 }

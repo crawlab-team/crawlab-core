@@ -360,15 +360,6 @@ func (svc *Service) installGit(p interfaces.Plugin) (err error) {
 		return err
 	}
 
-	// sync to fs
-	fsSvc, err := GetPluginFsService(p.GetId())
-	if err != nil {
-		return err
-	}
-	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
-		return err
-	}
-
 	// plugin.json
 	_p, err := svc.getPluginFromJson(pluginPath)
 	if err != nil {
@@ -388,12 +379,18 @@ func (svc *Service) installGit(p interfaces.Plugin) (err error) {
 		}
 	}
 
+	// build plugin binary and upload to fs
+	if svc._buildPlugin(pluginPath, p) != nil {
+		return err
+	}
+
 	// dispose temporary directory
 	if err := gitClient.Dispose(); err != nil {
 		return err
 	}
 
 	log.Infof("git installed %s", p.GetInstallUrl())
+
 	return nil
 }
 
@@ -415,15 +412,6 @@ func (svc *Service) installLocal(p interfaces.Plugin) (err error) {
 		return err
 	}
 
-	// sync to fs
-	fsSvc, err := GetPluginFsService(p.GetId())
-	if err != nil {
-		return err
-	}
-	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
-		return err
-	}
-
 	// fill plugin data and save to db
 	if svc.cfgSvc.IsMaster() {
 		_p.SetId(p.GetId())
@@ -432,6 +420,11 @@ func (svc *Service) installLocal(p interfaces.Plugin) (err error) {
 		if err := svc.savePlugin(_p); err != nil {
 			return err
 		}
+	}
+
+	// build plugin binary and upload to fs
+	if svc._buildPlugin(pluginPath, p) != nil {
+		return err
 	}
 
 	log.Infof("local installed %s", p.GetInstallUrl())
@@ -934,6 +927,36 @@ func (svc *Service) _syncToWorkspace(fsSvc interfaces.PluginFsService) (err erro
 
 func (svc *Service) isAllowed(p *models.Plugin) (ok bool) {
 	return p.DeployMode == constants.PluginDeployModeAll || svc.cfgSvc.IsMaster()
+}
+
+func (svc *Service) _buildPlugin(pluginPath string, p interfaces.Plugin) (err error) {
+	// install command
+	installCmd := p.GetInstallCmd()
+	if installCmd == "" {
+		installCmd = DefaultPluginInstallCmd
+	}
+
+	// build on local
+	cmd := sys_exec.BuildCmd(installCmd)
+
+	// current directory
+	cmd.Dir = pluginPath
+
+	// run
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// sync to fs
+	fsSvc, err := GetPluginFsService(p.GetId())
+	if err != nil {
+		return err
+	}
+	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewPluginService(opts ...Option) (svc2 interfaces.PluginService, err error) {
