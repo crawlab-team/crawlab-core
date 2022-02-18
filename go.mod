@@ -14,7 +14,7 @@ require (
 	github.com/crawlab-team/goseaweedfs v0.6.0-beta.20211101.1936
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emirpasic/gods v1.12.0
-	github.com/fsnotify/fsnotify v1.4.9
+	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.7.1
 	github.com/go-git/go-git/v5 v5.2.0
@@ -30,16 +30,15 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1
+	github.com/spf13/cobra v1.3.0
+	github.com/spf13/viper v1.10.0
+	github.com/stretchr/testify v1.7.0
 	github.com/thoas/go-funk v0.9.1
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.8.0
 	go.uber.org/dig v1.10.0
-	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b // indirect
-	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/grpc v1.34.0
+	google.golang.org/grpc v1.42.0
 )
