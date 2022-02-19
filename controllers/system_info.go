@@ -1,13 +1,18 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"net/http"
 )
 
 func getSystemInfo(c *gin.Context) {
-	// TODO: implement me
-	panic("not implemented")
+	info := &entity.SystemInfo{
+		Edition: viper.GetString("info.edition"),
+		Version: viper.GetString("info.version"),
+	}
+	HandleSuccessWithData(c, info)
 }
 
 func getSystemInfoActions() []Action {
