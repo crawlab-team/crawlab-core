@@ -100,6 +100,9 @@ func registerRoutesAnonymousGroup(svc *RouterService, groups *RouterGroups) {
 	// version
 	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/version", controllers.VersionController)
 
+	// i18n
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/i18n", controllers.I18nController)
+
 	// system info
 	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/system-info", controllers.SystemInfoController)
 }
