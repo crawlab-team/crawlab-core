@@ -1,6 +1,8 @@
 package config
 
 var DefaultConfigYaml = `
+info:
+  version: v0.6.0
 mongo:
   host: localhost
   port: 27017

@@ -30,6 +30,8 @@ func InitControllers() (err error) {
 	PluginProxyController = NewActionControllerDelegate(ControllerIdPluginDo, getPluginProxyActions())
 	GitController = NewListControllerDelegate(ControllerIdGit, modelSvc.GetBaseService(interfaces.ModelIdGit))
 	VersionController = NewActionControllerDelegate(ControllerIdVersion, getVersionActions())
+	I18nController = NewActionControllerDelegate(ControllerIdI18n, getI18nActions())
+	SystemInfoController = NewActionControllerDelegate(ControllerIdSystemInfo, getSystemInfoActions())
 
 	return nil
 }

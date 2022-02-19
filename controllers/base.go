@@ -25,6 +25,8 @@ const (
 	ControllerIdPluginDo
 	ControllerIdGit
 	ControllerIdVersion
+	ControllerIdI18n
+	ControllerIdSystemInfo
 )
 
 type ControllerId int

@@ -85,6 +85,26 @@ func InitRoutes(app *gin.Engine) (err error) {
 	// router service
 	svc := NewRouterService(app)
 
+	// register routes
+	registerRoutesAnonymousGroup(svc, groups)
+	registerRoutesAuthGroup(svc, groups)
+	registerRoutesFilterGroup(svc, groups)
+
+	return nil
+}
+
+func registerRoutesAnonymousGroup(svc *RouterService, groups *RouterGroups) {
+	// login
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
+
+	// version
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/version", controllers.VersionController)
+
+	// system info
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/system-info", controllers.SystemInfoController)
+}
+
+func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
 	// node
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/nodes", controllers.NodeController)
 
@@ -132,15 +152,9 @@ func InitRoutes(app *gin.Engine) (err error) {
 
 	// git
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/gits", controllers.GitController)
+}
 
-	// login
-	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/", controllers.LoginController)
-
-	// version
-	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/version", controllers.VersionController)
-
+func registerRoutesFilterGroup(svc *RouterService, groups *RouterGroups) {
 	// filer
 	svc.RegisterActionControllerToGroup(groups.FilerGroup, "", controllers.FilerController)
-
-	return nil
 }
