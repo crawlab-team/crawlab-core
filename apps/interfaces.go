@@ -18,6 +18,8 @@ type NodeApp interface {
 type MasterApp interface {
 	NodeApp
 	SetRunOnMaster(ok bool)
+	GetApi() (api *Api)
+	GetMasterService() (masterSvc interfaces.NodeMasterService)
 }
 
 type WorkerApp interface {

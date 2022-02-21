@@ -18,7 +18,6 @@ require (
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.7.1
 	github.com/go-git/go-git/v5 v5.2.0
-	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/imroc/req v0.3.0

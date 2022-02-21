@@ -1,12 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-	"github.com/apex/log"
-	"strings"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -34,44 +29,5 @@ func GetRootCmd() *cobra.Command {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "c", "", "Use Custom Config File")
-}
-
-func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		viper.AddConfigPath("./conf")
-		viper.SetConfigName("config")
-	}
-
-	// file format as yaml
-	viper.SetConfigType("yaml")
-
-	// auto load env
-	viper.AutomaticEnv()
-
-	// env prefix as CRAWLAB
-	viper.SetEnvPrefix("CRAWLAB")
-	replacer := strings.NewReplacer(".", "_")
-	viper.SetEnvKeyReplacer(replacer)
-
-	// read config file
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
-
-	// initialize log level
-	initLogLevel()
-}
-
-func initLogLevel() {
-	// set log level
-	logLevel := viper.GetString("log.level")
-	l, err := log.ParseLevel(logLevel)
-	if err != nil {
-		l = log.InfoLevel
-	}
-	log.SetLevel(l)
 }

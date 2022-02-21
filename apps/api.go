@@ -64,6 +64,14 @@ func (app *Api) Stop() {
 	}
 }
 
+func (app *Api) GetGinEngine() *gin.Engine {
+	return app.app
+}
+
+func (app *Api) GetHttpServer() *http.Server {
+	return app.srv
+}
+
 func (app *Api) initModuleWithApp(name string, fn func(app *gin.Engine) error) (err error) {
 	return initModule(name, func() error {
 		return fn(app.app)
@@ -75,5 +83,15 @@ func NewApi() *Api {
 		app: gin.New(),
 	}
 	api.Init()
+	return api
+}
+
+var api *Api
+
+func GetApi() *Api {
+	if api != nil {
+		return api
+	}
+	api = NewApi()
 	return api
 }

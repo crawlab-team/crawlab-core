@@ -32,6 +32,14 @@ func (app *Master) SetRunOnMaster(ok bool) {
 	app.runOnMaster = ok
 }
 
+func (app *Master) GetApi() (api *Api) {
+	return app.api
+}
+
+func (app *Master) GetMasterService() (masterSvc interfaces.NodeMasterService) {
+	return app.masterSvc
+}
+
 func (app *Master) Init() {
 	// initialize controllers
 	if err := controllers.InitControllers(); err != nil {
@@ -57,7 +65,7 @@ func NewMaster(opts ...MasterOption) (app MasterApp) {
 	// master
 	m := &Master{
 		WithConfigPath: config.NewConfigPathService(),
-		api:            NewApi(),
+		api:            GetApi(),
 		quit:           make(chan int, 1),
 	}
 
@@ -84,4 +92,14 @@ func NewMaster(opts ...MasterOption) (app MasterApp) {
 	}
 
 	return m
+}
+
+var master MasterApp
+
+func GetMaster(opts ...MasterOption) MasterApp {
+	if master != nil {
+		return master
+	}
+	master = NewMaster(opts...)
+	return master
 }

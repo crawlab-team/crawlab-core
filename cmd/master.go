@@ -20,7 +20,7 @@ which runs api and assign tasks to worker nodes`,
 		var opts []apps.MasterOption
 
 		// app
-		master := apps.NewMaster(opts...)
+		master := apps.GetMaster(opts...)
 
 		// start
 		apps.Start(master)

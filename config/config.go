@@ -1,13 +1,11 @@
 package config
 
 import (
+	"bytes"
 	"github.com/apex/log"
-	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/go-trace"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"io/ioutil"
-	"os"
-	"path"
 	"strings"
 )
 
@@ -23,6 +21,9 @@ func init() {
 
 	// watch config change and load responsively
 	c.WatchConfig()
+
+	// init log level
+	c.initLogLevel()
 }
 
 type Config struct {
@@ -40,7 +41,7 @@ func (c *Config) WatchConfig() {
 	})
 }
 
-func (c *Config) Init() error {
+func (c *Config) Init() (err error) {
 	// config
 	if c.Name != "" {
 		viper.SetConfigFile(c.Name) // if config file is set, load it accordingly
@@ -62,26 +63,26 @@ func (c *Config) Init() error {
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
 
-	// create conf directory if not exists
-	confDirName := "./conf"
-	if !utils.Exists(confDirName) {
-		if err := os.MkdirAll("./conf", os.ModeDir|os.ModePerm); err != nil {
-			return err
-		}
+	// read default config
+	defaultConfBuf := bytes.NewBufferString(DefaultConfigYaml)
+	if err := viper.ReadConfig(defaultConfBuf); err != nil {
+		return trace.TraceError(err)
 	}
 
-	// add default conf/config.yaml if not exists
-	confFilePath := path.Join(confDirName, "config.yml")
-	if !utils.Exists(confFilePath) {
-		if err := ioutil.WriteFile(confFilePath, []byte(DefaultConfigYaml), os.FileMode(0766)); err != nil {
-			return err
-		}
-	}
-
-	// read config
-	if err := viper.ReadInConfig(); err != nil { // viper parsing config file
+	// merge config
+	if err := viper.MergeInConfig(); err != nil { // viper parsing config file
 		return err
 	}
 
 	return nil
+}
+
+func (c *Config) initLogLevel() {
+	// set log level
+	logLevel := viper.GetString("log.level")
+	l, err := log.ParseLevel(logLevel)
+	if err != nil {
+		l = log.InfoLevel
+	}
+	log.SetLevel(l)
 }
