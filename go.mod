@@ -34,6 +34,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/thoas/go-funk v0.9.1
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
+	github.com/wumansgy/goEncrypt v1.0.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	github.com/ztrue/tracerr v0.3.0
 	go.mongodb.org/mongo-driver v1.8.0

@@ -15,7 +15,7 @@ func TestUserService_Init(t *testing.T) {
 	u, err := T.modelSvc.GetUserByUsernameWithPassword(constants.DefaultAdminUsername, nil)
 	require.Nil(t, err)
 	require.Equal(t, constants.DefaultAdminUsername, u.Username)
-	require.Equal(t, utils.EncryptPassword(constants.DefaultAdminPassword), u.Password)
+	require.Equal(t, utils.EncryptMd5(constants.DefaultAdminPassword), u.Password)
 }
 
 func TestUserService_Create_Login_CheckToken(t *testing.T) {
@@ -31,7 +31,7 @@ func TestUserService_Create_Login_CheckToken(t *testing.T) {
 	u, err := T.modelSvc.GetUserByUsernameWithPassword(T.TestUsername, nil)
 	require.Nil(t, err)
 	require.Equal(t, T.TestUsername, u.Username)
-	require.Equal(t, utils.EncryptPassword(T.TestPassword), u.Password)
+	require.Equal(t, utils.EncryptMd5(T.TestPassword), u.Password)
 
 	token, u2, err := T.userSvc.Login(&interfaces.UserLoginOptions{
 		Username: T.TestUsername,
@@ -57,5 +57,5 @@ func TestUserService_ChangePassword(t *testing.T) {
 
 	u2, err := T.modelSvc.GetUserByUsernameWithPassword(constants.DefaultAdminUsername, nil)
 	require.Nil(t, err)
-	require.Equal(t, utils.EncryptPassword(T.TestNewPassword), u2.Password)
+	require.Equal(t, utils.EncryptMd5(T.TestNewPassword), u2.Password)
 }

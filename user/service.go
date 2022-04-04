@@ -86,7 +86,7 @@ func (svc *Service) Create(opts *interfaces.UserCreateOptions, args ...interface
 		// add password
 		p := &models.Password{
 			Id:       u.Id,
-			Password: utils.EncryptPassword(opts.Password),
+			Password: utils.EncryptMd5(opts.Password),
 		}
 		if err := delegate.NewModelDelegate(p, actor).Add(); err != nil {
 			return err
@@ -105,7 +105,7 @@ func (svc *Service) Login(opts *interfaces.UserLoginOptions) (token string, u in
 	if err != nil {
 		return "", nil, err
 	}
-	if p.Password != utils.EncryptPassword(opts.Password) {
+	if p.Password != utils.EncryptMd5(opts.Password) {
 		return "", nil, errors.ErrorUserMismatch
 	}
 	token, err = svc.makeToken(u)
@@ -126,7 +126,7 @@ func (svc *Service) ChangePassword(id primitive.ObjectID, password string, args 
 	if err != nil {
 		return err
 	}
-	p.Password = utils.EncryptPassword(password)
+	p.Password = utils.EncryptMd5(password)
 	if err := delegate.NewModelDelegate(p, actor).Save(); err != nil {
 		return err
 	}

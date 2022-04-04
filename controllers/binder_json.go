@@ -57,6 +57,9 @@ func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.Model, err error) {
 	case ControllerIdTag:
 		err = c.ShouldBindJSON(&m.Tag)
 		return &m.Tag, nil
+	case ControllerIdDataSource:
+		err = c.ShouldBindJSON(&m.DataSource)
+		return &m.DataSource, nil
 	case ControllerIdPlugin:
 		err = c.ShouldBindJSON(&m.Plugin)
 		return &m.Plugin, nil
@@ -107,6 +110,9 @@ func (b *JsonBinder) BindList(c *gin.Context) (res interface{}, err error) {
 	case ControllerIdTag:
 		err = c.ShouldBindJSON(&m.Tags)
 		return m.Tags, nil
+	case ControllerIdDataSource:
+		err = c.ShouldBindJSON(&m.DataSources)
+		return m.DataSources, nil
 	case ControllerIdPlugin:
 		err = c.ShouldBindJSON(&m.Plugins)
 		return m.Plugins, nil
@@ -169,6 +175,9 @@ func (b *JsonBinder) BindBatchRequestPayloadWithStringData(c *gin.Context) (payl
 	case ControllerIdVariable:
 		err = json.Unmarshal([]byte(payload.Data), &m.Variable)
 		return payload, &m.Variable, err
+	case ControllerIdDataSource:
+		err = json.Unmarshal([]byte(payload.Data), &m.DataSource)
+		return payload, &m.DataSource, err
 	case ControllerIdPlugin:
 		err = json.Unmarshal([]byte(payload.Data), &m.Plugin)
 		return payload, &m.Plugin, err

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -28,21 +29,26 @@ func (svr MessageServer) Connect(stream grpc.MessageService_ConnectServer) (err 
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
+			log.Infof("[MessageServer] received signal EOF from node[%s], now quit", msg.NodeKey)
 			return nil
 		}
 		if err != nil {
+			log.Errorf("[MessageServer] receiving message error from node[%s]: %v", msg.NodeKey, err)
 			return err
 		}
 		switch msg.Code {
 		case grpc.StreamMessageCode_CONNECT:
+			log.Infof("[MessageServer] received connect request from node[%s], key: %s", msg.NodeKey, msg.Key)
 			svr.server.SetSubscribe(msg.Key, &entity.GrpcSubscribe{
 				Stream:   stream,
 				Finished: finished,
 			})
 		case grpc.StreamMessageCode_DISCONNECT:
+			log.Infof("[MessageServer] received disconnect request from node[%s], key: %s", msg.NodeKey, msg.Key)
 			svr.server.DeleteSubscribe(msg.Key)
 			return nil
 		case grpc.StreamMessageCode_SEND:
+			log.Debugf("[MessageServer] received send request from node[%s] to %s", msg.NodeKey, msg.To)
 			sub, err := svr.server.GetSubscribe(msg.To)
 			if err != nil {
 				return err
@@ -58,6 +64,7 @@ func (svr MessageServer) redirectMessage(sub interfaces.GrpcSubscribe, msg *grpc
 		trace.PrintError(errors.ErrorGrpcStreamNotFound)
 		return
 	}
+	log.Debugf("[MessageServer] redirect message: %v", msg)
 	if err := stream.Send(msg); err != nil {
 		trace.PrintError(err)
 		return
