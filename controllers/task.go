@@ -10,6 +10,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-db/generic"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/gin-gonic/gin"
@@ -343,15 +344,19 @@ func (ctx *taskContext) getData(c *gin.Context) {
 	}
 
 	// query
-	query := bson.M{
-		"_tid": id,
+	query := generic.ListQuery{
+		generic.ListQueryCondition{
+			Key:   "_tid",
+			Op:    generic.OpEqual,
+			Value: t.Id,
+		},
 	}
 
 	// list
-	data, err := resultSvc.GetList(query, &mongo.FindOptions{
+	data, err := resultSvc.List(query, &generic.ListOptions{
 		Skip:  (p.Page - 1) * p.Size,
 		Limit: p.Size,
-		Sort:  bson.D{{"_id", -1}},
+		Sort:  []generic.ListSort{{"_id", generic.SortDirectionDesc}},
 	})
 	if err != nil {
 		HandleErrorInternalServerError(c, err)

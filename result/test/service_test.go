@@ -23,7 +23,7 @@ func TestResultService_GetList(t *testing.T) {
 	require.Nil(t, err)
 
 	// get all
-	results, err := T.resultSvc.GetList(nil, nil)
+	results, err := T.resultSvc.List(nil, nil)
 	require.Nil(t, err)
 	require.Equal(t, n, len(results))
 
@@ -32,7 +32,7 @@ func TestResultService_GetList(t *testing.T) {
 			"$lt": n / 2,
 		},
 	}
-	results, err = T.resultSvc.GetList(query, nil)
+	results, err = T.resultSvc.List(query, nil)
 	require.Nil(t, err)
 	require.Equal(t, n/2, len(results))
 }

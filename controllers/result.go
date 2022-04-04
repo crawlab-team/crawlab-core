@@ -3,9 +3,8 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/result"
-	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/crawlab-team/crawlab-db/generic"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"net/http"
@@ -44,11 +43,11 @@ func (ctx *resultContext) getList(c *gin.Context) {
 
 	// params
 	pagination := MustGetPagination(c)
-	query := MustGetFilterQuery(c)
+	query := generic.ListQuery{} // TODO: implement query
 
 	// get results
-	data, err := svc.GetList(query, &mongo.FindOptions{
-		Sort:  bson.D{{"_id", -1}},
+	data, err := svc.List(query, &generic.ListOptions{
+		Sort:  []generic.ListSort{{"_id", generic.SortDirectionDesc}},
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
 	})
