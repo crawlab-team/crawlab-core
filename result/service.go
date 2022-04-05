@@ -1,61 +1,77 @@
 package result
 
 import (
+	"fmt"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/crawlab-team/go-trace"
 	"sync"
 )
 
-func NewResultService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.ResultService, err error) {
-	// service
-	svc := &ServiceMongo{
-		id: id,
+func NewResultService(registryKey string, s *models.Spider) (svc2 interfaces.ResultService, err error) {
+	// result service function
+	var fn interfaces.ResultServiceRegistryFn
+
+	if registryKey == "" {
+		// default
+		fn = NewResultServiceMongo
+	} else {
+		// from registry
+		reg := GetResultServiceRegistry()
+		fn = reg.Get(registryKey)
+		if fn == nil {
+			return nil, errors.NewResultError(fmt.Sprintf("%s is not implemented", registryKey))
+		}
 	}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svc)
-	}
-
-	// dependency injection
-	svc.modelSvc, err = service.GetService()
+	// generate result service
+	svc, err := fn(s.ColId, s.DataSourceId)
 	if err != nil {
-		return nil, err
+		return nil, trace.TraceError(err)
 	}
-
-	// data collection
-	svc.dc, err = svc.modelSvc.GetDataCollectionById(id)
-	if err != nil {
-		return nil, err
-	}
-
-	// data collection model service
-	svc.modelColSvc = service.GetBaseServiceByColName(interfaces.ModelIdResult, svc.dc.Name)
 
 	return svc, nil
 }
 
 var store = sync.Map{}
 
-func GetResultService(id primitive.ObjectID, opts ...Option) (svc interfaces.ResultService, err error) {
-	res, ok := store.Load(id)
+func GetResultService(s *models.Spider, opts ...Option) (svc interfaces.ResultService, err error) {
+	// apply options
+	_opts := &Options{}
+	for _, opt := range opts {
+		opt(_opts)
+	}
+
+	// store key
+	storeKey := s.ColId.Hex() + ":" + s.DataSourceId.Hex()
+
+	// attempt to load result service from store
+	res, ok := store.Load(storeKey)
 	if ok {
 		svc, ok = res.(interfaces.ResultService)
 		if ok {
 			return svc, nil
 		}
 	}
-	svc, err = NewResultService(id, opts...)
+
+	// registry key
+	var registryKey string
+	modelSvc, _ := service.NewService()
+	ds, _ := modelSvc.GetDataSourceById(s.DataSourceId)
+	if ds != nil {
+		registryKey = ds.Type
+	}
+
+	// create a new result service if not exists
+	svc, err = NewResultService(registryKey, s)
 	if err != nil {
 		return nil, err
 	}
-	store.Store(id, svc)
-	return svc, nil
-}
 
-func ProvideGetResultService(id primitive.ObjectID, opts ...Option) func() (svc interfaces.ResultService, err error) {
-	return func() (svc interfaces.ResultService, err error) {
-		return GetResultService(id, opts...)
-	}
+	// save into store
+	store.Store(storeKey, svc)
+
+	return svc, nil
 }

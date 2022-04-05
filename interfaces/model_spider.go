@@ -18,4 +18,6 @@ type Spider interface {
 	SetParam(param string)
 	GetPriority() (p int)
 	SetPriority(p int)
+	GetColId() (id primitive.ObjectID)
+	SetColId(id primitive.ObjectID)
 }

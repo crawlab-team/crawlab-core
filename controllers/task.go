@@ -337,7 +337,7 @@ func (ctx *taskContext) getData(c *gin.Context) {
 	}
 
 	// result service
-	resultSvc, err := result.GetResultService(s.ColId)
+	resultSvc, err := result.GetResultService(s)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return

@@ -73,7 +73,7 @@ func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interface
 	}
 
 	// result service
-	resultSvc, err = result.GetResultService(s.ColId)
+	resultSvc, err = result.GetResultService(s)
 	if err != nil {
 		return nil, err
 	}

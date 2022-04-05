@@ -23,6 +23,7 @@ const (
 	ErrorPrefixPlugin     = "plugin"
 	ErrorPrefixProcess    = "process"
 	ErrorPrefixGit        = "git"
+	ErrorPrefixResult     = "result"
 )
 
 type ErrorPrefix string

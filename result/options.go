@@ -1,14 +1,16 @@
 package result
 
-import (
-	"github.com/crawlab-team/crawlab-core/interfaces"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type Option func(svc interfaces.ResultService)
+type Option func(opts *Options)
 
-func WithId(id primitive.ObjectID) Option {
-	return func(svc interfaces.ResultService) {
-		svc.SetId(id)
+type Options struct {
+	registryKey string             // registry key
+	SpiderId    primitive.ObjectID // data source id
+}
+
+func WithRegistryKey(key string) Option {
+	return func(opts *Options) {
+		opts.registryKey = key
 	}
 }

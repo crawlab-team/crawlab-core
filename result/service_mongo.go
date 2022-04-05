@@ -18,8 +18,8 @@ type ServiceMongo struct {
 	modelColSvc interfaces.ModelBaseService
 
 	// internals
-	id primitive.ObjectID     // id of models.DataCollection
-	dc *models.DataCollection // models.DataCollection
+	colId primitive.ObjectID     // _id of models.DataCollection
+	dc    *models.DataCollection // models.DataCollection
 }
 
 func (svc *ServiceMongo) List(query generic.ListQuery, opts *generic.ListOptions) (results []interfaces.Result, err error) {
@@ -31,14 +31,6 @@ func (svc *ServiceMongo) List(query generic.ListQuery, opts *generic.ListOptions
 func (svc *ServiceMongo) Count(query generic.ListQuery) (n int, err error) {
 	_query := svc.getQuery(query)
 	return svc.modelColSvc.Count(_query)
-}
-
-func (svc *ServiceMongo) GetId() (id primitive.ObjectID) {
-	return svc.id
-}
-
-func (svc *ServiceMongo) SetId(id primitive.ObjectID) {
-	svc.id = id
 }
 
 func (svc *ServiceMongo) Insert(docs ...interface{}) (err error) {
@@ -69,4 +61,28 @@ func (svc *ServiceMongo) getQuery(query generic.ListQuery) (res bson.M) {
 
 func (svc *ServiceMongo) getOpts(opts *generic.ListOptions) (res *mongo.FindOptions) {
 	return utils.GetMongoOpts(opts)
+}
+
+func NewResultServiceMongo(colId primitive.ObjectID, _ primitive.ObjectID) (svc2 interfaces.ResultService, err error) {
+	// service
+	svc := &ServiceMongo{
+		colId: colId,
+	}
+
+	// dependency injection
+	svc.modelSvc, err = service.GetService()
+	if err != nil {
+		return nil, err
+	}
+
+	// data collection
+	svc.dc, err = svc.modelSvc.GetDataCollectionById(colId)
+	if err != nil {
+		return nil, err
+	}
+
+	// data collection model service
+	svc.modelColSvc = service.GetBaseServiceByColName(interfaces.ModelIdResult, svc.dc.Name)
+
+	return svc, nil
 }

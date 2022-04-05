@@ -1,10 +1,12 @@
 package controllers
 
 import (
-	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/result"
 	"github.com/crawlab-team/crawlab-db/generic"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"net/http"
@@ -24,18 +26,59 @@ func getResultActions() []Action {
 }
 
 type resultContext struct {
+	modelSvc service.ModelService
 }
 
 func (ctx *resultContext) getList(c *gin.Context) {
-	// id
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	// data collection id
+	dcId, err := primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
 		HandleErrorBadRequest(c, err)
 		return
 	}
 
+	// data source id
+	var dsId primitive.ObjectID
+	dsIdStr := c.Query("data_source_id")
+	if dsIdStr != "" {
+		dsId, err = primitive.ObjectIDFromHex(dsIdStr)
+		if err != nil {
+			HandleErrorBadRequest(c, err)
+			return
+		}
+	}
+
+	// data collection
+	dc, err := ctx.modelSvc.GetDataCollectionById(dcId)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// data source
+	ds, err := ctx.modelSvc.GetDataSourceById(dsId)
+	if err != nil {
+		if err.Error() == mongo2.ErrNoDocuments.Error() {
+			ds = &models.DataSource{}
+		} else {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	}
+
+	// spider
+	sq := bson.M{
+		"col_id":         dc.Id,
+		"data_source_id": ds.Id,
+	}
+	s, err := ctx.modelSvc.GetSpider(sq, nil)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
 	// service
-	svc, err := result.GetResultService(id)
+	svc, err := result.GetResultService(s)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -77,13 +120,15 @@ func (ctx *resultContext) getList(c *gin.Context) {
 	HandleSuccessWithListData(c, data, total)
 }
 
-func (ctx *resultContext) _getSvc(id primitive.ObjectID) (svc interfaces.ResultService, err error) {
-	return result.GetResultService(id)
-}
-
 func newResultContext() *resultContext {
 	// context
 	ctx := &resultContext{}
+
+	var err error
+	ctx.modelSvc, err = service.NewService()
+	if err != nil {
+		panic(err)
+	}
 
 	return ctx
 }

@@ -35,78 +35,88 @@ import (
 var SpiderController *spiderController
 
 func getSpiderActions() []Action {
-	spiderCtx := newSpiderContext()
+	ctx := newSpiderContext()
 	return []Action{
 		{
 			Method:      http.MethodGet,
 			Path:        "/:id/files/list",
-			HandlerFunc: spiderCtx.listDir,
+			HandlerFunc: ctx.listDir,
 		},
 		{
 			Method:      http.MethodGet,
 			Path:        "/:id/files/get",
-			HandlerFunc: spiderCtx.getFile,
+			HandlerFunc: ctx.getFile,
 		},
 		{
 			Method:      http.MethodGet,
 			Path:        "/:id/files/info",
-			HandlerFunc: spiderCtx.getFileInfo,
+			HandlerFunc: ctx.getFileInfo,
 		},
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/files/save",
-			HandlerFunc: spiderCtx.saveFile,
+			HandlerFunc: ctx.saveFile,
 		},
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/files/save/dir",
-			HandlerFunc: spiderCtx.saveDir,
+			HandlerFunc: ctx.saveDir,
 		},
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/files/rename",
-			HandlerFunc: spiderCtx.renameFile,
+			HandlerFunc: ctx.renameFile,
 		},
 		{
 			Method:      http.MethodDelete,
 			Path:        "/:id/files/delete",
-			HandlerFunc: spiderCtx.delete,
+			HandlerFunc: ctx.delete,
 		},
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/files/copy",
-			HandlerFunc: spiderCtx.copyFile,
+			HandlerFunc: ctx.copyFile,
 		},
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/run",
-			HandlerFunc: spiderCtx.run,
+			HandlerFunc: ctx.run,
 		},
 		{
 			Method:      http.MethodGet,
 			Path:        "/:id/git",
-			HandlerFunc: spiderCtx.getGit,
+			HandlerFunc: ctx.getGit,
 		},
 		{
 			Method:      http.MethodGet,
 			Path:        "/:id/git/remote-refs",
-			HandlerFunc: spiderCtx.getGitRemoteRefs,
+			HandlerFunc: ctx.getGitRemoteRefs,
 		},
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/git/pull",
-			HandlerFunc: spiderCtx.gitPull,
+			HandlerFunc: ctx.gitPull,
 		},
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/git/commit",
-			HandlerFunc: spiderCtx.gitCommit,
+			HandlerFunc: ctx.gitCommit,
 		},
 		//{
 		//	Method:      http.MethodPost,
 		//	Path:        "/:id/clone",
-		//	HandlerFunc: spiderCtx.clone,
+		//	HandlerFunc: ctx.clone,
 		//},
+		{
+			Path:        "/:id/data-source",
+			Method:      http.MethodGet,
+			HandlerFunc: ctx.getDataSource,
+		},
+		{
+			Path:        "/:id/data-source/:ds_id",
+			Method:      http.MethodPost,
+			HandlerFunc: ctx.postDataSource,
+		},
 	}
 }
 
@@ -590,6 +600,74 @@ func (ctx *spiderContext) gitCommit(c *gin.Context) {
 	if err := gitClient.Push(
 		vcs.WithRemoteNamePush(vcs.GitRemoteNameUpstream),
 	); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
+}
+
+func (ctx *spiderContext) getDataSource(c *gin.Context) {
+	// spider id
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// spider
+	s, err := ctx.modelSvc.GetSpiderById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// data source
+	ds, err := ctx.modelSvc.GetDataSourceById(s.DataSourceId)
+	if err != nil {
+		if err.Error() == mongo2.ErrNoDocuments.Error() {
+			HandleSuccess(c)
+			return
+		}
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccessWithData(c, ds)
+}
+
+func (ctx *spiderContext) postDataSource(c *gin.Context) {
+	// spider id
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// data source id
+	dsId, err := primitive.ObjectIDFromHex(c.Param("ds_id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// spider
+	s, err := ctx.modelSvc.GetSpiderById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// data source
+	_, err = ctx.modelSvc.GetDataSourceById(dsId)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// save data source id
+	s.DataSourceId = dsId
+	if err := delegate2.NewModelDelegate(s).Save(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}

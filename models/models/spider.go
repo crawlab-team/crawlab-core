@@ -11,19 +11,21 @@ type Env struct {
 }
 
 type Spider struct {
-	Id          primitive.ObjectID   `json:"_id" bson:"_id"`                 // spider id
-	Name        string               `json:"name" bson:"name"`               // spider name
-	Type        string               `json:"type" bson:"type"`               // spider type
-	ColId       primitive.ObjectID   `json:"col_id" bson:"col_id"`           // data collection id
-	ColName     string               `json:"col_name,omitempty" bson:"-"`    // data collection name
-	Description string               `json:"description" bson:"description"` // description
-	ProjectId   primitive.ObjectID   `json:"project_id" bson:"project_id"`   // Project.Id
-	Mode        string               `json:"mode" bson:"mode"`               // default Task.Mode
-	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`       // default Task.NodeIds
-	NodeTags    []string             `json:"node_tags" bson:"node_tags"`     // default Task.NodeTags
-	Tags        []Tag                `json:"tags" bson:"-"`                  // tags
-	Stat        *SpiderStat          `json:"stat,omitempty" bson:"-"`
-	GitId       primitive.ObjectID   `json:"git_id" bson:"git_id"`
+	Id           primitive.ObjectID   `json:"_id" bson:"_id"`                       // spider id
+	Name         string               `json:"name" bson:"name"`                     // spider name
+	Type         string               `json:"type" bson:"type"`                     // spider type
+	ColId        primitive.ObjectID   `json:"col_id" bson:"col_id"`                 // data collection id
+	ColName      string               `json:"col_name,omitempty" bson:"-"`          // data collection name
+	DataSourceId primitive.ObjectID   `json:"data_source_id" bson:"data_source_id"` // data source id
+	DataSource   *DataSource          `json:"data_source,omitempty" bson:"-"`       // data source
+	Description  string               `json:"description" bson:"description"`       // description
+	ProjectId    primitive.ObjectID   `json:"project_id" bson:"project_id"`         // Project.Id
+	Mode         string               `json:"mode" bson:"mode"`                     // default Task.Mode
+	NodeIds      []primitive.ObjectID `json:"node_ids" bson:"node_ids"`             // default Task.NodeIds
+	NodeTags     []string             `json:"node_tags" bson:"node_tags"`           // default Task.NodeTags
+	Tags         []Tag                `json:"tags" bson:"-"`                        // tags
+	Stat         *SpiderStat          `json:"stat,omitempty" bson:"-"`
+	GitId        primitive.ObjectID   `json:"git_id" bson:"git_id"`
 
 	IsPublic bool  `json:"is_public" bson:"is_public"` // 是否公开
 	Envs     []Env `json:"envs" bson:"envs"`           // 环境变量
@@ -134,4 +136,12 @@ func (s *Spider) GetPriority() (p int) {
 
 func (s *Spider) SetPriority(p int) {
 	s.Priority = p
+}
+
+func (s *Spider) GetColId() (id primitive.ObjectID) {
+	return s.ColId
+}
+
+func (s *Spider) SetColId(id primitive.ObjectID) {
+	s.ColId = id
 }
