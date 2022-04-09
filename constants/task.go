@@ -33,3 +33,7 @@ const (
 	TaskListQueuePrefixPublic = "tasks:public"
 	TaskListQueuePrefixNodes  = "tasks:nodes"
 )
+
+const (
+	TaskKey = "_tid"
+)

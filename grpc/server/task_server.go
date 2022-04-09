@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"github.com/apex/log"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -67,13 +68,13 @@ func (svr TaskServer) handleInsertData(msg *grpc.StreamMessage) (err error) {
 	}
 	var records []interface{}
 	for _, d := range data.Records {
-		res, ok := d["_tid"]
+		res, ok := d[constants.TaskKey]
 		if ok {
 			switch res.(type) {
 			case string:
 				id, err := primitive.ObjectIDFromHex(res.(string))
 				if err == nil {
-					d["_tid"] = id
+					d[constants.TaskKey] = id
 				}
 			}
 		}

@@ -98,3 +98,15 @@ func NormalizeBsonMObjectId(m bson.M) (res bson.M) {
 	}
 	return m
 }
+
+func DenormalizeBsonMObjectId(m bson.M) (res bson.M) {
+	for k, v := range m {
+		switch v.(type) {
+		case primitive.ObjectID:
+			m[k] = v.(primitive.ObjectID).Hex()
+		case bson.M:
+			m[k] = NormalizeBsonMObjectId(v.(bson.M))
+		}
+	}
+	return m
+}
