@@ -22,7 +22,7 @@ type ServiceMongo struct {
 	dc    *models.DataCollection // models.DataCollection
 }
 
-func (svc *ServiceMongo) List(query generic.ListQuery, opts *generic.ListOptions) (results []interfaces.Result, err error) {
+func (svc *ServiceMongo) List(query generic.ListQuery, opts *generic.ListOptions) (results []interface{}, err error) {
 	_query := svc.getQuery(query)
 	_opts := svc.getOpts(opts)
 	return svc.getList(_query, _opts)
@@ -41,7 +41,7 @@ func (svc *ServiceMongo) Insert(docs ...interface{}) (err error) {
 	return nil
 }
 
-func (svc *ServiceMongo) getList(query bson.M, opts *mongo.FindOptions) (results []interfaces.Result, err error) {
+func (svc *ServiceMongo) getList(query bson.M, opts *mongo.FindOptions) (results []interface{}, err error) {
 	list, err := svc.modelColSvc.GetList(query, opts)
 	if err != nil {
 		return nil, err

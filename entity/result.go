@@ -86,3 +86,12 @@ func (r Result) Flatten() (res Result) {
 	}
 	return r
 }
+
+func (r Result) String() (s string) {
+	r = r.ToJSON()
+	bytes, err := json.Marshal(r)
+	if err != nil {
+		return s
+	}
+	return string(bytes)
+}
