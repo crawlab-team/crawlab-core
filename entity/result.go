@@ -88,10 +88,13 @@ func (r Result) Flatten() (res Result) {
 }
 
 func (r Result) String() (s string) {
-	r = r.ToJSON()
-	bytes, err := json.Marshal(r)
+	return string(r.Bytes())
+}
+
+func (r Result) Bytes() (bytes []byte) {
+	bytes, err := json.Marshal(r.ToJSON())
 	if err != nil {
-		return s
+		return bytes
 	}
-	return string(bytes)
+	return bytes
 }
