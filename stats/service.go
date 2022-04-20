@@ -152,13 +152,7 @@ func (svc *Service) getDailyTasksStats(query bson.M) (data interface{}, err erro
 			bson.M{
 				"_id":     "$date",
 				"tasks":   bson.M{"$sum": 1},
-				"results": bson.M{"$sum": "$ts.rc"},
-			},
-		}},
-		{{
-			"$addFields",
-			bson.M{
-				"rc": "$ts.rc",
+				"results": bson.M{"$sum": "$ts.result_count"},
 			},
 		}},
 		{{
@@ -240,7 +234,7 @@ func (svc *Service) getTaskStatsByNode(query bson.M) (data interface{}, err erro
 			bson.M{
 				"node_id":   "$node_id",
 				"node":      bson.M{"$arrayElemAt": bson.A{"$_n", 0}},
-				"node_name": bson.M{"$arrayElemAt": bson.A{"$_n.n", 0}},
+				"node_name": bson.M{"$arrayElemAt": bson.A{"$_n.name", 0}},
 				"tasks":     "$tasks",
 			},
 		}},
