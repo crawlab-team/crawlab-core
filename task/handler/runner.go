@@ -305,6 +305,9 @@ func (r *Runner) startLoggingReaderStderr() {
 }
 
 func (r *Runner) startHealthCheck() {
+	if r.cmd.ProcessState == nil || r.cmd.ProcessState.Exited() {
+		return
+	}
 	for {
 		exists, _ := process.PidExists(int32(r.pid))
 		if !exists {
