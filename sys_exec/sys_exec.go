@@ -4,24 +4,8 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"github.com/shirou/gopsutil/process"
 	"os/exec"
-	"syscall"
 	"time"
 )
-
-func BuildCmd(cmdStr string) *exec.Cmd {
-	return exec.Command("sh", "-c", cmdStr)
-}
-
-func SetPgid(cmd *exec.Cmd) {
-	if cmd == nil {
-		return
-	}
-	if cmd.SysProcAttr == nil {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	} else {
-		cmd.SysProcAttr.Setpgid = true
-	}
-}
 
 type KillProcessOptions struct {
 	Timeout time.Duration
