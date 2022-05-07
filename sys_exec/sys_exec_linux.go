@@ -3,6 +3,11 @@
 
 package sys_exec
 
+import (
+	"os/exec"
+	"syscall"
+)
+
 func BuildCmd(cmdStr string) *exec.Cmd {
 	return exec.Command("sh", "-c", cmdStr)
 }
