@@ -35,6 +35,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -938,7 +939,12 @@ func (svc *Service) _buildPlugin(pluginPath string, p interfaces.Plugin) (err er
 	// install command
 	installCmd := p.GetInstallCmd()
 	if installCmd == "" {
-		installCmd = DefaultPluginInstallCmd
+		// windows 系统支持
+		if runtime.GOOS == "windows" {
+			installCmd = DefaultWindowsPluginInstallCmd
+		} else {
+			installCmd = DefaultPluginInstallCmd
+		}
 	}
 
 	// build on local
