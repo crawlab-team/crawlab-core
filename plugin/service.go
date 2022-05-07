@@ -272,8 +272,13 @@ func (svc *Service) StartPlugin(id primitive.ObjectID) (err error) {
 			sig := <-ch
 			switch sig {
 			case process.SignalStart:
-				// save pid
-				ps.Pid = d.GetCmd().Process.Pid
+				// 防止 cmd.Process nil 导致程序无法正常启动
+				if d.GetCmd().Process != nil {
+					// save pid
+					ps.Pid = d.GetCmd().Process.Pid
+				} else {
+					log.Warnf("Plugin process cannot get, work dir: %s, cmd: '%s'", d.GetCmd().Dir, strings.Join(d.GetCmd().Args, " "))
+				}
 				_ = svc.savePluginStatus(ps)
 			case process.SignalStopped, process.SignalReachedMaxErrors:
 				// break for loop
