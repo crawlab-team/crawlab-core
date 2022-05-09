@@ -31,6 +31,10 @@ func (svc *Service) GetJob(query bson.M, opts *mongo.FindOptions) (res *models2.
 }
 
 func (svc *Service) GetJobList(query bson.M, opts *mongo.FindOptions) (res []models2.Job, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdJob, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdJob).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Job)
+		res = append(res, *d)
+	}
+	return res, nil
 }

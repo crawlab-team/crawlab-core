@@ -7,8 +7,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
-	"github.com/emirpasic/gods/lists/arraylist"
-	"reflect"
 )
 
 func NewListBinder(id interfaces.ModelId, res *grpc.Response) (b interfaces.GrpcModelListBinder) {
@@ -23,7 +21,7 @@ type ListBinder struct {
 	res *grpc.Response
 }
 
-func (b *ListBinder) Bind() (list arraylist.List, err error) {
+func (b *ListBinder) Bind() (l interfaces.List, err error) {
 	m := models.NewModelListMap()
 
 	switch b.id {
@@ -74,7 +72,7 @@ func (b *ListBinder) Bind() (list arraylist.List, err error) {
 	case interfaces.ModelIdGit:
 		return b.Process(&m.Gits)
 	default:
-		return list, errors.ErrorModelInvalidModelId
+		return l, errors.ErrorModelInvalidModelId
 	}
 }
 
@@ -86,27 +84,9 @@ func (b *ListBinder) MustBind() (res interface{}) {
 	return res
 }
 
-func (b *ListBinder) Process(d interface{}) (list arraylist.List, err error) {
+func (b *ListBinder) Process(d interface{}) (l interfaces.List, err error) {
 	if err := json.Unmarshal(b.res.Data, d); err != nil {
-		return list, trace.TraceError(err)
+		return l, trace.TraceError(err)
 	}
-	return b.convertToList(d)
-}
-
-func (b *ListBinder) convertToList(d interface{}) (list arraylist.List, err error) {
-	vList := reflect.ValueOf(d)
-	if vList.Kind() == reflect.Ptr {
-		v := vList.Elem().Interface()
-		return b.convertToList(v)
-	}
-	if vList.Kind() != reflect.Array &&
-		vList.Kind() != reflect.Slice {
-		return list, errors.ErrorModelInvalidType
-	}
-	for i := 0; i < vList.Len(); i++ {
-		vItem := vList.Index(i)
-		item := vItem.Interface()
-		list.Add(item)
-	}
-	return list, nil
+	return d.(interfaces.List), nil
 }

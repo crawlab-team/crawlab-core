@@ -41,7 +41,7 @@ func (svc *PluginStatusServiceDelegate) GetPluginStatusList(query bson.M, opts *
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range list.Values() {
+	for _, item := range list.GetModels() {
 		s, ok := item.(interfaces.PluginStatus)
 		if !ok {
 			return nil, errors.ErrorModelInvalidType

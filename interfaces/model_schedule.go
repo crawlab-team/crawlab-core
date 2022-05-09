@@ -19,8 +19,6 @@ type Schedule interface {
 	SetMode(mode string)
 	GetNodeIds() (ids []primitive.ObjectID)
 	SetNodeIds(ids []primitive.ObjectID)
-	GetNodeTags() (tags []string)
-	SetNodeTags(tags []string)
 	GetCmd() (cmd string)
 	SetCmd(cmd string)
 	GetParam() (param string)

@@ -44,3 +44,13 @@ func (a *Artifact) SetObj(obj interfaces.Model) {
 func (a *Artifact) SetDel(del bool) {
 	a.Del = del
 }
+
+type ArtifactList []Artifact
+
+func (l *ArtifactList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
+}

@@ -34,8 +34,12 @@ func (svc *Service) GetTag(query bson.M, opts *mongo.FindOptions) (res *models2.
 }
 
 func (svc *Service) GetTagList(query bson.M, opts *mongo.FindOptions) (res []models2.Tag, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdTag, query, opts, &res)
-	return res, trace.TraceError(err)
+	l, err := svc.GetBaseService(interfaces.ModelIdTag).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Tag)
+		res = append(res, *d)
+	}
+	return res, nil
 }
 
 func (svc *Service) GetTagIds(colName string, tags []interfaces.Tag) (tagIds []primitive.ObjectID, err error) {

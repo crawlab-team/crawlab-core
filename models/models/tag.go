@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -30,4 +31,14 @@ func (t *Tag) GetColor() (res string) {
 
 func (t *Tag) SetCol(col string) {
 	t.Col = col
+}
+
+type TagList []Tag
+
+func (l *TagList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

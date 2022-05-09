@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -50,4 +51,14 @@ func (ev *ExtraValue) GetType() (t string) {
 
 func (ev *ExtraValue) SetType(t string) {
 	ev.Type = t
+}
+
+type ExtraValueList []ExtraValue
+
+func (l *ExtraValueList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

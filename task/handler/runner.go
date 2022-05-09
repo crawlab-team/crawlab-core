@@ -215,23 +215,19 @@ func (r *Runner) GetTaskId() (id primitive.ObjectID) {
 
 func (r *Runner) configureCmd() {
 	var cmdStr string
-	if r.t.GetType() == constants.TaskTypeSpider || r.t.GetType() == "" {
-		// spider task
-		if r.s.GetType() == constants.Configurable {
-			// configurable spider
-			cmdStr = "scrapy crawl config_spider"
-		} else {
-			// customized spider
-			cmdStr = r.s.GetCmd()
-		}
-	} else if r.t.GetType() == constants.TaskTypeSystem {
-		// system task
+
+	// customized spider
+	if r.t.GetCmd() == "" {
+		cmdStr = r.s.GetCmd()
+	} else {
 		cmdStr = r.t.GetCmd()
 	}
 
 	// parameters
 	if r.t.GetParam() != "" {
 		cmdStr += " " + r.t.GetParam()
+	} else if r.s.GetParam() != "" {
+		cmdStr += " " + r.s.GetParam()
 	}
 
 	// get cmd instance

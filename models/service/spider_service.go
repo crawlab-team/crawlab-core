@@ -31,6 +31,10 @@ func (svc *Service) GetSpider(query bson.M, opts *mongo.FindOptions) (res *model
 }
 
 func (svc *Service) GetSpiderList(query bson.M, opts *mongo.FindOptions) (res []models2.Spider, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdSpider, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdSpider).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Spider)
+		res = append(res, *d)
+	}
+	return res, nil
 }

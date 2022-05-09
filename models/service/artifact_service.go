@@ -31,6 +31,10 @@ func (svc *Service) GetArtifact(query bson.M, opts *mongo.FindOptions) (res *mod
 }
 
 func (svc *Service) GetArtifactList(query bson.M, opts *mongo.FindOptions) (res []models2.Artifact, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdArtifact, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdArtifact).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Artifact)
+		res = append(res, *d)
+	}
+	return res, nil
 }

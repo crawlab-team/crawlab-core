@@ -255,14 +255,14 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 	}
 
 	// check empty list
-	if len(list.Values()) == 0 {
+	if len(list.GetModels()) == 0 {
 		HandleSuccessWithListData(c, nil, 0)
 		return
 	}
 
 	// ids
 	var ids []primitive.ObjectID
-	for _, d := range list.Values() {
+	for _, d := range list.GetModels() {
 		t := d.(interfaces.Model)
 		ids = append(ids, t.GetId())
 	}
@@ -294,7 +294,7 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 
 	// iterate list again
 	var data []interface{}
-	for _, d := range list.Values() {
+	for _, d := range list.GetModels() {
 		t := d.(*models.Task)
 		s, ok := dict[t.GetId()]
 		if ok {

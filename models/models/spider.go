@@ -22,8 +22,6 @@ type Spider struct {
 	ProjectId    primitive.ObjectID   `json:"project_id" bson:"project_id"`         // Project.Id
 	Mode         string               `json:"mode" bson:"mode"`                     // default Task.Mode
 	NodeIds      []primitive.ObjectID `json:"node_ids" bson:"node_ids"`             // default Task.NodeIds
-	NodeTags     []string             `json:"node_tags" bson:"node_tags"`           // default Task.NodeTags
-	Tags         []Tag                `json:"tags" bson:"-"`                        // tags
 	Stat         *SpiderStat          `json:"stat,omitempty" bson:"-"`
 	GitId        primitive.ObjectID   `json:"git_id" bson:"git_id"`
 
@@ -74,14 +72,6 @@ func (s *Spider) SetId(id primitive.ObjectID) {
 	s.Id = id
 }
 
-func (s *Spider) GetTags() (tags []interfaces.Tag) {
-	return convertTagsToInterfaces(s.Tags)
-}
-
-func (s *Spider) SetTags(tags []interfaces.Tag) {
-	s.Tags = convertInterfacesToTags(tags)
-}
-
 func (s *Spider) GetName() (n string) {
 	return s.Name
 }
@@ -104,14 +94,6 @@ func (s *Spider) GetNodeIds() (ids []primitive.ObjectID) {
 
 func (s *Spider) SetNodeIds(ids []primitive.ObjectID) {
 	s.NodeIds = ids
-}
-
-func (s *Spider) GetNodeTags() (tags []string) {
-	return s.NodeTags
-}
-
-func (s *Spider) SetNodeTags(tags []string) {
-	s.NodeTags = tags
 }
 
 func (s *Spider) GetCmd() (cmd string) {
@@ -144,4 +126,14 @@ func (s *Spider) GetColId() (id primitive.ObjectID) {
 
 func (s *Spider) SetColId(id primitive.ObjectID) {
 	s.ColId = id
+}
+
+type SpiderList []Spider
+
+func (l *SpiderList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

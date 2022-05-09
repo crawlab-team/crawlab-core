@@ -31,8 +31,12 @@ func (svc *Service) GetPlugin(query bson.M, opts *mongo.FindOptions) (res *model
 }
 
 func (svc *Service) GetPluginList(query bson.M, opts *mongo.FindOptions) (res []models2.Plugin, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdPlugin, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdPlugin).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Plugin)
+		res = append(res, *d)
+	}
+	return res, nil
 }
 
 func (svc *Service) GetPluginByName(name string) (res *models2.Plugin, err error) {

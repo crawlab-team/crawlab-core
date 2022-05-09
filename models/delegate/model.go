@@ -183,10 +183,6 @@ func (d *ModelDelegate) add() (err error) {
 	if err := d.upsertArtifact(); err != nil {
 		return trace.TraceError(err)
 	}
-	// TODO: implement with alternative
-	if err := d.updateTags(); err != nil {
-		return trace.TraceError(err)
-	}
 	return d.refresh()
 }
 
@@ -341,50 +337,6 @@ func (d *ModelDelegate) deleteArtifact() (err error) {
 		d.a.GetSys().SetDeleteUid(d.u.GetId())
 	}
 	return col.ReplaceId(d.doc.GetId(), d.a)
-}
-
-// updateTags
-func (d *ModelDelegate) updateTags() (err error) {
-	// skip
-	if d._skip() {
-		return nil
-	}
-
-	// validate id
-	if d.doc.GetId().IsZero() {
-		return trace.TraceError(errors.ErrMissingValue)
-	}
-	//ctx := col.GetContext()
-
-	// convert to model with tags
-	doc, ok := d.doc.(interfaces.ModelWithTags)
-	if !ok {
-		return nil
-	}
-
-	// skip if not tags
-	if doc.GetTags() == nil || len(doc.GetTags()) == 0 {
-		return nil
-	}
-
-	// upsert tags and add to tag ids
-	var tagIds []primitive.ObjectID
-	for _, tag := range doc.GetTags() {
-		if tag.GetId().IsZero() {
-			tag.SetCol(d.colName)
-			if err := NewModelDelegate(tag).Add(); err != nil {
-				return err
-			}
-		}
-		tagIds = append(tagIds, tag.GetId())
-	}
-
-	// assign tag ids to artifact
-	d.a.SetTagIds(tagIds)
-
-	// update tag ids
-	col := mongo.GetMongoCol(interfaces.ModelColNameArtifact)
-	return col.ReplaceId(d.a.GetId(), d.a)
 }
 
 func (d *ModelDelegate) hasChange() (ok bool) {

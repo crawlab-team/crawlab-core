@@ -3,7 +3,7 @@ package interfaces
 import "time"
 
 type Node interface {
-	ModelWithTags
+	Model
 	GetName() (name string)
 	GetKey() (key string)
 	GetIsMaster() (ok bool)

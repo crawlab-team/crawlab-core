@@ -199,7 +199,6 @@ func (svc *Service) schedule(id primitive.ObjectID) (fn func()) {
 		opts := &interfaces.SpiderRunOptions{
 			Mode:       s.GetMode(),
 			NodeIds:    s.GetNodeIds(),
-			NodeTags:   s.GetNodeTags(),
 			Cmd:        s.GetCmd(),
 			Param:      s.GetParam(),
 			Priority:   s.GetPriority(),
@@ -213,9 +212,6 @@ func (svc *Service) schedule(id primitive.ObjectID) (fn func()) {
 		}
 		if len(opts.NodeIds) == 0 {
 			opts.NodeIds = spider.NodeIds
-		}
-		if len(opts.NodeTags) == 0 {
-			opts.NodeTags = spider.NodeTags
 		}
 		if opts.Cmd == "" {
 			opts.Cmd = spider.Cmd

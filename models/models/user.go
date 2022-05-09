@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -46,3 +47,13 @@ func (u *User) GetEmail() (email string) {
 //	MaxErrorLog          int      `json:"max_error_log" bson:"max_error_log"`
 //	LogExpireDuration    int64    `json:"log_expire_duration" bson:"log_expire_duration"`
 //}
+
+type UserList []User
+
+func (l *UserList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
+}

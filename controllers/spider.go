@@ -357,13 +357,6 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		branches = []vcs.GitRef{{Name: currentBranch}}
 	}
 
-	// tags
-	tags, err := gitClient.GetTags()
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// changes
 	changes, err := gitClient.GetStatus()
 	if err != nil {
@@ -398,7 +391,6 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 	res := bson.M{
 		"current_branch": currentBranch,
 		"branches":       branches,
-		"tags":           tags,
 		"changes":        changes,
 		"logs":           logs,
 		"ignore":         ignore,
@@ -776,7 +768,7 @@ func (ctx *spiderContext) _getListWithStats(c *gin.Context) {
 	sort := MustGetSortOption(c)
 
 	// get list
-	list, err := ctx.modelSpiderSvc.GetList(query, &mongo.FindOptions{
+	l, err := ctx.modelSpiderSvc.GetList(query, &mongo.FindOptions{
 		Sort:  sort,
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
@@ -791,14 +783,14 @@ func (ctx *spiderContext) _getListWithStats(c *gin.Context) {
 	}
 
 	// check empty list
-	if len(list.Values()) == 0 {
+	if len(l.GetModels()) == 0 {
 		HandleSuccessWithListData(c, nil, 0)
 		return
 	}
 
 	// ids
 	var ids []primitive.ObjectID
-	for _, d := range list.Values() {
+	for _, d := range l.GetModels() {
 		s := d.(*models.Spider)
 		ids = append(ids, s.GetId())
 	}
@@ -880,7 +872,7 @@ func (ctx *spiderContext) _getListWithStats(c *gin.Context) {
 
 	// iterate list again
 	var data []interface{}
-	for _, d := range list.Values() {
+	for _, d := range l.GetModels() {
 		s := d.(*models.Spider)
 
 		// spider stat

@@ -45,7 +45,7 @@ func (svc *PluginServiceDelegate) GetPluginList(query bson.M, opts *mongo.FindOp
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range list.Values() {
+	for _, item := range list.GetModels() {
 		s, ok := item.(interfaces.Plugin)
 		if !ok {
 			return nil, errors.ErrorModelInvalidType

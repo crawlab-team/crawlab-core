@@ -7,7 +7,6 @@ type Task interface {
 	GetNodeId() (id primitive.ObjectID)
 	SetNodeId(id primitive.ObjectID)
 	GetNodeIds() (ids []primitive.ObjectID)
-	GetNodeTags() (tags []string)
 	GetStatus() (status string)
 	SetStatus(status string)
 	GetError() (error string)

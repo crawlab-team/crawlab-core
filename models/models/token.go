@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -16,4 +17,14 @@ func (t *Token) GetId() (id primitive.ObjectID) {
 
 func (t *Token) SetId(id primitive.ObjectID) {
 	t.Id = id
+}
+
+type TokenList []Token
+
+func (l *TokenList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

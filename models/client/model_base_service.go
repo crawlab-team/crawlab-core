@@ -12,7 +12,6 @@ import (
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
-	"github.com/emirpasic/gods/lists/arraylist"
 	errors2 "github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
@@ -75,13 +74,13 @@ func (d *BaseServiceDelegate) Get(query bson.M, opts *mongo.FindOptions) (doc in
 	return NewBasicBinder(d.id, res).Bind()
 }
 
-func (d *BaseServiceDelegate) GetList(query bson.M, opts *mongo.FindOptions) (list arraylist.List, err error) {
+func (d *BaseServiceDelegate) GetList(query bson.M, opts *mongo.FindOptions) (l interfaces.List, err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query, FindOptions: opts})
 	res, err := d.getModelBaseServiceClient().GetList(ctx, req)
 	if err != nil {
-		return list, err
+		return l, err
 	}
 	return NewListBinder(d.id, res).Bind()
 }

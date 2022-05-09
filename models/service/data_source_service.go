@@ -31,6 +31,10 @@ func (svc *Service) GetDataSource(query bson.M, opts *mongo.FindOptions) (res *m
 }
 
 func (svc *Service) GetDataSourceList(query bson.M, opts *mongo.FindOptions) (res []models2.DataSource, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdDataSource, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdDataSource).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.DataSource)
+		res = append(res, *d)
+	}
+	return res, nil
 }

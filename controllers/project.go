@@ -29,10 +29,10 @@ func (ctr *projectController) GetList(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	data := list.Values()
+	data := list.GetModels()
 
 	// check empty list
-	if len(list.Values()) == 0 {
+	if len(list.GetModels()) == 0 {
 		HandleSuccessWithListData(c, nil, 0)
 		return
 	}

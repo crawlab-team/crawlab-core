@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -17,7 +18,6 @@ type Task struct {
 	Type       string               `json:"type" bson:"type"`
 	Mode       string               `json:"mode" bson:"mode"`           // running mode of Task
 	NodeIds    []primitive.ObjectID `json:"node_ids" bson:"node_ids"`   // list of Node.Id
-	NodeTags   []string             `json:"node_tags" bson:"node_tags"` // list of Node.Tag
 	ParentId   primitive.ObjectID   `json:"parent_id" bson:"parent_id"` // parent Task.Id if it'Spider a sub-task
 	Priority   int                  `json:"priority" bson:"priority"`
 	Stat       *TaskStat            `json:"stat,omitempty" bson:"-"`
@@ -44,10 +44,6 @@ func (t *Task) SetNodeId(id primitive.ObjectID) {
 
 func (t *Task) GetNodeIds() (ids []primitive.ObjectID) {
 	return t.NodeIds
-}
-
-func (t *Task) GetNodeTags() (nodeTags []string) {
-	return t.NodeTags
 }
 
 func (t *Task) GetStatus() (status string) {
@@ -100,6 +96,16 @@ func (t *Task) GetUserId() (id primitive.ObjectID) {
 
 func (t *Task) SetUserId(id primitive.ObjectID) {
 	t.UserId = id
+}
+
+type TaskList []Task
+
+func (l *TaskList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }
 
 type TaskDailyItem struct {

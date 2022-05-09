@@ -1,18 +1,19 @@
 package controllers
 
 import (
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
-	"github.com/emirpasic/gods/lists/arraylist"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"reflect"
+	"time"
 )
 
 func NewListControllerDelegate(id ControllerId, svc interfaces.ModelBaseService) (d *ListControllerDelegate) {
@@ -58,14 +59,13 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 	}
 
 	// get list and total
-	list, total, err := d.getList(c)
+	l, total, err := d.getList(c)
 	if err != nil {
 		return
 	}
-	data := list.Values()
 
 	// response
-	HandleSuccessWithListData(c, data, total)
+	HandleSuccessWithListData(c, l, total)
 }
 
 func (d *ListControllerDelegate) PostList(c *gin.Context) {
@@ -160,6 +160,8 @@ func (d *ListControllerDelegate) DeleteList(c *gin.Context) {
 
 func (d *ListControllerDelegate) getAll(c *gin.Context) {
 	// get list
+	tic := time.Now()
+	log.Debugf("getAll -> d.svc.GetList:start")
 	list, err := d.svc.GetList(nil, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
@@ -169,27 +171,31 @@ func (d *ListControllerDelegate) getAll(c *gin.Context) {
 		}
 		return
 	}
-	data := list.Values()
+	log.Debugf("getAll -> d.svc.GetList:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
+	tic = time.Now()
 
 	// total count
+	tic = time.Now()
+	log.Debugf("getAll -> d.svc.Count:start")
 	total, err := d.svc.Count(nil)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
+	log.Debugf("getAll -> d.svc.Count:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
 
 	// response
-	HandleSuccessWithListData(c, data, total)
+	HandleSuccessWithListData(c, list, total)
 }
 
-func (d *ListControllerDelegate) getList(c *gin.Context) (list arraylist.List, total int, err error) {
+func (d *ListControllerDelegate) getList(c *gin.Context) (l interfaces.List, total int, err error) {
 	// params
 	pagination := MustGetPagination(c)
 	query := MustGetFilterQuery(c)
 	sort := MustGetSortOption(c)
 
 	// get list
-	list, err = d.svc.GetList(query, &mongo.FindOptions{
+	l, err = d.svc.GetList(query, &mongo.FindOptions{
 		Sort:  sort,
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,
@@ -210,5 +216,5 @@ func (d *ListControllerDelegate) getList(c *gin.Context) (list arraylist.List, t
 		return
 	}
 
-	return list, total, nil
+	return l, total, nil
 }

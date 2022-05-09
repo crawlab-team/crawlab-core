@@ -76,14 +76,6 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 	}
 }
 
-func (b *BasicBinder) MustBind() (res interfaces.Model) {
-	res, err := b.Bind()
-	if err != nil {
-		panic(err)
-	}
-	return res
-}
-
 func (b *BasicBinder) Process(d interfaces.Model) (res interfaces.Model, err error) {
 	if err := json.Unmarshal(b.res.Data, d); err != nil {
 		return nil, trace.TraceError(err)

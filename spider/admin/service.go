@@ -64,7 +64,6 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 		SpiderId:   s.Id,
 		Mode:       opts.Mode,
 		NodeIds:    opts.NodeIds,
-		NodeTags:   opts.NodeTags,
 		Cmd:        opts.Cmd,
 		Param:      opts.Param,
 		ScheduleId: opts.ScheduleId,

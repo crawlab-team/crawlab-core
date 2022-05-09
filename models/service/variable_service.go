@@ -31,8 +31,12 @@ func (svc *Service) GetVariable(query bson.M, opts *mongo.FindOptions) (res *mod
 }
 
 func (svc *Service) GetVariableList(query bson.M, opts *mongo.FindOptions) (res []models2.Variable, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdVariable, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdVariable).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Variable)
+		res = append(res, *d)
+	}
+	return res, nil
 }
 
 func (svc *Service) GetVariableByKey(key string, opts *mongo.FindOptions) (res *models2.Variable, err error) {

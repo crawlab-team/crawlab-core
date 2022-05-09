@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -16,13 +17,11 @@ type Schedule struct {
 	Param          string               `json:"param" bson:"param"`
 	Mode           string               `json:"mode" bson:"mode"`
 	NodeIds        []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
-	NodeTags       []string             `json:"node_tags" bson:"node_tags"`
 	Priority       int                  `json:"priority" bson:"priority"`
 	Enabled        bool                 `json:"enabled" bson:"enabled"`
 	UserId         primitive.ObjectID   `json:"user_id" bson:"user_id"`
 	ScrapySpider   string               `json:"scrapy_spider" bson:"scrapy_spider"`
 	ScrapyLogLevel string               `json:"scrapy_log_level" bson:"scrapy_log_level"`
-	Tags           []string             `json:"tags" bson:"-"`
 }
 
 func (s *Schedule) GetId() (id primitive.ObjectID) {
@@ -81,14 +80,6 @@ func (s *Schedule) SetNodeIds(ids []primitive.ObjectID) {
 	s.NodeIds = ids
 }
 
-func (s *Schedule) GetNodeTags() (tags []string) {
-	return s.NodeTags
-}
-
-func (s *Schedule) SetNodeTags(tags []string) {
-	s.NodeTags = tags
-}
-
 func (s *Schedule) GetCmd() (cmd string) {
 	return s.Cmd
 }
@@ -111,4 +102,14 @@ func (s *Schedule) GetPriority() (p int) {
 
 func (s *Schedule) SetPriority(p int) {
 	s.Priority = p
+}
+
+type ScheduleList []Schedule
+
+func (l *ScheduleList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

@@ -31,6 +31,10 @@ func (svc *Service) GetSchedule(query bson.M, opts *mongo.FindOptions) (res *mod
 }
 
 func (svc *Service) GetScheduleList(query bson.M, opts *mongo.FindOptions) (res []models2.Schedule, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdSchedule, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdSchedule).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Schedule)
+		res = append(res, *d)
+	}
+	return res, nil
 }

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
@@ -36,7 +37,7 @@ func (svr ModelBaseServiceServer) GetList(ctx context.Context, req *grpc.Request
 		if err != nil {
 			return nil, err
 		}
-		data, err := list.ToJSON()
+		data, err := json.Marshal(list)
 		if err != nil {
 			return nil, err
 		}

@@ -31,6 +31,10 @@ func (svc *Service) GetTaskStat(query bson.M, opts *mongo.FindOptions) (res *mod
 }
 
 func (svc *Service) GetTaskStatList(query bson.M, opts *mongo.FindOptions) (res []models2.TaskStat, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdTaskStat, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdTaskStat).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.TaskStat)
+		res = append(res, *d)
+	}
+	return res, nil
 }

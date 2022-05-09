@@ -31,8 +31,12 @@ func (svc *Service) GetExtraValue(query bson.M, opts *mongo.FindOptions) (res *m
 }
 
 func (svc *Service) GetExtraValueList(query bson.M, opts *mongo.FindOptions) (res []models.ExtraValue, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdExtraValue, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdExtraValue).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models.ExtraValue)
+		res = append(res, *d)
+	}
+	return res, nil
 }
 
 func (svc *Service) GetExtraValueByObjectIdModel(oid primitive.ObjectID, m string, opts *mongo.FindOptions) (res *models.ExtraValue, err error) {

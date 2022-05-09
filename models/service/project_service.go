@@ -31,6 +31,10 @@ func (svc *Service) GetProject(query bson.M, opts *mongo.FindOptions) (res *mode
 }
 
 func (svc *Service) GetProjectList(query bson.M, opts *mongo.FindOptions) (res []models2.Project, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdProject, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdProject).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Project)
+		res = append(res, *d)
+	}
+	return res, nil
 }

@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"github.com/crawlab-team/crawlab-db/mongo"
-	"github.com/emirpasic/gods/lists/arraylist"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -12,7 +11,7 @@ type ModelBaseService interface {
 	SetModelId(id ModelId)
 	GetById(id primitive.ObjectID) (res Model, err error)
 	Get(query bson.M, opts *mongo.FindOptions) (res Model, err error)
-	GetList(query bson.M, opts *mongo.FindOptions) (res arraylist.List, err error)
+	GetList(query bson.M, opts *mongo.FindOptions) (res List, err error)
 	DeleteById(id primitive.ObjectID, args ...interface{}) (err error)
 	Delete(query bson.M, args ...interface{}) (err error)
 	DeleteList(query bson.M, args ...interface{}) (err error)

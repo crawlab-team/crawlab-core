@@ -1,6 +1,9 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type SpiderStat struct {
 	Id                     primitive.ObjectID `json:"_id" bson:"_id"`
@@ -22,4 +25,14 @@ func (s *SpiderStat) GetId() (id primitive.ObjectID) {
 
 func (s *SpiderStat) SetId(id primitive.ObjectID) {
 	s.Id = id
+}
+
+type SpiderStatList []SpiderStat
+
+func (l *SpiderStatList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

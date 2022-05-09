@@ -22,7 +22,6 @@ type Node struct {
 	ActiveTs         time.Time          `json:"active_ts" bson:"active_ts"`
 	AvailableRunners int                `json:"available_runners" bson:"available_runners"`
 	MaxRunners       int                `json:"max_runners" bson:"max_runners"`
-	Tags             []Tag              `json:"tags" bson:"-"`
 }
 
 func (n *Node) GetId() (id primitive.ObjectID) {
@@ -31,14 +30,6 @@ func (n *Node) GetId() (id primitive.ObjectID) {
 
 func (n *Node) SetId(id primitive.ObjectID) {
 	n.Id = id
-}
-
-func (n *Node) GetTags() (tags []interfaces.Tag) {
-	return convertTagsToInterfaces(n.Tags)
-}
-
-func (n *Node) SetTags(tags []interfaces.Tag) {
-	n.Tags = convertInterfacesToTags(tags)
 }
 
 func (n *Node) GetName() (name string) {
@@ -103,4 +94,14 @@ func (n *Node) IncrementAvailableRunners() {
 
 func (n *Node) DecrementAvailableRunners() {
 	n.AvailableRunners--
+}
+
+type NodeList []Node
+
+func (l *NodeList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

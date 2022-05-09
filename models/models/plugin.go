@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/crawlab-team/crawlab-core/entity"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -73,4 +74,14 @@ func (p *Plugin) GetInstallCmd() (cmd string) {
 
 func (p *Plugin) SetInstallCmd(cmd string) {
 	p.InstallCmd = cmd
+}
+
+type PluginList []Plugin
+
+func (l *PluginList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

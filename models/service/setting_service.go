@@ -31,8 +31,12 @@ func (svc *Service) GetSetting(query bson.M, opts *mongo.FindOptions) (res *mode
 }
 
 func (svc *Service) GetSettingList(query bson.M, opts *mongo.FindOptions) (res []models2.Setting, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdSetting, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdSetting).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Setting)
+		res = append(res, *d)
+	}
+	return res, nil
 }
 
 func (svc *Service) GetSettingByKey(key string, opts *mongo.FindOptions) (res *models2.Setting, err error) {

@@ -41,7 +41,7 @@ func (svc *TaskServiceDelegate) GetTaskList(query bson.M, opts *mongo.FindOption
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range list.Values() {
+	for _, item := range list.GetModels() {
 		s, ok := item.(interfaces.Task)
 		if !ok {
 			return nil, errors.ErrorModelInvalidType

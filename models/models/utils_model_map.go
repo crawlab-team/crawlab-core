@@ -27,29 +27,29 @@ type ModelMap struct {
 }
 
 type ModelListMap struct {
-	Artifacts       []Artifact
-	Tags            []Tag
-	Nodes           []Node
-	Projects        []Project
-	Spiders         []Spider
-	Tasks           []Task
-	Jobs            []Job
-	Schedules       []Schedule
-	Users           []User
-	Settings        []Setting
-	Tokens          []Token
-	Variables       []Variable
-	TaskQueueItems  []TaskQueueItem
-	TaskStats       []TaskStat
-	Plugins         []Plugin
-	SpiderStats     []SpiderStat
-	DataSources     []DataSource
-	DataCollections []DataCollection
-	Results         []Result
-	Passwords       []Password
-	ExtraValues     []ExtraValue
-	PluginStatus    []PluginStatus
-	Gits            []Git
+	Artifacts       ArtifactList
+	Tags            TagList
+	Nodes           NodeList
+	Projects        ProjectList
+	Spiders         SpiderList
+	Tasks           TaskList
+	Jobs            JobList
+	Schedules       ScheduleList
+	Users           UserList
+	Settings        SettingList
+	Tokens          TokenList
+	Variables       VariableList
+	TaskQueueItems  TaskQueueItemList
+	TaskStats       TaskStatList
+	Plugins         PluginList
+	SpiderStats     SpiderStatList
+	DataSources     DataSourceList
+	DataCollections DataCollectionList
+	Results         ResultList
+	Passwords       PasswordList
+	ExtraValues     ExtraValueList
+	PluginStatus    PluginStatusList
+	Gits            GitList
 }
 
 func NewModelMap() (m *ModelMap) {
@@ -58,27 +58,27 @@ func NewModelMap() (m *ModelMap) {
 
 func NewModelListMap() (m *ModelListMap) {
 	return &ModelListMap{
-		Artifacts:       []Artifact{},
-		Tags:            []Tag{},
-		Nodes:           []Node{},
-		Projects:        []Project{},
-		Spiders:         []Spider{},
-		Tasks:           []Task{},
-		Jobs:            []Job{},
-		Schedules:       []Schedule{},
-		Users:           []User{},
-		Settings:        []Setting{},
-		Tokens:          []Token{},
-		Variables:       []Variable{},
-		TaskQueueItems:  []TaskQueueItem{},
-		TaskStats:       []TaskStat{},
-		Plugins:         []Plugin{},
-		SpiderStats:     []SpiderStat{},
-		DataSources:     []DataSource{},
-		DataCollections: []DataCollection{},
-		Results:         []Result{},
-		Passwords:       []Password{},
-		ExtraValues:     []ExtraValue{},
-		PluginStatus:    []PluginStatus{},
+		Artifacts:       ArtifactList{},
+		Tags:            TagList{},
+		Nodes:           NodeList{},
+		Projects:        ProjectList{},
+		Spiders:         SpiderList{},
+		Tasks:           TaskList{},
+		Jobs:            JobList{},
+		Schedules:       ScheduleList{},
+		Users:           UserList{},
+		Settings:        SettingList{},
+		Tokens:          TokenList{},
+		Variables:       VariableList{},
+		TaskQueueItems:  TaskQueueItemList{},
+		TaskStats:       TaskStatList{},
+		Plugins:         PluginList{},
+		SpiderStats:     SpiderStatList{},
+		DataSources:     DataSourceList{},
+		DataCollections: DataCollectionList{},
+		Results:         ResultList{},
+		Passwords:       PasswordList{},
+		ExtraValues:     ExtraValueList{},
+		PluginStatus:    PluginStatusList{},
 	}
 }

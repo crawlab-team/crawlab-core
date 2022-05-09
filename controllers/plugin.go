@@ -307,14 +307,14 @@ func (ctx *pluginContext) getListWithStatus(c *gin.Context) {
 	}
 
 	// check empty list
-	if len(list.Values()) == 0 {
+	if len(list.GetModels()) == 0 {
 		HandleSuccessWithListData(c, nil, 0)
 		return
 	}
 
 	// ids
 	var ids []primitive.ObjectID
-	for _, d := range list.Values() {
+	for _, d := range list.GetModels() {
 		p := d.(interfaces.Model)
 		ids = append(ids, p.GetId())
 	}
@@ -378,7 +378,7 @@ func (ctx *pluginContext) getListWithStatus(c *gin.Context) {
 
 	// data
 	var data []interface{}
-	for _, d := range list.Values() {
+	for _, d := range list.GetModels() {
 		p := d.(*models.Plugin)
 		s, ok := dict[p.GetId()]
 		if ok {

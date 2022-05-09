@@ -31,8 +31,12 @@ func (svc *Service) GetNode(query bson.M, opts *mongo.FindOptions) (res *models2
 }
 
 func (svc *Service) GetNodeList(query bson.M, opts *mongo.FindOptions) (res []models2.Node, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdNode, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdNode).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Node)
+		res = append(res, *d)
+	}
+	return res, nil
 }
 
 func (svc *Service) GetNodeByKey(key string, opts *mongo.FindOptions) (res *models2.Node, err error) {

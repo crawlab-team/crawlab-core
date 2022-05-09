@@ -31,8 +31,12 @@ func (svc *Service) GetDataCollection(query bson.M, opts *mongo.FindOptions) (re
 }
 
 func (svc *Service) GetDataCollectionList(query bson.M, opts *mongo.FindOptions) (res []models2.DataCollection, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdDataCollection, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdDataCollection).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.DataCollection)
+		res = append(res, *d)
+	}
+	return res, nil
 }
 
 func (svc *Service) GetDataCollectionByName(name string, opts *mongo.FindOptions) (res *models2.DataCollection, err error) {

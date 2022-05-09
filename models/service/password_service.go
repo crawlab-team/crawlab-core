@@ -31,6 +31,10 @@ func (svc *Service) GetPassword(query bson.M, opts *mongo.FindOptions) (res *mod
 }
 
 func (svc *Service) GetPasswordList(query bson.M, opts *mongo.FindOptions) (res []models2.Password, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdPassword, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdPassword).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Password)
+		res = append(res, *d)
+	}
+	return res, nil
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -10,7 +11,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
-	"github.com/emirpasic/gods/lists/arraylist"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
@@ -56,9 +56,12 @@ func (svc *BaseService) Get(query bson.M, opts *mongo.FindOptions) (res interfac
 	return NewBasicBinder(svc.id, fr).Bind()
 }
 
-func (svc *BaseService) GetList(query bson.M, opts *mongo.FindOptions) (res arraylist.List, err error) {
+func (svc *BaseService) GetList(query bson.M, opts *mongo.FindOptions) (l interfaces.List, err error) {
 	// find result
+	tic := time.Now()
+	log.Debugf("BaseService.GetList -> svc.find:start")
 	fr := svc.find(query, opts)
+	log.Debugf("BaseService.GetList -> svc.find:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
 
 	// bind
 	return NewListBinder(svc.id, fr).Bind()
@@ -142,15 +145,11 @@ func (svc *BaseService) deleteList(query bson.M, args ...interface{}) (err error
 		return trace.TraceError(constants.ErrMissingCol)
 	}
 	fr := svc.find(query, nil)
-	docs, err := NewListBinder(svc.id, fr).Bind()
+	list, err := NewListBinder(svc.id, fr).Bind()
 	if err != nil {
 		return err
 	}
-	for _, value := range docs.Values() {
-		doc, ok := value.(interfaces.Model)
-		if !ok {
-			return errors.ErrorModelInvalidType
-		}
+	for _, doc := range list.GetModels() {
 		if err := delegate.NewModelDelegate(doc, svc._getUserFromArgs(args...)).Delete(); err != nil {
 			return err
 		}
@@ -237,14 +236,8 @@ func (svc *BaseService) insert(u interfaces.User, docs ...interface{}) (err erro
 		},
 	}
 	fr := svc.col.Find(query, nil)
-	list := NewListBinder(svc.id, fr).MustBindListWithNoFields()
-	for _, item := range list.Values() {
-		// convert to interfaces.Model
-		doc, ok := item.(interfaces.Model)
-		if !ok {
-			return trace.TraceError(errors.ErrorModelInvalidType)
-		}
-
+	list, err := NewListBinder(svc.id, fr).Bind()
+	for _, doc := range list.GetModels() {
 		// upsert artifact when performing model delegate save
 		if err := delegate.NewModelDelegate(doc, u).Save(); err != nil {
 			return err
@@ -261,12 +254,8 @@ func (svc *BaseService) _update(query bson.M, update interface{}, args ...interf
 	if err != nil {
 		return err
 	}
-	for _, value := range list.Values() {
-		item, ok := value.(interfaces.Model)
-		if !ok {
-			return errors.ErrorModelInvalidType
-		}
-		ids = append(ids, item.GetId())
+	for _, doc := range list.GetModels() {
+		ids = append(ids, doc.GetId())
 	}
 
 	// update model objects

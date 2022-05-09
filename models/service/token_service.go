@@ -31,6 +31,10 @@ func (svc *Service) GetToken(query bson.M, opts *mongo.FindOptions) (res *models
 }
 
 func (svc *Service) GetTokenList(query bson.M, opts *mongo.FindOptions) (res []models2.Token, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdToken, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdToken).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.Token)
+		res = append(res, *d)
+	}
+	return res, nil
 }

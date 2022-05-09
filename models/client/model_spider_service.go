@@ -41,7 +41,7 @@ func (svc *SpiderServiceDelegate) GetSpiderList(query bson.M, opts *mongo.FindOp
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range list.Values() {
+	for _, item := range list.GetModels() {
 		s, ok := item.(interfaces.Spider)
 		if !ok {
 			return nil, errors.ErrorModelInvalidType

@@ -9,7 +9,6 @@ type Project struct {
 	Id          primitive.ObjectID `json:"_id" bson:"_id"`
 	Name        string             `json:"name" bson:"name"`
 	Description string             `json:"description" bson:"description"`
-	Tags        []Tag              `json:"tags" bson:"-"`
 	Spiders     int                `json:"spiders" bson:"-"`
 }
 
@@ -21,10 +20,12 @@ func (p *Project) SetId(id primitive.ObjectID) {
 	p.Id = id
 }
 
-func (p *Project) GetTags() (tags []interfaces.Tag) {
-	return convertTagsToInterfaces(p.Tags)
-}
+type ProjectList []Project
 
-func (p *Project) SetTags(tags []interfaces.Tag) {
-	p.Tags = convertInterfacesToTags(tags)
+func (l *ProjectList) GetModels() (res []interfaces.Model) {
+	for i := range *l {
+		d := (*l)[i]
+		res = append(res, &d)
+	}
+	return res
 }

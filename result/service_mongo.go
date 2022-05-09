@@ -46,7 +46,7 @@ func (svc *ServiceMongo) getList(query bson.M, opts *mongo.FindOptions) (results
 	if err != nil {
 		return nil, err
 	}
-	for _, d := range list.Values() {
+	for _, d := range list.GetModels() {
 		r, ok := d.(interfaces.Result)
 		if ok {
 			results = append(results, r)

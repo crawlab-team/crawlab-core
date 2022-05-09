@@ -5,8 +5,7 @@ import (
 )
 
 type BaseModel struct {
-	Id   primitive.ObjectID `json:"_id" bson:"_id"`
-	Tags []Tag              `json:"tags" bson:"-"`
+	Id primitive.ObjectID `json:"_id" bson:"_id"`
 }
 
 func (d *BaseModel) GetId() (id primitive.ObjectID) {

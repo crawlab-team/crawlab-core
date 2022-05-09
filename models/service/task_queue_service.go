@@ -31,6 +31,10 @@ func (svc *Service) GetTaskQueueItem(query bson.M, opts *mongo.FindOptions) (res
 }
 
 func (svc *Service) GetTaskQueueItemList(query bson.M, opts *mongo.FindOptions) (res []models2.TaskQueueItem, err error) {
-	err = svc.getListSerializeTarget(interfaces.ModelIdTaskQueue, query, opts, &res)
-	return res, err
+	l, err := svc.GetBaseService(interfaces.ModelIdTaskQueue).GetList(query, opts)
+	for _, doc := range l.GetModels() {
+		d := doc.(*models2.TaskQueueItem)
+		res = append(res, *d)
+	}
+	return res, nil
 }
