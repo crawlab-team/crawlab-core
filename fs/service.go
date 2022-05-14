@@ -2,6 +2,7 @@ package fs
 
 import (
 	"fmt"
+	"github.com/cenkalti/backoff/v4"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
@@ -17,6 +18,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 )
 
 type Service struct {
@@ -647,10 +649,15 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	// TODO: external repo
 	if svc.repoPath != "" {
 		// remote repo
-		if !vcs.IsGitRepoExists(svc.GetRepoPath()) {
-			if err := vcs.CreateBareGitRepo(svc.GetRepoPath()); err != nil {
-				return nil, err
+		if err := backoff.Retry(func() error {
+			if !vcs.IsGitRepoExists(svc.GetRepoPath()) {
+				if err := vcs.CreateBareGitRepo(svc.GetRepoPath()); err != nil {
+					return err
+				}
 			}
+			return nil
+		}, backoff.WithMaxRetries(backoff.NewConstantBackOff(100*time.Millisecond), 10)); err != nil {
+			return nil, trace.TraceError(err)
 		}
 
 		// local workspace git client
@@ -661,7 +668,7 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 		}
 		svc.gitClient, err = vcs.NewGitClient(gitOpts...)
 		if err != nil {
-			return nil, err
+			return nil, trace.TraceError(err)
 		}
 	}
 
