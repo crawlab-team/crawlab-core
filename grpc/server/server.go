@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
@@ -180,12 +181,13 @@ func (svr *Server) IsStopped() (res bool) {
 	return svr.stopped
 }
 
+func (svr *Server) recoveryHandlerFunc(p interface{}) (err error) {
+	err = errors.NewError(errors.ErrorPrefixGrpc, fmt.Sprintf("%v", p))
+	trace.PrintError(err)
+	return err
+}
+
 func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
-	// recovery options
-	var recoveryFunc grpc_recovery.RecoveryHandlerFunc
-	recoveryOpts := []grpc_recovery.Option{
-		grpc_recovery.WithRecoveryHandler(recoveryFunc),
-	}
 
 	// server
 	svr := &Server{
@@ -242,6 +244,11 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 		svr.messageSvr = messageSvr
 	}); err != nil {
 		return nil, err
+	}
+
+	// recovery options
+	recoveryOpts := []grpc_recovery.Option{
+		grpc_recovery.WithRecoveryHandler(svr.recoveryHandlerFunc),
 	}
 
 	// grpc server

@@ -71,6 +71,23 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 		UserId:     opts.UserId,
 	}
 
+	// normalize
+	if mainTask.Mode == "" {
+		mainTask.Mode = s.Mode
+	}
+	if mainTask.NodeIds == nil {
+		mainTask.NodeIds = s.NodeIds
+	}
+	if mainTask.Cmd == "" {
+		mainTask.Cmd = s.Cmd
+	}
+	if mainTask.Param == "" {
+		mainTask.Param = s.Param
+	}
+	if mainTask.Priority == 0 {
+		mainTask.Priority = s.Priority
+	}
+
 	if svc.isMultiTask(opts) {
 		// multi tasks
 		// TODO: implement associated tasks

@@ -107,6 +107,7 @@ func (ctx *taskContext) run(c *gin.Context) {
 	opts := &interfaces.SpiderRunOptions{
 		Mode:     t.Mode,
 		NodeIds:  t.NodeIds,
+		Cmd:      t.Cmd,
 		Param:    t.Param,
 		Priority: t.Priority,
 	}
