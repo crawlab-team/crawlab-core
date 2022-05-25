@@ -470,7 +470,11 @@ func (svc *Service) handleCmdError(p *models.Plugin, ps *models.PluginStatus, er
 func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsService) func() (cmd *exec.Cmd) {
 	return func() (cmd *exec.Cmd) {
 		// command
-		cmd = sys_exec.BuildCmd(p.Cmd)
+		if viper.GetBool("docker") {
+			cmd = sys_exec.BuildCmd(p.DockerCmd)
+		} else {
+			cmd = sys_exec.BuildCmd(p.Cmd)
+		}
 
 		// working directory
 		cmd.Dir = fsSvc.GetWorkspacePath()

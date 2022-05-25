@@ -15,6 +15,7 @@ type Plugin struct {
 	Active        bool                       `json:"active" bson:"active"`
 	Endpoint      string                     `json:"endpoint" bson:"endpoint"`
 	Cmd           string                     `json:"cmd" bson:"cmd"`
+	DockerCmd     string                     `json:"docker_cmd" bson:"docker_cmd"`
 	EventKey      entity.PluginEventKey      `json:"event_key" bson:"event_key"`
 	InstallType   string                     `json:"install_type" bson:"install_type"`
 	InstallUrl    string                     `json:"install_url" bson:"install_url"`
