@@ -385,9 +385,11 @@ func (svc *Service) installGit(p interfaces.Plugin) (err error) {
 		}
 	}
 
-	// build plugin binary and upload to fs
-	if svc._buildPlugin(pluginPath, p) != nil {
-		return err
+	// if not in docker or non-public plugin, build plugin binary and upload to fs
+	if !utils.IsDocker() || p.GetInstallType() != constants.PluginInstallTypePublic {
+		if svc._buildPlugin(pluginPath, p) != nil {
+			return err
+		}
 	}
 
 	// dispose temporary directory
@@ -470,7 +472,7 @@ func (svc *Service) handleCmdError(p *models.Plugin, ps *models.PluginStatus, er
 func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsService) func() (cmd *exec.Cmd) {
 	return func() (cmd *exec.Cmd) {
 		// command
-		if viper.GetBool("docker") {
+		if utils.IsDocker() {
 			cmd = sys_exec.BuildCmd(p.DockerCmd)
 		} else {
 			cmd = sys_exec.BuildCmd(p.Cmd)
