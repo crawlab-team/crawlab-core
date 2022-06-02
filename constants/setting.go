@@ -8,7 +8,8 @@ const (
 )
 
 const (
-	DefaultSettingPluginBaseUrl         = "https://github.com"
+	DefaultSettingPluginBaseUrl         = "https://plugins.crawlab.cn"
+	DefaultSettingPluginBaseUrlGitHub   = "https://github.com"
 	DefaultSettingPluginGithubPublicOrg = "crawlab-team"
 	DefaultSettingPluginRepoPrefix      = "plugin-"
 )
