@@ -3,5 +3,7 @@ package utils
 import "github.com/spf13/viper"
 
 func IsDocker() (ok bool) {
-	return viper.GetBool("docker")
+	isDockerBool := viper.GetBool("docker")
+	isDockerString := viper.GetString("docker")
+	return isDockerBool || isDockerString == "Y"
 }

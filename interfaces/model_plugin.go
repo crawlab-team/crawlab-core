@@ -4,6 +4,8 @@ type Plugin interface {
 	Model
 	GetName() (name string)
 	SetName(name string)
+	GetShortName() (shortName string)
+	SetShortName(shortName string)
 	GetFullName() (fullName string)
 	SetFullName(fullName string)
 	GetInstallUrl() (url string)

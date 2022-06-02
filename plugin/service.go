@@ -34,6 +34,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -356,7 +357,7 @@ func (svc *Service) installPublic(p interfaces.Plugin) (err error) {
 		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrl, p.GetFullName()))
 		return svc.installRemote(p)
 	} else {
-		p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetFullName()))
+		p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetShortName()))
 		return svc.installGit(p)
 	}
 }
@@ -454,7 +455,8 @@ func (svc *Service) installRemote(p interfaces.Plugin) (err error) {
 		return trace.TraceError(err)
 	}
 	pluginPath := filepath.Join(os.TempDir(), uuid.New().String())
-	if err := ioutil.WriteFile(pluginPath, res.Bytes(), os.FileMode(0666)); err != nil {
+	_ = os.MkdirAll(pluginPath, os.FileMode(0766))
+	if err := ioutil.WriteFile(path.Join(pluginPath, "plugin.json"), res.Bytes(), os.FileMode(0766)); err != nil {
 		return trace.TraceError(err)
 	}
 
