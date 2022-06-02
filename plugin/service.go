@@ -352,8 +352,13 @@ func (svc *Service) GetPublicPluginInfo(fullName string) (res interface{}, err e
 }
 
 func (svc *Service) installPublic(p interfaces.Plugin) (err error) {
-	p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetFullName()))
-	return svc.installGit(p)
+	if utils.IsDocker() {
+		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrl, p.GetFullName()))
+		return svc.installRemote(p)
+	} else {
+		p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetFullName()))
+		return svc.installGit(p)
+	}
 }
 
 func (svc *Service) installGit(p interfaces.Plugin) (err error) {
@@ -436,6 +441,52 @@ func (svc *Service) installLocal(p interfaces.Plugin) (err error) {
 	}
 
 	log.Infof("local installed %s", p.GetInstallUrl())
+
+	return nil
+}
+
+func (svc *Service) installRemote(p interfaces.Plugin) (err error) {
+	log.Infof("remote installing %s", p.GetInstallUrl())
+
+	// download plugin.json
+	res, err := req.Get(p.GetInstallUrl())
+	if err != nil {
+		return trace.TraceError(err)
+	}
+	pluginPath := filepath.Join(os.TempDir(), uuid.New().String())
+	if err := ioutil.WriteFile(pluginPath, res.Bytes(), os.FileMode(0666)); err != nil {
+		return trace.TraceError(err)
+	}
+
+	// plugin.json
+	_p, err := svc.getPluginFromJson(pluginPath)
+	if err != nil {
+		return err
+	}
+
+	// set plugin name
+	if p.GetFullName() != "" && _p.GetFullName() == "" {
+		_p.SetFullName(p.GetFullName())
+	}
+
+	// fill plugin data and save to db
+	if svc.cfgSvc.IsMaster() {
+		_p.SetId(p.GetId())
+		if err := svc.savePlugin(_p); err != nil {
+			return err
+		}
+	}
+
+	// sync to fs
+	fsSvc, err := GetPluginFsService(p.GetId())
+	if err != nil {
+		return err
+	}
+	if err := fsSvc.GetFsService().GetFs().SyncLocalToRemote(pluginPath, fsSvc.GetFsPath()); err != nil {
+		return err
+	}
+
+	log.Infof("remote installed %s", p.GetInstallUrl())
 
 	return nil
 }
@@ -755,7 +806,7 @@ func (svc *Service) _getGlobalSettings() (err error) {
 		if err != nil {
 			if err.Error() == mongo.ErrNoDocuments.Error() {
 				svc.ps = entity.PluginSetting{
-					PluginBaseUrl:   constants.DefaultSettingPluginBaseUrl,
+					PluginBaseUrl:   constants.DefaultSettingPluginBaseUrlGitHub,
 					GithubPublicOrg: constants.DefaultSettingPluginGithubPublicOrg,
 					RepoPrefix:      constants.DefaultSettingPluginRepoPrefix,
 				}
@@ -801,7 +852,7 @@ func (svc *Service) _getGlobalSettings() (err error) {
 
 func (svc *Service) _getPublicPluginList() (res string, err error) {
 	// http request
-	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos", svc.ps.GithubPublicOrg)
+	url := fmt.Sprintf("%s/plugins.json", constants.DefaultSettingPluginBaseUrl)
 	r, err := req.Get(url)
 	if err != nil {
 		return "", trace.TraceError(err)
