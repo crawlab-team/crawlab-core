@@ -3,7 +3,6 @@ package entity
 type PublicPlugin struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
-	ShortName   string `json:"short_name"`
 	FullName    string `json:"full_name"`
 	Description string `json:"description"`
 	HtmlUrl     string `json:"html_url"`

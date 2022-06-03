@@ -354,7 +354,7 @@ func (svc *Service) GetPublicPluginInfo(fullName string) (res interface{}, err e
 
 func (svc *Service) installPublic(p interfaces.Plugin) (err error) {
 	if utils.IsDocker() {
-		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrl, p.GetShortName()))
+		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrl, p.GetName()))
 		return svc.installRemote(p)
 	} else {
 		p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetFullName()))
@@ -527,12 +527,11 @@ func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsServi
 		// command
 		if utils.IsDocker() {
 			cmd = sys_exec.BuildCmd(p.DockerCmd)
+			cmd.Dir = p.DockerDir
 		} else {
 			cmd = sys_exec.BuildCmd(p.Cmd)
+			cmd.Dir = fsSvc.GetWorkspacePath()
 		}
-
-		// working directory
-		cmd.Dir = fsSvc.GetWorkspacePath()
 
 		// inherit system envs
 		for _, env := range os.Environ() {
