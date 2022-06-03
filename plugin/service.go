@@ -354,10 +354,10 @@ func (svc *Service) GetPublicPluginInfo(fullName string) (res interface{}, err e
 
 func (svc *Service) installPublic(p interfaces.Plugin) (err error) {
 	if utils.IsDocker() {
-		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrl, p.GetFullName()))
+		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrl, p.GetShortName()))
 		return svc.installRemote(p)
 	} else {
-		p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetShortName()))
+		p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetFullName()))
 		return svc.installGit(p)
 	}
 }
