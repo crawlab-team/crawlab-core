@@ -9,6 +9,7 @@ const (
 
 const (
 	DefaultSettingPluginBaseUrl         = "https://plugins.crawlab.cn"
+	DefaultSettingPluginBaseUrlDocker   = "/app/plugins"
 	DefaultSettingPluginBaseUrlGitHub   = "https://github.com"
 	DefaultSettingPluginGithubPublicOrg = "crawlab-team"
 	DefaultSettingPluginRepoPrefix      = "plugin-"

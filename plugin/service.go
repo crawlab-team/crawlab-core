@@ -354,8 +354,8 @@ func (svc *Service) GetPublicPluginInfo(fullName string) (res interface{}, err e
 
 func (svc *Service) installPublic(p interfaces.Plugin) (err error) {
 	if utils.IsDocker() {
-		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrl, p.GetName()))
-		return svc.installRemote(p)
+		p.SetInstallUrl(fmt.Sprintf("%s/%s", constants.DefaultSettingPluginBaseUrlDocker, p.GetName()))
+		return svc.installLocal(p)
 	} else {
 		p.SetInstallUrl(fmt.Sprintf("%s/%s", svc.ps.PluginBaseUrl, p.GetFullName()))
 		return svc.installGit(p)
@@ -425,6 +425,7 @@ func (svc *Service) installLocal(p interfaces.Plugin) (err error) {
 	if err != nil {
 		return err
 	}
+	log.Debugf("_p: %v", _p)
 
 	// fill plugin data and save to db
 	if svc.cfgSvc.IsMaster() {
@@ -436,9 +437,11 @@ func (svc *Service) installLocal(p interfaces.Plugin) (err error) {
 		}
 	}
 
-	// build plugin binary and upload to fs
-	if svc._buildPlugin(pluginPath, p) != nil {
-		return err
+	// if not in docker or non-public plugin, build plugin binary and upload to fs
+	if !utils.IsDocker() || p.GetInstallType() != constants.PluginInstallTypePublic {
+		if svc._buildPlugin(pluginPath, p) != nil {
+			return err
+		}
 	}
 
 	log.Infof("local installed %s", p.GetInstallUrl())
@@ -467,6 +470,7 @@ func (svc *Service) installRemote(p interfaces.Plugin) (err error) {
 	}
 
 	// set plugin name
+	log.Debugf("_p: %v", _p)
 	if p.GetFullName() != "" && _p.GetFullName() == "" {
 		_p.SetFullName(p.GetFullName())
 	}
