@@ -17,7 +17,7 @@ func getDemoActions() []Action {
 		},
 		{
 			Method:      http.MethodGet,
-			Path:        "/import",
+			Path:        "/reimport",
 			HandlerFunc: ctx.reimport,
 		},
 	}
