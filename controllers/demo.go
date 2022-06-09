@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/crawlab-team/crawlab-core/sys_exec"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -27,9 +27,7 @@ type demoContext struct {
 }
 
 func (ctx *demoContext) import_(c *gin.Context) {
-	cmdStr := "python -m crawlab-demo import"
-	cmd := sys_exec.BuildCmd(cmdStr)
-	if err := cmd.Run(); err != nil {
+	if err := utils.ImportDemo(); err != nil {
 		trace.PrintError(err)
 		HandleErrorInternalServerError(c, err)
 		return
@@ -38,9 +36,7 @@ func (ctx *demoContext) import_(c *gin.Context) {
 }
 
 func (ctx *demoContext) reimport(c *gin.Context) {
-	cmdStr := "python -m crawlab-demo reimport"
-	cmd := sys_exec.BuildCmd(cmdStr)
-	if err := cmd.Run(); err != nil {
+	if err := utils.ReimportDemo(); err != nil {
 		trace.PrintError(err)
 		HandleErrorInternalServerError(c, err)
 		return

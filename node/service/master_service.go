@@ -79,7 +79,9 @@ func (svc *MasterService) Start() {
 
 	// import demo
 	if utils.EnvIsTrue("demo") {
-		utils.ImportDemo()
+		go func() {
+			_ = utils.ImportDemo()
+		}()
 	}
 
 	// wait for quit signal
