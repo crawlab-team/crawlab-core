@@ -78,7 +78,7 @@ func (svc *MasterService) Start() {
 	go svc.pluginSvc.Start()
 
 	// import demo
-	if utils.EnvIsTrue("demo") {
+	if utils.IsDemo() {
 		go func() {
 			_ = utils.ImportDemo()
 		}()

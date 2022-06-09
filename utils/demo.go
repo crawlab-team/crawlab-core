@@ -15,6 +15,10 @@ func GetApiAddress() (res string) {
 	return apiAddress
 }
 
+func IsDemo() (ok bool) {
+	return EnvIsTrue("demo", true)
+}
+
 func ImportDemo() (err error) {
 	cmdStr := fmt.Sprintf("python -m crawlab-demo import -a %s", GetApiAddress())
 	cmd := sys_exec.BuildCmd(cmdStr)

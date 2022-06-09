@@ -1,5 +1,5 @@
 package utils
 
 func IsDocker() (ok bool) {
-	return EnvIsTrue("docker")
+	return EnvIsTrue("docker", false)
 }
