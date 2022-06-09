@@ -32,6 +32,7 @@ func InitControllers() (err error) {
 	VersionController = NewActionControllerDelegate(ControllerIdVersion, getVersionActions())
 	I18nController = NewActionControllerDelegate(ControllerIdI18n, getI18nActions())
 	SystemInfoController = NewActionControllerDelegate(ControllerIdSystemInfo, getSystemInfoActions())
+	DemoController = NewActionControllerDelegate(ControllerIdDemo, getDemoActions())
 
 	return nil
 }

@@ -105,6 +105,9 @@ func registerRoutesAnonymousGroup(svc *RouterService, groups *RouterGroups) {
 
 	// system info
 	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/system-info", controllers.SystemInfoController)
+
+	// demo
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/demo", controllers.DemoController)
 }
 
 func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {

@@ -27,6 +27,7 @@ const (
 	ControllerIdVersion
 	ControllerIdI18n
 	ControllerIdSystemInfo
+	ControllerIdDemo
 )
 
 type ControllerId int
