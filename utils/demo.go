@@ -5,11 +5,10 @@ import (
 	"github.com/crawlab-team/go-trace"
 )
 
-func ImportDemo() (err error) {
+func ImportDemo() {
 	cmdStr := "crawlab-demo import && python -m crawlab-demo import"
 	cmd := sys_exec.BuildCmd(cmdStr)
 	if err := cmd.Run(); err != nil {
-		return trace.TraceError(err)
+		trace.PrintError(err)
 	}
-	return nil
 }
