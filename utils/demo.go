@@ -20,7 +20,7 @@ func IsDemo() (ok bool) {
 }
 
 func ImportDemo() (err error) {
-	cmdStr := fmt.Sprintf("curl %s/demo/import", GetApiAddress())
+	cmdStr := fmt.Sprintf("crawlab-cli login -a %s && crawlab-demo import", GetApiAddress())
 	cmd := sys_exec.BuildCmd(cmdStr)
 	if err := cmd.Run(); err != nil {
 		trace.PrintError(err)
@@ -29,7 +29,7 @@ func ImportDemo() (err error) {
 }
 
 func ReimportDemo() (err error) {
-	cmdStr := fmt.Sprintf("curl %s/demo/reimport", GetApiAddress())
+	cmdStr := fmt.Sprintf("crawlab-cli login -a %s && crawlab-demo reimport", GetApiAddress())
 	cmd := sys_exec.BuildCmd(cmdStr)
 	if err := cmd.Run(); err != nil {
 		trace.PrintError(err)
