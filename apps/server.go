@@ -44,7 +44,15 @@ func (app *Server) GetNodeService() (svc interfaces.NodeService) {
 }
 
 func (app *Server) Init() {
+	// log node info
+	app.logNodeInfo()
+
 	if utils.IsMaster() {
+		// run scripts
+		if utils.IsDocker() {
+			go app.runScripts()
+		}
+
 		// initialize controllers
 		if err := controllers.InitControllers(); err != nil {
 			panic(err)
@@ -53,9 +61,6 @@ func (app *Server) Init() {
 }
 
 func (app *Server) Start() {
-	// log node info
-	app.logNodeInfo()
-
 	if utils.IsMaster() {
 		// start api
 		go app.api.Start()
@@ -133,11 +138,6 @@ func NewServer(opts ...ServerOption) (app ServerApp) {
 	if utils.IsMaster() {
 		// api
 		svr.api = GetApi()
-
-		// run scripts
-		if utils.IsDocker() {
-			go svr.runScripts()
-		}
 	}
 
 	// node service
