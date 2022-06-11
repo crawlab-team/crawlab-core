@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"time"
 )
 
 type Server struct {
@@ -49,6 +50,19 @@ func (app *Server) Start() {
 		go app.api.Start()
 	}
 	go app.nodeSvc.Start()
+
+	// import demo
+	if utils.IsMaster() && utils.IsDemo() {
+		go func() {
+			for {
+				if app.api.Ready() {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+			_ = utils.ImportDemo()
+		}()
+	}
 }
 
 func (app *Server) Wait() {

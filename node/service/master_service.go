@@ -80,14 +80,6 @@ func (svc *MasterService) Start() {
 	// start plugin service
 	go svc.pluginSvc.Start()
 
-	// import demo
-	if utils.IsDemo() {
-		time.Sleep(10 * time.Second)
-		go func() {
-			_ = utils.ImportDemo()
-		}()
-	}
-
 	// wait for quit signal
 	svc.Wait()
 

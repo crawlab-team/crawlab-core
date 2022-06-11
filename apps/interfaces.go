@@ -1,6 +1,10 @@
 package apps
 
-import "github.com/crawlab-team/crawlab-core/interfaces"
+import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
 
 type App interface {
 	Init()
@@ -9,21 +13,17 @@ type App interface {
 	Stop()
 }
 
+type ApiApp interface {
+	App
+	GetGinEngine() (engine *gin.Engine)
+	GetHttpServer() (svr *http.Server)
+	Ready() (ok bool)
+}
+
 type NodeApp interface {
 	App
 	interfaces.WithConfigPath
 	SetGrpcAddress(address interfaces.Address)
-}
-
-type MasterApp interface {
-	NodeApp
-	SetRunOnMaster(ok bool)
-	GetApi() (api *Api)
-	GetMasterService() (masterSvc interfaces.NodeMasterService)
-}
-
-type WorkerApp interface {
-	NodeApp
 }
 
 type ServerApp interface {

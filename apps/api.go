@@ -19,8 +19,10 @@ type Api struct {
 	interfaces.WithConfigPath
 
 	// internals
-	app *gin.Engine
-	srv *http.Server
+	app   *gin.Engine
+	ln    net.Listener
+	srv   *http.Server
+	ready bool
 }
 
 func (app *Api) Init() {
@@ -35,14 +37,27 @@ func (app *Api) Init() {
 }
 
 func (app *Api) Start() {
+	// address
 	host := viper.GetString("server.host")
 	port := viper.GetString("server.port")
 	address := net.JoinHostPort(host, port)
+
+	// http server
 	app.srv = &http.Server{
 		Handler: app.app,
 		Addr:    address,
 	}
-	if err := app.srv.ListenAndServe(); err != nil {
+
+	// listen
+	var err error
+	app.ln, err = net.Listen("tcp", address)
+	if err != nil {
+		panic(err)
+	}
+	app.ready = true
+
+	// serve
+	if err := http.Serve(app.ln, app.app); err != nil {
 		if err != http.ErrServerClosed {
 			log.Error("run server error:" + err.Error())
 		} else {
@@ -70,6 +85,10 @@ func (app *Api) GetGinEngine() *gin.Engine {
 
 func (app *Api) GetHttpServer() *http.Server {
 	return app.srv
+}
+
+func (app *Api) Ready() (ok bool) {
+	return app.ready
 }
 
 func (app *Api) initModuleWithApp(name string, fn func(app *gin.Engine) error) (err error) {
