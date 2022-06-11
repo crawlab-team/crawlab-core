@@ -1,10 +1,13 @@
 package apps
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/service"
+	"github.com/crawlab-team/crawlab-core/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"os"
@@ -83,9 +86,15 @@ func (app *Server) importDemo() {
 }
 
 func (app *Server) runScripts() {
-	cmd := exec.Command("/bin/bash", "/app/bin/docker-start-master.sh")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmdExec := "/bin/bash"
+	cmdStr := "/app/bin/docker-start-master.sh"
+	cmd := exec.Command(cmdExec, cmdStr)
+	sys_exec.ConfigureCmdLogging(cmd, func(scanner *bufio.Scanner) {
+		for scanner.Scan() {
+			line := fmt.Sprintf("running %s %s", cmdExec, cmdStr)
+			_, _ = os.Stdout.WriteString(line)
+		}
+	})
 	if err := cmd.Run(); err != nil {
 		trace.PrintError(err)
 	}

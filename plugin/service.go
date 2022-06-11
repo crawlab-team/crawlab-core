@@ -274,7 +274,7 @@ func (svc *Service) StartPlugin(id primitive.ObjectID) (err error) {
 			sig := <-ch
 			switch sig {
 			case process.SignalStart:
-				// 防止 cmd.Process nil 导致程序无法正常启动
+				// prevent startup failure caused by cmd.Process nil
 				if d.GetCmd().Process != nil {
 					// save pid
 					ps.Pid = d.GetCmd().Process.Pid
@@ -564,22 +564,12 @@ func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsServi
 		}
 
 		// logging
-		stdout, _ := cmd.StdoutPipe()
-		stderr, _ := cmd.StderrPipe()
-		scannerStdout := bufio.NewScanner(stdout)
-		scannerStderr := bufio.NewScanner(stderr)
-		go func() {
-			for scannerStdout.Scan() {
-				line := fmt.Sprintf("[Plugin-%s] %s\n", p.GetName(), scannerStdout.Text())
+		sys_exec.ConfigureCmdLogging(cmd, func(scanner *bufio.Scanner) {
+			for scanner.Scan() {
+				line := fmt.Sprintf("[Plugin-%s] %s\n", p.GetName(), scanner.Text())
 				_, _ = os.Stdout.WriteString(line)
 			}
-		}()
-		go func() {
-			for scannerStderr.Scan() {
-				line := fmt.Sprintf("[PLUGIN-%s] %s\n", p.GetName(), scannerStderr.Text())
-				_, _ = os.Stderr.WriteString(line)
-			}
-		}()
+		})
 
 		return cmd
 	}

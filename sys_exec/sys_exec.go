@@ -1,6 +1,7 @@
 package sys_exec
 
 import (
+	"bufio"
 	"github.com/crawlab-team/go-trace"
 	"github.com/shirou/gopsutil/process"
 	"os/exec"
@@ -78,4 +79,13 @@ func forceKillProcess(p *process.Process) (err error) {
 		return trace.TraceError(err)
 	}
 	return nil
+}
+
+func ConfigureCmdLogging(cmd *exec.Cmd, fn func(scanner *bufio.Scanner)) {
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+	scannerStdout := bufio.NewScanner(stdout)
+	scannerStderr := bufio.NewScanner(stderr)
+	go fn(scannerStdout)
+	go fn(scannerStderr)
 }
