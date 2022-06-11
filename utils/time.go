@@ -1,6 +1,8 @@
 package utils
 
-import "time"
+import (
+	"time"
+)
 
 func GetLocalTime(t time.Time) time.Time {
 	return t.In(time.Local)

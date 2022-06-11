@@ -82,6 +82,7 @@ func (svc *MasterService) Start() {
 
 	// import demo
 	if utils.IsDemo() {
+		time.Sleep(10 * time.Second)
 		go func() {
 			_ = utils.ImportDemo()
 		}()

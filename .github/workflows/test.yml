@@ -9,20 +9,22 @@ on:
 
 jobs:
   test:
-    name: Unit Test
+    name: Test
     runs-on: ubuntu-latest
     services:
       mongo:
         image: mongo:4.2
         ports:
           - 27017:27017
+    env:
+      CRAWLAB_SERVER_PORT: 9999
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       - uses: actions/setup-go@v3
         with:
           go-version: '^1.16'
-      - name: Test
+      - name: Run unit tests
         run: |
           for pkg in apps; do
             go test ./${pkg}
