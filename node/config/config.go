@@ -19,7 +19,7 @@ type Options struct {
 
 var DefaultConfigOptions = &Options{
 	Key:        utils.NewUUIDString(),
-	IsMaster:   true,
+	IsMaster:   utils.IsMaster(),
 	AuthKey:    constants.DefaultGrpcAuthKey,
 	MaxRunners: 8,
 }
@@ -27,11 +27,6 @@ var DefaultConfigOptions = &Options{
 func NewConfig(opts *Options) (cfg *Config) {
 	if opts == nil {
 		opts = DefaultConfigOptions
-	}
-	if viper.GetString("node.master") == "Y" {
-		opts.IsMaster = true
-	} else {
-		opts.IsMaster = false
 	}
 	if opts.Key == "" {
 		if viper.GetString("node.key") != "" {
