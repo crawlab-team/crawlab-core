@@ -57,11 +57,6 @@ func (app *Server) Start() {
 		if utils.IsDemo() {
 			go app.importDemo()
 		}
-
-		// run scripts
-		if utils.IsDocker() {
-			go app.runScripts()
-		}
 	}
 
 	// start node service
@@ -114,9 +109,15 @@ func NewServer(opts ...ServerOption) (app ServerApp) {
 		svcOpts = append(svcOpts, service.WithAddress(svr.grpcAddress))
 	}
 
-	// api
+	// master actions
 	if utils.IsMaster() {
+		// api
 		svr.api = GetApi()
+
+		// run scripts
+		if utils.IsDocker() {
+			go svr.runScripts()
+		}
 	}
 
 	// node service
