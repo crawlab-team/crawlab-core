@@ -42,9 +42,6 @@ func (svc *WorkerService) Init() (err error) {
 }
 
 func (svc *WorkerService) Start() {
-	// log info
-	svc.LogInfo()
-
 	// start grpc client
 	if err := svc.client.Start(); err != nil {
 		panic(err)
@@ -207,13 +204,6 @@ func (svc *WorkerService) GetAddress() (address interfaces.Address) {
 
 func (svc *WorkerService) SetAddress(address interfaces.Address) {
 	svc.address = address
-}
-
-func (svc *WorkerService) LogInfo() {
-	log.Infof("current node type: %s", utils.GetNodeType())
-	if utils.IsDocker() {
-		log.Infof("running in docker container")
-	}
 }
 
 func (svc *WorkerService) SetHeartbeatInterval(duration time.Duration) {

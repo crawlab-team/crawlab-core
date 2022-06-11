@@ -49,9 +49,6 @@ func (svc *MasterService) Init() (err error) {
 }
 
 func (svc *MasterService) Start() {
-	// log info
-	svc.LogInfo()
-
 	// create indexes
 	common.CreateIndexes()
 
@@ -183,13 +180,6 @@ func (svc *MasterService) StopOnError() {
 
 func (svc *MasterService) GetServer() (svr interfaces.GrpcServer) {
 	return svc.server
-}
-
-func (svc *MasterService) LogInfo() {
-	log.Infof("current node type: %s", utils.GetNodeType())
-	if utils.IsDocker() {
-		log.Infof("running in docker container")
-	}
 }
 
 func (svc *MasterService) monitor() (err error) {

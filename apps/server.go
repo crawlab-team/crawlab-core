@@ -3,6 +3,7 @@ package apps
 import (
 	"bufio"
 	"fmt"
+	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -52,6 +53,9 @@ func (app *Server) Init() {
 }
 
 func (app *Server) Start() {
+	// log node info
+	app.logNodeInfo()
+
 	if utils.IsMaster() {
 		// start api
 		go app.api.Start()
@@ -97,6 +101,13 @@ func (app *Server) runScripts() {
 	})
 	if err := cmd.Run(); err != nil {
 		trace.PrintError(err)
+	}
+}
+
+func (app *Server) logNodeInfo() {
+	log.Infof("current node type: %s", utils.GetNodeType())
+	if utils.IsDocker() {
+		log.Infof("running in docker container")
 	}
 }
 
