@@ -25,3 +25,9 @@ type MasterApp interface {
 type WorkerApp interface {
 	NodeApp
 }
+
+type ServerApp interface {
+	NodeApp
+	GetApi() (api *Api)
+	GetNodeService() (masterSvc interfaces.NodeService)
+}
