@@ -6,6 +6,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/go-trace"
+	"os/exec"
 	"time"
 )
 
@@ -37,8 +39,8 @@ func (app *Server) GetNodeService() (svc interfaces.NodeService) {
 }
 
 func (app *Server) Init() {
-	// initialize controllers
 	if utils.IsMaster() {
+		// initialize controllers
 		if err := controllers.InitControllers(); err != nil {
 			panic(err)
 		}
@@ -47,22 +49,22 @@ func (app *Server) Init() {
 
 func (app *Server) Start() {
 	if utils.IsMaster() {
+		// start api
 		go app.api.Start()
-	}
-	go app.nodeSvc.Start()
 
-	// import demo
-	if utils.IsMaster() && utils.IsDemo() {
-		go func() {
-			for {
-				if app.api.Ready() {
-					break
-				}
-				time.Sleep(1 * time.Second)
-			}
-			_ = utils.ImportDemo()
-		}()
+		// import demo
+		if utils.IsDemo() {
+			go app.importDemo()
+		}
+
+		// run scripts
+		if utils.IsDocker() {
+			go app.runScripts()
+		}
 	}
+
+	// start node service
+	go app.nodeSvc.Start()
 }
 
 func (app *Server) Wait() {
@@ -72,6 +74,23 @@ func (app *Server) Wait() {
 func (app *Server) Stop() {
 	app.api.Stop()
 	app.quit <- 1
+}
+
+func (app *Server) importDemo() {
+	for {
+		if app.api.Ready() {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	_ = utils.ImportDemo()
+}
+
+func (app *Server) runScripts() {
+	cmd := exec.Command("/bin/bash", "/app/bin/docker-start-master.sh")
+	if err := cmd.Run(); err != nil {
+		trace.PrintError(err)
+	}
 }
 
 func NewServer(opts ...ServerOption) (app ServerApp) {
