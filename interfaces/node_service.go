@@ -5,4 +5,5 @@ type NodeService interface {
 	WithConfigPath
 	WithAddress
 	GetConfigService() NodeConfigService
+	LogInfo()
 }
