@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -88,6 +89,8 @@ func (app *Server) importDemo() {
 
 func (app *Server) runScripts() {
 	cmd := exec.Command("/bin/bash", "/app/bin/docker-start-master.sh")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		trace.PrintError(err)
 	}
