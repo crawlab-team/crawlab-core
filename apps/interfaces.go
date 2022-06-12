@@ -31,3 +31,10 @@ type ServerApp interface {
 	GetApi() (api *Api)
 	GetNodeService() (masterSvc interfaces.NodeService)
 }
+
+type DockerApp interface {
+	App
+	GetParent() (parent *Server)
+	SetParent(parent *Server)
+	Ready() (ok bool)
+}

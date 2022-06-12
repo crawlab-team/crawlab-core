@@ -7,7 +7,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
-	"time"
 )
 
 type Server struct {
@@ -60,11 +59,6 @@ func (app *Server) Start() {
 
 		// start api
 		go app.api.Start()
-
-		// import demo
-		if utils.IsDemo() {
-			go app.importDemo()
-		}
 	}
 
 	// start node service
@@ -78,16 +72,6 @@ func (app *Server) Wait() {
 func (app *Server) Stop() {
 	app.api.Stop()
 	app.quit <- 1
-}
-
-func (app *Server) importDemo() {
-	for {
-		if app.api.Ready() {
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-	_ = utils.ImportDemo()
 }
 
 func (app *Server) logNodeInfo() {

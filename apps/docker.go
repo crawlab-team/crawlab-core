@@ -7,20 +7,26 @@ import (
 	"github.com/crawlab-team/crawlab-core/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"github.com/imroc/req"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type Docker struct {
+	// parent
+	parent *Server
+
 	// dependencies
 	interfaces.WithConfigPath
 
 	// seaweedfs log
 	fsLogFilePath string
 	fsLogFile     *os.File
+	fsReady       bool
 }
 
 func (app *Docker) Init() {
@@ -43,6 +49,10 @@ func (app *Docker) Init() {
 }
 
 func (app *Docker) Start() {
+	// import demo
+	if utils.IsDemo() {
+		go app.importDemo()
+	}
 }
 
 func (app *Docker) Wait() {
@@ -50,6 +60,19 @@ func (app *Docker) Wait() {
 }
 
 func (app *Docker) Stop() {
+}
+
+func (app *Docker) GetParent() (parent *Server) {
+	return app.parent
+}
+
+func (app *Docker) SetParent(parent *Server) {
+	app.parent = parent
+}
+
+func (app *Docker) Ready() (ok bool) {
+	return app.fsReady &&
+		app.parent.api.Ready()
 }
 
 func (app *Docker) replacePaths() (err error) {
@@ -128,9 +151,30 @@ func (app *Docker) startSeaweedFs() {
 			_, _ = app.fsLogFile.WriteString(line)
 		}
 	})
-	if err := cmd.Run(); err != nil {
-		trace.PrintError(err)
+	go func() {
+		if err := cmd.Run(); err != nil {
+			trace.PrintError(err)
+		}
+	}()
+	for {
+		_, err := req.Get("http://localhost:8888")
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		app.fsReady = true
+		return
 	}
+}
+
+func (app *Docker) importDemo() {
+	for {
+		if app.Ready() {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	_ = utils.ImportDemo()
 }
 
 func NewDocker() *Docker {
