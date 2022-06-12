@@ -177,20 +177,26 @@ func (app *Docker) importDemo() {
 	_ = utils.ImportDemo()
 }
 
-func NewDocker() *Docker {
+func NewDocker(opts ...DockerOption) *Docker {
 	dck := &Docker{
 		fsLogFilePath: "/var/log/weed.log",
 	}
+
+	for _, opt := range opts {
+		opt(dck)
+	}
+
 	dck.Init()
+
 	return dck
 }
 
 var dck *Docker
 
-func GetDocker() *Docker {
+func GetDocker(opts ...DockerOption) *Docker {
 	if dck != nil {
 		return dck
 	}
-	dck = NewDocker()
+	dck = NewDocker(opts...)
 	return dck
 }
