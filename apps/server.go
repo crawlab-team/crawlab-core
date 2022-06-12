@@ -106,7 +106,7 @@ func NewServer(opts ...ServerOption) (app ServerApp) {
 
 		// docker
 		if utils.IsDocker() {
-			svr.dck = GetDocker()
+			svr.dck = GetDocker(WithDockerParent(svr))
 		}
 	}
 
