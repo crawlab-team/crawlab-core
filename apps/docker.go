@@ -97,7 +97,7 @@ func (app *Docker) _replacePath(text, path, baseUrl string) (res string) {
 }
 
 func (app *Docker) startNginx() {
-	cmd := exec.Command("service", "nginx start")
+	cmd := exec.Command("service", "nginx", "start")
 	sys_exec.ConfigureCmdLogging(cmd, func(scanner *bufio.Scanner) {
 		for scanner.Scan() {
 			line := fmt.Sprintf("[nginx] %s\n", scanner.Text())
