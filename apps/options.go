@@ -15,3 +15,11 @@ func WithServerGrpcAddress(address interfaces.Address) ServerOption {
 		app.SetGrpcAddress(address)
 	}
 }
+
+type DockerOption func(dck DockerApp)
+
+func WithDockerParent(parent ServerApp) DockerOption {
+	return func(dck DockerApp) {
+		dck.SetParent(parent)
+	}
+}

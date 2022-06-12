@@ -18,7 +18,7 @@ import (
 
 type Docker struct {
 	// parent
-	parent *Server
+	parent ServerApp
 
 	// dependencies
 	interfaces.WithConfigPath
@@ -62,17 +62,17 @@ func (app *Docker) Wait() {
 func (app *Docker) Stop() {
 }
 
-func (app *Docker) GetParent() (parent *Server) {
+func (app *Docker) GetParent() (parent ServerApp) {
 	return app.parent
 }
 
-func (app *Docker) SetParent(parent *Server) {
+func (app *Docker) SetParent(parent ServerApp) {
 	app.parent = parent
 }
 
 func (app *Docker) Ready() (ok bool) {
 	return app.fsReady &&
-		app.parent.api.Ready()
+		app.parent.GetApi().Ready()
 }
 
 func (app *Docker) replacePaths() (err error) {

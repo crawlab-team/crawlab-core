@@ -34,7 +34,7 @@ type ServerApp interface {
 
 type DockerApp interface {
 	App
-	GetParent() (parent *Server)
-	SetParent(parent *Server)
+	GetParent() (parent ServerApp)
+	SetParent(parent ServerApp)
 	Ready() (ok bool)
 }
