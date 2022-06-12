@@ -1,18 +1,12 @@
 package apps
 
 import (
-	"bufio"
-	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/service"
-	"github.com/crawlab-team/crawlab-core/sys_exec"
 	"github.com/crawlab-team/crawlab-core/utils"
-	"github.com/crawlab-team/go-trace"
-	"os"
-	"os/exec"
 	"time"
 )
 
@@ -26,6 +20,7 @@ type Server struct {
 
 	// modules
 	api *Api
+	dck *Docker
 
 	// internals
 	quit chan int
@@ -48,10 +43,6 @@ func (app *Server) Init() {
 	app.logNodeInfo()
 
 	if utils.IsMaster() {
-		// run scripts
-		if utils.IsDocker() {
-			go app.runScripts()
-		}
 
 		// initialize controllers
 		if err := controllers.InitControllers(); err != nil {
@@ -62,6 +53,11 @@ func (app *Server) Init() {
 
 func (app *Server) Start() {
 	if utils.IsMaster() {
+		// start docker app
+		if utils.IsDocker() {
+			go app.dck.Start()
+		}
+
 		// start api
 		go app.api.Start()
 
@@ -94,21 +90,6 @@ func (app *Server) importDemo() {
 	_ = utils.ImportDemo()
 }
 
-func (app *Server) runScripts() {
-	cmdExec := "/bin/bash"
-	cmdStr := "/app/bin/docker-start-master.sh"
-	cmd := exec.Command(cmdExec, cmdStr)
-	sys_exec.ConfigureCmdLogging(cmd, func(scanner *bufio.Scanner) {
-		for scanner.Scan() {
-			line := fmt.Sprintf("running %s %s", cmdExec, cmdStr)
-			_, _ = os.Stdout.WriteString(line)
-		}
-	})
-	if err := cmd.Run(); err != nil {
-		trace.PrintError(err)
-	}
-}
-
 func (app *Server) logNodeInfo() {
 	log.Infof("current node type: %s", utils.GetNodeType())
 	if utils.IsDocker() {
@@ -134,10 +115,15 @@ func NewServer(opts ...ServerOption) (app ServerApp) {
 		svcOpts = append(svcOpts, service.WithAddress(svr.grpcAddress))
 	}
 
-	// master actions
+	// master modules
 	if utils.IsMaster() {
 		// api
 		svr.api = GetApi()
+
+		// docker
+		if utils.IsDocker() {
+			svr.dck = GetDocker()
+		}
 	}
 
 	// node service

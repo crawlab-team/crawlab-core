@@ -14,6 +14,15 @@ import (
 	"time"
 )
 
+func init() {
+	// set gin mode
+	if viper.GetString("gin.mode") == "" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(viper.GetString("gin.mode"))
+	}
+}
+
 type Api struct {
 	// dependencies
 	interfaces.WithConfigPath

@@ -82,8 +82,8 @@ func forceKillProcess(p *process.Process) (err error) {
 }
 
 func ConfigureCmdLogging(cmd *exec.Cmd, fn func(scanner *bufio.Scanner)) {
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
+	stdout, _ := (*cmd).StdoutPipe()
+	stderr, _ := (*cmd).StderrPipe()
 	scannerStdout := bufio.NewScanner(stdout)
 	scannerStderr := bufio.NewScanner(stderr)
 	go fn(scannerStdout)
