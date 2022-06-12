@@ -19,13 +19,13 @@ type Docker struct {
 	interfaces.WithConfigPath
 
 	// seaweedfs log
-	fsLogFile *os.File
+	fsLogFilePath string
+	fsLogFile     *os.File
 }
 
 func (app *Docker) Init() {
-	// seaweedfs log file
 	var err error
-	app.fsLogFile, err = os.OpenFile("/var/log/weed.log", os.O_APPEND|os.O_CREATE, os.FileMode(0777))
+	app.fsLogFile, err = os.OpenFile(app.fsLogFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.FileMode(0777))
 	if err != nil {
 		trace.PrintError(err)
 	}
@@ -134,7 +134,9 @@ func (app *Docker) startSeaweedFs() {
 }
 
 func NewDocker() *Docker {
-	dck := &Docker{}
+	dck := &Docker{
+		fsLogFilePath: "/var/log/weed.log",
+	}
 	dck.Init()
 	return dck
 }
