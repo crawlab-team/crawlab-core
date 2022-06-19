@@ -71,6 +71,10 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 		return b.Process(&m.PluginStatus)
 	case interfaces.ModelIdGit:
 		return b.Process(&m.Git)
+	case interfaces.ModelIdRole:
+		return b.Process(&m.Role)
+	case interfaces.ModelIdUserRole:
+		return b.Process(&m.UserRole)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

@@ -3,7 +3,7 @@ package controllers
 import "github.com/gin-gonic/gin"
 
 const (
-	ControllerIdNode = iota
+	ControllerIdNode = iota << 1
 	ControllerIdProject
 	ControllerIdSpider
 	ControllerIdTask
@@ -24,6 +24,8 @@ const (
 	ControllerIdFiler
 	ControllerIdPluginDo
 	ControllerIdGit
+	ControllerIdRole
+
 	ControllerIdVersion
 	ControllerIdI18n
 	ControllerIdSystemInfo

@@ -65,6 +65,10 @@ func NewModelDelegate(doc interfaces.Model, args ...interface{}) interfaces.Mode
 		return newModelDelegate(interfaces.ModelIdPluginStatus, doc, args...)
 	case *models.Git:
 		return newModelDelegate(interfaces.ModelIdGit, doc, args...)
+	case *models.Role:
+		return newModelDelegate(interfaces.ModelIdRole, doc, args...)
+	case *models.UserRole:
+		return newModelDelegate(interfaces.ModelIdUserRole, doc, args...)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
@@ -220,11 +224,6 @@ func (d *ModelDelegate) save() (err error) {
 	if err := d.upsertArtifact(); err != nil {
 		return trace.TraceError(err)
 	}
-
-	// TODO: implement with alternative
-	//if err := d.updateTags(); err != nil {
-	//	return trace.TraceError(err)
-	//}
 
 	return d.refresh()
 }

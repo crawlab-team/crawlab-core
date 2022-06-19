@@ -60,6 +60,10 @@ func (svc *BaseService) GetList(query bson.M, opts *mongo.FindOptions) (l interf
 	// find result
 	tic := time.Now()
 	log.Debugf("BaseService.GetList -> svc.find:start")
+	log.Debugf("BaseService.GetList -> svc.id: %v", svc.id)
+	log.Debugf("BaseService.GetList -> svc.col.GetName(): %v", svc.col.GetName())
+	log.Debugf("BaseService.GetList -> query: %v", query)
+	log.Debugf("BaseService.GetList -> opts: %v", opts)
 	fr := svc.find(query, opts)
 	log.Debugf("BaseService.GetList -> svc.find:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
 
@@ -96,6 +100,8 @@ func (svc *BaseService) UpdateDoc(query bson.M, doc interfaces.Model, fields []s
 }
 
 func (svc *BaseService) Insert(u interfaces.User, docs ...interface{}) (err error) {
+	log.Debugf("BaseService.Insert -> svc.col.GetName(): %v", svc.col.GetName())
+	log.Debugf("BaseService.Insert -> docs: %v", docs)
 	return svc.insert(u, docs...)
 }
 

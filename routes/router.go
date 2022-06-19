@@ -158,6 +158,9 @@ func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
 
 	// git
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/gits", controllers.GitController)
+
+	// role
+	svc.RegisterListControllerToGroup(groups.AuthGroup, "/roles", controllers.RoleController)
 }
 
 func registerRoutesFilterGroup(svc *RouterService, groups *RouterGroups) {

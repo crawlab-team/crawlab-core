@@ -24,6 +24,8 @@ type ModelMap struct {
 	ExtraValue     ExtraValue
 	PluginStatus   PluginStatus
 	Git            Git
+	Role           Role
+	UserRole       UserRole
 }
 
 type ModelListMap struct {
@@ -50,6 +52,8 @@ type ModelListMap struct {
 	ExtraValues     ExtraValueList
 	PluginStatus    PluginStatusList
 	Gits            GitList
+	Roles           RoleList
+	UserRoles       UserRoleList
 }
 
 func NewModelMap() (m *ModelMap) {
@@ -80,5 +84,7 @@ func NewModelListMap() (m *ModelListMap) {
 		Passwords:       PasswordList{},
 		ExtraValues:     ExtraValueList{},
 		PluginStatus:    PluginStatusList{},
+		Gits:            GitList{},
+		Roles:           RoleList{},
 	}
 }

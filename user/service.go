@@ -67,7 +67,7 @@ func (svc *Service) Create(opts *interfaces.UserCreateOptions, args ...interface
 	}
 
 	// check if user exists
-	if _, err := svc.modelSvc.GetUserByUsername(opts.Username, nil); err == nil {
+	if u, err := svc.modelSvc.GetUserByUsername(opts.Username, nil); err == nil && u != nil && !u.Id.IsZero() {
 		return trace.TraceError(errors.ErrorUserAlreadyExists)
 	}
 

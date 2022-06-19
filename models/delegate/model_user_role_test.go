@@ -5,14 +5,20 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 )
 
-func TestProject_Add(t *testing.T) {
+func init() {
+	viper.Set("mongo.db", "crawlab_test")
+}
+
+func TestUserRole_Add(t *testing.T) {
 	SetupTest(t)
 
-	p := &models2.Project{}
+	p := &models2.UserRole{}
 
 	err := delegate.NewModelDelegate(p).Add()
 	require.Nil(t, err)
@@ -25,30 +31,34 @@ func TestProject_Add(t *testing.T) {
 	require.NotNil(t, a.GetSys().GetUpdateTs())
 }
 
-func TestProject_Save(t *testing.T) {
+func TestUserRole_Save(t *testing.T) {
 	SetupTest(t)
 
-	p := &models2.Project{}
+	p := &models2.UserRole{
+		UserId: primitive.NewObjectID(),
+		RoleId: primitive.NewObjectID(),
+	}
 
 	err := delegate.NewModelDelegate(p).Add()
 	require.Nil(t, err)
 
-	name := "test_project"
-	p.Name = name
+	uid := primitive.NewObjectID()
+	rid := primitive.NewObjectID()
+	p.UserId = uid
+	p.RoleId = rid
 	err = delegate.NewModelDelegate(p).Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(interfaces.ModelColNameProject).FindId(p.Id).One(&p)
+	err = mongo.GetMongoCol(interfaces.ModelColNameUserRole).FindId(p.Id).One(&p)
 	require.Nil(t, err)
-	require.Equal(t, name, p.Name)
+	require.Equal(t, uid, p.UserId)
+	require.Equal(t, rid, p.RoleId)
 }
 
-func TestProject_Delete(t *testing.T) {
+func TestUserRole_Delete(t *testing.T) {
 	SetupTest(t)
 
-	p := &models2.Project{
-		Name: "test_project",
-	}
+	p := &models2.UserRole{}
 
 	err := delegate.NewModelDelegate(p).Add()
 	require.Nil(t, err)
@@ -62,4 +72,24 @@ func TestProject_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, a.Obj)
 	require.True(t, a.Del)
+}
+
+func TestUserRole_AddDuplicates(t *testing.T) {
+	SetupTest(t)
+
+	uid := primitive.NewObjectID()
+	rid := primitive.NewObjectID()
+	p := &models2.UserRole{
+		UserId: uid,
+		RoleId: rid,
+	}
+	p2 := &models2.UserRole{
+		UserId: uid,
+		RoleId: rid,
+	}
+
+	err := delegate.NewModelDelegate(p).Add()
+	require.Nil(t, err)
+	err = delegate.NewModelDelegate(p2).Add()
+	require.NotNil(t, err)
 }

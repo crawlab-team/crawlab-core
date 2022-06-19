@@ -35,6 +35,8 @@ const (
 	ModelIdExtraValue
 	ModelIdPluginStatus
 	ModelIdGit
+	ModelIdRole
+	ModelIdUserRole
 )
 
 const (
@@ -60,6 +62,8 @@ const (
 	ModelColNameExtraValues    = "extra_values"
 	ModelColNamePluginStatus   = "plugin_status"
 	ModelColNameGit            = "gits"
+	ModelColNameRole           = "roles"
+	ModelColNameUserRole       = "user_roles"
 )
 
 type ModelWithTags interface {

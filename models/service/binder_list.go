@@ -72,6 +72,10 @@ func (b *ListBinder) Bind() (l interfaces.List, err error) {
 		return b.Process(&m.PluginStatus)
 	case interfaces.ModelIdGit:
 		return b.Process(&m.Gits)
+	case interfaces.ModelIdRole:
+		return b.Process(&m.Roles)
+	case interfaces.ModelIdUserRole:
+		return b.Process(&m.UserRoles)
 	default:
 		return l, errors.ErrorModelInvalidModelId
 	}

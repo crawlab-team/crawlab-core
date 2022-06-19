@@ -9,10 +9,10 @@ import (
 	"testing"
 )
 
-func TestProject_Add(t *testing.T) {
+func TestRole_Add(t *testing.T) {
 	SetupTest(t)
 
-	p := &models2.Project{}
+	p := &models2.Role{}
 
 	err := delegate.NewModelDelegate(p).Add()
 	require.Nil(t, err)
@@ -25,29 +25,29 @@ func TestProject_Add(t *testing.T) {
 	require.NotNil(t, a.GetSys().GetUpdateTs())
 }
 
-func TestProject_Save(t *testing.T) {
+func TestRole_Save(t *testing.T) {
 	SetupTest(t)
 
-	p := &models2.Project{}
+	p := &models2.Role{}
 
 	err := delegate.NewModelDelegate(p).Add()
 	require.Nil(t, err)
 
-	name := "test_project"
+	name := "test_role"
 	p.Name = name
 	err = delegate.NewModelDelegate(p).Save()
 	require.Nil(t, err)
 
-	err = mongo.GetMongoCol(interfaces.ModelColNameProject).FindId(p.Id).One(&p)
+	err = mongo.GetMongoCol(interfaces.ModelColNameRole).FindId(p.Id).One(&p)
 	require.Nil(t, err)
 	require.Equal(t, name, p.Name)
 }
 
-func TestProject_Delete(t *testing.T) {
+func TestRole_Delete(t *testing.T) {
 	SetupTest(t)
 
-	p := &models2.Project{
-		Name: "test_project",
+	p := &models2.Role{
+		Name: "test_role",
 	}
 
 	err := delegate.NewModelDelegate(p).Add()

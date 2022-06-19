@@ -120,6 +120,12 @@ func CreateIndexes() {
 		{Keys: bson.D{{"plugin_id", 1}, {"node_id", 1}}, Options: options.Index().SetUnique(true)},
 	})
 
+	// user role relations
+	mongo.GetMongoCol(interfaces.ModelColNameUserRole).MustCreateIndexes([]mongo2.IndexModel{
+		{Keys: bson.D{{"user_id", 1}, {"role_id", 1}}, Options: options.Index().SetUnique(true)},
+		{Keys: bson.D{{"role_id", 1}, {"user_id", 1}}, Options: options.Index().SetUnique(true)},
+	})
+
 	// cache
 	mongo.GetMongoCol(constants.CacheColName).MustCreateIndexes([]mongo2.IndexModel{
 		{

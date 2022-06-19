@@ -12,11 +12,7 @@ import (
 func TestNode_Add(t *testing.T) {
 	SetupTest(t)
 
-	n := &models2.Node{
-		Tags: []models2.Tag{
-			{Name: "tag 1"},
-		},
-	}
+	n := &models2.Node{}
 
 	err := delegate.NewModelDelegate(n).Add()
 	require.Nil(t, err)
@@ -28,9 +24,6 @@ func TestNode_Add(t *testing.T) {
 	require.Equal(t, n.Id, a.GetId())
 	require.NotNil(t, a.GetSys().GetCreateTs())
 	require.NotNil(t, a.GetSys().GetUpdateTs())
-
-	// validate tags
-	require.NotNil(t, a.GetTagIds())
 }
 
 func TestNode_Save(t *testing.T) {

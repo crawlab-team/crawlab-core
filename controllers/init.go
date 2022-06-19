@@ -33,6 +33,7 @@ func InitControllers() (err error) {
 	I18nController = NewActionControllerDelegate(ControllerIdI18n, getI18nActions())
 	SystemInfoController = NewActionControllerDelegate(ControllerIdSystemInfo, getSystemInfoActions())
 	DemoController = NewActionControllerDelegate(ControllerIdDemo, getDemoActions())
+	RoleController = NewListControllerDelegate(ControllerIdRole, modelSvc.GetBaseService(interfaces.ModelIdRole))
 
 	return nil
 }
