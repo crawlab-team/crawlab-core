@@ -10,6 +10,7 @@ import (
 
 type ModelService interface {
 	interfaces.ModelService
+	DropAll() (err error)
 	GetNodeById(id primitive.ObjectID) (res *models.Node, err error)
 	GetNode(query bson.M, opts *mongo.FindOptions) (res *models.Node, err error)
 	GetNodeList(query bson.M, opts *mongo.FindOptions) (res []models.Node, err error)
@@ -96,5 +97,11 @@ type ModelService interface {
 	GetUserRoleList(query bson.M, opts *mongo.FindOptions) (res []models.UserRole, err error)
 	GetUserRoleListByUserId(id primitive.ObjectID, opts *mongo.FindOptions) (res []models.UserRole, err error)
 	GetUserRoleListByRoleId(id primitive.ObjectID, opts *mongo.FindOptions) (res []models.UserRole, err error)
-	DropAll() (err error)
+	GetPermissionById(id primitive.ObjectID) (res *models.Permission, err error)
+	GetPermission(query bson.M, opts *mongo.FindOptions) (res *models.Permission, err error)
+	GetPermissionList(query bson.M, opts *mongo.FindOptions) (res []models.Permission, err error)
+	GetRolePermission(query bson.M, opts *mongo.FindOptions) (res *models.RolePermission, err error)
+	GetRolePermissionList(query bson.M, opts *mongo.FindOptions) (res []models.RolePermission, err error)
+	GetRolePermissionListByRoleId(id primitive.ObjectID, opts *mongo.FindOptions) (res []models.RolePermission, err error)
+	GetRolePermissionListByPermissionId(id primitive.ObjectID, opts *mongo.FindOptions) (res []models.RolePermission, err error)
 }

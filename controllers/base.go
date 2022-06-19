@@ -25,6 +25,7 @@ const (
 	ControllerIdPluginDo
 	ControllerIdGit
 	ControllerIdRole
+	ControllerIdPermission
 
 	ControllerIdVersion
 	ControllerIdI18n

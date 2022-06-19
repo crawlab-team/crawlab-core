@@ -126,6 +126,12 @@ func CreateIndexes() {
 		{Keys: bson.D{{"role_id", 1}, {"user_id", 1}}, Options: options.Index().SetUnique(true)},
 	})
 
+	// role permission relations
+	mongo.GetMongoCol(interfaces.ModelColNameRolePermission).MustCreateIndexes([]mongo2.IndexModel{
+		{Keys: bson.D{{"role_id", 1}, {"permission_id", 1}}, Options: options.Index().SetUnique(true)},
+		{Keys: bson.D{{"permission_id", 1}, {"role_id", 1}}, Options: options.Index().SetUnique(true)},
+	})
+
 	// cache
 	mongo.GetMongoCol(constants.CacheColName).MustCreateIndexes([]mongo2.IndexModel{
 		{

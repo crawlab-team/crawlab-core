@@ -69,6 +69,9 @@ func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.Model, err error) {
 	case ControllerIdRole:
 		err = c.ShouldBindJSON(&m.Role)
 		return &m.Role, nil
+	case ControllerIdPermission:
+		err = c.ShouldBindJSON(&m.Permission)
+		return &m.Permission, nil
 	default:
 		return nil, errors.ErrorControllerInvalidControllerId
 	}

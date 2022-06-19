@@ -62,6 +62,12 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 		return newModelDelegate(interfaces.ModelIdPluginStatus, doc, opts...)
 	case *models.Git:
 		return newModelDelegate(interfaces.ModelIdGit, doc, opts...)
+	case *models.UserRole:
+		return newModelDelegate(interfaces.ModelIdUserRole, doc, opts...)
+	case *models.Permission:
+		return newModelDelegate(interfaces.ModelIdPermission, doc, opts...)
+	case *models.RolePermission:
+		return newModelDelegate(interfaces.ModelIdRolePermission, doc, opts...)
 	default:
 		_ = trace.TraceError(errors.ErrorModelInvalidType)
 		return nil

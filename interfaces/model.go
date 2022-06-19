@@ -37,6 +37,8 @@ const (
 	ModelIdGit
 	ModelIdRole
 	ModelIdUserRole
+	ModelIdPermission
+	ModelIdRolePermission
 )
 
 const (
@@ -64,6 +66,8 @@ const (
 	ModelColNameGit            = "gits"
 	ModelColNameRole           = "roles"
 	ModelColNameUserRole       = "user_roles"
+	ModelColNamePermission     = "permissions"
+	ModelColNameRolePermission = "role_permissions"
 )
 
 type ModelWithTags interface {

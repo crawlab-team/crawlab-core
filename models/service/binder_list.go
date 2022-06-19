@@ -76,6 +76,10 @@ func (b *ListBinder) Bind() (l interfaces.List, err error) {
 		return b.Process(&m.Roles)
 	case interfaces.ModelIdUserRole:
 		return b.Process(&m.UserRoles)
+	case interfaces.ModelIdPermission:
+		return b.Process(&m.PermissionList)
+	case interfaces.ModelIdRolePermission:
+		return b.Process(&m.RolePermissionList)
 	default:
 		return l, errors.ErrorModelInvalidModelId
 	}
