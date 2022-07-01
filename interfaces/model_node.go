@@ -3,8 +3,7 @@ package interfaces
 import "time"
 
 type Node interface {
-	Model
-	GetName() (name string)
+	ModelWithNameDescription
 	GetKey() (key string)
 	GetIsMaster() (ok bool)
 	GetActive() (active bool)

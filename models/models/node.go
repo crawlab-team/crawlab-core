@@ -36,6 +36,18 @@ func (n *Node) GetName() (name string) {
 	return n.Name
 }
 
+func (n *Node) SetName(name string) {
+	n.Name = name
+}
+
+func (n *Node) GetDescription() (description string) {
+	return n.Description
+}
+
+func (n *Node) SetDescription(description string) {
+	n.Description = description
+}
+
 func (n *Node) GetKey() (key string) {
 	return n.Key
 }

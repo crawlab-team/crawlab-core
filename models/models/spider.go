@@ -72,8 +72,20 @@ func (s *Spider) SetId(id primitive.ObjectID) {
 	s.Id = id
 }
 
-func (s *Spider) GetName() (n string) {
+func (s *Spider) GetName() (name string) {
 	return s.Name
+}
+
+func (s *Spider) SetName(name string) {
+	s.Name = name
+}
+
+func (s *Spider) GetDescription() (description string) {
+	return s.Description
+}
+
+func (s *Spider) SetDescription(description string) {
+	s.Description = description
 }
 
 func (s *Spider) GetType() (ty string) {

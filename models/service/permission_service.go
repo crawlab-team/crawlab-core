@@ -32,9 +32,17 @@ func (svc *Service) GetPermission(query bson.M, opts *mongo.FindOptions) (res *m
 
 func (svc *Service) GetPermissionList(query bson.M, opts *mongo.FindOptions) (res []models2.Permission, err error) {
 	l, err := svc.GetBaseService(interfaces.ModelIdPermission).GetList(query, opts)
+	if err != nil {
+		return nil, err
+	}
 	for _, doc := range l.GetModels() {
 		d := doc.(*models2.Permission)
 		res = append(res, *d)
 	}
 	return res, nil
+}
+
+func (svc *Service) GetPermissionByKey(key string, opts *mongo.FindOptions) (res *models2.Permission, err error) {
+	query := bson.M{"key": key}
+	return svc.GetPermission(query, opts)
 }

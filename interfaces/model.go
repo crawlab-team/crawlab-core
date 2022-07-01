@@ -75,3 +75,17 @@ type ModelWithTags interface {
 	SetTags(tags []Tag)
 	GetTags() (tags []Tag)
 }
+
+type ModelWithNameDescription interface {
+	Model
+	GetName() (name string)
+	SetName(name string)
+	GetDescription() (description string)
+	SetDescription(description string)
+}
+
+type ModelWithKey interface {
+	Model
+	GetKey() (key string)
+	SetKey(key string)
+}

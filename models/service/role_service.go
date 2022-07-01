@@ -32,6 +32,9 @@ func (svc *Service) GetRole(query bson.M, opts *mongo.FindOptions) (res *models2
 
 func (svc *Service) GetRoleList(query bson.M, opts *mongo.FindOptions) (res []models2.Role, err error) {
 	l, err := svc.GetBaseService(interfaces.ModelIdRole).GetList(query, opts)
+	if err != nil {
+		return nil, err
+	}
 	for _, doc := range l.GetModels() {
 		d := doc.(*models2.Role)
 		res = append(res, *d)
@@ -41,5 +44,10 @@ func (svc *Service) GetRoleList(query bson.M, opts *mongo.FindOptions) (res []mo
 
 func (svc *Service) GetRoleByName(name string, opts *mongo.FindOptions) (res *models2.Role, err error) {
 	query := bson.M{"name": name}
+	return svc.GetRole(query, opts)
+}
+
+func (svc *Service) GetRoleByKey(key string, opts *mongo.FindOptions) (res *models2.Role, err error) {
+	query := bson.M{"key": key}
 	return svc.GetRole(query, opts)
 }

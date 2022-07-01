@@ -32,6 +32,9 @@ func (svc *Service) GetUserRole(query bson.M, opts *mongo.FindOptions) (res *mod
 
 func (svc *Service) GetUserRoleList(query bson.M, opts *mongo.FindOptions) (res []models2.UserRole, err error) {
 	l, err := svc.GetBaseService(interfaces.ModelIdUserRole).GetList(query, opts)
+	if err != nil {
+		return nil, err
+	}
 	for _, doc := range l.GetModels() {
 		d := doc.(*models2.UserRole)
 		res = append(res, *d)

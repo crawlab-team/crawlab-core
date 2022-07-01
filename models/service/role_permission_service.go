@@ -32,6 +32,9 @@ func (svc *Service) GetRolePermission(query bson.M, opts *mongo.FindOptions) (re
 
 func (svc *Service) GetRolePermissionList(query bson.M, opts *mongo.FindOptions) (res []models2.RolePermission, err error) {
 	l, err := svc.GetBaseService(interfaces.ModelIdRolePermission).GetList(query, opts)
+	if err != nil {
+		return nil, err
+	}
 	for _, doc := range l.GetModels() {
 		d := doc.(*models2.RolePermission)
 		res = append(res, *d)

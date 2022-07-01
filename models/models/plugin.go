@@ -47,6 +47,14 @@ func (p *Plugin) SetName(name string) {
 	p.Name = name
 }
 
+func (p *Plugin) GetDescription() (description string) {
+	return p.Description
+}
+
+func (p *Plugin) SetDescription(description string) {
+	p.Description = description
+}
+
 func (p *Plugin) GetShortName() (shortName string) {
 	return p.ShortName
 }
