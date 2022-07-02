@@ -1,0 +1,651 @@
+openapi: 3.1.0
+info:
+  title: Crawlab API
+  version: 0.6.0
+  description: Crawlab API
+  license:
+    name: BSD-3-Clause
+    url: https://github.com/crawlab-team/crawlab-pro/blob/main/LICENSE
+
+servers:
+  - url: http://<server_address>/api
+    description: Docker API
+  - url: http://localhost:8000
+    description: Local API
+
+tags:
+  - name: login
+    description: Login related
+    x-displayName: Login
+  - name: version
+    description: Version related
+    x-displayName: Version
+  - name: node
+    description: Node related
+    x-displayName: Node
+  - name: project
+    description: Project related
+    x-displayName: Project
+
+x-tagGroups:
+  - name: Anomalous
+    tags:
+      - login
+      - version
+  - name: Auth Required
+    tags:
+      - node
+      - project
+
+paths:
+  # login
+  /login:
+    post:
+      tags: [ login ]
+      operationId: postLogin
+      summary: Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostLoginResponse'
+        401:
+          description: Login failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedErrorResponse'
+  /logout:
+    post:
+      tags: [ login ]
+      operationId: postLogout
+      summary: Logout
+      responses:
+        200:
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+
+  # version
+  /version:
+    get:
+      tags: [ version ]
+      operationId: getVersion
+      summary: Get version
+      responses:
+        200:
+          description: Get version successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetVersionResponse'
+
+  # node
+  /nodes:
+    get:
+      tags: [ node ]
+      operationId: getNodes
+      summary: Get nodes
+      security:
+        - apiToken: [ ]
+      parameters:
+        - $ref: '#/components/schemas/PaginationPageParam'
+        - $ref: '#/components/schemas/PaginationSizeParam'
+      responses:
+        200:
+          description: Get nodes successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNodesResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /nodes/{id}:
+    get:
+      tags: [ node ]
+      operationId: getNode
+      summary: Get node
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Node ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get node successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNodeResponse'
+        404:
+          description: Node not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+
+  # project
+  /projects:
+    get:
+      tags: [ project ]
+      operationId: getProjects
+      summary: Get projects
+      security:
+        - apiToken: [ ]
+      parameters:
+        - $ref: '#/components/schemas/PaginationPageParam'
+        - $ref: '#/components/schemas/PaginationSizeParam'
+      responses:
+        200:
+          description: Get projects successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectsResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    put:
+      tags: [ project ]
+      operationId: putProject
+      summary: Create project
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutProjectRequest'
+      responses:
+        200:
+          description: Create project successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    post:
+      tags: [ project ]
+      operationId: postProjects
+      summary: Update projects
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequestPayloadWithStringData'
+      responses:
+        200:
+          description: Update project successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ project ]
+      operationId: deleteProjects
+      summary: Delete projects
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequestPayload'
+      responses:
+        200:
+          description: Delete project successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /projects/batch:
+    put:
+      tags: [ project ]
+      operationId: putProjects
+      summary: Create projects
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PutProjectRequest'
+      responses:
+        200:
+          description: Update project successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /projects/{id}:
+    get:
+      tags: [ project ]
+      operationId: getProject
+      summary: Get project
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get project successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectResponse'
+        404:
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    post:
+      tags: [ project ]
+      operationId: postProject
+      summary: Update project
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+      responses:
+        200:
+          description: Update project successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ project ]
+      operationId: deleteProject
+      summary: Delete project
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Delete project successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Project not found
+        content:
+          application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+components:
+  schemas:
+    # request params
+    GetListRequestParams:
+      description: Get list request params
+      properties:
+        all:
+          type: boolean
+          description: Whether to get all records
+        page:
+          type: integer
+          description: Page number
+        size:
+          type: integer
+          description: Page size
+    PaginationPageParam:
+      in: query
+      name: page
+      schema:
+        type: integer
+    PaginationSizeParam:
+      in: query
+      name: size
+      schema:
+        type: integer
+
+    # base request bodies
+    BatchRequestPayload:
+      description: Batch request payload
+      properties:
+        ids:
+          type: array
+          description: Model IDs to operate
+          items:
+            type: string
+    BatchRequestPayloadWithStringData:
+      description: Batch request payload with string data
+      properties:
+        ids:
+          type: array
+          description: Model IDs to operate
+          items:
+            type: string
+        data:
+          type: string
+          description: JSON marshalled model fields data to operate
+        fields:
+          type: array
+          description: Fields to operate
+          items:
+            type: string
+
+    # request bodies
+    PutProjectRequest:
+      description: Put project request body
+      properties:
+        name:
+          type: string
+          description: Project name
+        description:
+          type: string
+          description: Project description
+
+    # base responses
+    BaseResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Status of the response
+        message:
+          type: string
+          description: Message of the response
+    EmptyResponse:
+      description: Empty response body
+      $ref: '#/components/schemas/BaseResponse'
+    Response:
+      description: Response body
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+    ListResponse:
+      description: List response body
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+            total:
+              type: integer
+    ErrorResponse:
+      description: Error response body
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            error:
+              type: string
+
+    # error response
+    NotFoundErrorResponse:
+      description: Not found error response body
+      status: 404
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequestErrorResponse:
+      description: Bad request error response
+      status: 400
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnauthorizedErrorResponse:
+      description: Unauthorized error response
+      status: 401
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    # success response
+    PostLoginResponse:
+      type: object
+      properties:
+        data:
+          type: string
+          description: API token
+    GetVersionResponse:
+      type: object
+      properties:
+        data:
+          type: string
+          description: Version
+    GetNodesResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Node'
+    GetNodeResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Node'
+    GetProjectsResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Project'
+    GetProjectResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Project'
+
+    # models
+    Model:
+      description: Base model
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID of the model (MongoDB ObjectID)
+    ModelWithNameDescription:
+      allOf:
+        - $ref: '#/components/schemas/Model'
+        - properties:
+            name:
+              type: string
+              description: Name of the model
+            description:
+              type: string
+              description: Description of the model
+    ModelWithKey:
+      allOf:
+        - $ref: '#/components/schemas/Model'
+        - properties:
+            key:
+              type: string
+              description: Key of the model
+    Node:
+      description: Node model
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ModelWithKey'
+        - $ref: '#/components/schemas/ModelWithNameDescription'
+        - properties:
+            ip:
+              description: Node IP
+              type: string
+            port:
+              description: Node port
+              type: string
+            mac:
+              description: Node MAC
+              type: string
+            hostname:
+              description: Node hostname
+              type: string
+            is_master:
+              description: Whether the node is master
+              type: boolean
+            status:
+              description: Node current status
+              type: string
+              enum:
+                - online
+                - offline
+            enabled:
+              description: Node enabled
+              type: boolean
+            active:
+              description: Node active
+              type: boolean
+            active_ts:
+              description: Node active timestamp
+              type: string
+              format: date-time
+            available_runners:
+              description: Available number of available runners of the node
+              type: integer
+            max_runners:
+              description: Max number of runners of the node
+              type: integer
+    Project:
+      description: Project model
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ModelWithNameDescription'
+        - properties:
+            spiders:
+              description: Spiders of the project
+              type: integer
+
+  securitySchemes:
+    apiToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: API Token
+      x-displayName: API Token
