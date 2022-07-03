@@ -54,6 +54,9 @@ paths:
                   type: string
                 password:
                   type: string
+            example:
+              username: admin
+              password: admin
       responses:
         200:
           description: Login successful
