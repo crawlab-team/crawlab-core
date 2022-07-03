@@ -103,8 +103,14 @@ paths:
       security:
         - apiToken: [ ]
       parameters:
-        - $ref: '#/components/schemas/PaginationPageParam'
-        - $ref: '#/components/schemas/PaginationSizeParam'
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: size
+          schema:
+            type: integer
       responses:
         200:
           description: Get nodes successful
@@ -161,8 +167,14 @@ paths:
       security:
         - apiToken: [ ]
       parameters:
-        - $ref: '#/components/schemas/PaginationPageParam'
-        - $ref: '#/components/schemas/PaginationSizeParam'
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: size
+          schema:
+            type: integer
       responses:
         200:
           description: Get projects successful
@@ -405,16 +417,6 @@ components:
         size:
           type: integer
           description: Page size
-    PaginationPageParam:
-      in: query
-      name: page
-      schema:
-        type: integer
-    PaginationSizeParam:
-      in: query
-      name: size
-      schema:
-        type: integer
 
     # base request bodies
     BatchRequestPayload:
