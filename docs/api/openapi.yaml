@@ -8,7 +8,7 @@ info:
     url: https://github.com/crawlab-team/crawlab-pro/blob/main/LICENSE
 
 servers:
-  - url: http://<server_address>/api
+  - url: http://localhost:8080/api
     description: Docker API
   - url: http://localhost:8000
     description: Local API
