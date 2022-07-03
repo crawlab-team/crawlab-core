@@ -281,12 +281,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmptyResponse'
-        404:
-          description: Project not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFoundErrorResponse'
         400:
           description: Bad request
           content:
@@ -385,16 +379,17 @@ paths:
                 $ref: '#/components/schemas/EmptyResponse'
         404:
           description: Project not found
-        content:
-          application/json:
-          schema:
-            $ref: '#/components/schemas/NotFoundErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
         400:
           description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
+
 components:
   schemas:
     # request params
@@ -501,25 +496,13 @@ components:
     # error response
     NotFoundErrorResponse:
       description: Not found error response body
-      status: 404
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+      $ref: '#/components/schemas/ErrorResponse'
     BadRequestErrorResponse:
       description: Bad request error response
-      status: 400
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+      $ref: '#/components/schemas/ErrorResponse'
     UnauthorizedErrorResponse:
       description: Unauthorized error response
-      status: 401
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+      $ref: '#/components/schemas/ErrorResponse'
 
     # success response
     PostLoginResponse:
