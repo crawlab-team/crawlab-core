@@ -404,20 +404,6 @@ paths:
 
 components:
   schemas:
-    # request params
-    GetListRequestParams:
-      description: Get list request params
-      properties:
-        all:
-          type: boolean
-          description: Whether to get all records
-        page:
-          type: integer
-          description: Page number
-        size:
-          type: integer
-          description: Page size
-
     # base request bodies
     BatchRequestPayload:
       description: Batch request payload
