@@ -1,0 +1,35 @@
+name: "Update API Doc"
+
+on:
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  update:
+    name: Update API Doc
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+      - name: Install
+        run: |
+          cd docs
+          npm install -g yarn
+          rm -rf .npmrc
+          yarn install
+      - name: Build
+        run: |
+          cd docs
+          yarn run build
+      - name: Publish
+        run: |
+          cd docs
+          yarn run publish
+        env:
+          QINIU_ACCESS_KEY: ${{secrets.QINIU_ACCESS_KEY}}
+          QINIU_SECRET_KEY: ${{secrets.QINIU_SECRET_KEY}}
+          QINIU_BUCKET: ${{secrets.QINIU_BUCKET}}
+          QINIU_ZONE: ${{secrets.QINIU_ZONE}
