@@ -38,7 +38,7 @@ type scheduleController struct {
 	ctx *scheduleContext
 }
 
-func (ctr *scheduleController) Put(c *gin.Context) {
+func (ctr *scheduleController) Post(c *gin.Context) {
 	var s models.Schedule
 	if err := c.ShouldBindJSON(&s); err != nil {
 		HandleErrorBadRequest(c, err)

@@ -35,7 +35,7 @@ func (ctr *settingController) Get(c *gin.Context) {
 	HandleSuccessWithData(c, s)
 }
 
-func (ctr *settingController) Post(c *gin.Context) {
+func (ctr *settingController) Put(c *gin.Context) {
 	// key
 	key := c.Param("id")
 

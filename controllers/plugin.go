@@ -55,8 +55,8 @@ type pluginController struct {
 	ctx *pluginContext
 }
 
-func (ctr *pluginController) Put(c *gin.Context) {
-	s, err := ctr.ctx.put(c)
+func (ctr *pluginController) Post(c *gin.Context) {
+	s, err := ctr.ctx.post(c)
 	if err != nil {
 		return
 	}
@@ -174,7 +174,7 @@ func (ctx *pluginContext) stop(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-func (ctx *pluginContext) put(c *gin.Context) (p *models.Plugin, err error) {
+func (ctx *pluginContext) post(c *gin.Context) (p *models.Plugin, err error) {
 	// bind
 	p = &models.Plugin{}
 	if err := c.ShouldBindJSON(&p); err != nil {

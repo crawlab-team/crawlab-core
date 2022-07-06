@@ -18,14 +18,14 @@ type nodeController struct {
 	ListControllerDelegate
 }
 
-func (ctr *nodeController) Put(c *gin.Context) {
+func (ctr *nodeController) Post(c *gin.Context) {
 	var n models.Node
 	if err := c.ShouldBindJSON(&n); err != nil {
 		HandleErrorBadRequest(c, err)
 		return
 	}
 
-	if err := ctr._put(c, &n); err != nil {
+	if err := ctr._post(c, &n); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -33,7 +33,7 @@ func (ctr *nodeController) Put(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-func (ctr *nodeController) PutList(c *gin.Context) {
+func (ctr *nodeController) PostList(c *gin.Context) {
 	// bind
 	var docs []models.Node
 	if err := c.ShouldBindJSON(&docs); err != nil {
@@ -46,7 +46,7 @@ func (ctr *nodeController) PutList(c *gin.Context) {
 
 	// iterate nodes
 	for _, n := range docs {
-		if err := ctr._put(c, &n); err != nil {
+		if err := ctr._post(c, &n); err != nil {
 			trace.PrintError(err)
 			continue
 		}
@@ -57,7 +57,7 @@ func (ctr *nodeController) PutList(c *gin.Context) {
 	HandleSuccessWithData(c, docs)
 }
 
-func (ctr *nodeController) _put(c *gin.Context, n *models.Node) (err error) {
+func (ctr *nodeController) _post(c *gin.Context, n *models.Node) (err error) {
 	// set default key
 	if n.Key == "" {
 		id, err := uuid.NewUUID()

@@ -130,16 +130,16 @@ func (ctr *spiderController) Get(c *gin.Context) {
 	ctr.ctx._get(c)
 }
 
-func (ctr *spiderController) Put(c *gin.Context) {
-	s, err := ctr.ctx._put(c)
+func (ctr *spiderController) Post(c *gin.Context) {
+	s, err := ctr.ctx._post(c)
 	if err != nil {
 		return
 	}
 	HandleSuccessWithData(c, s)
 }
 
-func (ctr *spiderController) Post(c *gin.Context) {
-	s, err := ctr.ctx._post(c)
+func (ctr *spiderController) Put(c *gin.Context) {
+	s, err := ctr.ctx._put(c)
 	if err != nil {
 		return
 	}
@@ -720,8 +720,17 @@ func (ctx *spiderContext) _post(c *gin.Context) (s *models.Spider, err error) {
 		return nil, err
 	}
 
-	// save
-	if err := delegate2.NewModelDelegate(s, GetUserFromContext(c)).Save(); err != nil {
+	// add
+	if err := delegate2.NewModelDelegate(s, GetUserFromContext(c)).Add(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return nil, err
+	}
+
+	// add stat
+	st := &models.SpiderStat{
+		Id: s.GetId(),
+	}
+	if err := delegate2.NewModelDelegate(st, GetUserFromContext(c)).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return nil, err
 	}
@@ -743,17 +752,8 @@ func (ctx *spiderContext) _put(c *gin.Context) (s *models.Spider, err error) {
 		return nil, err
 	}
 
-	// add
-	if err := delegate2.NewModelDelegate(s, GetUserFromContext(c)).Add(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return nil, err
-	}
-
-	// add stat
-	st := &models.SpiderStat{
-		Id: s.GetId(),
-	}
-	if err := delegate2.NewModelDelegate(st, GetUserFromContext(c)).Add(); err != nil {
+	// save
+	if err := delegate2.NewModelDelegate(s, GetUserFromContext(c)).Save(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return nil, err
 	}

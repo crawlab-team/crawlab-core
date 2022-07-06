@@ -35,9 +35,9 @@ func getUserActions() []Action {
 			HandlerFunc: userCtx.getMe,
 		},
 		{
-			Method:      http.MethodPost,
+			Method:      http.MethodPut,
 			Path:        "/me",
-			HandlerFunc: userCtx.postMe,
+			HandlerFunc: userCtx.putMe,
 		},
 	}
 }
@@ -48,7 +48,7 @@ type userController struct {
 	ctx *userContext
 }
 
-func (ctr *userController) Put(c *gin.Context) {
+func (ctr *userController) Post(c *gin.Context) {
 	var u models.User
 	if err := c.ShouldBindJSON(&u); err != nil {
 		HandleErrorBadRequest(c, err)
@@ -67,6 +67,28 @@ func (ctr *userController) Put(c *gin.Context) {
 }
 
 func (ctr *userController) PostList(c *gin.Context) {
+	// users
+	var users []models.User
+	if err := c.ShouldBindJSON(&users); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	for _, u := range users {
+		if err := ctr.ctx.userSvc.Create(&interfaces.UserCreateOptions{
+			Username: u.Username,
+			Password: u.Password,
+			Email:    u.Email,
+			Role:     u.Role,
+		}); err != nil {
+			trace.PrintError(err)
+		}
+	}
+
+	HandleSuccess(c)
+}
+
+func (ctr *userController) PutList(c *gin.Context) {
 	// payload
 	var payload entity.BatchRequestPayloadWithStringData
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -100,28 +122,6 @@ func (ctr *userController) PostList(c *gin.Context) {
 			if err := ctr.ctx.userSvc.ChangePassword(id, doc.Password); err != nil {
 				trace.PrintError(err)
 			}
-		}
-	}
-
-	HandleSuccess(c)
-}
-
-func (ctr *userController) PutList(c *gin.Context) {
-	// users
-	var users []models.User
-	if err := c.ShouldBindJSON(&users); err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-
-	for _, u := range users {
-		if err := ctr.ctx.userSvc.Create(&interfaces.UserCreateOptions{
-			Username: u.Username,
-			Password: u.Password,
-			Email:    u.Email,
-			Role:     u.Role,
-		}); err != nil {
-			trace.PrintError(err)
 		}
 	}
 
@@ -169,7 +169,7 @@ func (ctx *userContext) getMe(c *gin.Context) {
 	HandleSuccessWithData(c, u)
 }
 
-func (ctx *userContext) postMe(c *gin.Context) {
+func (ctx *userContext) putMe(c *gin.Context) {
 	// current user
 	u, err := ctx._getMe(c)
 	if err != nil {

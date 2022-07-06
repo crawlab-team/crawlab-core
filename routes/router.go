@@ -26,18 +26,18 @@ func NewRouterService(app *gin.Engine) (svc *RouterService) {
 
 func (svc *RouterService) RegisterControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.BasicController) {
 	group.GET(basePath, ctr.Get)
-	group.PUT(basePath, ctr.Put)
 	group.POST(basePath, ctr.Post)
+	group.PUT(basePath, ctr.Put)
 	group.DELETE(basePath, ctr.Delete)
 }
 
 func (svc *RouterService) RegisterListControllerToGroup(group *gin.RouterGroup, basePath string, ctr controllers.ListController) {
 	group.GET(basePath+"/:id", ctr.Get)
 	group.GET(basePath, ctr.GetList)
-	group.PUT(basePath, ctr.Put)
-	group.PUT(basePath+"/batch", ctr.PutList)
-	group.POST(basePath+"/:id", ctr.Post)
-	group.POST(basePath, ctr.PostList)
+	group.POST(basePath, ctr.Post)
+	group.POST(basePath+"/batch", ctr.PostList)
+	group.PUT(basePath+"/:id", ctr.Put)
+	group.PUT(basePath, ctr.PutList)
 	group.DELETE(basePath+"/:id", ctr.Delete)
 	group.DELETE(basePath, ctr.DeleteList)
 }
@@ -48,10 +48,10 @@ func (svc *RouterService) RegisterActionControllerToGroup(group *gin.RouterGroup
 		switch action.Method {
 		case http.MethodGet:
 			group.GET(routerPath, action.HandlerFunc)
-		case http.MethodPut:
-			group.PUT(routerPath, action.HandlerFunc)
 		case http.MethodPost:
 			group.POST(routerPath, action.HandlerFunc)
+		case http.MethodPut:
+			group.PUT(routerPath, action.HandlerFunc)
 		case http.MethodDelete:
 			group.DELETE(routerPath, action.HandlerFunc)
 		}
@@ -67,10 +67,10 @@ func (svc *RouterService) RegisterHandlerToGroup(group *gin.RouterGroup, path st
 	switch method {
 	case http.MethodGet:
 		group.GET(path, handler)
-	case http.MethodPut:
-		group.PUT(path, handler)
 	case http.MethodPost:
 		group.POST(path, handler)
+	case http.MethodPut:
+		group.PUT(path, handler)
 	case http.MethodDelete:
 		group.DELETE(path, handler)
 	default:

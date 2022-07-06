@@ -22,19 +22,19 @@ func TestProjectController_Get(t *testing.T) {
 	p := models.Project{
 		Name: "test project",
 	}
-	res := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
+	res := T.WithAuth(e.POST("/projects")).WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
 	res.Path("$.data._id").NotNull()
 	id := res.Path("$.data._id").String().Raw()
 	oid, err := primitive.ObjectIDFromHex(id)
 	require.Nil(t, err)
 	require.False(t, oid.IsZero())
 
-	res = e.GET("/projects/" + id).WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
+	res = T.WithAuth(e.GET("/projects/" + id)).WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
 	res.Path("$.data._id").NotNull()
 	res.Path("$.data.name").Equal("test project")
 }
 
-func TestProjectController_Post(t *testing.T) {
+func TestProjectController_Put(t *testing.T) {
 	T.Setup(t)
 	e := T.NewExpect(t)
 
@@ -44,7 +44,7 @@ func TestProjectController_Post(t *testing.T) {
 	}
 
 	// add
-	res := e.PUT("/projects").
+	res := T.WithAuth(e.POST("/projects")).
 		WithJSON(p).
 		Expect().Status(http.StatusOK).
 		JSON().Object()
@@ -60,18 +60,18 @@ func TestProjectController_Post(t *testing.T) {
 	p.Description = "new description"
 
 	// update
-	e.POST("/projects/" + id).
+	T.WithAuth(e.PUT("/projects/" + id)).
 		WithJSON(p).
 		Expect().Status(http.StatusOK)
 
 	// check
-	res = e.GET("/projects/" + id).Expect().Status(http.StatusOK).JSON().Object()
+	res = T.WithAuth(e.GET("/projects/" + id)).Expect().Status(http.StatusOK).JSON().Object()
 	res.Path("$.data._id").Equal(id)
 	res.Path("$.data.name").Equal("new name")
 	res.Path("$.data.description").Equal("new description")
 }
 
-func TestProjectController_Put(t *testing.T) {
+func TestProjectController_Post(t *testing.T) {
 	T.Setup(t)
 	e := T.NewExpect(t)
 
@@ -80,7 +80,7 @@ func TestProjectController_Put(t *testing.T) {
 		Description: "this is a test project",
 	}
 
-	res := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
+	res := T.WithAuth(e.POST("/projects")).WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
 	res.Path("$.data._id").NotNull()
 	res.Path("$.data.name").Equal("test project")
 	res.Path("$.data.description").Equal("this is a test project")
@@ -96,7 +96,7 @@ func TestProjectController_Delete(t *testing.T) {
 	}
 
 	// add
-	res := e.PUT("/projects").
+	res := T.WithAuth(e.POST("/projects")).
 		WithJSON(p).
 		Expect().Status(http.StatusOK).
 		JSON().Object()
@@ -107,7 +107,7 @@ func TestProjectController_Delete(t *testing.T) {
 	require.False(t, oid.IsZero())
 
 	// get
-	res = e.GET("/projects/" + id).
+	res = T.WithAuth(e.GET("/projects/" + id)).
 		Expect().Status(http.StatusOK).
 		JSON().Object()
 	res.Path("$.data._id").NotNull()
@@ -117,12 +117,12 @@ func TestProjectController_Delete(t *testing.T) {
 	require.False(t, oid.IsZero())
 
 	// delete
-	e.DELETE("/projects/" + id).
+	T.WithAuth(e.DELETE("/projects/" + id)).
 		Expect().Status(http.StatusOK).
 		JSON().Object()
 
 	// get
-	e.GET("/projects/" + id).
+	T.WithAuth(e.GET("/projects/" + id)).
 		Expect().Status(http.StatusNotFound)
 }
 
@@ -137,7 +137,7 @@ func TestProjectController_GetList(t *testing.T) {
 		p := models.Project{
 			Name: fmt.Sprintf("test name %d", i+1),
 		}
-		obj := e.PUT("/projects").WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
+		obj := T.WithAuth(e.POST("/projects")).WithJSON(p).Expect().Status(http.StatusOK).JSON().Object()
 		obj.Path("$.data._id").NotNull()
 	}
 
@@ -156,7 +156,7 @@ func TestProjectController_GetList(t *testing.T) {
 	}
 
 	// get list with pagination
-	res := e.GET("/projects").
+	res := T.WithAuth(e.GET("/projects")).
 		WithQuery("conditions", string(condBytes)).
 		WithQueryObject(pagination).
 		Expect().Status(http.StatusOK).JSON().Object()
@@ -169,16 +169,9 @@ func TestProjectController_GetList(t *testing.T) {
 		obj.Path("$.name").Equal(fmt.Sprintf("test name %d", i+1))
 	}
 
-	// get all
-	res = e.GET("/projects").
-		WithQuery("all", "1").
-		Expect().Status(http.StatusOK).JSON().Object()
-	res.Path("$.data").Array().Length().Equal(n)
-	res.Path("$.total").Number().Equal(n)
-
 }
 
-func TestProjectController_PutList(t *testing.T) {
+func TestProjectController_PostList(t *testing.T) {
 	T.Setup(t)
 	e := T.NewExpect(t)
 
@@ -191,10 +184,10 @@ func TestProjectController_PutList(t *testing.T) {
 		})
 	}
 
-	e.PUT("/projects/batch").WithJSON(docs).Expect().Status(http.StatusOK)
+	T.WithAuth(e.POST("/projects/batch")).WithJSON(docs).Expect().Status(http.StatusOK)
 
-	res := e.GET("/projects").
-		WithQueryObject(entity.Pagination{Page: 1, Size: 100}).
+	res := T.WithAuth(e.GET("/projects")).
+		WithQueryObject(entity.Pagination{Page: 1, Size: 10}).
 		Expect().Status(http.StatusOK).
 		JSON().Object()
 	res.Path("$.data").Array().Length().Equal(n)
@@ -214,7 +207,7 @@ func TestProjectController_DeleteList(t *testing.T) {
 	}
 
 	// add
-	res := e.PUT("/projects/batch").WithJSON(docs).Expect().Status(http.StatusOK).
+	res := T.WithAuth(e.POST("/projects/batch")).WithJSON(docs).Expect().Status(http.StatusOK).
 		JSON().Object()
 	var ids []primitive.ObjectID
 	data := res.Path("$.data").Array()
@@ -231,19 +224,19 @@ func TestProjectController_DeleteList(t *testing.T) {
 	payload := entity.BatchRequestPayload{
 		Ids: ids,
 	}
-	e.DELETE("/projects").
+	T.WithAuth(e.DELETE("/projects")).
 		WithJSON(payload).
 		Expect().Status(http.StatusOK)
 
 	// check
-	res = e.GET("/projects").
-		Expect().Status(http.StatusOK).JSON().Object()
-	res.Path("$.data").Array().Empty()
-	res.Path("$.total").Number().Equal(0)
+	for _, id := range ids {
+		T.WithAuth(e.GET("/projects/" + id.Hex())).
+			Expect().Status(http.StatusNotFound)
+	}
 
 }
 
-func TestProjectController_PostList(t *testing.T) {
+func TestProjectController_PutList(t *testing.T) {
 	T.Setup(t)
 	e := T.NewExpect(t)
 
@@ -260,7 +253,7 @@ func TestProjectController_PostList(t *testing.T) {
 	}
 
 	// add
-	res := e.PUT("/projects/batch").WithJSON(docs).Expect().Status(http.StatusOK).
+	res := T.WithAuth(e.POST("/projects/batch")).WithJSON(docs).Expect().Status(http.StatusOK).
 		JSON().Object()
 	var ids []primitive.ObjectID
 	data := res.Path("$.data").Array()
@@ -291,22 +284,13 @@ func TestProjectController_PostList(t *testing.T) {
 			"description",
 		},
 	}
-	e.POST("/projects").
-		WithJSON(payload).
-		Expect().Status(http.StatusOK)
+	T.WithAuth(e.PUT("/projects")).WithJSON(payload).Expect().Status(http.StatusOK)
 
 	// check response data
-	res = e.GET("/projects").
-		WithQueryObject(entity.Pagination{
-			Page: 1,
-			Size: 100,
-		}).
-		Expect().Status(http.StatusOK).JSON().Object()
-	data = res.Path("$.data").Array()
 	for i := 0; i < n; i++ {
-		obj := data.Element(i)
-		obj.Path("$.name").Equal("new name")
-		obj.Path("$.description").Equal("new description")
+		res = T.WithAuth(e.GET("/projects/" + ids[i].Hex())).Expect().Status(http.StatusOK).JSON().Object()
+		res.Path("$.data.name").Equal("new name")
+		res.Path("$.data.description").Equal("new description")
 	}
 
 	// check artifacts

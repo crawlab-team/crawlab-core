@@ -37,10 +37,10 @@ type Test struct {
 }
 
 func (t *Test) Setup(t2 *testing.T) {
-	if err := controllers.InitControllers(); err != nil {
-		panic(err)
-	}
-	t2.Cleanup(t.Cleanup)
+	//if err := controllers.InitControllers(); err != nil {
+	//	panic(err)
+	//}
+	//t2.Cleanup(t.Cleanup)
 }
 
 func (t *Test) Cleanup() {

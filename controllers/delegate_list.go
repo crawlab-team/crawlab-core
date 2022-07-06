@@ -69,29 +69,6 @@ func (d *ListControllerDelegate) GetList(c *gin.Context) {
 }
 
 func (d *ListControllerDelegate) PostList(c *gin.Context) {
-	payload, doc, err := NewJsonBinder(d.id).BindBatchRequestPayloadWithStringData(c)
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-
-	// query
-	query := bson.M{
-		"_id": bson.M{
-			"$in": payload.Ids,
-		},
-	}
-
-	// update
-	if err := d.svc.UpdateDoc(query, doc, payload.Fields); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
-	HandleSuccess(c)
-}
-
-func (d *ListControllerDelegate) PutList(c *gin.Context) {
 	// bind
 	docs, err := NewJsonBinder(d.id).BindList(c)
 	if err != nil {
@@ -139,6 +116,29 @@ func (d *ListControllerDelegate) PutList(c *gin.Context) {
 
 	// success
 	HandleSuccessWithData(c, docs)
+}
+
+func (d *ListControllerDelegate) PutList(c *gin.Context) {
+	payload, doc, err := NewJsonBinder(d.id).BindBatchRequestPayloadWithStringData(c)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// query
+	query := bson.M{
+		"_id": bson.M{
+			"$in": payload.Ids,
+		},
+	}
+
+	// update
+	if err := d.svc.UpdateDoc(query, doc, payload.Fields); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
 }
 
 func (d *ListControllerDelegate) DeleteList(c *gin.Context) {

@@ -8,10 +8,10 @@ info:
     url: https://github.com/crawlab-team/crawlab-pro/blob/main/LICENSE
 
 servers:
-  - url: http://localhost:8080/api
-    description: Docker API
   - url: http://localhost:8000
     description: Local API
+  - url: http://localhost:8080/api
+    description: Docker API
 
 tags:
   - name: login
@@ -110,10 +110,12 @@ paths:
           name: page
           schema:
             type: integer
+            default: 1
         - in: query
           name: size
           schema:
             type: integer
+            default: 10
       responses:
         200:
           description: Get nodes successful
@@ -121,6 +123,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetNodesResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    post:
+      tags: [ node ]
+      operationId: postNode
+      summary: Update node
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequestPayloadWithStringData'
+      responses:
+        200:
+          description: Update node successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ node ]
+      operationId: deleteNodes
+      summary: Delete nodes
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequestPayload'
+      responses:
+        200:
+          description: Delete node successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
         400:
           description: Bad request
           content:
@@ -148,6 +198,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetNodeResponse'
+        404:
+          description: Node not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    post:
+      tags: [ node ]
+      operationId: postNode
+      summary: Update node
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Node ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostNodeRequest'
+      responses:
+        200:
+          description: Update node successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
         404:
           description: Node not found
           content:

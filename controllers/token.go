@@ -20,7 +20,7 @@ type tokenController struct {
 	ctx *tokenContext
 }
 
-func (ctr *tokenController) Put(c *gin.Context) {
+func (ctr *tokenController) Post(c *gin.Context) {
 	var err error
 	var t models.Token
 	if err := c.ShouldBindJSON(&t); err != nil {

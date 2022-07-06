@@ -40,6 +40,19 @@ func (d *BasicControllerDelegate) Get(c *gin.Context) {
 }
 
 func (d *BasicControllerDelegate) Post(c *gin.Context) {
+	doc, err := NewJsonBinder(d.id).Bind(c)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+	if err := delegate2.NewModelDelegate(doc, GetUserFromContext(c)).Add(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccessWithData(c, doc)
+}
+
+func (d *BasicControllerDelegate) Put(c *gin.Context) {
 	id, err := primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
 		HandleErrorBadRequest(c, err)
@@ -60,19 +73,6 @@ func (d *BasicControllerDelegate) Post(c *gin.Context) {
 		return
 	}
 	if err := delegate2.NewModelDelegate(doc, GetUserFromContext(c)).Save(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	HandleSuccessWithData(c, doc)
-}
-
-func (d *BasicControllerDelegate) Put(c *gin.Context) {
-	doc, err := NewJsonBinder(d.id).Bind(c)
-	if err != nil {
-		HandleErrorBadRequest(c, err)
-		return
-	}
-	if err := delegate2.NewModelDelegate(doc, GetUserFromContext(c)).Add(); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
