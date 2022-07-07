@@ -96,6 +96,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetVersionResponse'
+              example:
+                status: ok
+                data: v0.6.0
 
   # node
   /nodes:
@@ -129,7 +132,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
-    post:
+    put:
       tags: [ node ]
       operationId: postNode
       summary: Update node
@@ -210,7 +213,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
-    post:
+    put:
       tags: [ node ]
       operationId: postNode
       summary: Update node
@@ -227,7 +230,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PostNodeRequest'
+              $ref: '#/components/schemas/Node'
       responses:
         200:
           description: Update node successful
@@ -278,7 +281,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
-    put:
+    post:
       tags: [ project ]
       operationId: putProject
       summary: Create project
@@ -288,7 +291,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PutProjectRequest'
+              $ref: '#/components/schemas/PostProjectRequest'
       responses:
         200:
           description: Create project successful
@@ -302,7 +305,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
-    post:
+    put:
       tags: [ project ]
       operationId: postProjects
       summary: Update projects
@@ -363,7 +366,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
   /projects/batch:
-    put:
+    post:
       tags: [ project ]
       operationId: putProjects
       summary: Create projects
@@ -375,7 +378,7 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/PutProjectRequest'
+                $ref: '#/components/schemas/PostProjectRequest'
       responses:
         200:
           description: Update project successful
@@ -492,6 +495,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
 
+  /spiders:
+    get:
+      tags: [ spider ]
+      operationId: getSpiders
+      summary: Get spiders
+      security:
+        - apiToken: [ ]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: size
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Get spiders successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpidersResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    post:
+      tags: [ spider ]
+      operationId: postSpiders
+      summary: Create spiders
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequestPayloadWithStringData'
+      responses:
+        200:
+          description: Create spiders successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+
 components:
   schemas:
     # base request bodies
@@ -521,7 +578,7 @@ components:
             type: string
 
     # request bodies
-    PutProjectRequest:
+    PostProjectRequest:
       description: Put project request body
       properties:
         name:
@@ -623,6 +680,15 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Project'
+    GetSpidersResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Spider'
 
     # models
     Model:
@@ -701,6 +767,31 @@ components:
         - properties:
             spiders:
               description: Spiders of the project
+              type: integer
+    Spider:
+      description: Spider model
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ModelWithNameDescription'
+        - properties:
+            project_id:
+              description: Project ID of the spider
+              type: string
+            enabled:
+              description: Spider enabled
+              type: boolean
+            active:
+              description: Spider active
+              type: boolean
+            active_ts:
+              description: Spider active timestamp
+              type: string
+              format: date-time
+            available_runners:
+              description: Available number of available runners of the spider
+              type: integer
+            max_runners:
+              description: Max number of runners of the spider
               type: integer
 
   securitySchemes:
