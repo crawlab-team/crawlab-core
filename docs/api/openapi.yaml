@@ -134,7 +134,7 @@ paths:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
     put:
       tags: [ node ]
-      operationId: postNode
+      operationId: putNode
       summary: Update node
       security:
         - apiToken: [ ]
@@ -215,7 +215,7 @@ paths:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
     put:
       tags: [ node ]
-      operationId: postNode
+      operationId: putNode
       summary: Update node
       security:
         - apiToken: [ ]
@@ -283,7 +283,7 @@ paths:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
     post:
       tags: [ project ]
-      operationId: putProject
+      operationId: postProject
       summary: Create project
       security:
         - apiToken: [ ]
@@ -307,7 +307,7 @@ paths:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
     put:
       tags: [ project ]
-      operationId: postProjects
+      operationId: putProjects
       summary: Update projects
       security:
         - apiToken: [ ]
@@ -368,7 +368,7 @@ paths:
   /projects/batch:
     post:
       tags: [ project ]
-      operationId: putProjects
+      operationId: postProjects
       summary: Create projects
       security:
         - apiToken: [ ]
@@ -495,6 +495,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
 
+  # spider
   /spiders:
     get:
       tags: [ spider ]
@@ -548,6 +549,694 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/batch:
+    post:
+      tags: [ spider ]
+      operationId: postSpiders
+      summary: Update spiders
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PostSpiderRequest'
+      responses:
+        200:
+          description: Update spiders successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}:
+    get:
+      tags: [ spider ]
+      operationId: getSpider
+      summary: Get spider
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get spider successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpiderResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    post:
+      tags: [ spider ]
+      operationId: postSpider
+      summary: Update spider
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Spider'
+      responses:
+        200:
+          description: Update spider successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ spider ]
+      operationId: deleteSpider
+      summary: Delete spider
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+  /spiders/{id}/files/list:
+    get:
+      tags: [ spider ]
+      operationId: getSpiderFilesList
+      summary: Get spider files list
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get spider files list successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpiderFilesListResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/files/get:
+    get:
+      tags: [ spider ]
+      operationId: getSpiderFile
+      summary: Get spider file
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: File path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get spider file successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpiderFileResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/files/info:
+    get:
+      tags: [ spider ]
+      operationId: getSpiderFileInfo
+      summary: Get spider file info
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: File path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get spider file info successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpiderFileInfoResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/files/save:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderFile
+      summary: Save spider file
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: File path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSpiderFileRequest'
+      responses:
+        200:
+          description: Save spider file successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/files/save/dir:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderFileDir
+      summary: Save spider file dir
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: File path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSpiderFileDirRequest'
+      responses:
+        200:
+          description: Save spider file dir successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/files/renameFile:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderFileRenameFile
+      summary: Rename spider file
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: File path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSpiderFileRenameFileRequest'
+      responses:
+        200:
+          description: Rename spider file successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/files/delete:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderFileDelete
+      summary: Delete spider file
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: File path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Delete spider file successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/files/copy:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderFileCopy
+      summary: Copy spider file
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: File path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSpiderFileCopyRequest'
+      responses:
+        200:
+          description: Copy spider file successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/run:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderRun
+      summary: Run spider
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSpiderRunRequest'
+      responses:
+        200:
+          description: Run spider successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/git:
+    get:
+      tags: [ spider ]
+      operationId: getSpiderGit
+      summary: Get spider git
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get spider git successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpiderGitResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/git/remote-refs:
+    get:
+      tags: [ spider ]
+      operationId: getSpiderGitRemoteRefs
+      summary: Get spider git remote refs
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get spider git remote refs successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpiderGitRemoteRefsResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/git/pull:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderGitPull
+      summary: Pull spider git
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSpiderGitPullRequest'
+      responses:
+        200:
+          description: Pull spider git successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/git/commit:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderGitCommit
+      summary: Commit spider git
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSpiderGitCommitRequest'
+      responses:
+        200:
+          description: Commit spider git successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/data-source:
+    get:
+      tags: [ spider ]
+      operationId: getSpiderDataSource
+      summary: Get spider data source
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get spider data source successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSpiderDataSourceResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /spiders/{id}/data-source/{ds_id}:
+    post:
+      tags: [ spider ]
+      operationId: postSpiderDataSource
+      summary: Create spider data source
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Spider ID
+          required: true
+          schema:
+            type: string
+        - name: ds_id
+          in: path
+          description: Data source ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Create spider data source successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Spider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
 
 components:
   schemas:
@@ -587,6 +1276,100 @@ components:
         description:
           type: string
           description: Project description
+    PostSpiderRequest:
+      description: Put project request body
+      properties:
+        name:
+          type: string
+          description: Spider name
+        description:
+          type: string
+          description: Spider description
+        type:
+          type: string
+          description: Spider type
+        params:
+          type: string
+          description: Default spider task params
+        col_name:
+          type: string
+          description: Spider collection name
+        project_id:
+          type: string
+          description: Spider project ID
+        mode:
+          type: string
+          enum:
+            - random
+            - all-nodes
+            - selected-nodes
+          description: Default spider task mode
+    PostSpiderFileRequest:
+      description: Post spider file request body
+      properties:
+        path:
+          type: string
+          description: File path
+        data:
+          type: string
+          description: File data
+    PostSpiderFileDirRequest:
+      description: Post spider file dir request body
+      properties:
+        path:
+          type: string
+          description: File path
+    PostSpiderFileRenameFileRequest:
+      description: Post spider file rename file request body
+      properties:
+        path:
+          type: string
+          description: File path
+        new_path:
+          type: string
+          description: New file path
+    PostSpiderFileCopyRequest:
+      description: Post spider file copy request body
+      properties:
+        path:
+          type: string
+          description: File path
+        new_path:
+          type: string
+          description: New file path
+    PostSpiderRunRequest:
+      description: Post spider run request body
+      properties:
+        params:
+          type: string
+          description: Spider task params
+        mode:
+          type: string
+          enum:
+            - random
+            - all-nodes
+            - selected-nodes
+          description: Spider task mode
+      example:
+        mode: random
+    PostSpiderGitPullRequest:
+      description: Post spider git pull request body
+      properties:
+        branch:
+          type: string
+          description: Git branch
+        commit:
+          type: string
+          description: Git commit
+        remote:
+          type: string
+          description: Git remote
+        ref:
+          type: string
+          description: Git ref
+    PostSpiderGitCommitRequest:
+      description: Post spider git commit request body
+      $ref: '#/components/schemas/GitPayload'
 
     # base responses
     BaseResponse:
@@ -601,6 +1384,9 @@ components:
     EmptyResponse:
       description: Empty response body
       $ref: '#/components/schemas/BaseResponse'
+      example:
+        status: ok
+        message: success
     Response:
       description: Response body
       allOf:
@@ -632,12 +1418,21 @@ components:
     NotFoundErrorResponse:
       description: Not found error response body
       $ref: '#/components/schemas/ErrorResponse'
+      example:
+        status: error
+        message: not found
     BadRequestErrorResponse:
       description: Bad request error response
       $ref: '#/components/schemas/ErrorResponse'
+      example:
+        status: error
+        message: bad request
     UnauthorizedErrorResponse:
       description: Unauthorized error response
       $ref: '#/components/schemas/ErrorResponse'
+      example:
+        status: error
+        message: unauthorized
 
     # success response
     PostLoginResponse:
@@ -677,10 +1472,24 @@ components:
                 $ref: '#/components/schemas/Project'
     GetProjectResponse:
       type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              $ref: '#/components/schemas/Project'
+    GetSpidersResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListResponse'
+        - properties:
+            data:
+              $ref: '#/components/schemas/Spider'
+    GetSpiderResponse:
+      type: object
       properties:
         data:
-          $ref: '#/components/schemas/Project'
-    GetSpidersResponse:
+          $ref: '#/components/schemas/Spider'
+    GetSpiderFilesListResponse:
       type: object
       allOf:
         - $ref: '#/components/schemas/ListResponse'
@@ -688,7 +1497,235 @@ components:
             data:
               type: array
               items:
-                $ref: '#/components/schemas/Spider'
+                $ref: '#/components/schemas/SpiderFile'
+      example:
+        {
+          "status": "ok",
+          "message": "success",
+          "data": [
+            {
+              "name": "scrapy_baidu",
+              "path": "/scrapy_baidu",
+              "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu",
+              "extension": "",
+              "md5": "",
+              "is_dir": true,
+              "file_size": 0,
+              "children": [
+                {
+                  "name": "spiders",
+                  "path": "/scrapy_baidu/spiders",
+                  "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/spiders",
+                  "extension": "",
+                  "md5": "",
+                  "is_dir": true,
+                  "file_size": 0,
+                  "children": [
+                    {
+                      "name": "__init__.py",
+                      "path": "/scrapy_baidu/spiders/__init__.py",
+                      "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/spiders/__init__.py",
+                      "extension": "py",
+                      "md5": "EoqQSUWYa98Uwyno4FRZYw==",
+                      "is_dir": false,
+                      "file_size": 161,
+                      "children": null
+                    },
+                    {
+                      "name": "baidu.py",
+                      "path": "/scrapy_baidu/spiders/baidu.py",
+                      "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/spiders/baidu.py",
+                      "extension": "py",
+                      "md5": "AhySHuGyj88CEA1ZbUJ19g==",
+                      "is_dir": false,
+                      "file_size": 791,
+                      "children": null
+                    }
+                  ]
+                },
+                {
+                  "name": "__init__.py",
+                  "path": "/scrapy_baidu/__init__.py",
+                  "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/__init__.py",
+                  "extension": "py",
+                  "md5": "chXunH2dwinSkhpA6JnsXw==",
+                  "is_dir": false,
+                  "file_size": 1,
+                  "children": null
+                },
+                {
+                  "name": "items.py",
+                  "path": "/scrapy_baidu/items.py",
+                  "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/items.py",
+                  "extension": "py",
+                  "md5": "Zg9KIbCe1h/coLSkQcQ9Sg==",
+                  "is_dir": false,
+                  "file_size": 311,
+                  "children": null
+                },
+                {
+                  "name": "middlewares.py",
+                  "path": "/scrapy_baidu/middlewares.py",
+                  "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/middlewares.py",
+                  "extension": "py",
+                  "md5": "4FQr2+wt4ALcuRYxzjsUdQ==",
+                  "is_dir": false,
+                  "file_size": 3658,
+                  "children": null
+                },
+                {
+                  "name": "pipelines.py",
+                  "path": "/scrapy_baidu/pipelines.py",
+                  "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/pipelines.py",
+                  "extension": "py",
+                  "md5": "q8MuuuJwvuV0gcE42Mg2oQ==",
+                  "is_dir": false,
+                  "file_size": 259,
+                  "children": null
+                },
+                {
+                  "name": "settings.py",
+                  "path": "/scrapy_baidu/settings.py",
+                  "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy_baidu/settings.py",
+                  "extension": "py",
+                  "md5": "hh/13eHBaVrLNtB27duOZQ==",
+                  "is_dir": false,
+                  "file_size": 3201,
+                  "children": null
+                }
+              ]
+            },
+            {
+              "name": "__init__.py",
+              "path": "/__init__.py",
+              "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/__init__.py",
+              "extension": "py",
+              "md5": "chXunH2dwinSkhpA6JnsXw==",
+              "is_dir": false,
+              "file_size": 1,
+              "children": null
+            },
+            {
+              "name": "crawlab.json",
+              "path": "/crawlab.json",
+              "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/crawlab.json",
+              "extension": "json",
+              "md5": "jQ5qto4lYSEzWNF77h11gw==",
+              "is_dir": false,
+              "file_size": 169,
+              "children": null
+            },
+            {
+              "name": "scrapy.cfg",
+              "path": "/scrapy.cfg",
+              "full_path": "/fs/62c66a8ef9dce6fe4caa58e5/scrapy.cfg",
+              "extension": "cfg",
+              "md5": "UAALAu5OkhbTVtwQeFXpQA==",
+              "is_dir": false,
+              "file_size": 267,
+              "children": null
+            }
+          ],
+          "error": ""
+        }
+    GetSpiderFileResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              type: string
+              description: Spider file content
+      example:
+        {
+          "status": "ok",
+          "message": "success",
+          "data": "# Automatically created by: scrapy startproject\n#\n# For more information about the [deploy] section see:\n# https://scrapyd.readthedocs.io/en/latest/deploy.html\n\n[settings]\ndefault = scrapy_baidu.settings\n\n[deploy]\n#url = http://localhost:6800/\nproject = scrapy_baidu\n",
+          "error": ""
+        }
+    GetSpiderFileInfoResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              $ref: '#/components/schemas/SpiderFile'
+      example:
+        {
+          "status": "ok",
+          "message": "success",
+          "data": {
+            "name": "openapi.yaml",
+            "path": "/openapi.yaml",
+            "full_path": "/fs/62c66a8af9dce6fe4caa58e3/openapi.yaml",
+            "extension": "yaml",
+            "md5": "1UUumcDmYtVAUOZZNegjJA==",
+            "is_dir": false,
+            "file_size": 27698,
+            "children": null
+          },
+          "error": ""
+        }
+    GetSpiderGitResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              type: object
+              description: Spider git content
+              properties:
+                current_branch:
+                  type: string
+                  description: Current git branch
+                branches:
+                  type: array
+                  description: Git branches
+                  items:
+                    type: string
+                changes:
+                  type: array
+                  description: Git changes
+                  items:
+                    $ref: '#/components/schemas/GitFileStatus'
+                logs:
+                  type: array
+                  description: Git logs
+                  items:
+                    $ref: '#/components/schemas/GitLog'
+                ignore:
+                  type: array
+                  description: Git ignore files
+                  items:
+                    type: string
+                git:
+                  type: object
+                  description: Git url
+                  $ref: '#/components/schemas/Git'
+    GetSpiderGitRemoteRefsResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              type: object
+              description: Spider git remote refs
+              properties:
+                refs:
+                  type: array
+                  description: Git remote refs
+                  items:
+                    $ref: '#/components/schemas/GitRef'
+    GetSpiderDataSourceResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              type: array
+              description: Spider data source
+              items:
+                $ref: '#/components/schemas/DataSource'
 
     # models
     Model:
@@ -793,7 +1830,209 @@ components:
             max_runners:
               description: Max number of runners of the spider
               type: integer
-
+    SpiderFile:
+      description: Spider file model
+      type: object
+      properties:
+        name:
+          description: File name
+          type: string
+        path:
+          description: File path
+          type: string
+        full_path:
+          description: Full file path
+          type: string
+        extension:
+          description: File extension
+          type: string
+        md5:
+          description: File MD5 hash
+          type: string
+        is_dir:
+          description: Whether the file is directory
+          type: string
+        fileSize:
+          description: File size
+          type: integer
+        children:
+          description: Children files
+          type: array
+          items:
+            $ref: '#/components/schemas/SpiderFile'
+    GitFileStatus:
+      description: Git file status
+      type: object
+      properties:
+        path:
+          description: File path
+          type: string
+        name:
+          description: File name
+          type: string
+        is_dir:
+          description: Whether the file is directory
+          type: boolean
+        staging:
+          description: Staging
+          type: string
+        worktree:
+          description: Worktree
+          type: string
+        extra:
+          description: Extra
+          type: string
+        children:
+          description: Children files
+          type: array
+          items:
+            $ref: '#/components/schemas/GitFileStatus'
+    GitRef:
+      description: Git ref
+      type: object
+      properties:
+        type:
+          description: Ref type
+          type: string
+        name:
+          description: Ref name
+          type: string
+        full_name:
+          description: Ref full name
+          type: string
+        hash:
+          description: Ref hash
+          type: string
+        timestamp:
+          description: Ref timestamp
+          type: string
+          format: date-time
+    GitLog:
+      description: Git log
+      type: object
+      properties:
+        hash:
+          description: Commit hash
+          type: string
+        msg:
+          description: Commit message
+          type: string
+        author_name:
+          description: Author name
+          type: string
+        author_email:
+          description: Author email
+          type: string
+        timestamp:
+          description: Commit timestamp
+          type: string
+          format: date-time
+        refs:
+          description: Commit refs
+          type: array
+          items:
+            $ref: '#/components/schemas/GitRef'
+    Git:
+      description: Git model
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ModelWithKey'
+        - properties:
+          url:
+            description: Git url
+            type: string
+          branch:
+            description: Git branch
+            type: string
+          changes:
+            description: Git changes
+            type: array
+            items:
+              $ref: '#/components/schemas/GitFileStatus'
+          logs:
+            description: Git logs
+            type: array
+            items:
+              $ref: '#/components/schemas/GitLog'
+          ignore:
+            description: Git ignore files
+            type: array
+            items:
+              type: string
+          git:
+            description: Git url
+            type: string
+    GitPayload:
+      description: Git payload
+      type: object
+      properties:
+        paths:
+          description: Git paths
+          type: array
+          items:
+            type: string
+        commit_message:
+          description: Commit message
+          type: string
+        branch:
+          description: Branch
+          type: string
+        tag:
+          description: Tag
+          type: string
+    DataSource:
+      description: Data source model
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ModelWithKey'
+        - properties:
+            name:
+              description: Data source name
+              type: string
+            description:
+              description: Data source description
+              type: string
+            type:
+              description: Data source type
+              type: string
+            host:
+              description: Data source host
+              type: string
+            port:
+              description: Data source port
+              type: string
+            url:
+              description: Data source url
+              type: string
+            hosts:
+              description: Data source hosts
+              type: array
+              items:
+                type: string
+            database:
+              description: Data source database
+              type: string
+            username:
+              description: Data source username
+              type: string
+            password:
+              description: Data source password
+              type: string
+            enabled:
+              description: Data source enabled
+              type: boolean
+            connect_type:
+              description: Data source connect type
+              type: string
+            status:
+              description: Data source status
+              type: string
+            error:
+              description: Data source error
+              type: string
+            extra:
+              description: Data source extra
+              type: object
   securitySchemes:
     apiToken:
       type: apiKey
