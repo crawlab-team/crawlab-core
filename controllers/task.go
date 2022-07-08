@@ -29,7 +29,7 @@ func getTaskActions() []Action {
 	taskCtx := newTaskContext()
 	return []Action{
 		{
-			Method:      http.MethodPut,
+			Method:      http.MethodPost,
 			Path:        "/run",
 			HandlerFunc: taskCtx.run,
 		},

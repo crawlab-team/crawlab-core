@@ -7,21 +7,19 @@ import (
 )
 
 type Schedule struct {
-	Id             primitive.ObjectID   `json:"_id" bson:"_id"`
-	Name           string               `json:"name" bson:"name"`
-	Description    string               `json:"description" bson:"description"`
-	SpiderId       primitive.ObjectID   `json:"spider_id" bson:"spider_id"`
-	Cron           string               `json:"cron" bson:"cron"`
-	EntryId        cron.EntryID         `json:"entry_id" bson:"entry_id"`
-	Cmd            string               `json:"cmd" bson:"cmd"`
-	Param          string               `json:"param" bson:"param"`
-	Mode           string               `json:"mode" bson:"mode"`
-	NodeIds        []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
-	Priority       int                  `json:"priority" bson:"priority"`
-	Enabled        bool                 `json:"enabled" bson:"enabled"`
-	UserId         primitive.ObjectID   `json:"user_id" bson:"user_id"`
-	ScrapySpider   string               `json:"scrapy_spider" bson:"scrapy_spider"`
-	ScrapyLogLevel string               `json:"scrapy_log_level" bson:"scrapy_log_level"`
+	Id          primitive.ObjectID   `json:"_id" bson:"_id"`
+	Name        string               `json:"name" bson:"name"`
+	Description string               `json:"description" bson:"description"`
+	SpiderId    primitive.ObjectID   `json:"spider_id" bson:"spider_id"`
+	Cron        string               `json:"cron" bson:"cron"`
+	EntryId     cron.EntryID         `json:"entry_id" bson:"entry_id"`
+	Cmd         string               `json:"cmd" bson:"cmd"`
+	Param       string               `json:"param" bson:"param"`
+	Mode        string               `json:"mode" bson:"mode"`
+	NodeIds     []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
+	Priority    int                  `json:"priority" bson:"priority"`
+	Enabled     bool                 `json:"enabled" bson:"enabled"`
+	UserId      primitive.ObjectID   `json:"user_id" bson:"user_id"`
 }
 
 func (s *Schedule) GetId() (id primitive.ObjectID) {

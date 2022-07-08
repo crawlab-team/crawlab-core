@@ -1238,6 +1238,634 @@ paths:
               schema:
                 $ref: '#/components/schemas/BadRequestErrorResponse'
 
+  # schedule
+  /schedules:
+    get:
+      tags: [ schedule ]
+      operationId: getSchedules
+      summary: Get schedules
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: Page size
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Get schedules successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSchedulesResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    post:
+      tags: [ schedule ]
+      operationId: postSchedule
+      summary: Create schedule
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostScheduleRequest'
+      responses:
+        200:
+          description: Create schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    put:
+      tags: [ schedule ]
+      operationId: putSchedule
+      summary: Update schedule
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Schedule ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequestPayloadWithStringData'
+      responses:
+        200:
+          description: Update schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ schedule ]
+      operationId: deleteSchedules
+      summary: Delete schedules
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequestPayload'
+      responses:
+        200:
+          description: Delete schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /schedules/batch:
+    post:
+      tags: [ schedule ]
+      operationId: postSchedulesBatch
+      summary: Create schedules
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostSchedulesBatchRequest'
+      responses:
+        200:
+          description: Create schedules successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /schedules/{id}:
+    get:
+      tags: [ schedule ]
+      operationId: getSchedule
+      summary: Get schedule
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Schedule ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetScheduleResponse'
+        404:
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    put:
+      tags: [ schedule ]
+      operationId: putSchedule
+      summary: Update schedule
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Schedule ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutScheduleRequest'
+      responses:
+        200:
+          description: Update schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ schedule ]
+      operationId: deleteSchedule
+      summary: Delete schedule
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Schedule ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Delete schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /schedules/{id}/enabled:
+    post:
+      tags: [ schedule ]
+      operationId: postScheduleEnabled
+      summary: Enable schedule
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Schedule ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Enable schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /schedules/{id}/disabled:
+    post:
+      tags: [ schedule ]
+      operationId: postScheduleDisabled
+      summary: Disable schedule
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Schedule ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Disable schedule successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+
+  # task
+  /tasks:
+    get:
+      tags: [ task ]
+      operationId: getTasks
+      summary: Get tasks
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+        - name: size
+          in: query
+          description: Page size number
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Get tasks successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTasksResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ task ]
+      operationId: deleteTasks
+      summary: Delete tasks
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: ids
+          in: query
+          description: Task IDs
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          description: Delete tasks successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /tasks/run:
+    post:
+      tags: [ task ]
+      operationId: postTaskRun
+      summary: Run task
+      security:
+        - apiToken: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostTaskRunRequest'
+      responses:
+        200:
+          description: Run task successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /tasks/{id}:
+    get:
+      tags: [ task ]
+      operationId: getTask
+      summary: Get task
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Get task successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTaskResponse'
+        404:
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+    delete:
+      tags: [ task ]
+      operationId: deleteTask
+      summary: Delete task
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Delete task successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /tasks/{id}/restart:
+    post:
+      tags: [ task ]
+      operationId: postTaskRestart
+      summary: Restart task
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Restart task successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /tasks/{id}/cancel:
+    post:
+      tags: [ task ]
+      operationId: postTaskCancel
+      summary: Cancel task
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Cancel task successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        404:
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /tasks/{id}/logs:
+    get:
+      tags: [ task ]
+      operationId: getTaskLogs
+      summary: Get task logs
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+        - name: size
+          in: query
+          description: Page size number
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Get task logs successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTaskLogsResponse'
+        404:
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+  /tasks/{id}/data:
+    get:
+      tags: [ task ]
+      operationId: getTaskData
+      summary: Get task data
+      security:
+        - apiToken: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+        - name: size
+          in: query
+          description: Page size number
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Get task data successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTaskDataResponse'
+        404:
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundErrorResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestErrorResponse'
+
 components:
   schemas:
     # base request bodies
@@ -1370,6 +1998,77 @@ components:
     PostSpiderGitCommitRequest:
       description: Post spider git commit request body
       $ref: '#/components/schemas/GitPayload'
+    PostScheduleRequest:
+      description: Post schedule request body
+      properties:
+        name:
+          type: string
+          description: Schedule name
+        description:
+          type: string
+          description: Schedule description
+        project_id:
+          type: string
+          description: Schedule project ID
+        spider_id:
+          type: string
+          description: Schedule spider ID
+        cron:
+          type: string
+          description: Cron expression
+        params:
+          type: string
+          description: Schedule params
+        mode:
+          $ref: '#/components/schemas/TaskMode'
+    PostSchedulesBatchRequest:
+      description: Post schedules batch request body
+      properties:
+        data:
+          type: array
+          description: Schedules data
+          items:
+            $ref: '#/components/schemas/PostScheduleRequest'
+    PutScheduleRequest:
+      description: Put schedule request body
+      properties:
+        name:
+          type: string
+          description: Schedule name
+        description:
+          type: string
+          description: Schedule description
+        project_id:
+          type: string
+          description: Schedule project ID
+        spider_id:
+          type: string
+          description: Schedule spider ID
+        cron:
+          type: string
+          description: Cron expression
+        params:
+          type: string
+          description: Schedule params
+        mode:
+          $ref: '#/components/schemas/TaskMode'
+    PostTaskRunRequest:
+      description: Post task run request body
+      properties:
+        spider_id:
+          type: string
+          description: Task spider ID
+        cmd:
+          type: string
+          description: Task command
+        params:
+          type: string
+          description: Task params
+        mode:
+          $ref: '#/components/schemas/TaskMode'
+        priority:
+          type: integer
+          description: Task priority
 
     # base responses
     BaseResponse:
@@ -1726,6 +2425,62 @@ components:
               description: Spider data source
               items:
                 $ref: '#/components/schemas/DataSource'
+    GetScheduleResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+            type: array
+            description: Schedules
+            items:
+              $ref: '#/components/schemas/Schedule'
+    GetSchedulesResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+            type: array
+            description: Schedules
+            items:
+              $ref: '#/components/schemas/Schedule'
+    GetTasksResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListResponse'
+        - properties:
+            data:
+            type: array
+            description: Tasks
+            items:
+            $ref: '#/components/schemas/Task'
+    GetTaskResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+            $ref: '#/components/schemas/Task'
+    GetTaskLogsResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListResponse'
+        - properties:
+          data:
+            type: array
+            description: Task logs
+            items:
+              type: string
+    GetTaskDataResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                type: object
 
     # models
     Model:
@@ -1805,31 +2560,127 @@ components:
             spiders:
               description: Spiders of the project
               type: integer
+    TaskStat:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Model'
+        - properties:
+            create_ts:
+              type: string
+              format: date-time
+            start_ts:
+              type: string
+              format: date-time
+            end_ts:
+              type: string
+              format: date-time
+            wait_duration:
+              type: integer
+            runtime_duration:
+              type: integer
+            total_duration:
+              type: integer
+            result_count:
+              type: integer
+            error_log_count:
+              type: integer
+    Task:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Model'
+        - properties:
+            spider_id:
+              type: string
+            status:
+              type: string
+            node_id:
+              type: string
+            cmd:
+              type: string
+            param:
+              type: string
+            error:
+              type: string
+            pid:
+              description: Process ID
+              type: integer
+            schedule_id:
+              type: string
+            type:
+              type: string
+            mode:
+              $ref: '#/components/schemas/TaskMode'
+            node_ids:
+              type: array
+              items:
+                type: string
+            parent_id:
+              type: string
+            priority:
+              type: integer
+            stat:
+              $ref: '#/components/schemas/TaskStat'
+            has_sub:
+              type: boolean
+            sub_tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+            user_id:
+              type: string
+    TaskMode:
+      type: string
+      enum:
+        - random
+        - all-nodes
+        - selected-nodes
+    SpiderStat:
+      description: Spider stat
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Model'
+        - properties:
+            type:
+              description: Last task ID
+              type: string
+            task:
+              description: Last task
+              $ref: '#/components/schemas/Task'
     Spider:
       description: Spider model
       type: object
       allOf:
         - $ref: '#/components/schemas/ModelWithNameDescription'
         - properties:
+            type:
+              description: Spider type
+              type: string
+            col_id:
+              description: Spider collection ID
+              type: string
+            col_name:
+              description: Spider collection name
+              type: string
+            data_source_id:
+              description: Spider data source id
+              type: string
+            data_source_name:
+              description: Spider data source name
+              type: string
             project_id:
-              description: Project ID of the spider
+              description: Spider project id
               type: string
-            enabled:
-              description: Spider enabled
-              type: boolean
-            active:
-              description: Spider active
-              type: boolean
-            active_ts:
-              description: Spider active timestamp
-              type: string
-              format: date-time
-            available_runners:
-              description: Available number of available runners of the spider
-              type: integer
-            max_runners:
-              description: Max number of runners of the spider
-              type: integer
+            mode:
+              description: Spider task mode
+              $ref: '#/components/schemas/TaskMode'
+            node_ids:
+              description: Spider task selected node IDs
+              type: array
+              items:
+                type: string
+            stat:
+              description: Spider stat
+              $ref: '#/components/schemas/SpiderStat'
     SpiderFile:
       description: Spider file model
       type: object
@@ -2033,6 +2884,44 @@ components:
             extra:
               description: Data source extra
               type: object
+    Schedule:
+      description: Schedule model
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ModelWithKey'
+        - properties:
+            spider_id:
+              description: Schedule spider ID
+              type: string
+            cron:
+              description: Schedule cron
+              type: string
+              example: "* * * * *"
+            entry_id:
+              description: Schedule entry ID
+              type: string
+              example: 1
+            cmd:
+              description: Schedule execute command
+              type: string
+              example: scrapy crawl spider
+            param:
+              description: Schedule execute command param
+              type: string
+              example: -a param1=value1 -a param2=value2
+            mode:
+              description: Schedule task mode
+              type: string
+              example: random
+            node_ids:
+            enabled:
+              description: Schedule enabled
+              type: boolean
+              example: true
+            user_id:
+              description: Schedule user ID
+              type: string
+
   securitySchemes:
     apiToken:
       type: apiKey
