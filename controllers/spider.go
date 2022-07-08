@@ -68,7 +68,7 @@ func getSpiderActions() []Action {
 			HandlerFunc: ctx.renameFile,
 		},
 		{
-			Method:      http.MethodDelete,
+			Method:      http.MethodPost,
 			Path:        "/:id/files/delete",
 			HandlerFunc: ctx.delete,
 		},
