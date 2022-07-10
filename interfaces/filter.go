@@ -5,4 +5,5 @@ type Filter interface {
 	SetIsOr(isOr bool)
 	GetConditions() (conditions []FilterCondition)
 	SetConditions(conditions []FilterCondition)
+	IsNil() (ok bool)
 }

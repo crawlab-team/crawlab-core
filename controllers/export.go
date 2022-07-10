@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/export"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -63,11 +64,11 @@ func (ctx *exportContext) getExport(c *gin.Context) {
 	exportType := c.Param("type")
 	exportId := c.Param("id")
 
-	var export interfaces.Export
+	var exp interfaces.Export
 	var err error
 	switch exportType {
 	case constants.ExportTypeCsv:
-		export, err = ctx.csvSvc.GetExport(exportId)
+		exp, err = ctx.csvSvc.GetExport(exportId)
 	default:
 		HandleErrorBadRequest(c, errors.New(fmt.Sprintf("invalid export type: %s", exportType)))
 	}
@@ -76,18 +77,18 @@ func (ctx *exportContext) getExport(c *gin.Context) {
 		return
 	}
 
-	HandleSuccessWithData(c, export)
+	HandleSuccessWithData(c, exp)
 }
 
 func (ctx *exportContext) getExportDownload(c *gin.Context) {
 	exportType := c.Param("type")
 	exportId := c.Param("id")
 
-	var export interfaces.Export
+	var exp interfaces.Export
 	var err error
 	switch exportType {
 	case constants.ExportTypeCsv:
-		export, err = ctx.csvSvc.GetExport(exportId)
+		exp, err = ctx.csvSvc.GetExport(exportId)
 	default:
 		HandleErrorBadRequest(c, errors.New(fmt.Sprintf("invalid export type: %s", exportType)))
 	}
@@ -97,11 +98,13 @@ func (ctx *exportContext) getExportDownload(c *gin.Context) {
 	}
 
 	c.Header("Content-Type", "text/csv")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", export.GetDownloadPath()))
-	c.Header("Content-Length", strconv.Itoa(len(export.GetDownloadPath())))
-	c.File(export.GetDownloadPath())
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", exp.GetDownloadPath()))
+	c.Header("Content-Length", strconv.Itoa(len(exp.GetDownloadPath())))
+	c.File(exp.GetDownloadPath())
 }
 
 func newExportContext() *exportContext {
-	return &exportContext{}
+	return &exportContext{
+		csvSvc: export.GetCsvService(),
+	}
 }

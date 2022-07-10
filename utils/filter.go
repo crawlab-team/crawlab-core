@@ -9,7 +9,7 @@ import (
 
 // FilterToQuery Translate entity.Filter to bson.M
 func FilterToQuery(f interfaces.Filter) (q bson.M, err error) {
-	if f == nil {
+	if f.IsNil() {
 		return nil, nil
 	}
 

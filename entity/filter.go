@@ -1,6 +1,9 @@
 package entity
 
-import "github.com/crawlab-team/crawlab-core/interfaces"
+import (
+	"github.com/crawlab-team/crawlab-core/interfaces"
+	"reflect"
+)
 
 type Condition struct {
 	Key   string      `json:"key"`
@@ -57,4 +60,9 @@ func (f *Filter) SetConditions(conditions []interfaces.FilterCondition) {
 	for _, c := range conditions {
 		f.Conditions = append(f.Conditions, c.(*Condition))
 	}
+}
+
+func (f *Filter) IsNil() (ok bool) {
+	val := reflect.ValueOf(f)
+	return val.IsNil()
 }
