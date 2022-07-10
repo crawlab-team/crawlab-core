@@ -5,6 +5,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,7 +17,7 @@ import (
 func GetFilter(c *gin.Context) (f *entity.Filter, err error) {
 	// bind
 	condStr := c.Query(constants.FilterQueryFieldConditions)
-	var conditions []entity.Condition
+	var conditions []*entity.Condition
 	if err := json.Unmarshal([]byte(condStr), &conditions); err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func GetFilterQuery(c *gin.Context) (q bson.M, err error) {
 
 	// TODO: implement logic OR
 
-	return FilterToQuery(f)
+	return utils.FilterToQuery(f)
 }
 
 func MustGetFilterQuery(c *gin.Context) (q bson.M) {
@@ -86,40 +87,6 @@ func MustGetFilterQuery(c *gin.Context) (q bson.M) {
 		return nil
 	}
 	return q
-}
-
-// FilterToQuery Translate entity.Filter to bson.M
-func FilterToQuery(f *entity.Filter) (q bson.M, err error) {
-	q = bson.M{}
-	for _, cond := range f.Conditions {
-		switch cond.Op {
-		case constants.FilterOpNotSet:
-			// do nothing
-		case constants.FilterOpEqual:
-			q[cond.Key] = cond.Value
-		case constants.FilterOpNotEqual:
-			q[cond.Key] = bson.M{"$ne": cond.Value}
-		case constants.FilterOpContains, constants.FilterOpRegex, constants.FilterOpSearch:
-			q[cond.Key] = bson.M{"$regex": cond.Value, "$options": "i"}
-		case constants.FilterOpNotContains:
-			q[cond.Key] = bson.M{"$not": bson.M{"$regex": cond.Value}}
-		case constants.FilterOpIn:
-			q[cond.Key] = bson.M{"$in": cond.Value}
-		case constants.FilterOpNotIn:
-			q[cond.Key] = bson.M{"$nin": cond.Value}
-		case constants.FilterOpGreaterThan:
-			q[cond.Key] = bson.M{"$gt": cond.Value}
-		case constants.FilterOpGreaterThanEqual:
-			q[cond.Key] = bson.M{"$gte": cond.Value}
-		case constants.FilterOpLessThan:
-			q[cond.Key] = bson.M{"$lt": cond.Value}
-		case constants.FilterOpLessThanEqual:
-			q[cond.Key] = bson.M{"$lte": cond.Value}
-		default:
-			return nil, errors.ErrorFilterInvalidOperation
-		}
-	}
-	return q, nil
 }
 
 // GetFilterAll Get all from gin.Context

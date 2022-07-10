@@ -26,6 +26,7 @@ const (
 	ControllerIdGit
 	ControllerIdRole
 	ControllerIdPermission
+	ControllerIdExport
 
 	ControllerIdVersion
 	ControllerIdI18n

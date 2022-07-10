@@ -2,7 +2,10 @@ module github.com/crawlab-team/crawlab-core
 
 go 1.16
 
+replace github.com/crawlab-team/crawlab-db => ../crawlab-db
+
 require (
+	github.com/ReneKroon/ttlcache v1.7.0
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300
@@ -22,6 +25,7 @@ require (
 	github.com/goccy/go-json v0.9.8 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
+	github.com/hashicorp/go-uuid v1.0.1
 	github.com/imroc/req v0.3.0
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901
 	github.com/mailru/easyjson v0.7.7 // indirect

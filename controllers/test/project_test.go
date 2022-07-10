@@ -143,7 +143,7 @@ func TestProjectController_GetList(t *testing.T) {
 
 	f := entity.Filter{
 		//IsOr: false,
-		Conditions: []entity.Condition{
+		Conditions: []*entity.Condition{
 			{Key: "name", Op: constants.FilterOpContains, Value: "test name"},
 		},
 	}
