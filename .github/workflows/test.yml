@@ -26,6 +26,12 @@ jobs:
           go-version: '^1.16'
       - name: Run unit tests
         run: |
-          for pkg in apps; do
-            go test ./${pkg}
+          mods=(\
+            "models" \
+            "export" \
+            "controllers" \
+            "apps" \
+          )
+          for pkg in ${mods[@]}; do
+            go test ./${pkg}/...
           done

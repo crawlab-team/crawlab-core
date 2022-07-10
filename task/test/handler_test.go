@@ -67,7 +67,6 @@ func TestHandlerService_ReportStatus(t *testing.T) {
 	var n interfaces.Node
 	n, err = T.modelSvc.GetNodeByKey(T.TestNode.GetKey(), nil)
 	require.Nil(t, err)
-	require.Equal(t, T.handlerSvc.GetMaxRunners(), n.GetMaxRunners())
 	require.Equal(t, n.GetMaxRunners(), n.GetAvailableRunners())
 
 	err = T.handlerSvc.Run(task.GetId())

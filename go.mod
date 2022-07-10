@@ -2,13 +2,11 @@ module github.com/crawlab-team/crawlab-core
 
 go 1.16
 
-replace github.com/crawlab-team/crawlab-db => ../crawlab-db
-
 require (
 	github.com/ReneKroon/ttlcache v1.7.0
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300
+	github.com/crawlab-team/crawlab-db v0.6.0-1
 	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940
 	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930
 	github.com/crawlab-team/crawlab-log v0.1.0

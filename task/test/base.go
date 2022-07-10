@@ -153,7 +153,6 @@ func main() {
 	if err := c.Provide(handler.ProvideGetTaskHandlerService(
 		ntest.T.WorkerSvc.GetConfigPath(),
 		handler.WithReportInterval(t.ReportInterval),
-		handler.WithMaxRunners(t.MaxRunners),
 		handler.WithExitWatchDuration(t.ExitWatchDuration),
 	)); err != nil {
 		return nil, trace.TraceError(err)

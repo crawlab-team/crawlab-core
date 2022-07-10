@@ -639,6 +639,9 @@ func NewFsService(opts ...Option) (svc2 interfaces.FsService, err error) {
 	}
 
 	// workspace directory
+	if svc.GetWorkspacePath() == "" {
+		svc.SetWorkspacePath(DefaultWorkspacePath)
+	}
 	if _, err := os.Stat(svc.GetWorkspacePath()); err != nil {
 		if err := os.MkdirAll(svc.GetWorkspacePath(), os.FileMode(0766)); err != nil {
 			return nil, trace.TraceError(err)

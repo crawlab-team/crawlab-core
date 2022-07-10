@@ -2,6 +2,7 @@ package delegate_test
 
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
+	"github.com/crawlab-team/crawlab-core/models/common"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	models2 "github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-db/mongo"
@@ -13,6 +14,7 @@ import (
 
 func init() {
 	viper.Set("mongo.db", "crawlab_test")
+	common.CreateIndexes()
 }
 
 func TestUserRole_Add(t *testing.T) {
