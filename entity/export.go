@@ -13,7 +13,8 @@ type Export struct {
 	Status       string            `json:"status"`
 	StartTs      time.Time         `json:"start_ts"`
 	EndTs        time.Time         `json:"end_ts"`
-	DownloadPath string            `json:"download_path"`
+	FileName     string            `json:"file_name"`
+	DownloadPath string            `json:"-"`
 	Limit        int               `json:"-"`
 }
 

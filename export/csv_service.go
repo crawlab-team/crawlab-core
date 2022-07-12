@@ -50,6 +50,7 @@ func (svc *CsvService) Export(exportType, target string, filter interfaces.Filte
 		Filter:       filter,
 		Status:       constants.TaskStatusRunning,
 		StartTs:      time.Now(),
+		FileName:     svc.getFileName(exportId),
 		DownloadPath: svc.getDownloadPath(exportId),
 		Limit:        100,
 	}
@@ -74,6 +75,17 @@ func (svc *CsvService) GetExport(exportId string) (export interfaces.Export, err
 }
 
 func (svc *CsvService) export(export *entity.Export) {
+	// check empty
+	if export.Target == "" {
+		err := errors.New("empty target")
+		export.Status = constants.TaskStatusError
+		export.EndTs = time.Now()
+		log.Errorf("export error (id: %s): %v", export.Id, err)
+		trace.PrintError(err)
+		svc.cache.Set(export.Id, export)
+		return
+	}
+
 	// mongo collection
 	col := mongo.GetMongoCol(export.Target)
 
@@ -200,6 +212,10 @@ func (svc *CsvService) getExportDir() (dir string, err error) {
 	return exportDir, nil
 }
 
+func (svc *CsvService) getFileName(exportId string) (fileName string) {
+	return exportId + "_" + time.Now().Format("20060102150405") + ".csv"
+}
+
 // getDownloadPath returns the download path for the export
 // format: <tempDir>/export/<exportId>/<exportId>_<timestamp>.csv
 func (svc *CsvService) getDownloadPath(exportId string) (downloadPath string) {
@@ -207,7 +223,7 @@ func (svc *CsvService) getDownloadPath(exportId string) (downloadPath string) {
 	if err != nil {
 		return ""
 	}
-	downloadPath = path.Join(exportDir, exportId+"_"+time.Now().Format("20060102150405")+".csv")
+	downloadPath = path.Join(exportDir, svc.getFileName(exportId))
 	return downloadPath
 }
 
