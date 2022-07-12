@@ -64,6 +64,14 @@ func (svc *Service) GetFileInfo(path string) (file interfaces.FsFileInfo, err er
 	return svc.fsSvc.GetFileInfo(path)
 }
 
+func (svc *Service) Exists(path string) (ok bool) {
+	_, err := svc.fsSvc.GetFileInfo(path)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func (svc *Service) Save(path string, data []byte) (err error) {
 	return svc.fsSvc.Save(path, data)
 }

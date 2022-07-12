@@ -216,6 +216,14 @@ func (ctx *spiderContext) saveFile(c *gin.Context) {
 		return
 	}
 
+	// validate payload data
+	if payload.Data == "" {
+		if fsSvc.Exists(payload.Path) {
+			HandleErrorBadRequest(c, errors.ErrorFsInvalidContent)
+			return
+		}
+	}
+
 	data := utils.FillEmptyFileData([]byte(payload.Data))
 
 	if err := fsSvc.Save(payload.Path, data); err != nil {

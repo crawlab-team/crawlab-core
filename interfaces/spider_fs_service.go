@@ -11,6 +11,7 @@ type SpiderFsService interface {
 	List(path string) (files []FsFileInfo, err error)
 	GetFile(path string) (data []byte, err error)
 	GetFileInfo(path string) (file FsFileInfo, err error)
+	Exists(path string) (ok bool)
 	Save(path string, data []byte) (err error)
 	Rename(path, newPath string) (err error)
 	Delete(path string) (err error)
