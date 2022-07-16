@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/sys_exec"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
 )
@@ -19,6 +20,15 @@ func IsDemo() (ok bool) {
 	return EnvIsTrue("demo", true)
 }
 
+func InitializedDemo() (ok bool) {
+	col := mongo.GetMongoCol("users")
+	n, err := col.Count(nil)
+	if err != nil {
+		return true
+	}
+	return n > 0
+}
+
 func ImportDemo() (err error) {
 	cmdStr := fmt.Sprintf("crawlab-cli login -a %s && crawlab-demo import", GetApiAddress())
 	cmd := sys_exec.BuildCmd(cmdStr)
@@ -29,6 +39,15 @@ func ImportDemo() (err error) {
 }
 
 func ReimportDemo() (err error) {
+	cmdStr := fmt.Sprintf("crawlab-cli login -a %s && crawlab-demo reimport", GetApiAddress())
+	cmd := sys_exec.BuildCmd(cmdStr)
+	if err := cmd.Run(); err != nil {
+		trace.PrintError(err)
+	}
+	return nil
+}
+
+func CleanupDemo() (err error) {
 	cmdStr := fmt.Sprintf("crawlab-cli login -a %s && crawlab-demo reimport", GetApiAddress())
 	cmd := sys_exec.BuildCmd(cmdStr)
 	if err := cmd.Run(); err != nil {

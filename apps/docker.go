@@ -50,7 +50,7 @@ func (app *Docker) Init() {
 
 func (app *Docker) Start() {
 	// import demo
-	if utils.IsDemo() {
+	if utils.IsDemo() && utils.InitializedDemo() {
 		go app.importDemo()
 	}
 }

@@ -20,6 +20,11 @@ func getDemoActions() []Action {
 			Path:        "/reimport",
 			HandlerFunc: ctx.reimport,
 		},
+		{
+			Method:      http.MethodGet,
+			Path:        "/cleanup",
+			HandlerFunc: ctx.cleanup,
+		},
 	}
 }
 
@@ -36,6 +41,15 @@ func (ctx *demoContext) import_(c *gin.Context) {
 }
 
 func (ctx *demoContext) reimport(c *gin.Context) {
+	if err := utils.ReimportDemo(); err != nil {
+		trace.PrintError(err)
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccess(c)
+}
+
+func (ctx *demoContext) cleanup(c *gin.Context) {
 	if err := utils.ReimportDemo(); err != nil {
 		trace.PrintError(err)
 		HandleErrorInternalServerError(c, err)
