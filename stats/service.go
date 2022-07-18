@@ -174,7 +174,7 @@ func (svc *Service) getOverviewResults(query bson.M) (data interface{}, err erro
 			"$group",
 			bson.M{
 				"_id":     nil,
-				"results": bson.M{"$sum": "$rc"},
+				"results": bson.M{"$sum": "$result_count"},
 			},
 		}},
 	}
