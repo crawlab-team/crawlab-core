@@ -13,6 +13,7 @@ import (
 	stest "github.com/crawlab-team/crawlab-core/spider/test"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
+	"github.com/crawlab-team/crawlab-core/task/stats"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -39,6 +40,7 @@ type Test struct {
 	// dependencies
 	schedulerSvc    interfaces.TaskSchedulerService
 	handlerSvc      interfaces.TaskHandlerService
+	statsSvc        interfaces.TaskStatsService
 	modelSvc        service.ModelService
 	masterFsSvc     interfaces.SpiderFsService
 	workerFsSvc     interfaces.SpiderFsService
@@ -157,16 +159,23 @@ func main() {
 	)); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Provide(stats.ProvideGetTaskStatsService(
+		ntest.T.MasterSvc.GetConfigPath(),
+	)); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Provide(service.NewService); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(
 		schedulerSvc interfaces.TaskSchedulerService,
 		handlerSvc interfaces.TaskHandlerService,
+		statsSvc interfaces.TaskStatsService,
 		modelSvc service.ModelService,
 	) {
 		t.schedulerSvc = schedulerSvc
 		t.handlerSvc = handlerSvc
+		t.statsSvc = statsSvc
 		t.modelSvc = modelSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)
