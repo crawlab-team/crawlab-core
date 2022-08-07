@@ -22,7 +22,6 @@ func TestExportController_Csv(t *testing.T) {
 	// mongo collection
 	colName := "test_collection_for_export"
 	col := mongo.GetMongoCol(colName)
-	t.Cleanup(T.Cleanup)
 
 	// insert test data to mongo collection
 	for i := 0; i < 10; i++ {
