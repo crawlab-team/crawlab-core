@@ -21,7 +21,6 @@ func TestModelDelegate_Do(t *testing.T) {
 	modelDelegateAdd(t)
 	project, err := test.T.ModelSvc.GetProject(bson.M{"name": "test-project"}, nil)
 	require.Nil(t, err)
-	require.Greater(t, len(project.Tags), 0)
 
 	// get artifact
 	a := modelDelegateGetArtifact(t)
@@ -31,7 +30,6 @@ func TestModelDelegate_Do(t *testing.T) {
 	modelDelegateSave(t)
 	project, err = test.T.ModelSvc.GetProject(bson.M{"name": "test-new-project"}, nil)
 	require.Nil(t, err)
-	require.Greater(t, len(project.Tags), 0)
 	require.Equal(t, "test-new-project", project.Name)
 	require.Equal(t, "test-new-description", project.Description)
 
@@ -55,12 +53,6 @@ func modelDelegateAdd(t *testing.T) {
 	project := &models.Project{
 		Name:        "test-project",
 		Description: "test-description",
-		Tags: []models.Tag{
-			{
-				Name:  "test-tag",
-				Color: "red",
-			},
-		},
 	}
 	projectD := client.NewModelDelegate(project, client.WithDelegateConfigPath(T.Client.GetConfigPath()))
 	err := projectD.Add()
