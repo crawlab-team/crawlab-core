@@ -11,7 +11,7 @@ require (
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.6.0-1
-	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940
+	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20220818064917-625d96eea842
 	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930
 	github.com/crawlab-team/crawlab-log v0.1.1-0.20220805131402-a07582abedca
 	github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211113.2048

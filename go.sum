@@ -133,6 +133,8 @@ github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300/go.mod h1:gfeF0nAnF
 github.com/crawlab-team/crawlab-fs v0.0.0/go.mod h1:k2VXprQspLAmbgO5sSpqMjg/xP4iKDkW4RyTWY8eTZM=
 github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940 h1:KFZ39oe/QyhhRhXYZSmzDZl3L/JUEPkiiaf4+/iuboY=
 github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940/go.mod h1:dA1G6xeiClbTMkjRuoagGrcKfQ97jJZRAhZUSwrKdoI=
+github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20220818064917-625d96eea842 h1:tbl2/qhQYwcL6Bn3BpK6luTjrVrPAte7unXrLdDUSk0=
+github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20220818064917-625d96eea842/go.mod h1:dA1G6xeiClbTMkjRuoagGrcKfQ97jJZRAhZUSwrKdoI=
 github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930 h1:THQ+k+LgCO0Tyw0wDTnTekqnyGhJdsbg3IAhtyqdBlU=
 github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930/go.mod h1:YHWntJs8VVIgYqtrq/mMfYpO8DNhnEzizP0apw9NQ8Y=
 github.com/crawlab-team/crawlab-log v0.1.0 h1:0t+lZEojs3Vqb/bMkk2qs3I+1+XdwKG3pMTfeK5PZWM=
