@@ -17,6 +17,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
@@ -192,16 +193,9 @@ func (svc *MasterService) monitor() (err error) {
 	}
 
 	// all worker nodes
-	query := bson.M{
-		"key":    bson.M{"$ne": svc.cfgSvc.GetNodeKey()}, // not self
-		"active": true,                                   // active
-	}
-	nodes, err := svc.modelSvc.GetNodeList(query, nil)
+	nodes, err := svc.getAllWorkerNodes()
 	if err != nil {
-		if err == mongo2.ErrNoDocuments {
-			return nil
-		}
-		return trace.TraceError(err)
+		return err
 	}
 
 	// error flag
@@ -210,24 +204,20 @@ func (svc *MasterService) monitor() (err error) {
 	// iterate all nodes
 	for _, n := range nodes {
 		// subscribe
-		_, err := svc.server.GetSubscribe("node:" + n.GetKey())
-		if err != nil {
-			trace.PrintError(err)
+		if err := svc.subscribeNode(&n); err != nil {
 			isErr = true
-			if err := svc.setWorkerNodeOffline(&n); err != nil {
-				trace.PrintError(err)
-			}
 			continue
 		}
 
-		// PING client
-		if err := svc.server.SendStreamMessage("node:"+n.GetKey(), grpc.StreamMessageCode_PING); err != nil {
-			log.Errorf("cannot ping worker[%s]: %v", n.GetKey(), err)
-			trace.PrintError(err)
+		// ping client
+		if err := svc.pingNodeClient(&n); err != nil {
 			isErr = true
-			if err := svc.setWorkerNodeOffline(&n); err != nil {
-				trace.PrintError(err)
-			}
+			continue
+		}
+
+		// update node available runners
+		if err := svc.updateNodeAvailableRunners(&n); err != nil {
+			isErr = true
 			continue
 		}
 	}
@@ -237,6 +227,21 @@ func (svc *MasterService) monitor() (err error) {
 	}
 
 	return nil
+}
+
+func (svc *MasterService) getAllWorkerNodes() (nodes []models.Node, err error) {
+	query := bson.M{
+		"key":    bson.M{"$ne": svc.cfgSvc.GetNodeKey()}, // not self
+		"active": true,                                   // active
+	}
+	nodes, err = svc.modelSvc.GetNodeList(query, nil)
+	if err != nil {
+		if err == mongo2.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, trace.TraceError(err)
+	}
+	return nodes, nil
 }
 
 func (svc *MasterService) updateMasterNodeStatus() (err error) {
@@ -251,6 +256,42 @@ func (svc *MasterService) updateMasterNodeStatus() (err error) {
 
 func (svc *MasterService) setWorkerNodeOffline(n interfaces.Node) (err error) {
 	return delegate.NewModelNodeDelegate(n).UpdateStatusOffline()
+}
+
+func (svc *MasterService) subscribeNode(n interfaces.Node) (err error) {
+	_, err = svc.server.GetSubscribe("node:" + n.GetKey())
+	if err != nil {
+		log.Errorf("cannot subscribe worker node[%s]: %v", n.GetKey(), err)
+		if err := svc.setWorkerNodeOffline(n); err != nil {
+			return trace.TraceError(err)
+		}
+		return trace.TraceError(err)
+	}
+	return nil
+}
+
+func (svc *MasterService) pingNodeClient(n interfaces.Node) (err error) {
+	if err := svc.server.SendStreamMessage("node:"+n.GetKey(), grpc.StreamMessageCode_PING); err != nil {
+		log.Errorf("cannot ping worker node client[%s]: %v", n.GetKey(), err)
+		if err := svc.setWorkerNodeOffline(n); err != nil {
+			return trace.TraceError(err)
+		}
+		return trace.TraceError(err)
+	}
+	return nil
+}
+
+func (svc *MasterService) updateNodeAvailableRunners(n interfaces.Node) (err error) {
+	query := bson.M{
+		"node_id": n.GetId(),
+		"status":  constants.TaskStatusRunning,
+	}
+	runningTasksCount, err := mongo.GetMongoCol(interfaces.ModelColNameTask).Count(query)
+	if err != nil {
+		return trace.TraceError(err)
+	}
+	n.SetAvailableRunners(n.GetMaxRunners() - runningTasksCount)
+	return delegate.NewModelDelegate(n).Save()
 }
 
 func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err error) {
