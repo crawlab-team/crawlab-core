@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -148,8 +149,13 @@ func (svc *Service) Dequeue() (tasks []interfaces.Task, err error) {
 		return nil, err
 	}
 
-	// dequeue tasks
-	if err := svc.dequeueTasks(tasks); err != nil {
+	// update tasks
+	if err := svc.updateTasks(tasks); err != nil {
+		return nil, err
+	}
+
+	// delete task queue items
+	if err := svc.deleteTaskQueueItems(tasks); err != nil {
 		return nil, err
 	}
 
@@ -359,7 +365,14 @@ func (svc *Service) matchResources(tqList []models.TaskQueueItem) (tasks []inter
 		// task
 		t, err := svc.modelSvc.GetTaskById(tq.GetId())
 		if err != nil {
-			return nil, nil, err
+			// remove task queue item if it is not found in tasks
+			_ = mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).DeleteId(tq.GetId())
+
+			// set task status as abnormal
+			t.Status = constants.TaskStatusAbnormal
+			t.Error = err.Error()
+			_ = delegate.NewModelDelegate(t, nil).Save()
+			continue
 		}
 
 		// iterate shuffled resources to match a resource
@@ -399,16 +412,21 @@ func (svc *Service) updateResources(nodesMap map[primitive.ObjectID]models.Node)
 	return nil
 }
 
-func (svc *Service) dequeueTasks(tasks []interfaces.Task) (err error) {
+func (svc *Service) updateTasks(tasks []interfaces.Task) (err error) {
 	for _, t := range tasks {
 		// save task with node id
 		if err := delegate.NewModelDelegate(t).Save(); err != nil {
 			return err
 		}
+	}
+	return nil
+}
 
-		// remove task queue item
+func (svc *Service) deleteTaskQueueItems(tasks []interfaces.Task) (err error) {
+	for _, t := range tasks {
 		if err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).DeleteId(t.GetId()); err != nil {
-			return err
+			log.Warnf("task[id: %s] missing task queue: %s", t.GetId(), err.Error())
+			continue
 		}
 	}
 	return nil
