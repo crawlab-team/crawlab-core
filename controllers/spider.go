@@ -11,6 +11,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
+	"github.com/crawlab-team/crawlab-core/spider/fs"
 	"github.com/crawlab-team/crawlab-core/spider/sync"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
@@ -19,7 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
@@ -91,6 +91,11 @@ func getSpiderActions() []Action {
 			Method:      http.MethodGet,
 			Path:        "/:id/git/remote-refs",
 			HandlerFunc: ctx.getGitRemoteRefs,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/git/checkout",
+			HandlerFunc: ctx.gitCheckout,
 		},
 		{
 			Method:      http.MethodPost,
@@ -348,8 +353,14 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		return
 	}
 
+	// return null if git client is empty
+	if gitClient == nil {
+		HandleSuccess(c)
+		return
+	}
+
 	// current branch
-	currentBranch, err := ctx._getCurrentBranch(gitClient)
+	currentBranch, err := gitClient.GetCurrentBranch()
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -418,7 +429,7 @@ func (ctx *spiderContext) getGitRemoteRefs(c *gin.Context) {
 	// remote name
 	remoteName := c.Query("remote")
 	if remoteName == "" {
-		remoteName = vcs.GitRemoteNameUpstream
+		remoteName = vcs.GitRemoteNameOrigin
 	}
 
 	// spider fs service
@@ -428,16 +439,16 @@ func (ctx *spiderContext) getGitRemoteRefs(c *gin.Context) {
 		return
 	}
 
-	// sync from remote to workspace
-	//if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
-	//	HandleErrorInternalServerError(c, err)
-	//	return
-	//}
-
 	// git client
 	gitClient, err := ctx._getGitClient(id, fsSvc)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// return null if git client is empty
+	if gitClient == nil {
+		HandleSuccess(c)
 		return
 	}
 
@@ -449,6 +460,69 @@ func (ctx *spiderContext) getGitRemoteRefs(c *gin.Context) {
 	}
 
 	HandleSuccessWithData(c, refs)
+}
+
+func (ctx *spiderContext) gitCheckout(c *gin.Context) {
+	// payload
+	var payload entity.GitPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// spider id
+	id, err := ctx._processActionRequest(c)
+	if err != nil {
+		return
+	}
+
+	// spider fs service
+	fsSvc, err := ctx.syncSvc.GetFsService(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// git client
+	gitClient, err := ctx._getGitClient(id, fsSvc)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// return null if git client is empty
+	if gitClient == nil {
+		HandleSuccess(c)
+		return
+	}
+
+	// branch to pull
+	var branch string
+	if payload.Branch == "" {
+		// by default current branch
+		branch, err = gitClient.GetCurrentBranch()
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	} else {
+		// payload branch
+		branch = payload.Branch
+	}
+
+	// checkout
+	if err := ctx._gitCheckout(gitClient, constants.GitRemoteNameOrigin, branch); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// sync to fs
+	if err := fsSvc.GetFsService().SyncToFs(interfaces.WithOnlyFromWorkspace()); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccess(c)
 }
 
 func (ctx *spiderContext) gitPull(c *gin.Context) {
@@ -472,13 +546,6 @@ func (ctx *spiderContext) gitPull(c *gin.Context) {
 		return
 	}
 
-	// git
-	g, err := ctx.modelSvc.GetGitById(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// git client
 	gitClient, err := ctx._getGitClient(id, fsSvc)
 	if err != nil {
@@ -486,37 +553,10 @@ func (ctx *spiderContext) gitPull(c *gin.Context) {
 		return
 	}
 
-	// set remote
-	r, err := gitClient.GetRemote(constants.GitRemoteNameUpstream)
-	if err != nil {
-		if err == git.ErrRemoteNotFound {
-			// create upstream remote if not exists
-			r, err = ctx._createGitRemote(gitClient, g)
-			if err != nil {
-				HandleErrorInternalServerError(c, err)
-				return
-			}
-		} else {
-			// error
-			HandleErrorInternalServerError(c, err)
-			return
-		}
-	} else {
-		// re-create upstream remote if remote urls not matched
-		if len(r.Config().URLs) == 0 || r.Config().URLs[0] != g.Url {
-			// delete existing upstream remote
-			if err := gitClient.DeleteRemote(constants.GitRemoteNameUpstream); err != nil {
-				HandleErrorInternalServerError(c, err)
-				return
-			}
-
-			// create upstream remote if not exists
-			r, err = ctx._createGitRemote(gitClient, g)
-			if err != nil {
-				HandleErrorInternalServerError(c, err)
-				return
-			}
-		}
+	// return null if git client is empty
+	if gitClient == nil {
+		HandleSuccess(c)
+		return
 	}
 
 	// branch to pull
@@ -534,7 +574,7 @@ func (ctx *spiderContext) gitPull(c *gin.Context) {
 	}
 
 	// attempt to pull with target branch
-	if err := ctx._gitPull(gitClient, constants.GitRemoteNameUpstream, branch); err != nil {
+	if err := ctx._gitPull(gitClient, constants.GitRemoteNameOrigin, branch); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -582,6 +622,12 @@ func (ctx *spiderContext) gitCommit(c *gin.Context) {
 		return
 	}
 
+	// return null if git client is empty
+	if gitClient == nil {
+		HandleSuccess(c)
+		return
+	}
+
 	// add
 	for _, p := range payload.Paths {
 		if err := gitClient.Add(p); err != nil {
@@ -598,7 +644,7 @@ func (ctx *spiderContext) gitCommit(c *gin.Context) {
 
 	// push
 	if err := gitClient.Push(
-		vcs.WithRemoteNamePush(vcs.GitRemoteNameUpstream),
+		vcs.WithRemoteNamePush(vcs.GitRemoteNameOrigin),
 	); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -1021,39 +1067,16 @@ func (ctx *spiderContext) _getGitIgnore(fsSvc interfaces.SpiderFsService) (ignor
 	return ignore, nil
 }
 
-func (ctx *spiderContext) _createGitRemote(gitClient *vcs.GitClient, g *models.Git) (r *git.Remote, err error) {
-	r, err = gitClient.CreateRemote(&config.RemoteConfig{
-		Name: constants.GitRemoteNameUpstream,
-		URLs: []string{g.Url},
-	})
-	if err != nil {
-		return nil, trace.TraceError(err)
+func (ctx *spiderContext) _gitCheckout(gitClient *vcs.GitClient, remote, branch string) (err error) {
+	if err := gitClient.CheckoutBranch(branch, vcs.WithBranch(branch)); err != nil {
+		return trace.TraceError(err)
 	}
-	return r, nil
+
+	// pull
+	return ctx._gitPull(gitClient, remote, branch)
 }
 
 func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch string) (err error) {
-	// remote refs
-	//remoteRefs, err := gitClient.GetRemoteRefs(remote)
-	//if err != nil {
-	//	return err
-	//}
-
-	// ref
-	//var ref *plumbing.Reference
-	//for _, remoteRef := range remoteRefs {
-	//	if remoteRef.Type == vcs.GitRefTypeBranch && remoteRef.Name == branch {
-	//		ref = plumbing.NewHashReference(plumbing.NewBranchReferenceName(branch), plumbing.NewHash(remoteRef.Hash))
-	//		break
-	//	}
-	//}
-
-	// reset
-	_ = gitClient.Reset()
-
-	// checkout to target branch
-	//_ = gitClient.CheckoutBranchWithRemoteFromRef(branch, remote, ref)
-
 	// pull
 	if err := gitClient.Pull(
 		vcs.WithRemoteNamePull(remote),
@@ -1061,9 +1084,6 @@ func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch stri
 	); err != nil {
 		return trace.TraceError(err)
 	}
-
-	// reset
-	_ = gitClient.Reset()
 
 	return nil
 }
@@ -1078,6 +1098,7 @@ func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.
 		if err != mongo2.ErrNoDocuments {
 			return nil, trace.TraceError(err)
 		}
+		return nil, nil
 	} else {
 		authType = g.AuthType
 	}
@@ -1085,6 +1106,7 @@ func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.
 	// git client
 	gitClient = fsSvc.GetFsService().GetGitClient()
 
+	// set auth
 	switch authType {
 	case constants.GitAuthTypeHttp:
 		gitClient.SetAuthType(vcs.GitAuthTypeHTTP)
@@ -1098,64 +1120,146 @@ func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.
 		return gitClient, nil
 	}
 
+	// remote name
+	remoteName := vcs.GitRemoteNameOrigin
+
+	// update remote
+	r, err := gitClient.GetRemote(remoteName)
+	if err == git.ErrRemoteNotFound {
+		// remote not exists, create
+		if _, err := gitClient.CreateRemote(&config.RemoteConfig{
+			Name: remoteName,
+			URLs: []string{g.Url},
+		}); err != nil {
+			return nil, trace.TraceError(err)
+		}
+	} else if err == nil {
+		// remote exists, update if different
+		if g.Url != r.Config().URLs[0] {
+			if err := gitClient.DeleteRemote(remoteName); err != nil {
+				return nil, trace.TraceError(err)
+			}
+			if _, err := gitClient.CreateRemote(&config.RemoteConfig{
+				Name: remoteName,
+				URLs: []string{g.Url},
+			}); err != nil {
+				return nil, trace.TraceError(err)
+			}
+		}
+		gitClient.SetRemoteUrl(g.Url)
+	} else {
+		// error
+		return nil, trace.TraceError(err)
+	}
+
+	// check if head reference exists
+	_, err = gitClient.GetRepository().Head()
+	if err == nil {
+		return gitClient, nil
+	}
+
+	// sync remote
+	if err := ctx._syncRemote(id, gitClient); err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// align master/main branch
+	ctx._alignBranch(gitClient)
+
 	return gitClient, nil
 }
 
-func (ctx *spiderContext) _getCurrentBranch(gitClient *vcs.GitClient) (currentBranch string, err error) {
-	// current branch from repo
-	currentBranch, err = gitClient.GetCurrentBranch()
+func (ctx *spiderContext) _syncRemote(id primitive.ObjectID, gitClient *vcs.GitClient) (err error) {
+	// remote refs
+	refs, err := gitClient.GetRemoteRefs(vcs.GitRemoteNameOrigin)
 	if err != nil {
-		return "", err
+		return err
+	}
+
+	// remote branch name
+	remoteBranchName, err := ctx._getDefaultRemoteBranch(refs)
+	if err != nil {
+		return err
+	}
+
+	// pull
+	if err := gitClient.Pull(
+		vcs.WithBranchNamePull(remoteBranchName),
+		vcs.WithRemoteNamePull(vcs.GitRemoteNameOrigin),
+	); err != nil {
+		return trace.TraceError(err)
+	}
+
+	// spider fs service
+	fsSvc, err := fs.GetSpiderFsService(id)
+	if err != nil {
+		return trace.TraceError(err)
+	}
+
+	// sync to fs
+	if err := fsSvc.GetFsService().SyncToFs(); err != nil {
+		return trace.TraceError(err)
+	}
+
+	return nil
+}
+
+func (ctx *spiderContext) _alignBranch(gitClient *vcs.GitClient) {
+	// current branch
+	currentBranch, err := gitClient.GetCurrentBranch()
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+
+	// skip if current branch is not master
+	if currentBranch != vcs.GitBranchNameMaster {
+		return
 	}
 
 	// remote refs
-	remoteRefs, err := gitClient.GetRemoteRefs(constants.GitRemoteNameUpstream)
+	refs, err := gitClient.GetRemoteRefs(vcs.GitRemoteNameOrigin)
 	if err != nil {
-		return currentBranch, err
+		trace.PrintError(err)
+		return
 	}
 
-	// return if no remote refs found
-	if remoteRefs == nil {
-		return currentBranch, nil
+	// main branch
+	defaultRemoteBranch, err := ctx._getDefaultRemoteBranch(refs)
+	if err != nil || defaultRemoteBranch == "" {
+		return
 	}
 
-	// return if current branch is not default branch (master)
-	if currentBranch != vcs.GitDefaultBranchName {
-		return currentBranch, nil
+	// move branch
+	if err := gitClient.MoveBranch(vcs.GitBranchNameMaster, defaultRemoteBranch); err != nil {
+		trace.PrintError(err)
 	}
+}
 
-	// iterate remote refs and determine current branch
-	var hasMain bool
-	var mainRef *plumbing.Reference
-	for _, remoteRef := range remoteRefs {
-		// skip non-branch remote ref
-		if remoteRef.Type != vcs.GitRefTypeBranch {
+func (ctx *spiderContext) _getDefaultRemoteBranch(refs []vcs.GitRef) (defaultRemoteBranchName string, err error) {
+	// remote branch name
+	for _, r := range refs {
+		if r.Type != vcs.GitRefTypeBranch {
 			continue
 		}
 
-		// return if current branch is in remote refs
-		if remoteRef.Name == currentBranch {
-			return currentBranch, nil
+		if r.Name == vcs.GitBranchNameMain {
+			defaultRemoteBranchName = r.Name
+			break
 		}
 
-		// set has main if any
-		if remoteRef.Name == vcs.GitBranchNameMain {
-			hasMain = true
-			mainRef = plumbing.NewHashReference(plumbing.NewBranchReferenceName(remoteRef.Name), plumbing.NewHash(remoteRef.Hash))
+		if r.Name == vcs.GitBranchNameMaster {
+			defaultRemoteBranchName = r.Name
+			continue
+		}
+
+		if defaultRemoteBranchName == "" {
+			defaultRemoteBranchName = r.Name
+			continue
 		}
 	}
 
-	// error if no main branch found in remote refs
-	if !hasMain {
-		return "", trace.TraceError(errors.ErrorGitNoMainBranch)
-	}
-
-	// checkout to main branch
-	if err := gitClient.CheckoutBranchWithRemoteFromRef(vcs.GitBranchNameMain, constants.GitRemoteNameUpstream, mainRef); err != nil {
-		return "", trace.TraceError(err)
-	}
-
-	return vcs.GitBranchNameMain, nil
+	return defaultRemoteBranchName, nil
 }
 
 var _spiderCtx *spiderContext

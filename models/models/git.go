@@ -6,11 +6,12 @@ import (
 )
 
 type Git struct {
-	Id       primitive.ObjectID `json:"_id" bson:"_id"`
-	Url      string             `json:"url" bson:"url"`
-	AuthType string             `json:"auth_type" bson:"auth_type"`
-	Username string             `json:"username" bson:"username"`
-	Password string             `json:"password" bson:"password"`
+	Id            primitive.ObjectID `json:"_id" bson:"_id"`
+	Url           string             `json:"url" bson:"url"`
+	AuthType      string             `json:"auth_type" bson:"auth_type"`
+	Username      string             `json:"username" bson:"username"`
+	Password      string             `json:"password" bson:"password"`
+	CurrentBranch string             `json:"current_branch" bson:"current_branch"`
 }
 
 func (t *Git) GetId() (id primitive.ObjectID) {

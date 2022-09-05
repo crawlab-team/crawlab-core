@@ -314,13 +314,6 @@ func (svc *Service) SyncToFs(opts ...interfaces.ServiceCrudOption) (err error) {
 		opt(o)
 	}
 
-	// sync from repo to workspace
-	if !o.OnlyFromWorkspace {
-		if err := svc.syncFromRepoToWorkspace(); err != nil {
-			return err
-		}
-	}
-
 	// sync from workspace to fs
 	if err := svc.fs.SyncLocalToRemote(svc.GetWorkspacePath(), svc.fsPath); err != nil {
 		return err
@@ -565,11 +558,6 @@ func (svc *Service) copyFsDir(path, newPath string, opts ...interfaces.ServiceCr
 	}
 
 	return nil
-}
-
-func (svc *Service) syncFromRepoToWorkspace() (err error) {
-	// TODO: specify remote
-	return svc.gitClient.Reset()
 }
 
 func (svc *Service) getRemotePath(path string, o *interfaces.ServiceCrudOptions) (remotePath string) {
