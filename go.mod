@@ -7,14 +7,14 @@ require (
 	github.com/apex/log v1.9.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.6.0-1
-	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20220818064917-625d96eea842
+	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20220912130912-a47819e0c7c9
 	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930
 	github.com/crawlab-team/crawlab-log v0.1.1-0.20220805131402-a07582abedca
 	github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211113.2048.0.20220902052958-e3ff72bd9062
 	github.com/crawlab-team/go-trace v0.1.1
-	github.com/crawlab-team/goseaweedfs v0.6.0-beta.20211101.1936
+	github.com/crawlab-team/goseaweedfs v0.6.0-beta.20211101.1936.0.20220912021203-dfee5f74dd69
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/emirpasic/gods v1.12.0
+	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/gin-gonic/gin v1.8.1
