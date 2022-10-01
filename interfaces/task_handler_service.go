@@ -15,12 +15,12 @@ type TaskHandlerService interface {
 	ReportStatus()
 	// Reset reset internals to default
 	Reset()
-	// IsSyncLocked whether the given spider is locked for files sync
-	IsSyncLocked(spiderId primitive.ObjectID) (ok bool)
-	// LockSync lock files sync for given spider
-	LockSync(spiderId primitive.ObjectID)
-	// UnlockSync unlock files sync for given spider
-	UnlockSync(spiderId primitive.ObjectID)
+	// IsSyncLocked whether the given task is locked for files sync
+	IsSyncLocked(path string) (ok bool)
+	// LockSync lock files sync for given task
+	LockSync(path string)
+	// UnlockSync unlock files sync for given task
+	UnlockSync(path string)
 	// GetExitWatchDuration get max runners
 	GetExitWatchDuration() (duration time.Duration)
 	// SetExitWatchDuration set max runners

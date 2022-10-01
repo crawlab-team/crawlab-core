@@ -130,17 +130,17 @@ func (svc *Service) ReportStatus() {
 	}
 }
 
-func (svc *Service) IsSyncLocked(spiderId primitive.ObjectID) (ok bool) {
-	_, ok = svc.syncLocks.Load(spiderId)
+func (svc *Service) IsSyncLocked(path string) (ok bool) {
+	_, ok = svc.syncLocks.Load(path)
 	return ok
 }
 
-func (svc *Service) LockSync(spiderId primitive.ObjectID) {
-	svc.syncLocks.Store(spiderId, true)
+func (svc *Service) LockSync(path string) {
+	svc.syncLocks.Store(path, true)
 }
 
-func (svc *Service) UnlockSync(spiderId primitive.ObjectID) {
-	svc.syncLocks.Delete(spiderId)
+func (svc *Service) UnlockSync(path string) {
+	svc.syncLocks.Delete(path)
 }
 
 //func (svc *Service) GetMaxRunners() (maxRunners int) {

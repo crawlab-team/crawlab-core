@@ -459,13 +459,13 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 
 func (r *Runner) syncFiles() (err error) {
 	// skip if files sync is locked
-	if r.svc.IsSyncLocked(r.s.GetId()) {
+	if r.svc.IsSyncLocked(r.fsSvc.GetWorkspacePath()) {
 		return
 	}
 
 	// lock files sync
-	r.svc.LockSync(r.s.GetId())
-	defer r.svc.UnlockSync(r.s.GetId())
+	r.svc.LockSync(r.fsSvc.GetWorkspacePath())
+	defer r.svc.UnlockSync(r.fsSvc.GetWorkspacePath())
 	if err := r.fsSvc.GetFsService().SyncToWorkspace(); err != nil {
 		return err
 	}
