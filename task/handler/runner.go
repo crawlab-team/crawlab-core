@@ -15,8 +15,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
-	"github.com/crawlab-team/crawlab-core/spider/fs"
 	"github.com/crawlab-team/crawlab-core/sys_exec"
+	"github.com/crawlab-team/crawlab-core/task/fs"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
@@ -35,7 +35,7 @@ import (
 type Runner struct {
 	// dependencies
 	svc   interfaces.TaskHandlerService // task handler service
-	fsSvc interfaces.SpiderFsService    // spider fs service
+	fsSvc interfaces.TaskFsService      // task fs service
 
 	// settings
 	logDriverType    string
@@ -193,12 +193,12 @@ func (r *Runner) Cancel() (err error) {
 
 func (r *Runner) Dispose() (err error) {
 	// remove working directory
-	// TODO: make it configurable
-	//if err := os.RemoveAll(r.cwd); err != nil {
-	//	return err
-	//}
-
-	return nil
+	return backoff.Retry(func() error {
+		if err := os.RemoveAll(r.cwd); err != nil {
+			return trace.TraceError(err)
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
 }
 
 func (r *Runner) SetLogDriverType(driverType string) {
@@ -619,19 +619,20 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 		return nil, err
 	}
 
+	// task fs service
+	r.fsSvc, err = fs.NewTaskFsService(r.t.GetId())
+	if err != nil {
+		return nil, err
+	}
+
 	// dependency injection
 	c := dig.New()
-	if err := c.Provide(fs.ProvideGetSpiderFsService(r.t.GetSpiderId())); err != nil {
-		return nil, trace.TraceError(err)
-	}
 	if err := c.Provide(gclient.ProvideGetClient(r.svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(
-		fsSvc interfaces.SpiderFsService,
 		c interfaces.GrpcClient,
 	) {
-		r.fsSvc = fsSvc
 		r.c = c
 	}); err != nil {
 		return nil, trace.TraceError(err)
