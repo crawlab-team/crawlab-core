@@ -5,7 +5,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/fs"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,28 +19,14 @@ type Service struct {
 	repoPathBase      string
 
 	// dependencies
-	fsSvc    interfaces.FsService
-	modelSvc service.ModelService
+	fsSvc interfaces.FsService
 
 	// internals
-	id primitive.ObjectID
-	s  interfaces.Spider
-	t  interfaces.Task
+	tid primitive.ObjectID // models.Task Id
+	sid primitive.ObjectID // models.Spider Id
 }
 
 func (svc *Service) Init() (err error) {
-	// task
-	svc.t, err = svc.modelSvc.GetTaskById(svc.id)
-	if err != nil {
-		return err
-	}
-
-	// spider
-	svc.s, err = svc.modelSvc.GetSpiderById(svc.t.GetSpiderId())
-	if err != nil {
-		return err
-	}
-
 	// fs service
 	var fsOpts []fs.Option
 	if svc.cfgPath != "" {
@@ -66,16 +51,8 @@ func (svc *Service) Init() (err error) {
 	return nil
 }
 
-func (svc *Service) SetId(id primitive.ObjectID) {
-	svc.id = id
-}
-
 func (svc *Service) GetFsService() (fsSvc interfaces.FsService) {
 	return svc.fsSvc
-}
-
-func (svc *Service) GetWorkspacePath() (res string) {
-	return filepath.Join(svc.workspacePathBase, svc.s.GetId().Hex(), svc.t.GetId().Hex())
 }
 
 func (svc *Service) SetFsPathBase(path string) {
@@ -99,20 +76,30 @@ func (svc *Service) SetConfigPath(path string) {
 }
 
 func (svc *Service) GetFsPath() (res string) {
-	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.s.GetId().Hex())
+	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.sid.Hex())
+}
+
+func (svc *Service) GetWorkspacePath() (res string) {
+	return filepath.Join(svc.workspacePathBase, svc.sid.Hex(), svc.tid.Hex())
 }
 
 func (svc *Service) GetRepoPath() (res string) {
-	return fmt.Sprintf("%s/%s", svc.repoPathBase, svc.id.Hex())
+	return fmt.Sprintf("%s/%s", svc.repoPathBase, svc.sid.Hex())
 }
 
-func NewTaskFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.TaskFsService, err error) {
+func NewTaskFsService(taskId, spiderId primitive.ObjectID, opts ...Option) (svc2 interfaces.TaskFsService, err error) {
 	// service
 	svc := &Service{
 		fsPathBase:        fs.DefaultFsPath,
 		workspacePathBase: fs.DefaultWorkspacePath,
 		repoPathBase:      fs.DefaultRepoPath,
-		id:                id,
+		tid:               taskId,
+		sid:               spiderId,
+	}
+
+	// validate
+	if svc.tid.IsZero() || svc.sid.IsZero() {
+		return nil, trace.TraceError(errors.ErrorTaskMissingRequiredOption)
 	}
 
 	// workspace path
@@ -138,17 +125,6 @@ func NewTaskFsService(id primitive.ObjectID, opts ...Option) (svc2 interfaces.Ta
 	// apply options
 	for _, opt := range opts {
 		opt(svc)
-	}
-
-	// validate
-	if svc.id.IsZero() {
-		return nil, trace.TraceError(errors.ErrorSpiderMissingRequiredOption)
-	}
-
-	// model service
-	svc.modelSvc, err = service.GetService()
-	if err != nil {
-		return nil, err
 	}
 
 	// init
