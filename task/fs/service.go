@@ -99,7 +99,7 @@ func (svc *Service) SetConfigPath(path string) {
 }
 
 func (svc *Service) GetFsPath() (res string) {
-	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.id.Hex())
+	return fmt.Sprintf("%s/%s", svc.fsPathBase, svc.s.GetId().Hex())
 }
 
 func (svc *Service) GetRepoPath() (res string) {
