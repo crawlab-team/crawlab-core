@@ -104,12 +104,13 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 				SpiderId: s.Id,
 				// TODO: implement associated tasks
 				//ParentId: mainTask.Id,
-				Mode:     opts.Mode,
-				Cmd:      s.Cmd,
-				Param:    opts.Param,
-				NodeId:   nodeId,
-				Priority: opts.Priority,
-				UserId:   opts.UserId,
+				Mode:       opts.Mode,
+				Cmd:        s.Cmd,
+				Param:      opts.Param,
+				NodeId:     nodeId,
+				ScheduleId: opts.ScheduleId,
+				Priority:   opts.Priority,
+				UserId:     opts.UserId,
 			}
 			if err := svc.schedulerSvc.Enqueue(t); err != nil {
 				return err
