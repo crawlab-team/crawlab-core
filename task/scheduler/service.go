@@ -30,6 +30,10 @@ import (
 	"time"
 )
 
+type TaskSchedulerService interface {
+	interfaces.TaskSchedulerService
+}
+
 type Service struct {
 	// dependencies
 	interfaces.TaskBaseService

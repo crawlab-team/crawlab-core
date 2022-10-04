@@ -16,7 +16,12 @@ import (
 	"go.uber.org/dig"
 )
 
+type SpiderAdminService interface {
+	interfaces.SpiderAdminService
+}
+
 type Service struct {
+
 	// dependencies
 	nodeCfgSvc   interfaces.NodeConfigService
 	modelSvc     service.ModelService

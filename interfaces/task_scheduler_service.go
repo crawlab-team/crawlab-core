@@ -1,3 +1,4 @@
+//go:generate mockgen -source ./task_scheduler_service.go -destination ../mock/task_scheduler_service_mock.go
 package interfaces
 
 import (

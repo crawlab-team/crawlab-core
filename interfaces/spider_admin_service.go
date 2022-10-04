@@ -1,3 +1,4 @@
+//go:generate mockgen -source ./spider_admin_service.go -destination ../mock/spider_admin_service_mock.go
 package interfaces
 
 import (
