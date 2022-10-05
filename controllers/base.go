@@ -27,6 +27,7 @@ const (
 	ControllerIdRole
 	ControllerIdPermission
 	ControllerIdExport
+	ControllerIdEnvDeps
 
 	ControllerIdVersion
 	ControllerIdI18n

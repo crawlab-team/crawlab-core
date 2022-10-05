@@ -19,7 +19,7 @@ package service
 //}
 //
 //type tagService struct {
-//	*BaseService
+//	*baseService
 //}
 //
 //func (svc *tagService) getTagIds(colName string, tags []Tag) (tagIds []primitive.ObjectID, err error) {

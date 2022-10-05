@@ -4,6 +4,7 @@ import (
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
+	envDepsServices "github.com/crawlab-team/crawlab-core/env/deps/services"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -36,6 +37,7 @@ type MasterService struct {
 	handlerSvc   interfaces.TaskHandlerService
 	scheduleSvc  interfaces.ScheduleService
 	pluginSvc    interfaces.PluginService
+	envDepsSvs   *envDepsServices.Service
 
 	// settings
 	cfgPath         string
@@ -77,6 +79,9 @@ func (svc *MasterService) Start() {
 
 	// start plugin service
 	go svc.pluginSvc.Start()
+
+	// start env deps service
+	go svc.envDepsSvs.Start()
 
 	// wait for quit signal
 	svc.Wait()
@@ -355,6 +360,9 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	}); err != nil {
 		return nil, err
 	}
+
+	// env deps service
+	svc.envDepsSvs = envDepsServices.GetService()
 
 	// init
 	if err := svc.Init(); err != nil {

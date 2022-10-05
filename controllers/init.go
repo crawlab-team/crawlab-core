@@ -36,6 +36,7 @@ func InitControllers() (err error) {
 	RoleController = NewListControllerDelegate(ControllerIdRole, modelSvc.GetBaseService(interfaces.ModelIdRole))
 	PermissionController = NewListControllerDelegate(ControllerIdPermission, modelSvc.GetBaseService(interfaces.ModelIdPermission))
 	ExportController = NewActionControllerDelegate(ControllerIdExport, getExportActions())
+	EnvDepsController = NewActionControllerDelegate(ControllerIdEnvDeps, getEnvDepsActions())
 
 	return nil
 }
