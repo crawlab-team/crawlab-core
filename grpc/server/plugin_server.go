@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -119,48 +120,52 @@ func (svr PluginServer) deserialize(msg *grpc.StreamMessage) (data entity.Stream
 
 // handleEvent receives events from channel and send to plugins
 func (svr PluginServer) handleEvent(pluginName, nodeKey string, ch *chan interfaces.EventData) {
-	sub, err := svr.server.GetSubscribe("plugin:" + pluginName + ":" + nodeKey)
-	if err != nil {
-		trace.PrintError(err)
-		return
-	}
-	for {
-		// model data
-		eventData := <-*ch
-		vData, err := json.Marshal(eventData.GetData())
+	op := func() error {
+		sub, err := svr.server.GetSubscribe("plugin:" + pluginName + ":" + nodeKey)
 		if err != nil {
-			trace.PrintError(err)
-			continue
+			return trace.TraceError(err)
 		}
-
-		// service message
-		svcMsg := &entity.GrpcEventServiceMessage{
-			Type:   constants.GrpcEventServiceTypeSend,
-			Events: []string{eventData.GetEvent()},
-			Data:   vData,
-		}
-
-		// serialize
-		data, err := json.Marshal(svcMsg)
-		if err != nil {
-			trace.PrintError(err)
-			continue
-		}
-
-		// stream message
-		msg := &grpc.StreamMessage{
-			Code: grpc.StreamMessageCode_SEND_EVENT,
-			Data: data,
-		}
-
-		// send
-		if err := sub.GetStream().Send(msg); err != nil {
-			if strings.HasSuffix(err.Error(), "transport is closing") {
-				return
+		for {
+			// model data
+			eventData := <-*ch
+			vData, err := json.Marshal(eventData.GetData())
+			if err != nil {
+				trace.PrintError(err)
+				continue
 			}
-			trace.PrintError(err)
+
+			// service message
+			svcMsg := &entity.GrpcEventServiceMessage{
+				Type:   constants.GrpcEventServiceTypeSend,
+				Events: []string{eventData.GetEvent()},
+				Data:   vData,
+			}
+
+			// serialize
+			data, err := json.Marshal(svcMsg)
+			if err != nil {
+				trace.PrintError(err)
+				continue
+			}
+
+			// stream message
+			msg := &grpc.StreamMessage{
+				Code: grpc.StreamMessageCode_SEND_EVENT,
+				Data: data,
+			}
+
+			// send
+			if err := sub.GetStream().Send(msg); err != nil {
+				if strings.HasSuffix(err.Error(), "transport is closing") {
+					return trace.TraceError(err)
+				}
+				trace.PrintError(err)
+			}
+			utils.LogDebug(fmt.Sprintf("msg: %v", msg))
 		}
-		utils.LogDebug(fmt.Sprintf("msg: %v", msg))
+	}
+	if err := backoff.Retry(op, backoff.NewExponentialBackOff()); err != nil {
+		trace.PrintError(err)
 	}
 }
 

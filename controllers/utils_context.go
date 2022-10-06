@@ -7,7 +7,7 @@ import (
 )
 
 func GetUserFromContext(c *gin.Context) (u interfaces.User) {
-	value, ok := c.Get(constants.ContextUser)
+	value, ok := c.Get(constants.UserContextKey)
 	if !ok {
 		return nil
 	}

@@ -133,8 +133,8 @@ func (svc *BaseLangService) Install(payload entity.InstallPayload) (err error) {
 		msg := &grpc.StreamMessage{
 			Code:    grpc.StreamMessageCode_SEND,
 			NodeKey: svc.parent.currentNode.GetKey(),
-			From:    "plugin:" + svc.parent.currentNode.GetKey(),
-			To:      "plugin:" + n.GetKey(),
+			From:    svc.parent.getStreamMessagePrefix() + svc.parent.currentNode.GetKey(),
+			To:      svc.parent.getStreamMessagePrefix() + n.GetKey(),
 			Data:    msgData,
 		}
 
@@ -237,8 +237,8 @@ func (svc *BaseLangService) Uninstall(payload entity.UninstallPayload) (err erro
 		msg := &grpc.StreamMessage{
 			Code:    grpc.StreamMessageCode_SEND,
 			NodeKey: svc.parent.currentNode.GetKey(),
-			From:    "plugin:" + svc.parent.currentNode.GetKey(),
-			To:      "plugin:" + n.GetKey(),
+			From:    svc.parent.getStreamMessagePrefix() + svc.parent.currentNode.GetKey(),
+			To:      svc.parent.getStreamMessagePrefix() + n.GetKey(),
 			Data:    msgData,
 		}
 
@@ -388,8 +388,8 @@ func (svc *BaseLangService) Update() (err error) {
 			msg := &grpc.StreamMessage{
 				Code:    grpc.StreamMessageCode_SEND,
 				NodeKey: svc.parent.currentNode.GetKey(),
-				From:    "plugin:" + svc.parent.currentNode.GetKey(),
-				To:      "plugin:" + n.GetKey(),
+				From:    svc.parent.getStreamMessagePrefix() + svc.parent.currentNode.GetKey(),
+				To:      svc.parent.getStreamMessagePrefix() + n.GetKey(),
 				Data:    msgDataBytes,
 			}
 
@@ -454,8 +454,8 @@ func (svc *BaseLangService) UpdateDependencyList(msg *grpc.StreamMessage, msgDat
 	msg = &grpc.StreamMessage{
 		Code:    grpc.StreamMessageCode_SEND,
 		NodeKey: svc.parent.currentNode.GetKey(),
-		From:    "plugin:" + svc.parent.currentNode.GetKey(),
-		To:      "plugin:" + svc.parent.masterNode.GetKey(),
+		From:    svc.parent.getStreamMessagePrefix() + svc.parent.currentNode.GetKey(),
+		To:      svc.parent.getStreamMessagePrefix() + svc.parent.masterNode.GetKey(),
 		Data:    msgDataBytes,
 	}
 

@@ -170,6 +170,9 @@ func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
 
 	// env deps
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/env/deps", controllers.EnvDepsController)
+
+	// notification
+	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/notifications", controllers.NotificationController)
 }
 
 func registerRoutesFilterGroup(svc *RouterService, groups *RouterGroups) {

@@ -288,7 +288,7 @@ func (svc *Service) _connect() (err error) {
 	msg := &grpc.StreamMessage{
 		Code:    grpc.StreamMessageCode_CONNECT,
 		NodeKey: svc.currentNode.GetKey(),
-		Key:     "plugin:" + svc.currentNode.GetKey(),
+		Key:     svc.getStreamMessagePrefix() + svc.currentNode.GetKey(),
 	}
 	if err := stream.Send(msg); err != nil {
 		return err
@@ -428,8 +428,8 @@ func (svc *Service) _sendLogs(taskId primitive.ObjectID, lines []string) {
 	msg := &grpc.StreamMessage{
 		Code:    grpc.StreamMessageCode_SEND,
 		NodeKey: svc.currentNode.GetKey(),
-		From:    "plugin:" + svc.currentNode.GetKey(),
-		To:      "plugin:" + svc.masterNode.GetKey(),
+		From:    svc.getStreamMessagePrefix() + svc.currentNode.GetKey(),
+		To:      svc.getStreamMessagePrefix() + svc.masterNode.GetKey(),
 		Data:    msgData,
 	}
 
@@ -466,8 +466,8 @@ func (svc *Service) _sendTaskStatus(taskId primitive.ObjectID, status string, er
 	msg := &grpc.StreamMessage{
 		Code:    grpc.StreamMessageCode_SEND,
 		NodeKey: svc.currentNode.GetKey(),
-		From:    "plugin:" + svc.currentNode.GetKey(),
-		To:      "plugin:" + svc.masterNode.GetKey(),
+		From:    svc.getStreamMessagePrefix() + svc.currentNode.GetKey(),
+		To:      svc.getStreamMessagePrefix() + svc.masterNode.GetKey(),
 		Data:    msgData,
 	}
 
@@ -543,8 +543,8 @@ func (svc *Service) _updateDependencyList(
 	msg = &grpc.StreamMessage{
 		Code:    grpc.StreamMessageCode_SEND,
 		NodeKey: svc.currentNode.GetKey(),
-		From:    "plugin:" + svc.currentNode.GetKey(),
-		To:      "plugin:" + svc.masterNode.GetKey(),
+		From:    svc.getStreamMessagePrefix() + svc.currentNode.GetKey(),
+		To:      svc.getStreamMessagePrefix() + svc.masterNode.GetKey(),
 		Data:    msgDataBytes,
 	}
 
@@ -553,6 +553,10 @@ func (svc *Service) _updateDependencyList(
 		trace.PrintError(err)
 		return
 	}
+}
+
+func (svc *Service) getStreamMessagePrefix() (prefix string) {
+	return "plugin:" + constants.PluginName + ":"
 }
 
 func NewService() *Service {

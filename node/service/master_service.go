@@ -13,6 +13,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/notification"
 	"github.com/crawlab-team/crawlab-core/plugin"
 	"github.com/crawlab-team/crawlab-core/schedule"
 	"github.com/crawlab-team/crawlab-core/task/handler"
@@ -30,14 +31,15 @@ import (
 
 type MasterService struct {
 	// dependencies
-	modelSvc     service.ModelService
-	cfgSvc       interfaces.NodeConfigService
-	server       interfaces.GrpcServer
-	schedulerSvc interfaces.TaskSchedulerService
-	handlerSvc   interfaces.TaskHandlerService
-	scheduleSvc  interfaces.ScheduleService
-	pluginSvc    interfaces.PluginService
-	envDepsSvs   *envDepsServices.Service
+	modelSvc        service.ModelService
+	cfgSvc          interfaces.NodeConfigService
+	server          interfaces.GrpcServer
+	schedulerSvc    interfaces.TaskSchedulerService
+	handlerSvc      interfaces.TaskHandlerService
+	scheduleSvc     interfaces.ScheduleService
+	pluginSvc       interfaces.PluginService
+	envDepsSvc      *envDepsServices.Service
+	notificationSvc *notification.Service
 
 	// settings
 	cfgPath         string
@@ -81,7 +83,10 @@ func (svc *MasterService) Start() {
 	go svc.pluginSvc.Start()
 
 	// start env deps service
-	go svc.envDepsSvs.Start()
+	go svc.envDepsSvc.Start()
+
+	// start notification service
+	go svc.notificationSvc.Start()
 
 	// wait for quit signal
 	svc.Wait()
@@ -362,7 +367,10 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	}
 
 	// env deps service
-	svc.envDepsSvs = envDepsServices.GetService()
+	svc.envDepsSvc = envDepsServices.GetService()
+
+	// notification service
+	svc.notificationSvc = notification.GetService()
 
 	// init
 	if err := svc.Init(); err != nil {
