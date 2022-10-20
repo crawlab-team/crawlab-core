@@ -8,9 +8,9 @@ require (
 	github.com/apex/log v1.9.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/crawlab-team/crawlab-db v0.6.0-1
+	github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300.0.20221020034454-40c7a5c6cbe2
 	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20220912130912-a47819e0c7c9
-	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930
+	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930.0.20221020032435-afa1c691f73c
 	github.com/crawlab-team/crawlab-log v0.1.1-0.20221001084727-6c3b35136f2b
 	github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211113.2048.0.20220902052958-e3ff72bd9062
 	github.com/crawlab-team/go-trace v0.1.1

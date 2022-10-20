@@ -16,4 +16,5 @@ var (
 	ErrorGrpcStreamNotFound       = NewGrpcError("stream not found")
 	ErrorGrpcInvalidCode          = NewGrpcError("invalid code")
 	ErrorGrpcUnauthorized         = NewGrpcError("unauthorized")
+	ErrorGrpcInvalidNodeKey       = NewGrpcError("invalid node key")
 )

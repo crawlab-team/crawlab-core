@@ -44,7 +44,7 @@ type Service struct {
 
 func (svc *Service) Start() {
 	go svc.initTaskStatus()
-	go svc.DequeueAndSchedule()
+	//go svc.DequeueAndSchedule()
 	svc.Wait()
 	svc.Stop()
 }
@@ -68,6 +68,7 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 	tq := &models.TaskQueueItem{
 		Id:       t.GetId(),
 		Priority: t.GetPriority(),
+		NodeId:   t.GetNodeId(),
 	}
 
 	// task stat

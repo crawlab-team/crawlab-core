@@ -8,6 +8,7 @@ import (
 type TaskQueueItem struct {
 	Id       primitive.ObjectID `json:"_id" bson:"_id"`
 	Priority int                `json:"p" bson:"p"`
+	NodeId   primitive.ObjectID `json:"nid,omitempty" bson:"nid,omitempty"`
 }
 
 func (t *TaskQueueItem) GetId() (id primitive.ObjectID) {

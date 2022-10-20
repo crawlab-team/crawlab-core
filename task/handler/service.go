@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"context"
+	"encoding/json"
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
+	client2 "github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
@@ -30,11 +33,14 @@ type Service struct {
 	clientModelSpiderSvc   interfaces.GrpcClientModelSpiderService
 	clientModelTaskSvc     interfaces.GrpcClientModelTaskService
 	clientModelTaskStatSvc interfaces.GrpcClientModelTaskStatService
+	c                      interfaces.GrpcClient // grpc client
 
 	// settings
 	//maxRunners        int
 	exitWatchDuration time.Duration
 	reportInterval    time.Duration
+	fetchInterval     time.Duration
+	fetchTimeout      time.Duration
 	cancelTimeout     time.Duration
 
 	// internals variables
@@ -45,57 +51,17 @@ type Service struct {
 }
 
 func (svc *Service) Start() {
+	// start grpc client
+	if !svc.c.IsStarted() {
+		svc.c.Start()
+	}
+
 	go svc.ReportStatus()
+	go svc.Fetch()
 }
 
 func (svc *Service) Run(taskId primitive.ObjectID) (err error) {
-	// current node
-	n, err := svc.GetCurrentNode()
-	if err != nil {
-		return err
-	}
-
-	// validate if there are available runners
-	if svc.getRunnerCount() >= n.GetMaxRunners() {
-		return trace.TraceError(errors.ErrorTaskNoAvailableRunners)
-	}
-
-	// attempt to get runner from pool
-	_, ok := svc.runners.Load(taskId)
-	if ok {
-		return trace.TraceError(errors.ErrorTaskAlreadyExists)
-	}
-
-	// create a new task runner
-	r, err := NewTaskRunner(taskId, svc)
-	if err != nil {
-		return err
-	}
-
-	// add runner to pool
-	svc.addRunner(taskId, r)
-
-	// create a goroutine to run task
-	go func() {
-		// delete runner from pool
-		defer svc.deleteRunner(r.GetTaskId())
-
-		// run task process (blocking)
-		// error or finish after task runner ends
-		if err := r.Run(); err != nil {
-			switch err {
-			case constants.ErrTaskError:
-				log.Errorf("task[%s] finished with error: %v", r.GetTaskId().Hex(), err)
-			case constants.ErrTaskCancelled:
-				log.Errorf("task[%s] cancelled", r.GetTaskId().Hex())
-			default:
-				log.Errorf("task[%s] finished with unknown error: %v", r.GetTaskId().Hex(), err)
-			}
-		}
-		log.Infof("task[%s] finished", r.GetTaskId().Hex())
-	}()
-
-	return nil
+	return svc.run(taskId)
 }
 
 func (svc *Service) Reset() {
@@ -112,6 +78,42 @@ func (svc *Service) Cancel(taskId primitive.ObjectID) (err error) {
 		return err
 	}
 	return nil
+}
+
+func (svc *Service) Fetch() {
+	for {
+		// wait
+		time.Sleep(svc.fetchInterval)
+
+		// current node
+		n, err := svc.GetCurrentNode()
+		if err != nil {
+			continue
+		}
+
+		// validate if there are available runners
+		if svc.getRunnerCount() >= n.GetMaxRunners() {
+			continue
+		}
+
+		// stop
+		if svc.stopped {
+			return
+		}
+
+		// fetch task
+		tid, err := svc.fetch()
+		if err != nil {
+			trace.PrintError(err)
+			continue
+		}
+
+		// run task
+		if err := svc.run(tid); err != nil {
+			trace.PrintError(err)
+			continue
+		}
+	}
 }
 
 func (svc *Service) ReportStatus() {
@@ -157,6 +159,14 @@ func (svc *Service) GetExitWatchDuration() (duration time.Duration) {
 
 func (svc *Service) SetExitWatchDuration(duration time.Duration) {
 	svc.exitWatchDuration = duration
+}
+
+func (svc *Service) GetFetchInterval() (interval time.Duration) {
+	return svc.fetchInterval
+}
+
+func (svc *Service) SetFetchInterval(interval time.Duration) {
+	svc.fetchInterval = interval
 }
 
 func (svc *Service) GetReportInterval() (interval time.Duration) {
@@ -327,6 +337,59 @@ func (svc *Service) reportStatus() (err error) {
 	return nil
 }
 
+func (svc *Service) fetch() (tid primitive.ObjectID, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), svc.fetchTimeout)
+	defer cancel()
+	res, err := svc.c.GetTaskClient().Fetch(ctx, svc.c.NewRequest(nil))
+	if err != nil {
+		return tid, trace.TraceError(err)
+	}
+	if err := json.Unmarshal(res.Data, &tid); err != nil {
+		return tid, trace.TraceError(err)
+	}
+	return tid, nil
+}
+
+func (svc *Service) run(taskId primitive.ObjectID) (err error) {
+
+	// attempt to get runner from pool
+	_, ok := svc.runners.Load(taskId)
+	if ok {
+		return trace.TraceError(errors.ErrorTaskAlreadyExists)
+	}
+
+	// create a new task runner
+	r, err := NewTaskRunner(taskId, svc)
+	if err != nil {
+		return err
+	}
+
+	// add runner to pool
+	svc.addRunner(taskId, r)
+
+	// create a goroutine to run task
+	go func() {
+		// delete runner from pool
+		defer svc.deleteRunner(r.GetTaskId())
+
+		// run task process (blocking)
+		// error or finish after task runner ends
+		if err := r.Run(); err != nil {
+			switch err {
+			case constants.ErrTaskError:
+				log.Errorf("task[%s] finished with error: %v", r.GetTaskId().Hex(), err)
+			case constants.ErrTaskCancelled:
+				log.Errorf("task[%s] cancelled", r.GetTaskId().Hex())
+			default:
+				log.Errorf("task[%s] finished with unknown error: %v", r.GetTaskId().Hex(), err)
+			}
+		}
+		log.Infof("task[%s] finished", r.GetTaskId().Hex())
+	}()
+
+	return nil
+}
+
 func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, err error) {
 	// base service
 	baseSvc, err := task.NewBaseService()
@@ -338,6 +401,8 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	svc := &Service{
 		TaskBaseService:   baseSvc,
 		exitWatchDuration: 60 * time.Second,
+		fetchInterval:     5 * time.Second,
+		fetchTimeout:      15 * time.Second,
 		reportInterval:    5 * time.Second,
 		cancelTimeout:     5 * time.Second,
 		mu:                sync.Mutex{},
@@ -373,6 +438,9 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	if err := c.Provide(client.ProvideTaskStatServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Provide(client2.ProvideClient(svc.GetConfigPath())); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Invoke(func(
 		cfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
@@ -381,6 +449,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		clientModelSpiderSvc interfaces.GrpcClientModelSpiderService,
 		clientModelTaskSvc interfaces.GrpcClientModelTaskService,
 		clientModelTaskStatSvc interfaces.GrpcClientModelTaskStatService,
+		c interfaces.GrpcClient,
 	) {
 		svc.cfgSvc = cfgSvc
 		svc.modelSvc = modelSvc
@@ -389,6 +458,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		svc.clientModelSpiderSvc = clientModelSpiderSvc
 		svc.clientModelTaskSvc = clientModelTaskSvc
 		svc.clientModelTaskStatSvc = clientModelTaskStatSvc
+		svc.c = c
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}

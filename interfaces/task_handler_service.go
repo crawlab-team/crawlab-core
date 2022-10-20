@@ -11,6 +11,8 @@ type TaskHandlerService interface {
 	Run(taskId primitive.ObjectID) (err error)
 	// Cancel task locally
 	Cancel(taskId primitive.ObjectID) (err error)
+	// Fetch tasks and run
+	Fetch()
 	// ReportStatus periodically report handler status to master
 	ReportStatus()
 	// Reset reset internals to default
@@ -25,6 +27,10 @@ type TaskHandlerService interface {
 	GetExitWatchDuration() (duration time.Duration)
 	// SetExitWatchDuration set max runners
 	SetExitWatchDuration(duration time.Duration)
+	// GetFetchInterval get report interval
+	GetFetchInterval() (interval time.Duration)
+	// SetFetchInterval set report interval
+	SetFetchInterval(interval time.Duration)
 	// GetReportInterval get report interval
 	GetReportInterval() (interval time.Duration)
 	// SetReportInterval set report interval
