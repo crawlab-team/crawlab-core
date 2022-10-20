@@ -51,11 +51,6 @@ type Service struct {
 }
 
 func (svc *Service) Start() {
-	// start grpc client
-	if !svc.c.IsStarted() {
-		svc.c.Start()
-	}
-
 	go svc.ReportStatus()
 	go svc.Fetch()
 }
@@ -442,7 +437,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	if err := c.Provide(client.ProvideTaskStatServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(client2.ProvideClient(svc.GetConfigPath())); err != nil {
+	if err := c.Provide(client2.ProvideGetClient(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(
