@@ -108,6 +108,11 @@ func (svc *Service) Fetch() {
 			continue
 		}
 
+		// skip if no task id
+		if tid.IsZero() {
+			continue
+		}
+
 		// run task
 		if err := svc.run(tid); err != nil {
 			trace.PrintError(err)
@@ -351,7 +356,6 @@ func (svc *Service) fetch() (tid primitive.ObjectID, err error) {
 }
 
 func (svc *Service) run(taskId primitive.ObjectID) (err error) {
-
 	// attempt to get runner from pool
 	_, ok := svc.runners.Load(taskId)
 	if ok {

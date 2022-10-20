@@ -88,7 +88,7 @@ func (svr TaskServer) Fetch(ctx context.Context, request *grpc.Request) (respons
 	}
 	if err := mongo.RunTransactionWithContext(ctx, func(sc mongo2.SessionContext) (err error) {
 		// get task queue item assigned to this node
-		tid, err = svr.getTaskQueueItemIdAndDequeue(bson.M{"nid": n.Id}, opts)
+		tid, err = svr.getTaskQueueItemIdAndDequeue(bson.M{"nid": n.Id}, opts, n.Id)
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (svr TaskServer) Fetch(ctx context.Context, request *grpc.Request) (respons
 		}
 
 		// get task queue item assigned to any node (random mode)
-		tid, err = svr.getTaskQueueItemIdAndDequeue(bson.M{"nid": nil}, opts)
+		tid, err = svr.getTaskQueueItemIdAndDequeue(bson.M{"nid": nil}, opts, n.Id)
 		if !tid.IsZero() {
 			return nil
 		}
@@ -141,18 +141,20 @@ func (svr TaskServer) handleInsertLogs(msg *grpc.StreamMessage) (err error) {
 	return svr.statsSvc.InsertLogs(data.TaskId, data.Logs...)
 }
 
-func (svr TaskServer) getTaskQueueItemIdAndDequeue(query bson.M, opts *mongo.FindOptions) (tid primitive.ObjectID, err error) {
+func (svr TaskServer) getTaskQueueItemIdAndDequeue(query bson.M, opts *mongo.FindOptions, nid primitive.ObjectID) (tid primitive.ObjectID, err error) {
 	var tq models.TaskQueueItem
-	// get task queue item assigned to this node
 	if err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Find(query, opts).One(&tq); err != nil {
 		if err == mongo2.ErrNoDocuments {
 			return tid, nil
 		}
 		return tid, trace.TraceError(err)
 	}
-	if err := delegate.NewModelDelegate(&tq).Delete(); err != nil {
-		return tid, trace.TraceError(err)
+	t, err := svr.modelSvc.GetTaskById(tq.Id)
+	if err == nil {
+		t.NodeId = nid
+		_ = delegate.NewModelDelegate(t).Save()
 	}
+	_ = delegate.NewModelDelegate(&tq).Delete()
 	return tq.Id, nil
 }
 
