@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"context"
+	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/errors"
@@ -8,12 +10,17 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
+	"github.com/crawlab-team/crawlab-core/spider/fs"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"sync"
+	"time"
 )
 
 type Service struct {
@@ -21,6 +28,8 @@ type Service struct {
 	nodeCfgSvc   interfaces.NodeConfigService
 	modelSvc     service.ModelService
 	schedulerSvc interfaces.TaskSchedulerService
+	cron         *cron.Cron
+	syncLock     bool
 
 	// settings
 	cfgPath string
@@ -32,6 +41,10 @@ func (svc *Service) GetConfigPath() (path string) {
 
 func (svc *Service) SetConfigPath(path string) {
 	svc.cfgPath = path
+}
+
+func (svc *Service) Start() (err error) {
+	return svc.SyncGit()
 }
 
 func (svc *Service) Schedule(id primitive.ObjectID, opts *interfaces.SpiderRunOptions) (err error) {
@@ -56,6 +69,14 @@ func (svc *Service) Clone(id primitive.ObjectID, opts *interfaces.SpiderCloneOpt
 
 func (svc *Service) Delete(id primitive.ObjectID) (err error) {
 	panic("implement me")
+}
+
+func (svc *Service) SyncGit() (err error) {
+	if _, err = svc.cron.AddFunc("* * * * *", svc.syncGit); err != nil {
+		return trace.TraceError(err)
+	}
+	svc.cron.Start()
+	return nil
 }
 
 func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOptions) (err error) {
@@ -175,6 +196,81 @@ func (svc *Service) isMultiTask(opts *interfaces.SpiderRunOptions) (res bool) {
 	}
 }
 
+func (svc *Service) syncGit() {
+	if svc.syncLock {
+		log.Infof("[SpiderAdminService] sync git is locked, skip")
+		return
+	}
+	log.Infof("[SpiderAdminService] start to sync git")
+
+	svc.syncLock = true
+	defer func() {
+		svc.syncLock = false
+	}()
+
+	gits, err := svc.modelSvc.GetGitList(bson.M{"auto_pull": true}, nil)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(gits))
+	for _, g := range gits {
+		go func(g models.Git) {
+			svc.syncGitOne(g)
+			wg.Done()
+		}(g)
+	}
+	wg.Wait()
+
+	log.Infof("[SpiderAdminService] finished sync git")
+}
+
+func (svc *Service) syncGitOne(g models.Git) {
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
+	defer cancel()
+
+	// spider fs service
+	fsSvc, err := fs.NewSpiderFsService(g.Id)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+
+	// git client
+	gitClient := fsSvc.GetFsService().GetGitClient()
+
+	// set auth
+	utils.InitGitClientAuth(&g, gitClient)
+
+	// check if remote has changes
+	ok, err := gitClient.IsRemoteChanged()
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+	if !ok {
+		// no change
+		return
+	}
+
+	// pull and sync to workspace
+	go func() {
+		if err := gitClient.Pull(); err != nil {
+			trace.PrintError(err)
+			return
+		}
+		if err := fsSvc.GetFsService().SyncToFs(); err != nil {
+			trace.PrintError(err)
+			return
+		}
+	}()
+
+	// wait for context to end
+	<-ctx.Done()
+}
+
 func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, err error) {
 	svc := &Service{
 		cfgPath: config2.DefaultConfigPath,
@@ -204,6 +300,9 @@ func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, 
 		return nil, trace.TraceError(err)
 	}
 
+	// cron
+	svc.cron = cron.New()
+
 	// validate node type
 	if !svc.nodeCfgSvc.IsMaster() {
 		return nil, trace.TraceError(errors.ErrorSpiderForbidden)
@@ -223,5 +322,34 @@ func ProvideSpiderAdminService(path string, opts ...Option) func() (svc interfac
 	opts = append(opts, WithConfigPath(path))
 	return func() (svc interfaces.SpiderAdminService, err error) {
 		return NewSpiderAdminService(opts...)
+	}
+}
+
+var _service interfaces.SpiderAdminService
+
+func GetSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, err error) {
+	if _service != nil {
+		return _service, nil
+	}
+
+	_service, err = NewSpiderAdminService(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return _service, nil
+}
+
+func ProvideGetSpiderAdminService(path string, opts ...Option) func() (svc interfaces.SpiderAdminService, err error) {
+	if path != "" || path == config2.DefaultConfigPath {
+		if viper.GetString("config.path") != "" {
+			path = viper.GetString("config.path")
+		} else {
+			path = config2.DefaultConfigPath
+		}
+	}
+	opts = append(opts, WithConfigPath(path))
+	return func() (svc interfaces.SpiderAdminService, err error) {
+		return GetSpiderAdminService(opts...)
 	}
 }

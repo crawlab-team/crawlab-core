@@ -1089,9 +1089,6 @@ func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch stri
 }
 
 func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.SpiderFsService) (gitClient *vcs.GitClient, err error) {
-	// auth type
-	authType := ""
-
 	// git
 	g, err := ctx.modelSvc.GetGitById(id)
 	if err != nil {
@@ -1099,26 +1096,13 @@ func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.
 			return nil, trace.TraceError(err)
 		}
 		return nil, nil
-	} else {
-		authType = g.AuthType
 	}
 
 	// git client
 	gitClient = fsSvc.GetFsService().GetGitClient()
 
 	// set auth
-	switch authType {
-	case constants.GitAuthTypeHttp:
-		gitClient.SetAuthType(vcs.GitAuthTypeHTTP)
-		gitClient.SetUsername(g.Username)
-		gitClient.SetPassword(g.Password)
-	case constants.GitAuthTypeSsh:
-		gitClient.SetAuthType(vcs.GitAuthTypeSSH)
-		gitClient.SetUsername(g.Username)
-		gitClient.SetPrivateKey(g.Password)
-	default:
-		return gitClient, nil
-	}
+	utils.InitGitClientAuth(g, gitClient)
 
 	// remote name
 	remoteName := vcs.GitRemoteNameOrigin

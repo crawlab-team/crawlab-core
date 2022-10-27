@@ -16,6 +16,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/notification"
 	"github.com/crawlab-team/crawlab-core/plugin"
 	"github.com/crawlab-team/crawlab-core/schedule"
+	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -40,6 +41,7 @@ type MasterService struct {
 	pluginSvc       interfaces.PluginService
 	envDepsSvc      *envDepsServices.Service
 	notificationSvc *notification.Service
+	spiderAdminSvc  interfaces.SpiderAdminService
 
 	// settings
 	cfgPath         string
@@ -87,6 +89,9 @@ func (svc *MasterService) Start() {
 
 	// start notification service
 	go svc.notificationSvc.Start()
+
+	// start spider admin service
+	go svc.spiderAdminSvc.Start()
 
 	// wait for quit signal
 	svc.Wait()
@@ -346,6 +351,9 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	if err := c.Provide(plugin.ProvideGetPluginService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
+	if err := c.Provide(admin.ProvideGetSpiderAdminService(svc.cfgPath)); err != nil {
+		return nil, err
+	}
 	if err := c.Invoke(func(
 		cfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
@@ -354,6 +362,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 		handlerSvc interfaces.TaskHandlerService,
 		scheduleSvc interfaces.ScheduleService,
 		pluginSvc interfaces.PluginService,
+		spiderAdminSvc interfaces.SpiderAdminService,
 	) {
 		svc.cfgSvc = cfgSvc
 		svc.modelSvc = modelSvc
@@ -362,6 +371,7 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 		svc.handlerSvc = handlerSvc
 		svc.scheduleSvc = scheduleSvc
 		svc.pluginSvc = pluginSvc
+		svc.spiderAdminSvc = spiderAdminSvc
 	}); err != nil {
 		return nil, err
 	}

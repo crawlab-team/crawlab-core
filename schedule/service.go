@@ -255,7 +255,7 @@ func NewScheduleService(opts ...Option) (svc2 interfaces.ScheduleService, err er
 	if err := c.Provide(service.GetService); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	if err := c.Provide(admin.ProvideSpiderAdminService(svc.GetConfigPath())); err != nil {
+	if err := c.Provide(admin.ProvideGetSpiderAdminService(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	if err := c.Invoke(func(

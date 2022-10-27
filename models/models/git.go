@@ -12,6 +12,7 @@ type Git struct {
 	Username      string             `json:"username" bson:"username"`
 	Password      string             `json:"password" bson:"password"`
 	CurrentBranch string             `json:"current_branch" bson:"current_branch"`
+	AutoPull      bool               `json:"auto_pull" bson:"auto_pull"`
 }
 
 func (t *Git) GetId() (id primitive.ObjectID) {
