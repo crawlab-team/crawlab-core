@@ -29,6 +29,7 @@ const (
 	ControllerIdExport
 	ControllerIdEnvDeps
 	ControllerIdNotification
+	ControllerIdFilter
 
 	ControllerIdVersion
 	ControllerIdI18n

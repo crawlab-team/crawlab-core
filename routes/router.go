@@ -173,6 +173,9 @@ func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
 
 	// notification
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/notifications", controllers.NotificationController)
+
+	// filter
+	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/filters", controllers.FilterController)
 }
 
 func registerRoutesFilterGroup(svc *RouterService, groups *RouterGroups) {

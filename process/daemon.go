@@ -28,37 +28,16 @@ type Daemon struct {
 	// internals
 	errors   int
 	errMsg   string
+	exitCode int
 	newCmdFn func() *exec.Cmd
 	cmd      *exec.Cmd
 	stopped  bool
 	ch       chan int
 }
 
-func (d *Daemon) GetMaxErrors() (maxErrors int) {
-	return d.maxErrors
-}
-
-func (d *Daemon) SetMaxErrors(maxErrors int) {
-	d.maxErrors = maxErrors
-}
-
-func (d *Daemon) GetExitTimeout() (timeout time.Duration) {
-	return d.exitTimeout
-}
-
-func (d *Daemon) SetExitTimeout(timeout time.Duration) {
-	d.exitTimeout = timeout
-}
-
-func (d *Daemon) GetCmd() (cmd *exec.Cmd) {
-	return d.cmd
-}
-
-func (d *Daemon) GetCh() (ch chan int) {
-	return d.ch
-}
-
 func (d *Daemon) Start() (err error) {
+	go d.handleSignal()
+
 	for {
 		// command
 		d.cmd = d.newCmdFn()
@@ -84,6 +63,17 @@ func (d *Daemon) Start() (err error) {
 
 		// exited
 		d.ch <- SignalExited
+
+		// exit code
+		d.exitCode = d.cmd.ProcessState.ExitCode()
+
+		// check exit code
+		if d.exitCode == 0 {
+			log.Infof("process exited with code 0")
+			return
+		}
+
+		// error message
 		d.errMsg = errors.ErrorProcessDaemonProcessExited.Error()
 
 		// increment errors
@@ -110,6 +100,53 @@ func (d *Daemon) Stop() {
 		Force:   false,
 	}
 	_ = sys_exec.KillProcess(d.cmd, opts)
+}
+
+func (d *Daemon) GetMaxErrors() (maxErrors int) {
+	return d.maxErrors
+}
+
+func (d *Daemon) SetMaxErrors(maxErrors int) {
+	d.maxErrors = maxErrors
+}
+
+func (d *Daemon) GetExitTimeout() (timeout time.Duration) {
+	return d.exitTimeout
+}
+
+func (d *Daemon) SetExitTimeout(timeout time.Duration) {
+	d.exitTimeout = timeout
+}
+
+func (d *Daemon) GetCmd() (cmd *exec.Cmd) {
+	return d.cmd
+}
+
+func (d *Daemon) GetCh() (ch chan int) {
+	return d.ch
+}
+
+func (d *Daemon) handleSignal() {
+	for {
+		select {
+		case signal := <-d.ch:
+			switch signal {
+			case SignalCreate:
+				log.Infof("process created")
+			case SignalStart:
+				log.Infof("process started")
+			case SignalStopped:
+				log.Infof("process stopped")
+			case SignalError:
+				trace.PrintError(errors.NewProcessError(d.errMsg))
+			case SignalExited:
+				log.Infof("process exited")
+			case SignalReachedMaxErrors:
+				log.Infof("reached max errors")
+				return
+			}
+		}
+	}
 }
 
 func NewProcessDaemon(newCmdFn func() *exec.Cmd, opts ...DaemonOption) (d interfaces.ProcessDaemon) {

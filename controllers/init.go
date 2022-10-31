@@ -38,6 +38,7 @@ func InitControllers() (err error) {
 	ExportController = NewActionControllerDelegate(ControllerIdExport, getExportActions())
 	EnvDepsController = NewActionControllerDelegate(ControllerIdEnvDeps, getEnvDepsActions())
 	NotificationController = NewActionControllerDelegate(ControllerIdNotification, getNotificationActions())
+	FilterController = NewActionControllerDelegate(ControllerIdFilter, getFilterActions())
 
 	return nil
 }
