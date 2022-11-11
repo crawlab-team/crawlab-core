@@ -464,10 +464,6 @@ func (svc *Service) PosSetting(s *Setting) (err error) {
 }
 
 func (svc *Service) PutSetting(id primitive.ObjectID, s Setting) (err error) {
-	if err := svc.col.FindId(id).One(&s); err != nil {
-		return err
-	}
-
 	if err := svc.col.ReplaceId(id, s); err != nil {
 		return err
 	}
