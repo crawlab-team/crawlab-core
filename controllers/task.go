@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/crawlab-team/crawlab-core/config"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -20,7 +21,7 @@ import (
 	"go.uber.org/dig"
 	"net/http"
 	"strings"
-	"sync"
+	"time"
 )
 
 var TaskController *taskController
@@ -79,7 +80,7 @@ type taskContext struct {
 	l            clog.Driver
 
 	// internals
-	drivers sync.Map
+	drivers entity.TTLMap
 }
 
 func (ctx *taskContext) run(c *gin.Context) {
@@ -209,7 +210,7 @@ func (ctx *taskContext) getLogs(c *gin.Context) {
 	}
 
 	// log driver
-	l, err := ctx._getLogDriver(id)
+	l, err := ctx.getLogDriver(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -374,11 +375,11 @@ func (ctx *taskContext) getData(c *gin.Context) {
 	HandleSuccessWithListData(c, data, total)
 }
 
-func (ctx *taskContext) _getLogDriver(id primitive.ObjectID) (l clog.Driver, err error) {
+func (ctx *taskContext) getLogDriver(id primitive.ObjectID) (l clog.Driver, err error) {
 	// attempt to get from cache
-	res, ok := ctx.drivers.Load(id)
-	if ok {
-		l, ok = res.(clog.Driver)
+	res := ctx.drivers.Load(id.Hex())
+	if res != nil {
+		l, ok := res.(clog.Driver)
 		if ok {
 			return l, nil
 		}
@@ -389,7 +390,7 @@ func (ctx *taskContext) _getLogDriver(id primitive.ObjectID) (l clog.Driver, err
 	if err != nil {
 		return nil, err
 	}
-	ctx.drivers.Store(id, l)
+	ctx.drivers.Store(id.Hex(), l)
 
 	return l, nil
 }
@@ -397,7 +398,7 @@ func (ctx *taskContext) _getLogDriver(id primitive.ObjectID) (l clog.Driver, err
 func newTaskContext() *taskContext {
 	// context
 	ctx := &taskContext{
-		drivers: sync.Map{},
+		drivers: entity.NewTTLMap(15 * time.Minute),
 	}
 
 	// dependency injection

@@ -2,6 +2,7 @@ package stats
 
 import (
 	config2 "github.com/crawlab-team/crawlab-core/config"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
@@ -14,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"sync"
+	"time"
 )
 
 type Service struct {
@@ -24,9 +26,8 @@ type Service struct {
 
 	// internals
 	mu             sync.Mutex
-	cache          sync.Map
-	logDrivers     sync.Map
-	resultServices sync.Map
+	logDrivers     entity.TTLMap
+	resultServices entity.TTLMap
 }
 
 func (svc *Service) InsertData(id primitive.ObjectID, records ...interface{}) (err error) {
@@ -51,10 +52,10 @@ func (svc *Service) InsertLogs(id primitive.ObjectID, logs ...string) (err error
 
 func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interfaces.ResultService, err error) {
 	// attempt to get from cache
-	res, ok := svc.resultServices.Load(id)
-	if ok {
+	res := svc.resultServices.Load(id.Hex())
+	if res != nil {
 		// hit in cache
-		resultSvc, ok = res.(interfaces.ResultService)
+		resultSvc, ok := res.(interfaces.ResultService)
 		if ok {
 			return resultSvc, nil
 		}
@@ -79,19 +80,17 @@ func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interface
 	}
 
 	// store in cache
-	svc.resultServices.Store(id, resultSvc)
-
-	// TODO: cleanup result service
+	svc.resultServices.Store(id.Hex(), resultSvc)
 
 	return resultSvc, nil
 }
 
 func (svc *Service) getLogDriver(id primitive.ObjectID) (l clog.Driver, err error) {
 	// attempt to get from cache
-	res, ok := svc.logDrivers.Load(id)
-	if ok {
+	res := svc.logDrivers.Load(id.Hex())
+	if res != nil {
 		// hit in cache
-		l, ok = res.(clog.Driver)
+		l, ok := res.(clog.Driver)
 		if ok {
 			return l, nil
 		}
@@ -107,9 +106,7 @@ func (svc *Service) getLogDriver(id primitive.ObjectID) (l clog.Driver, err erro
 	}
 
 	// store in cache
-	svc.logDrivers.Store(id, l)
-
-	// TODO: cleanup log driver
+	svc.logDrivers.Store(id.Hex(), l)
 
 	return l, nil
 }
@@ -132,8 +129,8 @@ func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err 
 	// service
 	svc := &Service{
 		TaskBaseService: baseSvc,
-		cache:           sync.Map{},
-		logDrivers:      sync.Map{},
+		logDrivers:      entity.NewTTLMap(15 * time.Minute),
+		resultServices:  entity.NewTTLMap(15 * time.Minute),
 	}
 
 	// apply options
