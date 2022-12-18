@@ -497,7 +497,9 @@ func (ctx *envDepsContext) _getDependenciesRequirementsTxt(workspacePath string)
 	content := string(data)
 
 	// regex pattern
-	pattern, err := regexp.Compile("(\\w+)([=<>]=.*)?")
+	// python distribution names rules according to https://peps.python.org/pep-0508/#names
+	pattern, err := regexp.Compile("(?i)([A-Z0-9][A-Z0-9._-]*[A-Z0-9])([=<>]=.*)?")
+
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
