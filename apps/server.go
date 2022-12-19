@@ -1,12 +1,16 @@
 package apps
 
 import (
+	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/spf13/viper"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 type Server struct {
@@ -48,6 +52,9 @@ func (app *Server) Init() {
 			panic(err)
 		}
 	}
+
+	// pprof
+	app.initPprof()
 }
 
 func (app *Server) Start() {
@@ -78,6 +85,14 @@ func (app *Server) logNodeInfo() {
 	log.Infof("current node type: %s", utils.GetNodeType())
 	if utils.IsDocker() {
 		log.Infof("running in docker container")
+	}
+}
+
+func (app *Server) initPprof() {
+	if viper.GetBool("pprof") {
+		go func() {
+			fmt.Println(http.ListenAndServe("0.0.0.0:6060", nil))
+		}()
 	}
 }
 
