@@ -9,11 +9,11 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/result"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
+	"github.com/crawlab-team/crawlab-core/task/log"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/generic"
 	"github.com/crawlab-team/crawlab-db/mongo"
-	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -77,7 +77,7 @@ type taskContext struct {
 	modelTaskSvc interfaces.ModelBaseService
 	adminSvc     interfaces.SpiderAdminService
 	schedulerSvc interfaces.TaskSchedulerService
-	l            clog.Driver
+	l            log.Driver
 
 	// internals
 	drivers entity.TTLMap
@@ -209,15 +209,8 @@ func (ctx *taskContext) getLogs(c *gin.Context) {
 		return
 	}
 
-	// log driver
-	l, err := ctx.getLogDriver(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// logs
-	logs, err := l.Find("", (p.Page-1)*p.Size, p.Size)
+	logs, err := ctx.l.Find(id.Hex(), "", (p.Page-1)*p.Size, p.Size)
 	if err != nil {
 		if strings.HasSuffix(err.Error(), "Status:404 Not Found") {
 			HandleSuccess(c)
@@ -226,7 +219,7 @@ func (ctx *taskContext) getLogs(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	total, err := l.Count("")
+	total, err := ctx.l.Count(id.Hex(), "")
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -375,26 +368,6 @@ func (ctx *taskContext) getData(c *gin.Context) {
 	HandleSuccessWithListData(c, data, total)
 }
 
-func (ctx *taskContext) getLogDriver(id primitive.ObjectID) (l clog.Driver, err error) {
-	// attempt to get from cache
-	res := ctx.drivers.Load(id.Hex())
-	if res != nil {
-		l, ok := res.(clog.Driver)
-		if ok {
-			return l, nil
-		}
-	}
-
-	// TODO: other types of log drivers
-	l, err = clog.NewSeaweedFsLogDriver(&clog.SeaweedFsLogDriverOptions{Prefix: id.Hex()})
-	if err != nil {
-		return nil, err
-	}
-	ctx.drivers.Store(id.Hex(), l)
-
-	return l, nil
-}
-
 func newTaskContext() *taskContext {
 	// context
 	ctx := &taskContext{
@@ -426,6 +399,13 @@ func newTaskContext() *taskContext {
 
 	// model task service
 	ctx.modelTaskSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdTask)
+
+	// log driver
+	l, err := log.GetLogDriver(log.DriverTypeFile, nil)
+	if err != nil {
+		panic(err)
+	}
+	ctx.l = l
 
 	return ctx
 }

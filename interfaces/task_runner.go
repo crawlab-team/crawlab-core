@@ -10,7 +10,6 @@ type TaskRunner interface {
 	Run() (err error)
 	Cancel() (err error)
 	Dispose() (err error)
-	SetLogDriverType(driverType string)
 	SetSubscribeTimeout(timeout time.Duration)
 	GetTaskId() (id primitive.ObjectID)
 }

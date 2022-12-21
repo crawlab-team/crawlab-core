@@ -20,7 +20,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
-	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/crawlab-team/go-trace"
 	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
@@ -38,7 +37,6 @@ type Runner struct {
 	fsSvc interfaces.TaskFsService      // task fs service
 
 	// settings
-	logDriverType    string
 	subscribeTimeout time.Duration
 
 	// internals
@@ -201,10 +199,6 @@ func (r *Runner) Dispose() (err error) {
 	}, backoff.NewExponentialBackOff())
 }
 
-func (r *Runner) SetLogDriverType(driverType string) {
-	r.logDriverType = driverType
-}
-
 func (r *Runner) SetSubscribeTimeout(timeout time.Duration) {
 	r.subscribeTimeout = timeout
 }
@@ -238,26 +232,6 @@ func (r *Runner) configureCmd() {
 
 	// configure pgid to allow killing sub processes
 	//sys_exec.SetPgid(r.cmd)
-}
-
-func (r *Runner) getLogDriver() (driver clog.Driver, err error) {
-	options := r.getLogDriverOptions()
-	driver, err = clog.NewLogDriver(r.logDriverType, options)
-	if err != nil {
-		return driver, err
-	}
-	return driver, nil
-}
-
-func (r *Runner) getLogDriverOptions() (options interface{}) {
-	switch r.logDriverType {
-	case clog.DriverTypeFs:
-		options = &clog.SeaweedFsLogDriverOptions{
-			BaseDir: viper.GetString("log.path"),
-			Prefix:  r.tid.Hex(),
-		}
-	}
-	return options
 }
 
 func (r *Runner) configureLogging() {
@@ -595,7 +569,6 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 
 	// runner
 	r := &Runner{
-		logDriverType:    clog.DriverTypeFs,
 		subscribeTimeout: 30 * time.Second,
 		svc:              svc,
 		tid:              id,

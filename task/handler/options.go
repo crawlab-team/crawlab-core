@@ -33,12 +33,6 @@ func WithCancelTimeout(timeout time.Duration) Option {
 
 type RunnerOption func(r interfaces.TaskRunner)
 
-func WithLogDriverType(driverType string) RunnerOption {
-	return func(r interfaces.TaskRunner) {
-		r.SetLogDriverType(driverType)
-	}
-}
-
 func WithSubscribeTimeout(timeout time.Duration) RunnerOption {
 	return func(r interfaces.TaskRunner) {
 		r.SetSubscribeTimeout(timeout)

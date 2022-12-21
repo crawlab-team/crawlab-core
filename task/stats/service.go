@@ -8,8 +8,8 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/result"
 	"github.com/crawlab-team/crawlab-core/task"
+	"github.com/crawlab-team/crawlab-core/task/log"
 	"github.com/crawlab-team/crawlab-db/mongo"
-	clog "github.com/crawlab-team/crawlab-log"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,6 +28,7 @@ type Service struct {
 	mu             sync.Mutex
 	logDrivers     entity.TTLMap
 	resultServices entity.TTLMap
+	logDriver      log.Driver
 }
 
 func (svc *Service) InsertData(id primitive.ObjectID, records ...interface{}) (err error) {
@@ -43,11 +44,7 @@ func (svc *Service) InsertData(id primitive.ObjectID, records ...interface{}) (e
 }
 
 func (svc *Service) InsertLogs(id primitive.ObjectID, logs ...string) (err error) {
-	l, err := svc.getLogDriver(id)
-	if err != nil {
-		return err
-	}
-	return l.WriteLines(logs)
+	return svc.logDriver.WriteLines(id.Hex(), logs)
 }
 
 func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interfaces.ResultService, err error) {
@@ -83,32 +80,6 @@ func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interface
 	svc.resultServices.Store(id.Hex(), resultSvc)
 
 	return resultSvc, nil
-}
-
-func (svc *Service) getLogDriver(id primitive.ObjectID) (l clog.Driver, err error) {
-	// attempt to get from cache
-	res := svc.logDrivers.Load(id.Hex())
-	if res != nil {
-		// hit in cache
-		l, ok := res.(clog.Driver)
-		if ok {
-			return l, nil
-		}
-	}
-
-	// log driver
-	// TODO: other types of log logDrivers
-	l, err = clog.NewSeaweedFsLogDriver(&clog.SeaweedFsLogDriverOptions{
-		Prefix: id.Hex(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// store in cache
-	svc.logDrivers.Store(id.Hex(), l)
-
-	return l, nil
 }
 
 func (svc *Service) updateTaskStats(id primitive.ObjectID, resultCount int) {
@@ -154,6 +125,12 @@ func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err 
 		svc.modelSvc = modelSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)
+	}
+
+	// log driver
+	svc.logDriver, err = log.GetLogDriver(log.DriverTypeFile, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	return svc, nil
