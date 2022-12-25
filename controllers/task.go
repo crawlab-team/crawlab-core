@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/crawlab-team/crawlab-core/config"
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -61,6 +62,10 @@ type taskController struct {
 	ListActionControllerDelegate
 	d   ListActionControllerDelegate
 	ctx *taskContext
+}
+
+func (ctr *taskController) Get(c *gin.Context) {
+	ctr.ctx.getWithStatsSpider(c)
 }
 
 func (ctr *taskController) GetList(c *gin.Context) {
@@ -300,6 +305,40 @@ func (ctx *taskContext) getListWithStats(c *gin.Context) {
 
 	// response
 	HandleSuccessWithListData(c, data, total)
+}
+
+func (ctx *taskContext) getWithStatsSpider(c *gin.Context) {
+	// id
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// task
+	t, err := ctx.modelSvc.GetTaskById(id)
+	if err == mongo2.ErrNoDocuments {
+		HandleErrorNotFound(c, err)
+		return
+	}
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// spider
+	t.Spider, _ = ctx.modelSvc.GetSpiderById(t.SpiderId)
+
+	// skip if task status is pending
+	if t.Status == constants.TaskStatusPending {
+		HandleSuccessWithData(c, t)
+		return
+	}
+
+	// task stat
+	t.Stat, _ = ctx.modelSvc.GetTaskStatById(id)
+
+	HandleSuccessWithData(c, t)
 }
 
 func (ctx *taskContext) getData(c *gin.Context) {

@@ -23,6 +23,7 @@ type Task struct {
 	Stat       *TaskStat            `json:"stat,omitempty" bson:"-"`
 	HasSub     bool                 `json:"has_sub" json:"has_sub"` // whether to have sub-tasks
 	SubTasks   []Task               `json:"sub_tasks,omitempty" bson:"-"`
+	Spider     *Spider              `json:"spider,omitempty" bson:"-"`
 	UserId     primitive.ObjectID   `json:"-" bson:"-"`
 }
 

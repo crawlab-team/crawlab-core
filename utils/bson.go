@@ -110,3 +110,16 @@ func DenormalizeBsonMObjectId(m bson.M) (res bson.M) {
 	}
 	return m
 }
+
+func NormalizeObjectId(v interface{}) (res interface{}) {
+	switch v.(type) {
+	case string:
+		oid, err := primitive.ObjectIDFromHex(v.(string))
+		if err != nil {
+			return v
+		}
+		return oid
+	default:
+		return v
+	}
+}

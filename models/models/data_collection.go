@@ -1,13 +1,15 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DataCollection struct {
-	Id   primitive.ObjectID `json:"_id" bson:"_id"`
-	Name string             `json:"name" bson:"name"`
+	Id     primitive.ObjectID `json:"_id" bson:"_id"`
+	Name   string             `json:"name" bson:"name"`
+	Fields []entity.DataField `json:"fields" bson:"fields"`
 }
 
 func (dc *DataCollection) GetId() (id primitive.ObjectID) {

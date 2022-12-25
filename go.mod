@@ -31,6 +31,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matcornic/hermes/v2 v2.1.0
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/nleeper/goment v1.4.4 // indirect
 	github.com/olivere/elastic/v7 v7.0.15
 	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
 	github.com/pkg/errors v0.9.1

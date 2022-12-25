@@ -4,6 +4,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/result"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/generic"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -86,7 +87,7 @@ func (ctx *resultContext) getList(c *gin.Context) {
 
 	// params
 	pagination := MustGetPagination(c)
-	query := generic.ListQuery{} // TODO: implement query
+	query := ctx.getListQuery(c)
 
 	// get results
 	data, err := svc.List(query, &generic.ListOptions{
@@ -118,6 +119,21 @@ func (ctx *resultContext) getList(c *gin.Context) {
 
 	// response
 	HandleSuccessWithListData(c, data, total)
+}
+
+func (ctx *resultContext) getListQuery(c *gin.Context) (q generic.ListQuery) {
+	f, err := GetFilter(c)
+	if err != nil {
+		return q
+	}
+	for _, cond := range f.Conditions {
+		q = append(q, generic.ListQueryCondition{
+			Key:   cond.Key,
+			Op:    cond.Op,
+			Value: utils.NormalizeObjectId(cond.Value),
+		})
+	}
+	return q
 }
 
 func newResultContext() *resultContext {
