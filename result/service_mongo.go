@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
@@ -10,6 +11,8 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ServiceMongo struct {
@@ -34,11 +37,51 @@ func (svc *ServiceMongo) Count(query generic.ListQuery) (n int, err error) {
 }
 
 func (svc *ServiceMongo) Insert(docs ...interface{}) (err error) {
-	_, err = mongo.GetMongoCol(svc.dc.Name).InsertMany(docs)
-	if err != nil {
-		return trace.TraceError(err)
+	if svc.dc.Dedup.Enabled {
+		for _, doc := range docs {
+			hash, err := utils.GetResultHash(doc, svc.dc.Dedup.Keys)
+			if err != nil {
+				return err
+			}
+			doc.(interfaces.Result).SetValue(constants.HashKey, hash)
+			query := bson.M{constants.HashKey: hash}
+			switch svc.dc.Dedup.Type {
+			case constants.DedupTypeIgnore:
+				var o bson.M
+				err := mongo.GetMongoCol(svc.dc.Name).Find(query, &mongo.FindOptions{Limit: 1}).One(&o)
+				if err == nil {
+					// exists, ignore
+					continue
+				}
+				if err != mongo2.ErrNoDocuments {
+					// error
+					return trace.TraceError(err)
+				}
+				// not exists, insert
+				_, err = mongo.GetMongoCol(svc.dc.Name).Insert(doc)
+				if err != nil {
+					return trace.TraceError(err)
+				}
+			case constants.DedupTypeOverwrite:
+				err = mongo.GetMongoCol(svc.dc.Name).ReplaceWithOptions(query, doc, &options.ReplaceOptions{Upsert: &[]bool{true}[0]})
+				if err != nil {
+					return trace.TraceError(err)
+				}
+			}
+		}
+	} else {
+		_, err = mongo.GetMongoCol(svc.dc.Name).InsertMany(docs)
+		if err != nil {
+			return trace.TraceError(err)
+		}
 	}
 	return nil
+}
+
+func (svc *ServiceMongo) Index(fields []string) {
+	for _, field := range fields {
+		_ = mongo.GetMongoCol(svc.dc.Name).CreateIndex(mongo2.IndexModel{Keys: bson.M{field: 1}})
+	}
 }
 
 func (svc *ServiceMongo) getList(query bson.M, opts *mongo.FindOptions) (results []interface{}, err error) {

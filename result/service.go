@@ -2,12 +2,14 @@ package result
 
 import (
 	"fmt"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/go-trace"
-	"sync"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 func NewResultService(registryKey string, s *models.Spider) (svc2 interfaces.ResultService, err error) {
@@ -35,9 +37,21 @@ func NewResultService(registryKey string, s *models.Spider) (svc2 interfaces.Res
 	return svc, nil
 }
 
-var store = sync.Map{}
+var store = entity.NewTTLMap(5 * time.Second)
 
-func GetResultService(s *models.Spider, opts ...Option) (svc interfaces.ResultService, err error) {
+func GetResultService(spiderId primitive.ObjectID, opts ...Option) (svc2 interfaces.ResultService, err error) {
+	// model service
+	modelSvc, err := service.GetService()
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
+	// spider
+	s, err := modelSvc.GetSpiderById(spiderId)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+
 	// apply options
 	_opts := &Options{}
 	for _, opt := range opts {
@@ -48,9 +62,9 @@ func GetResultService(s *models.Spider, opts ...Option) (svc interfaces.ResultSe
 	storeKey := s.ColId.Hex() + ":" + s.DataSourceId.Hex()
 
 	// attempt to load result service from store
-	res, ok := store.Load(storeKey)
-	if ok {
-		svc, ok = res.(interfaces.ResultService)
+	res := store.Load(storeKey)
+	if res != nil {
+		svc, ok := res.(interfaces.ResultService)
 		if ok {
 			return svc, nil
 		}
@@ -58,14 +72,13 @@ func GetResultService(s *models.Spider, opts ...Option) (svc interfaces.ResultSe
 
 	// registry key
 	var registryKey string
-	modelSvc, _ := service.NewService()
 	ds, _ := modelSvc.GetDataSourceById(s.DataSourceId)
 	if ds != nil {
 		registryKey = ds.Type
 	}
 
 	// create a new result service if not exists
-	svc, err = NewResultService(registryKey, s)
+	svc, err := NewResultService(registryKey, s)
 	if err != nil {
 		return nil, err
 	}

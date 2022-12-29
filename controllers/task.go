@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -22,7 +21,6 @@ import (
 	"go.uber.org/dig"
 	"net/http"
 	"strings"
-	"time"
 )
 
 var TaskController *taskController
@@ -83,9 +81,6 @@ type taskContext struct {
 	adminSvc     interfaces.SpiderAdminService
 	schedulerSvc interfaces.TaskSchedulerService
 	l            log.Driver
-
-	// internals
-	drivers entity.TTLMap
 }
 
 func (ctx *taskContext) run(c *gin.Context) {
@@ -363,15 +358,8 @@ func (ctx *taskContext) getData(c *gin.Context) {
 		return
 	}
 
-	// spider
-	s, err := ctx.modelSvc.GetSpiderById(t.SpiderId)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// result service
-	resultSvc, err := result.GetResultService(s)
+	resultSvc, err := result.GetResultService(t.SpiderId)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -380,7 +368,7 @@ func (ctx *taskContext) getData(c *gin.Context) {
 	// query
 	query := generic.ListQuery{
 		generic.ListQueryCondition{
-			Key:   "_tid",
+			Key:   constants.TaskKey,
 			Op:    generic.OpEqual,
 			Value: t.Id,
 		},
@@ -409,9 +397,7 @@ func (ctx *taskContext) getData(c *gin.Context) {
 
 func newTaskContext() *taskContext {
 	// context
-	ctx := &taskContext{
-		drivers: entity.NewTTLMap(15 * time.Minute),
-	}
+	ctx := &taskContext{}
 
 	// dependency injection
 	c := dig.New()

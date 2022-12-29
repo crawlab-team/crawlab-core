@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -36,7 +37,7 @@ func (r *Result) GetValue(key string) (value interface{}) {
 }
 
 func (r *Result) GetTaskId() (id primitive.ObjectID) {
-	res := r.GetValue("_tid")
+	res := r.GetValue(constants.TaskKey)
 	if res == nil {
 		return id
 	}
@@ -45,7 +46,7 @@ func (r *Result) GetTaskId() (id primitive.ObjectID) {
 }
 
 func (r *Result) SetTaskId(id primitive.ObjectID) {
-	r.SetValue("_tid", id)
+	r.SetValue(constants.TaskKey, id)
 }
 
 type ResultList []Result

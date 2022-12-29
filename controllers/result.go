@@ -79,7 +79,7 @@ func (ctx *resultContext) getList(c *gin.Context) {
 	}
 
 	// service
-	svc, err := result.GetResultService(s)
+	svc, err := result.GetResultService(s.Id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return

@@ -3,14 +3,25 @@ package controllers
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-db/mongo"
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
+	"net/http"
 )
 
 var DataCollectionController *dataCollectionController
 
 func getDataCollectionActions() []Action {
-	//ctx := newDataCollectionContext()
-	return []Action{}
+	ctx := newDataCollectionContext()
+	return []Action{
+		{
+			Method:      http.MethodPost,
+			Path:        "/:id/indexes",
+			HandlerFunc: ctx.postIndexes,
+		},
+	}
 }
 
 type dataCollectionController struct {
@@ -22,6 +33,31 @@ type dataCollectionController struct {
 type dataCollectionContext struct {
 	modelSvc  service.ModelService
 	resultSvc interfaces.ResultService
+}
+
+func (ctx *dataCollectionContext) postIndexes(c *gin.Context) {
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	dc, err := ctx.modelSvc.GetDataCollectionById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	for _, f := range dc.Fields {
+		if err := mongo.GetMongoCol(dc.Name).CreateIndex(mongo2.IndexModel{
+			Keys: f.Key,
+		}); err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	}
+
+	HandleSuccess(c)
 }
 
 var _dataCollectionCtx *dataCollectionContext

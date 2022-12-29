@@ -246,9 +246,9 @@ func (ctx *spiderContext) saveDir(c *gin.Context) {
 	}
 
 	data := []byte("")
-	path := fmt.Sprintf("%s/%s", payload.Path, constants.FsKeepFileName)
+	filePath := fmt.Sprintf("%s/%s", payload.Path, constants.FsKeepFileName)
 
-	if err := fsSvc.Save(path, data); err != nil {
+	if err := fsSvc.Save(filePath, data); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -1042,7 +1042,8 @@ func (ctx *spiderContext) _upsertDataCollection(c *gin.Context, s *models.Spider
 		s.ColId = dc.Id
 
 		// create index
-		_ = mongo.GetMongoCol(dc.Name).CreateIndex(mongo2.IndexModel{Keys: bson.M{"_tid": 1}})
+		_ = mongo.GetMongoCol(dc.Name).CreateIndex(mongo2.IndexModel{Keys: bson.M{constants.TaskKey: 1}})
+		_ = mongo.GetMongoCol(dc.Name).CreateIndex(mongo2.IndexModel{Keys: bson.M{constants.HashKey: 1}})
 	} else {
 		// with id
 		dc, err := ctx.modelSvc.GetDataCollectionById(s.ColId)

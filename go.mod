@@ -8,7 +8,7 @@ require (
 	github.com/apex/log v1.9.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300.0.20221020034454-40c7a5c6cbe2
+	github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300.0.20221226064900-5a357ee73484
 	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20221218100256-a28d12756f73
 	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930.0.20221020032435-afa1c691f73c
 	github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211113.2048.0.20221024150201-467fe22630f8
@@ -31,7 +31,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matcornic/hermes/v2 v2.1.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/nleeper/goment v1.4.4 // indirect
 	github.com/olivere/elastic/v7 v7.0.15
 	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
 	github.com/pkg/errors v0.9.1

@@ -37,13 +37,16 @@ func (t *TTLMap) Load(key string) (val interface{}) {
 	return expireEntry.Value
 }
 
-func NewTTLMap(ttl time.Duration) (m TTLMap) {
-	m.TTL = ttl
+func NewTTLMap(ttl time.Duration) (m *TTLMap) {
+	m = &TTLMap{
+		TTL: ttl,
+	}
 
 	go func() {
 		for now := range time.Tick(time.Second) {
 			m.data.Range(func(k, v interface{}) bool {
-				if v.(expireEntry).ExpiresAt.After(now) {
+				expiresAt := v.(expireEntry).ExpiresAt
+				if expiresAt.Before(now) {
 					m.data.Delete(k)
 				}
 				return true

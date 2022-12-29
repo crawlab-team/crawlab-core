@@ -26,8 +26,7 @@ type Service struct {
 
 	// internals
 	mu             sync.Mutex
-	logDrivers     entity.TTLMap
-	resultServices entity.TTLMap
+	resultServices *entity.TTLMap
 	logDriver      log.Driver
 }
 
@@ -64,14 +63,8 @@ func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interface
 		return nil, err
 	}
 
-	// spider
-	s, err := svc.modelSvc.GetSpiderById(t.SpiderId)
-	if err != nil {
-		return nil, err
-	}
-
 	// result service
-	resultSvc, err = result.GetResultService(s)
+	resultSvc, err = result.GetResultService(t.SpiderId)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +93,7 @@ func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err 
 	// service
 	svc := &Service{
 		TaskBaseService: baseSvc,
-		logDrivers:      entity.NewTTLMap(15 * time.Minute),
-		resultServices:  entity.NewTTLMap(15 * time.Minute),
+		resultServices:  entity.NewTTLMap(5 * time.Second),
 	}
 
 	// apply options
