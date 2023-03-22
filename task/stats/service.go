@@ -2,7 +2,6 @@ package stats
 
 import (
 	config2 "github.com/crawlab-team/crawlab-core/config"
-	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
@@ -26,7 +25,8 @@ type Service struct {
 
 	// internals
 	mu             sync.Mutex
-	resultServices *entity.TTLMap
+	resultServices sync.Map
+	rsTtl          time.Duration
 	logDriver      log.Driver
 }
 
@@ -47,11 +47,16 @@ func (svc *Service) InsertLogs(id primitive.ObjectID, logs ...string) (err error
 }
 
 func (svc *Service) getResultService(id primitive.ObjectID) (resultSvc interfaces.ResultService, err error) {
+	// atomic operation
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
 	// attempt to get from cache
-	res := svc.resultServices.Load(id.Hex())
+	res, _ := svc.resultServices.Load(id.Hex())
 	if res != nil {
 		// hit in cache
 		resultSvc, ok := res.(interfaces.ResultService)
+		resultSvc.SetTime(time.Now())
 		if ok {
 			return resultSvc, nil
 		}
@@ -83,6 +88,25 @@ func (svc *Service) updateTaskStats(id primitive.ObjectID, resultCount int) {
 	})
 }
 
+func (svc *Service) cleanup() {
+	for {
+		// atomic operation
+		svc.mu.Lock()
+
+		svc.resultServices.Range(func(key, value interface{}) bool {
+			rs := value.(interfaces.ResultService)
+			if time.Now().After(rs.GetTime().Add(svc.rsTtl)) {
+				svc.resultServices.Delete(key)
+			}
+			return true
+		})
+
+		svc.mu.Unlock()
+
+		time.Sleep(10 * time.Minute)
+	}
+}
+
 func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err error) {
 	// base service
 	baseSvc, err := task.NewBaseService()
@@ -92,8 +116,9 @@ func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err 
 
 	// service
 	svc := &Service{
+		mu:              sync.Mutex{},
 		TaskBaseService: baseSvc,
-		resultServices:  entity.NewTTLMap(5 * time.Second),
+		resultServices:  sync.Map{},
 	}
 
 	// apply options

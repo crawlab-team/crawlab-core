@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 type ServiceMongo struct {
@@ -23,6 +24,7 @@ type ServiceMongo struct {
 	// internals
 	colId primitive.ObjectID     // _id of models.DataCollection
 	dc    *models.DataCollection // models.DataCollection
+	t     time.Time
 }
 
 func (svc *ServiceMongo) List(query generic.ListQuery, opts *generic.ListOptions) (results []interface{}, err error) {
@@ -84,6 +86,14 @@ func (svc *ServiceMongo) Index(fields []string) {
 	}
 }
 
+func (svc *ServiceMongo) SetTime(t time.Time) {
+	svc.t = t
+}
+
+func (svc *ServiceMongo) GetTime() (t time.Time) {
+	return svc.t
+}
+
 func (svc *ServiceMongo) getList(query bson.M, opts *mongo.FindOptions) (results []interface{}, err error) {
 	list, err := svc.modelColSvc.GetList(query, opts)
 	if err != nil {
@@ -110,6 +120,7 @@ func NewResultServiceMongo(colId primitive.ObjectID, _ primitive.ObjectID) (svc2
 	// service
 	svc := &ServiceMongo{
 		colId: colId,
+		t:     time.Now(),
 	}
 
 	// dependency injection

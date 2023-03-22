@@ -2,14 +2,13 @@ package result
 
 import (
 	"fmt"
-	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
+	"sync"
 )
 
 func NewResultService(registryKey string, s *models.Spider) (svc2 interfaces.ResultService, err error) {
@@ -37,7 +36,7 @@ func NewResultService(registryKey string, s *models.Spider) (svc2 interfaces.Res
 	return svc, nil
 }
 
-var store = entity.NewTTLMap(5 * time.Second)
+var store = sync.Map{}
 
 func GetResultService(spiderId primitive.ObjectID, opts ...Option) (svc2 interfaces.ResultService, err error) {
 	// model service
@@ -62,7 +61,7 @@ func GetResultService(spiderId primitive.ObjectID, opts ...Option) (svc2 interfa
 	storeKey := s.ColId.Hex() + ":" + s.DataSourceId.Hex()
 
 	// attempt to load result service from store
-	res := store.Load(storeKey)
+	res, _ := store.Load(storeKey)
 	if res != nil {
 		svc, ok := res.(interfaces.ResultService)
 		if ok {
