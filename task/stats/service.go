@@ -30,6 +30,11 @@ type Service struct {
 	logDriver      log.Driver
 }
 
+func (svc *Service) Init() (err error) {
+	go svc.cleanup()
+	return nil
+}
+
 func (svc *Service) InsertData(id primitive.ObjectID, records ...interface{}) (err error) {
 	resultSvc, err := svc.getResultService(id)
 	if err != nil {
