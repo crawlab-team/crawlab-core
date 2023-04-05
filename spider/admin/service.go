@@ -126,7 +126,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 				// TODO: implement associated tasks
 				//ParentId: mainTask.Id,
 				Mode:       opts.Mode,
-				Cmd:        s.Cmd,
+				Cmd:        opts.Cmd,
 				Param:      opts.Param,
 				NodeId:     nodeId,
 				ScheduleId: opts.ScheduleId,

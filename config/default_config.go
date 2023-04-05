@@ -2,7 +2,7 @@ package config
 
 var DefaultConfigYaml = `
 info:
-  version: v0.6.0
+  version: v0.6.1
   edition: global.edition.community
 mongo:
   host: localhost
