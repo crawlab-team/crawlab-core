@@ -111,6 +111,12 @@ func (svc *Service) Fetch() {
 		// run task
 		if err := svc.run(tid); err != nil {
 			trace.PrintError(err)
+			t, err := svc.GetTaskById(tid)
+			if err == nil {
+				t.SetError(err.Error())
+				_ = svc.SaveTask(t, constants.TaskStatusError)
+				continue
+			}
 			continue
 		}
 	}
@@ -360,7 +366,7 @@ func (svc *Service) run(taskId primitive.ObjectID) (err error) {
 	// create a new task runner
 	r, err := NewTaskRunner(taskId, svc)
 	if err != nil {
-		return err
+		return trace.TraceError(err)
 	}
 
 	// add runner to pool
