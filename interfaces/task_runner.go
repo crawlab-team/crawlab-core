@@ -12,4 +12,5 @@ type TaskRunner interface {
 	Dispose() (err error)
 	SetSubscribeTimeout(timeout time.Duration)
 	GetTaskId() (id primitive.ObjectID)
+	CleanUp() (err error)
 }

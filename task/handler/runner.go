@@ -199,6 +199,19 @@ func (r *Runner) Dispose() (err error) {
 	}, backoff.NewExponentialBackOff())
 }
 
+// CleanUp clean up task runner
+func (r *Runner) CleanUp() (err error) {
+	// close fs service
+	fsSvc := r.fsSvc.GetFsService().GetFs()
+	if fsSvc == nil {
+		return
+	}
+	if err = fsSvc.Close(); err != nil {
+		return
+	}
+	return
+}
+
 func (r *Runner) SetSubscribeTimeout(timeout time.Duration) {
 	r.subscribeTimeout = timeout
 }
