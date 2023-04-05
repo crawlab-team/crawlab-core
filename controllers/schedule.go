@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/crawlab-team/crawlab-core/config"
+	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -49,6 +50,39 @@ func (ctr *scheduleController) Post(c *gin.Context) {
 		return
 	}
 	if s.Enabled {
+		if err := ctr.ctx.scheduleSvc.Enable(&s, GetUserFromContext(c)); err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+	}
+	HandleSuccessWithData(c, s)
+}
+
+func (ctr *scheduleController) Put(c *gin.Context) {
+	id := c.Param("id")
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+	var s models.Schedule
+	if err := c.ShouldBindJSON(&s); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+	if s.GetId() != oid {
+		HandleErrorBadRequest(c, errors.ErrorHttpBadRequest)
+		return
+	}
+	if err := delegate.NewModelDelegate(&s).Save(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	if s.Enabled {
+		if err := ctr.ctx.scheduleSvc.Disable(&s, GetUserFromContext(c)); err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
 		if err := ctr.ctx.scheduleSvc.Enable(&s, GetUserFromContext(c)); err != nil {
 			HandleErrorInternalServerError(c, err)
 			return
