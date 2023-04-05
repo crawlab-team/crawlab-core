@@ -162,7 +162,9 @@ func (d *ListControllerDelegate) getAll(c *gin.Context) {
 	// get list
 	tic := time.Now()
 	log.Debugf("getAll -> d.svc.GetList:start")
-	list, err := d.svc.GetList(nil, nil)
+	list, err := d.svc.GetList(nil, &mongo.FindOptions{
+		Sort: bson.D{{"_id", -1}},
+	})
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
 			HandleErrorNotFound(c, err)
