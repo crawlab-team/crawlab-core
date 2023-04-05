@@ -55,6 +55,7 @@ type Runner struct {
 	// log internals
 	scannerStdout *bufio.Scanner
 	scannerStderr *bufio.Scanner
+	logBatchSize  int
 }
 
 func (r *Runner) Init() (err error) {
@@ -199,6 +200,19 @@ func (r *Runner) Dispose() (err error) {
 	}, backoff.NewExponentialBackOff())
 }
 
+// CleanUp clean up task runner
+func (r *Runner) CleanUp() (err error) {
+	// close fs service
+	fsSvc := r.fsSvc.GetFsService().GetFs()
+	if fsSvc == nil {
+		return
+	}
+	if err = fsSvc.Close(); err != nil {
+		return
+	}
+	return
+}
+
 func (r *Runner) SetSubscribeTimeout(timeout time.Duration) {
 	r.subscribeTimeout = timeout
 }
@@ -254,10 +268,20 @@ func (r *Runner) startLogging() {
 
 func (r *Runner) startLoggingReaderStdout() {
 	utils.LogDebug("begin startLoggingReaderStdout")
+	var lines []string
 	for r.scannerStdout.Scan() {
 		line := r.scannerStdout.Text()
-		utils.LogDebug(fmt.Sprintf("scannerStdout line: %s", line))
-		r.writeLogLine(line)
+		lines = append(lines, line)
+		if len(lines) >= r.logBatchSize {
+			r.writeLogLines(lines)
+			utils.LogDebug(fmt.Sprintf("scannerStdout lines: %s", lines))
+			lines = []string{}
+		}
+	}
+	if len(lines) > 0 {
+		r.writeLogLines(lines)
+		utils.LogDebug(fmt.Sprintf("scannerStdout lines: %s", lines))
+
 	}
 	// reach end
 	utils.LogDebug("scannerStdout reached end")
@@ -265,10 +289,19 @@ func (r *Runner) startLoggingReaderStdout() {
 
 func (r *Runner) startLoggingReaderStderr() {
 	utils.LogDebug("begin startLoggingReaderStderr")
+	var lines []string
 	for r.scannerStderr.Scan() {
 		line := r.scannerStderr.Text()
-		utils.LogDebug(fmt.Sprintf("scannerStderr line: %s", line))
-		r.writeLogLine(line)
+		lines = append(lines, line)
+		if len(lines) >= r.logBatchSize {
+			r.writeLogLines(lines)
+			utils.LogDebug(fmt.Sprintf("scannerStderr lines: %s", lines))
+			lines = []string{}
+		}
+	}
+	if len(lines) > 0 {
+		r.writeLogLines(lines)
+		utils.LogDebug(fmt.Sprintf("scannerStderr lines: %s", lines))
 	}
 	// reach end
 	utils.LogDebug("scannerStderr reached end")
@@ -455,10 +488,10 @@ func (r *Runner) initSub() (err error) {
 	return nil
 }
 
-func (r *Runner) writeLogLine(line string) {
+func (r *Runner) writeLogLines(lines []string) {
 	data, err := json.Marshal(&entity.StreamMessageTaskData{
 		TaskId: r.tid,
-		Logs:   []string{line},
+		Logs:   lines,
 	})
 	if err != nil {
 		trace.PrintError(err)
@@ -573,6 +606,7 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 		svc:              svc,
 		tid:              id,
 		ch:               make(chan constants.TaskSignal),
+		logBatchSize:     20,
 	}
 
 	// apply options

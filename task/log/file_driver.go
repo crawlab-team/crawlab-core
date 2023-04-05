@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -43,12 +44,18 @@ func (d *FileLogDriver) WriteLine(id string, line string) (err error) {
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	filePath := d.getLogFilePath(id, d.logFileName)
 
-	f, err := os.OpenFile(d.getLogFilePath(id, d.logFileName), os.O_WRONLY|os.O_APPEND|os.O_CREATE, os.FileMode(0760))
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, os.FileMode(0760))
 	if err != nil {
 		return trace.TraceError(err)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			log.Errorf("close file error: %s", err.Error())
+		}
+	}(f)
 
 	_, err = f.WriteString(line + "\n")
 	if err != nil {
@@ -59,10 +66,9 @@ func (d *FileLogDriver) WriteLine(id string, line string) (err error) {
 }
 
 func (d *FileLogDriver) WriteLines(id string, lines []string) (err error) {
-	for _, l := range lines {
-		if err := d.WriteLine(id, l); err != nil {
-			return err
-		}
+	linesString := strings.Join(lines, "\n")
+	if err := d.WriteLine(id, linesString); err != nil {
+		return err
 	}
 	return nil
 }

@@ -376,7 +376,12 @@ func (svc *Service) run(taskId primitive.ObjectID) (err error) {
 	go func() {
 		// delete runner from pool
 		defer svc.deleteRunner(r.GetTaskId())
-
+		defer func(r interfaces.TaskRunner) {
+			err := r.CleanUp()
+			if err != nil {
+				log.Errorf("task[%s] clean up error: %v", r.GetTaskId().Hex(), err)
+			}
+		}(r)
 		// run task process (blocking)
 		// error or finish after task runner ends
 		if err := r.Run(); err != nil {
