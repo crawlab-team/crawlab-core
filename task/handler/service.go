@@ -86,6 +86,11 @@ func (svc *Service) Fetch() {
 			continue
 		}
 
+		// skip if node is not active or enabled
+		if !n.GetActive() || !n.GetEnabled() {
+			continue
+		}
+
 		// validate if there are available runners
 		if svc.getRunnerCount() >= n.GetMaxRunners() {
 			continue
