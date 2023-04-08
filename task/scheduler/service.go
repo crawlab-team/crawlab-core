@@ -48,7 +48,7 @@ func (svc *Service) Start() {
 	svc.Stop()
 }
 
-func (svc *Service) Enqueue(t interfaces.Task) (err error) {
+func (svc *Service) Enqueue(t interfaces.Task) (t2 interfaces.Task, err error) {
 	// set task status
 	t.SetStatus(constants.TaskStatusPending)
 
@@ -60,7 +60,7 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 
 	// add task
 	if err = delegate.NewModelDelegate(t, u).Add(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// task queue item
@@ -79,17 +79,17 @@ func (svc *Service) Enqueue(t interfaces.Task) (err error) {
 	// enqueue task
 	_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Insert(tq)
 	if err != nil {
-		return trace.TraceError(err)
+		return nil, trace.TraceError(err)
 	}
 
 	// add task stat
 	_, err = mongo.GetMongoCol(interfaces.ModelColNameTaskStat).Insert(ts)
 	if err != nil {
-		return trace.TraceError(err)
+		return nil, trace.TraceError(err)
 	}
 
 	// success
-	return nil
+	return t, nil
 }
 
 func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err error) {

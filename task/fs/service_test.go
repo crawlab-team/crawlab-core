@@ -20,7 +20,7 @@ func TestTaskFsService(t *testing.T) {
 	require.Nil(t, err)
 
 	t.Run("sync-to-workspace", func(t *testing.T) {
-		fsSvc, err := NewTaskFsService(task.Id)
+		fsSvc, err := NewTaskFsService(task.Id, spider.Id)
 		require.Nil(t, err)
 
 		err = fsSvc.GetFsService().SyncToWorkspace()

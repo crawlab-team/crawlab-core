@@ -318,12 +318,13 @@ func (ctx *spiderContext) run(c *gin.Context) {
 	}
 
 	// schedule
-	if err := ctx.adminSvc.Schedule(id, &opts); err != nil {
+	taskIds, err := ctx.adminSvc.Schedule(id, &opts)
+	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 
-	HandleSuccess(c)
+	HandleSuccessWithData(c, taskIds)
 }
 
 func (ctx *spiderContext) getGit(c *gin.Context) {

@@ -47,19 +47,15 @@ func (svc *Service) Start() (err error) {
 	return svc.SyncGit()
 }
 
-func (svc *Service) Schedule(id primitive.ObjectID, opts *interfaces.SpiderRunOptions) (err error) {
+func (svc *Service) Schedule(id primitive.ObjectID, opts *interfaces.SpiderRunOptions) (taskIds []primitive.ObjectID, err error) {
 	// spider
 	s, err := svc.modelSvc.GetSpiderById(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// assign tasks
-	if err := svc.scheduleTasks(s, opts); err != nil {
-		return err
-	}
-
-	return nil
+	return svc.scheduleTasks(s, opts)
 }
 
 func (svc *Service) Clone(id primitive.ObjectID, opts *interfaces.SpiderCloneOptions) (err error) {
@@ -79,7 +75,7 @@ func (svc *Service) SyncGit() (err error) {
 	return nil
 }
 
-func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOptions) (err error) {
+func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOptions) (taskIds []primitive.ObjectID, err error) {
 	// main task
 	mainTask := &models.Task{
 		SpiderId:   s.Id,
@@ -118,7 +114,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 		//}
 		nodeIds, err := svc.getNodeIds(opts)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, nodeId := range nodeIds {
 			t := &models.Task{
@@ -133,25 +129,29 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 				Priority:   opts.Priority,
 				UserId:     opts.UserId,
 			}
-			if err := svc.schedulerSvc.Enqueue(t); err != nil {
-				return err
+			t2, err := svc.schedulerSvc.Enqueue(t)
+			if err != nil {
+				return nil, err
 			}
+			taskIds = append(taskIds, t2.GetId())
 		}
 	} else {
 		// single task
 		nodeIds, err := svc.getNodeIds(opts)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if len(nodeIds) > 0 {
 			mainTask.NodeId = nodeIds[0]
 		}
-		if err := svc.schedulerSvc.Enqueue(mainTask); err != nil {
-			return err
+		t2, err := svc.schedulerSvc.Enqueue(mainTask)
+		if err != nil {
+			return nil, err
 		}
+		taskIds = append(taskIds, t2.GetId())
 	}
 
-	return nil
+	return taskIds, nil
 }
 
 func (svc *Service) getNodeIds(opts *interfaces.SpiderRunOptions) (nodeIds []primitive.ObjectID, err error) {

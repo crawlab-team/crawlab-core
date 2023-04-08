@@ -8,7 +8,7 @@ type SpiderAdminService interface {
 	WithConfigPath
 	Start() (err error)
 	// Schedule a new task of the spider
-	Schedule(id primitive.ObjectID, opts *SpiderRunOptions) (err error)
+	Schedule(id primitive.ObjectID, opts *SpiderRunOptions) (taskIds []primitive.ObjectID, err error)
 	// Clone the spider
 	Clone(id primitive.ObjectID, opts *SpiderCloneOptions) (err error)
 	// Delete the spider

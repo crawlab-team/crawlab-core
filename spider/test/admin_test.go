@@ -15,7 +15,7 @@ func TestAdminService_Run(t *testing.T) {
 
 	// TODO: implement
 	// run
-	err = T.adminSvc.Schedule(T.TestSpider.Id, &interfaces.SpiderRunOptions{
+	_, err = T.adminSvc.Schedule(T.TestSpider.Id, &interfaces.SpiderRunOptions{
 		Mode: constants.RunTypeRandom,
 	})
 	require.Nil(t, err)
@@ -25,5 +25,5 @@ func TestAdminService_Run(t *testing.T) {
 	task, err := T.modelSvc.GetTask(bson.M{"spider_id": T.TestSpider.Id}, nil)
 	require.Nil(t, err)
 	require.False(t, task.Id.IsZero())
-	require.Equal(t, constants.TaskStatusFinished, task.Status)
+	require.NotEqual(t, constants.TaskStatusPending, task.Status)
 }

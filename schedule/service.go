@@ -228,7 +228,7 @@ func (svc *Service) schedule(id primitive.ObjectID) (fn func()) {
 		}
 
 		// schedule or assign a task in the task queue
-		if err := svc.adminSvc.Schedule(s.GetSpiderId(), opts); err != nil {
+		if _, err := svc.adminSvc.Schedule(s.GetSpiderId(), opts); err != nil {
 			trace.PrintError(err)
 		}
 	}

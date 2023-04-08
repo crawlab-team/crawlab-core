@@ -13,7 +13,7 @@ func TestHandlerService_Run(t *testing.T) {
 	T.Setup(t)
 
 	task := T.NewTask()
-	err = T.schedulerSvc.Enqueue(task)
+	_, err = T.schedulerSvc.Enqueue(task)
 	require.Nil(t, err)
 
 	err = T.handlerSvc.Run(task.GetId())
@@ -30,7 +30,7 @@ func TestHandlerService_Cancel(t *testing.T) {
 	T.Setup(t)
 
 	task := T.NewTaskLong()
-	err = T.schedulerSvc.Enqueue(task)
+	_, err = T.schedulerSvc.Enqueue(task)
 	require.Nil(t, err)
 	time.Sleep(1 * time.Second)
 
@@ -57,7 +57,7 @@ func TestHandlerService_ReportStatus(t *testing.T) {
 	T.Setup(t)
 
 	task := T.NewTaskLong()
-	err = T.schedulerSvc.Enqueue(task)
+	_, err = T.schedulerSvc.Enqueue(task)
 	require.Nil(t, err)
 	time.Sleep(1 * time.Second)
 
