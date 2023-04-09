@@ -520,11 +520,19 @@ func (svc *BaseLangService) SaveDependencyList(msg *grpc.StreamMessage, msgData 
 		// new dependencies
 		var depsNew []interface{}
 		for _, d := range deps {
-			if _, ok := depsDbMap[d.Name]; !ok {
+			depDb, ok := depsDbMap[d.Name]
+			if !ok {
+				// new dep
 				d.Id = primitive.NewObjectID()
 				d.Type = svc.key
 				d.NodeId = n.GetId()
 				depsNew = append(depsNew, d)
+			} else if depDb.Version != d.Version {
+				// existing dep with different version
+				depDb.Version = d.Version
+				if err := svc.parent.colD.ReplaceId(depDb.Id, depDb); err != nil {
+					trace.PrintError(err)
+				}
 			}
 		}
 
