@@ -7,6 +7,7 @@ import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"github.com/spf13/viper"
 	"io"
 	"os"
 	"path/filepath"
@@ -207,7 +208,12 @@ func newFileLogDriver(options *FileLogDriverOptions) (driver Driver, err error) 
 	// normalize Ttl
 	ttl := options.Ttl
 	if ttl == 0 {
-		ttl = 30 * 24 * time.Hour
+		ttlSeconds := viper.GetInt("log.ttl")
+		if ttlSeconds == 0 {
+			ttl = 30 * 24 * time.Hour
+		} else {
+			ttl = time.Second * time.Duration(ttlSeconds)
+		}
 	}
 	options.Ttl = ttl
 
