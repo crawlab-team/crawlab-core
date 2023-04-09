@@ -24,6 +24,7 @@ const (
 	ErrorPrefixProcess    = "process"
 	ErrorPrefixGit        = "git"
 	ErrorPrefixResult     = "result"
+	ErrorPrefixDataSource = "data_source"
 )
 
 type ErrorPrefix string

@@ -39,6 +39,7 @@ func InitControllers() (err error) {
 	EnvDepsController = NewActionControllerDelegate(ControllerIdEnvDeps, getEnvDepsActions())
 	NotificationController = NewActionControllerDelegate(ControllerIdNotification, getNotificationActions())
 	FilterController = NewActionControllerDelegate(ControllerIdFilter, getFilterActions())
+	DataSourceController = newDataSourceController()
 
 	return nil
 }
