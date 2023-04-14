@@ -35,7 +35,8 @@ func getExportActions() []Action {
 }
 
 type exportContext struct {
-	csvSvc interfaces.ExportService
+	csvSvc  interfaces.ExportService
+	jsonSvc interfaces.ExportService
 }
 
 func (ctx *exportContext) postExport(c *gin.Context) {
@@ -48,6 +49,8 @@ func (ctx *exportContext) postExport(c *gin.Context) {
 	switch exportType {
 	case constants.ExportTypeCsv:
 		exportId, err = ctx.csvSvc.Export(exportType, exportTarget, exportFilter)
+	case constants.ExportTypeJson:
+		exportId, err = ctx.jsonSvc.Export(exportType, exportTarget, exportFilter)
 	default:
 		HandleErrorBadRequest(c, errors.New(fmt.Sprintf("invalid export type: %s", exportType)))
 		return
@@ -69,6 +72,8 @@ func (ctx *exportContext) getExport(c *gin.Context) {
 	switch exportType {
 	case constants.ExportTypeCsv:
 		exp, err = ctx.csvSvc.GetExport(exportId)
+	case constants.ExportTypeJson:
+		exp, err = ctx.jsonSvc.GetExport(exportId)
 	default:
 		HandleErrorBadRequest(c, errors.New(fmt.Sprintf("invalid export type: %s", exportType)))
 	}
@@ -89,6 +94,8 @@ func (ctx *exportContext) getExportDownload(c *gin.Context) {
 	switch exportType {
 	case constants.ExportTypeCsv:
 		exp, err = ctx.csvSvc.GetExport(exportId)
+	case constants.ExportTypeJson:
+		exp, err = ctx.jsonSvc.GetExport(exportId)
 	default:
 		HandleErrorBadRequest(c, errors.New(fmt.Sprintf("invalid export type: %s", exportType)))
 	}
@@ -97,7 +104,18 @@ func (ctx *exportContext) getExportDownload(c *gin.Context) {
 		return
 	}
 
-	c.Header("Content-Type", "text/csv")
+	switch exportType {
+	case constants.ExportTypeCsv:
+		c.Header("Content-Type", "text/csv")
+	case constants.ExportTypeJson:
+		c.Header("Content-Type", "text/plain")
+	default:
+		HandleErrorBadRequest(c, errors.New(fmt.Sprintf("invalid export type: %s", exportType)))
+	}
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", exp.GetDownloadPath()))
 	c.Header("Content-Length", strconv.Itoa(len(exp.GetDownloadPath())))
 	c.File(exp.GetDownloadPath())
@@ -105,6 +123,7 @@ func (ctx *exportContext) getExportDownload(c *gin.Context) {
 
 func newExportContext() *exportContext {
 	return &exportContext{
-		csvSvc: export.GetCsvService(),
+		csvSvc:  export.GetCsvService(),
+		jsonSvc: export.GetJsonService(),
 	}
 }
