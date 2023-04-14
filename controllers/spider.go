@@ -706,10 +706,12 @@ func (ctx *spiderContext) postDataSource(c *gin.Context) {
 	}
 
 	// data source
-	_, err = ctx.modelSvc.GetDataSourceById(dsId)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
+	if !dsId.IsZero() {
+		_, err = ctx.modelSvc.GetDataSourceById(dsId)
+		if err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
 	}
 
 	// save data source id
