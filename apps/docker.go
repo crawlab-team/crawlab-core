@@ -143,6 +143,7 @@ func (app *Docker) startSeaweedFs() {
 		"-volume.dir.idx", seaweedFsDataPath,
 		"-ip", "localhost",
 		"-volume.port", "9999",
+		"-volume.minFreeSpace", "1GiB",
 		"-filer",
 	)
 	sys_exec.ConfigureCmdLogging(cmd, func(scanner *bufio.Scanner) {
