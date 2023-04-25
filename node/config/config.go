@@ -17,11 +17,13 @@ type Options struct {
 	MaxRunners int
 }
 
+var DefaultMaxRunner = 8
+
 var DefaultConfigOptions = &Options{
 	Key:        utils.NewUUIDString(),
 	IsMaster:   utils.IsMaster(),
 	AuthKey:    constants.DefaultGrpcAuthKey,
-	MaxRunners: 8,
+	MaxRunners: 0,
 }
 
 func NewConfig(opts *Options) (cfg *Config) {
@@ -53,7 +55,7 @@ func NewConfig(opts *Options) (cfg *Config) {
 		if viper.GetInt("task.handler.maxRunners") != 0 {
 			opts.MaxRunners = viper.GetInt("task.handler.maxRunners")
 		} else {
-			opts.MaxRunners = DefaultConfigOptions.MaxRunners
+			opts.MaxRunners = DefaultMaxRunner
 		}
 	}
 	return &Config{
