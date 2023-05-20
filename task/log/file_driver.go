@@ -88,10 +88,16 @@ func (d *FileLogDriver) Find(id string, pattern string, skip int, limit int) (li
 	}
 	defer f.Close()
 
-	sc := bufio.NewScanner(f)
+	sc := bufio.NewReaderSize(f, 1024*1024*10)
 
 	i := -1
-	for sc.Scan() {
+	for {
+		line, err := sc.ReadString(byte('\n'))
+		if err != nil {
+			break
+		}
+		line = strings.TrimSuffix(line, "\n")
+
 		i++
 
 		if i < skip {
@@ -102,11 +108,7 @@ func (d *FileLogDriver) Find(id string, pattern string, skip int, limit int) (li
 			break
 		}
 
-		line := sc.Text()
 		lines = append(lines, line)
-	}
-	if err := sc.Err(); err != nil {
-		return nil, trace.TraceError(err)
 	}
 
 	return lines, nil
