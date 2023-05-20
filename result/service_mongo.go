@@ -48,7 +48,12 @@ func (svc *ServiceMongo) Insert(docs ...interface{}) (err error) {
 			doc.(interfaces.Result).SetValue(constants.HashKey, hash)
 			query := bson.M{constants.HashKey: hash}
 			switch svc.dc.Dedup.Type {
-			case constants.DedupTypeIgnore:
+			case constants.DedupTypeOverwrite:
+				err = mongo.GetMongoCol(svc.dc.Name).ReplaceWithOptions(query, doc, &options.ReplaceOptions{Upsert: &[]bool{true}[0]})
+				if err != nil {
+					return trace.TraceError(err)
+				}
+			default:
 				var o bson.M
 				err := mongo.GetMongoCol(svc.dc.Name).Find(query, &mongo.FindOptions{Limit: 1}).One(&o)
 				if err == nil {
@@ -61,11 +66,6 @@ func (svc *ServiceMongo) Insert(docs ...interface{}) (err error) {
 				}
 				// not exists, insert
 				_, err = mongo.GetMongoCol(svc.dc.Name).Insert(doc)
-				if err != nil {
-					return trace.TraceError(err)
-				}
-			case constants.DedupTypeOverwrite:
-				err = mongo.GetMongoCol(svc.dc.Name).ReplaceWithOptions(query, doc, &options.ReplaceOptions{Upsert: &[]bool{true}[0]})
 				if err != nil {
 					return trace.TraceError(err)
 				}
@@ -130,10 +130,13 @@ func NewResultServiceMongo(colId primitive.ObjectID, _ primitive.ObjectID) (svc2
 	}
 
 	// data collection
-	svc.dc, err = svc.modelSvc.GetDataCollectionById(colId)
-	if err != nil {
-		return nil, err
-	}
+	svc.dc, _ = svc.modelSvc.GetDataCollectionById(colId)
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+			svc.dc, _ = svc.modelSvc.GetDataCollectionById(colId)
+		}
+	}()
 
 	// data collection model service
 	svc.modelColSvc = service.GetBaseServiceByColName(interfaces.ModelIdResult, svc.dc.Name)
