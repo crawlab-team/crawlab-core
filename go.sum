@@ -154,6 +154,8 @@ github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211113.2048.0.20221026084338-2
 github.com/crawlab-team/crawlab-vcs v0.6.0-beta.20211113.2048.0.20221026084338-2410033a0e29/go.mod h1:6fIrMZn4BbLXNmvRBJTWfrhYydfNOUNnjn5PKfunPO0=
 github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230603041819-f743a203c7d5 h1:CcY2yDkRR8eGiDUqjo0pqOwgYAUbnd+NYkmni25xQtY=
 github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230603041819-f743a203c7d5/go.mod h1:YHMYUEoSqfXUZHsWW/M/DaLh/zOpRtiElaRWcrGyv/I=
+github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230603042545-1d886de7e8c0 h1:0q8z1+Xgk27oX3lSryKi4wVpSYO1HDGum5ye0ebRrsM=
+github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230603042545-1d886de7e8c0/go.mod h1:YHMYUEoSqfXUZHsWW/M/DaLh/zOpRtiElaRWcrGyv/I=
 github.com/crawlab-team/go-trace v0.1.0/go.mod h1:LcWyn68HoT+d29CHM8L41pFHxsAcBMF1xjqJmWdyFh8=
 github.com/crawlab-team/go-trace v0.1.1 h1:AecgAOld+ZrSVvujyhK3zoaOmViGKHSCT8/weJ7adB8=
 github.com/crawlab-team/go-trace v0.1.1/go.mod h1:4U+pWgLhRuD3pbXHonwcaHcW+y8AUqyOfKoZnvKwCug=
