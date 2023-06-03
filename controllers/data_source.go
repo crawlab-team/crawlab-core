@@ -69,6 +69,23 @@ func (ctr *dataSourceController) Post(c *gin.Context) {
 	HandleSuccess(c)
 }
 
+func (ctr *dataSourceController) Put(c *gin.Context) {
+	// data source
+	var _ds models.DataSource
+	if err := c.ShouldBindJSON(&_ds); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	if err := delegate.NewModelDelegate(&_ds).Save(); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// check data source status
+	go func() { _ = ctr.ctx.dsSvc.CheckStatus(_ds.Id) }()
+}
+
 type dataSourceContext struct {
 	dsSvc interfaces.DataSourceService
 }

@@ -288,6 +288,9 @@ func NewDataSourceService(opts ...DataSourceServiceOption) (svc2 interfaces.Data
 	// initialize
 	svc.Init()
 
+	// start
+	svc.Start()
+
 	return svc, nil
 }
 
