@@ -208,7 +208,26 @@ func (svc *Service) syncGit() {
 		svc.syncLock = false
 	}()
 
-	gits, err := svc.modelSvc.GetGitList(bson.M{"auto_pull": true}, nil)
+	// spiders
+	spiders, err := svc.modelSvc.GetSpiderList(nil, nil)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+
+	// spider ids
+	var spiderIds []primitive.ObjectID
+	for _, s := range spiders {
+		spiderIds = append(spiderIds, s.Id)
+	}
+
+	// gits
+	gits, err := svc.modelSvc.GetGitList(bson.M{
+		"_id": bson.M{
+			"$in": spiderIds,
+		},
+		"auto_pull": true,
+	}, nil)
 	if err != nil {
 		trace.PrintError(err)
 		return
@@ -228,6 +247,8 @@ func (svc *Service) syncGit() {
 }
 
 func (svc *Service) syncGitOne(g models.Git) {
+	log.Infof("[SpiderAdminService] sync git %s", g.Id)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
 
@@ -258,6 +279,10 @@ func (svc *Service) syncGitOne(g models.Git) {
 	// pull and sync to workspace
 	go func() {
 		if err := gitClient.Pull(); err != nil {
+			trace.PrintError(err)
+			return
+		}
+		if err := gitClient.Reset(); err != nil {
 			trace.PrintError(err)
 			return
 		}

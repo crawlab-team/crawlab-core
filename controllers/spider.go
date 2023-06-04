@@ -1089,6 +1089,11 @@ func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch stri
 		return trace.TraceError(err)
 	}
 
+	// reset
+	if err := gitClient.Reset(); err != nil {
+		return trace.TraceError(err)
+	}
+
 	return nil
 }
 

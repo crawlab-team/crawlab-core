@@ -23,7 +23,6 @@ type Spider struct {
 	Mode         string               `json:"mode" bson:"mode"`                     // default Task.Mode
 	NodeIds      []primitive.ObjectID `json:"node_ids" bson:"node_ids"`             // default Task.NodeIds
 	Stat         *SpiderStat          `json:"stat,omitempty" bson:"-"`
-	GitId        primitive.ObjectID   `json:"git_id" bson:"git_id"`
 
 	// execution
 	Cmd      string `json:"cmd" bson:"cmd"`     // execute command
