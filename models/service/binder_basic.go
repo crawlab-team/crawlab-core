@@ -79,6 +79,8 @@ func (b *BasicBinder) Bind() (res interfaces.Model, err error) {
 		return b.Process(&m.Permission)
 	case interfaces.ModelIdRolePermission:
 		return b.Process(&m.RolePermission)
+	case interfaces.ModelIdEnvironment:
+		return b.Process(&m.Environment)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

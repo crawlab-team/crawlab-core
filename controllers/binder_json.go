@@ -75,6 +75,9 @@ func (b *JsonBinder) Bind(c *gin.Context) (res interfaces.Model, err error) {
 	case ControllerIdPermission:
 		err = c.ShouldBindJSON(&m.Permission)
 		return &m.Permission, nil
+	case ControllerIdEnvironment:
+		err = c.ShouldBindJSON(&m.Environment)
+		return &m.Environment, nil
 	default:
 		return nil, errors.ErrorControllerInvalidControllerId
 	}
@@ -134,6 +137,9 @@ func (b *JsonBinder) BindList(c *gin.Context) (res interface{}, err error) {
 	case ControllerIdRole:
 		err = c.ShouldBindJSON(&m.Roles)
 		return m.Roles, nil
+	case ControllerIdEnvironment:
+		err = c.ShouldBindJSON(&m.Environments)
+		return m.Environments, nil
 	default:
 		return nil, errors.ErrorControllerInvalidControllerId
 	}
@@ -202,6 +208,9 @@ func (b *JsonBinder) BindBatchRequestPayloadWithStringData(c *gin.Context) (payl
 	case ControllerIdPlugin:
 		err = json.Unmarshal([]byte(payload.Data), &m.Plugin)
 		return payload, &m.Plugin, err
+	case ControllerIdEnvironment:
+		err = json.Unmarshal([]byte(payload.Data), &m.Environment)
+		return payload, &m.Environment, err
 	default:
 		return payload, nil, errors.ErrorControllerInvalidControllerId
 	}

@@ -39,6 +39,7 @@ const (
 	ModelIdUserRole
 	ModelIdPermission
 	ModelIdRolePermission
+	ModelIdEnvironment
 )
 
 const (
@@ -68,6 +69,7 @@ const (
 	ModelColNameUserRole       = "user_roles"
 	ModelColNamePermission     = "permissions"
 	ModelColNameRolePermission = "role_permissions"
+	ModelColNameEnvironment    = "environments"
 )
 
 type ModelWithTags interface {

@@ -83,6 +83,8 @@ func (b *ModelDelegateBinder) Bind() (res interface{}, err error) {
 		return b.process(&m.Permission)
 	case interfaces.ModelIdRolePermission:
 		return b.process(&m.RolePermission)
+	case interfaces.ModelIdEnvironment:
+		return b.process(&m.Environment)
 	default:
 		return nil, errors.ErrorModelInvalidModelId
 	}

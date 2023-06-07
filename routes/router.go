@@ -179,6 +179,9 @@ func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
 
 	// data sources
 	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/data-sources", controllers.DataSourceController)
+
+	// environments
+	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/environments", controllers.EnvironmentController)
 }
 
 func registerRoutesFilterGroup(svc *RouterService, groups *RouterGroups) {

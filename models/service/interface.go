@@ -106,4 +106,7 @@ type ModelService interface {
 	GetRolePermissionList(query bson.M, opts *mongo.FindOptions) (res []models.RolePermission, err error)
 	GetRolePermissionListByRoleId(id primitive.ObjectID, opts *mongo.FindOptions) (res []models.RolePermission, err error)
 	GetRolePermissionListByPermissionId(id primitive.ObjectID, opts *mongo.FindOptions) (res []models.RolePermission, err error)
+	GetEnvironmentById(id primitive.ObjectID) (res *models.Environment, err error)
+	GetEnvironment(query bson.M, opts *mongo.FindOptions) (res *models.Environment, err error)
+	GetEnvironmentList(query bson.M, opts *mongo.FindOptions) (res []models.Environment, err error)
 }

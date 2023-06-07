@@ -28,6 +28,7 @@ type ModelMap struct {
 	UserRole       UserRole
 	Permission     Permission
 	RolePermission RolePermission
+	Environment    Environment
 }
 
 type ModelListMap struct {
@@ -58,6 +59,7 @@ type ModelListMap struct {
 	UserRoles          UserRoleList
 	PermissionList     PermissionList
 	RolePermissionList RolePermissionList
+	Environments       EnvironmentList
 }
 
 func NewModelMap() (m *ModelMap) {
@@ -92,5 +94,6 @@ func NewModelListMap() (m *ModelListMap) {
 		Roles:              RoleList{},
 		PermissionList:     PermissionList{},
 		RolePermissionList: RolePermissionList{},
+		Environments:       EnvironmentList{},
 	}
 }

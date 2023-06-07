@@ -30,6 +30,7 @@ const (
 	ControllerIdEnvDeps
 	ControllerIdNotification
 	ControllerIdFilter
+	ControllerIdEnvironment
 
 	ControllerIdVersion
 	ControllerIdI18n

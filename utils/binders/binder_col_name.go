@@ -70,6 +70,8 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return interfaces.ModelColNamePermission, nil
 	case interfaces.ModelIdRolePermission:
 		return interfaces.ModelColNameRolePermission, nil
+	case interfaces.ModelIdEnvironment:
+		return interfaces.ModelColNameEnvironment, nil
 
 	// invalid
 	default:
