@@ -32,6 +32,9 @@ func (svc *Service) GetGit(query bson.M, opts *mongo.FindOptions) (res *models2.
 
 func (svc *Service) GetGitList(query bson.M, opts *mongo.FindOptions) (res []models2.Git, err error) {
 	l, err := svc.GetBaseService(interfaces.ModelIdGit).GetList(query, opts)
+	if l == nil {
+		return nil, nil
+	}
 	for _, doc := range l.GetModels() {
 		d := doc.(*models2.Git)
 		res = append(res, *d)

@@ -221,27 +221,29 @@ func (svc *Service) syncGit() {
 		spiderIds = append(spiderIds, s.Id)
 	}
 
-	// gits
-	gits, err := svc.modelSvc.GetGitList(bson.M{
-		"_id": bson.M{
-			"$in": spiderIds,
-		},
-		"auto_pull": true,
-	}, nil)
-	if err != nil {
-		trace.PrintError(err)
-		return
-	}
+	if len(spiderIds) > 0 {
+		// gits
+		gits, err := svc.modelSvc.GetGitList(bson.M{
+			"_id": bson.M{
+				"$in": spiderIds,
+			},
+			"auto_pull": true,
+		}, nil)
+		if err != nil {
+			trace.PrintError(err)
+			return
+		}
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(gits))
-	for _, g := range gits {
-		go func(g models.Git) {
-			svc.syncGitOne(g)
-			wg.Done()
-		}(g)
+		wg := sync.WaitGroup{}
+		wg.Add(len(gits))
+		for _, g := range gits {
+			go func(g models.Git) {
+				svc.syncGitOne(g)
+				wg.Done()
+			}(g)
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 
 	log.Infof("[SpiderAdminService] finished sync git")
 }
