@@ -26,14 +26,15 @@ import (
 type Service struct {
 	// dependencies
 	interfaces.TaskBaseService
-	cfgSvc                 interfaces.NodeConfigService
-	modelSvc               service.ModelService
-	clientModelSvc         interfaces.GrpcClientModelService
-	clientModelNodeSvc     interfaces.GrpcClientModelNodeService
-	clientModelSpiderSvc   interfaces.GrpcClientModelSpiderService
-	clientModelTaskSvc     interfaces.GrpcClientModelTaskService
-	clientModelTaskStatSvc interfaces.GrpcClientModelTaskStatService
-	c                      interfaces.GrpcClient // grpc client
+	cfgSvc                    interfaces.NodeConfigService
+	modelSvc                  service.ModelService
+	clientModelSvc            interfaces.GrpcClientModelService
+	clientModelNodeSvc        interfaces.GrpcClientModelNodeService
+	clientModelSpiderSvc      interfaces.GrpcClientModelSpiderService
+	clientModelTaskSvc        interfaces.GrpcClientModelTaskService
+	clientModelTaskStatSvc    interfaces.GrpcClientModelTaskStatService
+	clientModelEnvironmentSvc interfaces.GrpcClientModelEnvironmentService
+	c                         interfaces.GrpcClient // grpc client
 
 	// settings
 	//maxRunners        int
@@ -210,6 +211,10 @@ func (svc *Service) GetModelTaskService() (modelTaskSvc interfaces.GrpcClientMod
 
 func (svc *Service) GetModelTaskStatService() (modelTaskSvc interfaces.GrpcClientModelTaskStatService) {
 	return svc.clientModelTaskStatSvc
+}
+
+func (svc *Service) GetModelEnvironmentService() (modelTaskSvc interfaces.GrpcClientModelEnvironmentService) {
+	return svc.clientModelEnvironmentSvc
 }
 
 func (svc *Service) GetNodeConfigService() (cfgSvc interfaces.NodeConfigService) {
@@ -453,6 +458,9 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	if err := c.Provide(client.ProvideTaskStatServiceDelegate(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
+	if err := c.Provide(client.ProvideEnvironmentServiceDelegate(svc.GetConfigPath())); err != nil {
+		return nil, trace.TraceError(err)
+	}
 	if err := c.Provide(client2.ProvideGetClient(svc.GetConfigPath())); err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -464,6 +472,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		clientModelSpiderSvc interfaces.GrpcClientModelSpiderService,
 		clientModelTaskSvc interfaces.GrpcClientModelTaskService,
 		clientModelTaskStatSvc interfaces.GrpcClientModelTaskStatService,
+		clientModelEnvironmentSvc interfaces.GrpcClientModelEnvironmentService,
 		c interfaces.GrpcClient,
 	) {
 		svc.cfgSvc = cfgSvc
@@ -473,6 +482,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		svc.clientModelSpiderSvc = clientModelSpiderSvc
 		svc.clientModelTaskSvc = clientModelTaskSvc
 		svc.clientModelTaskStatSvc = clientModelTaskStatSvc
+		svc.clientModelEnvironmentSvc = clientModelEnvironmentSvc
 		svc.c = c
 	}); err != nil {
 		return nil, trace.TraceError(err)

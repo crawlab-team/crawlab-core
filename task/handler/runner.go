@@ -304,33 +304,13 @@ func (r *Runner) startHealthCheck() {
 }
 
 func (r *Runner) configureEnv() {
-	// TODO: refactor
-	//envs := r.s.Envs
-	//if r.s.Type == constants.Configurable {
-	//	// 数据库配置
-	//	envs = append(envs, model.Env{Name: "CRAWLAB_MONGO_HOST", Value: viper.GetString("mongo.host")})
-	//	envs = append(envs, model.Env{Name: "CRAWLAB_MONGO_PORT", Value: viper.GetString("mongo.port")})
-	//	envs = append(envs, model.Env{Name: "CRAWLAB_MONGO_DB", Value: viper.GetString("mongo.db")})
-	//	envs = append(envs, model.Env{Name: "CRAWLAB_MONGO_USERNAME", Value: viper.GetString("mongo.username")})
-	//	envs = append(envs, model.Env{Name: "CRAWLAB_MONGO_PASSWORD", Value: viper.GetString("mongo.password")})
-	//	envs = append(envs, model.Env{Name: "CRAWLAB_MONGO_AUTHSOURCE", Value: viper.GetString("mongo.authSource")})
-	//
-	//	// 设置配置
-	//	for envName, envValue := range r.s.Config.Settings {
-	//		envs = append(envs, model.Env{Name: "CRAWLAB_SETTING_" + envName, Value: envValue})
-	//	}
-	//}
-
 	// 默认把Node.js的全局node_modules加入环境变量
-	//envPath := os.Getenv("PATH")
-	//nodePath := "/usr/lib/node_modules"
-	//if !strings.Contains(envPath, nodePath) {
-	//	_ = os.Setenv("PATH", nodePath+":"+envPath)
-	//}
-	//_ = os.Setenv("NODE_PATH", nodePath)
-
-	// default results collection
-	//col := utils.GetSpiderCol(r.s.Col, r.s.Name)
+	envPath := os.Getenv("PATH")
+	nodePath := "/usr/lib/node_modules"
+	if !strings.Contains(envPath, nodePath) {
+		_ = os.Setenv("PATH", nodePath+":"+envPath)
+	}
+	_ = os.Setenv("NODE_PATH", nodePath)
 
 	// default envs
 	r.cmd.Env = append(os.Environ(), "CRAWLAB_TASK_ID="+r.tid.Hex())
@@ -342,46 +322,16 @@ func (r *Runner) configureEnv() {
 	} else {
 		r.cmd.Env = append(r.cmd.Env, "CRAWLAB_GRPC_AUTH_KEY="+constants.DefaultGrpcAuthKey)
 	}
-	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_COLLECTION="+col)
-	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_HOST="+viper.GetString("mongo.host"))
-	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_PORT="+viper.GetString("mongo.port"))
-	//if viper.GetString("mongo.db") != "" {
-	//	r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_DB="+viper.GetString("mongo.db"))
-	//}
-	//if viper.GetString("mongo.username") != "" {
-	//	r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_USERNAME="+viper.GetString("mongo.username"))
-	//}
-	//if viper.GetString("mongo.password") != "" {
-	//	r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_PASSWORD="+viper.GetString("mongo.password"))
-	//}
-	//if viper.GetString("mongo.authSource") != "" {
-	//	r.cmd.Env = append(r.cmd.Env, "CRAWLAB_MONGO_AUTHSOURCE="+viper.GetString("mongo.authSource"))
-	//}
-	//r.cmd.Env = append(r.cmd.Env, "PYTHONUNBUFFERED=0")
-	//r.cmd.Env = append(r.cmd.Env, "PYTHONIOENCODING=utf-8")
-	//r.cmd.Env = append(r.cmd.Env, "TZ=Asia/Shanghai")
-	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_DEDUP_FIELD="+r.s.DedupField)
-	//r.cmd.Env = append(r.cmd.Env, "CRAWLAB_DEDUP_METHOD="+r.s.DedupMethod)
-	//if r.s.IsDedup {
-	//	r.cmd.Env = append(r.cmd.Env, "CRAWLAB_IS_DEDUP=1")
-	//} else {
-	//	r.cmd.Env = append(r.cmd.Env, "CRAWLAB_IS_DEDUP=0")
-	//}
 
-	// TODO: implement task environment variables
-	//for _, env := range r.s.Envs {
-	//	r.cmd.Env = append(r.cmd.Env, env.Name+"="+env.Value)
-	//}
-
-	// TODO: implement global environment variables
-	//variables, err := models.MustGetRootService().GetVariableList(nil, nil)
-	//if err != nil {
-	//	return err
-	//}
-	//for _, variable := range variables {
-	//	r.cmd.Env = append(r.cmd.Env, variable.Key+"="+variable.Value)
-	//}
-	//return nil
+	// global environment variables
+	envs, err := r.svc.GetModelEnvironmentService().GetEnvironmentList(nil, nil)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+	for _, env := range envs {
+		r.cmd.Env = append(r.cmd.Env, env.GetKey()+"="+env.GetValue())
+	}
 }
 
 // wait for process to finish and send task signal (constants.TaskSignal)

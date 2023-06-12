@@ -47,6 +47,8 @@ type TaskHandlerService interface {
 	GetModelTaskService() (modelTaskSvc GrpcClientModelTaskService)
 	// GetModelTaskStatService get model task stat service
 	GetModelTaskStatService() (modelTaskStatSvc GrpcClientModelTaskStatService)
+	// GetModelEnvironmentService get model environment service
+	GetModelEnvironmentService() (modelEnvironmentSvc GrpcClientModelEnvironmentService)
 	// GetNodeConfigService get node config service
 	GetNodeConfigService() (cfgSvc NodeConfigService)
 	// GetCurrentNode get node of the handler

@@ -19,6 +19,22 @@ func (e *Environment) SetId(id primitive.ObjectID) {
 	e.Id = id
 }
 
+func (e *Environment) GetKey() (key string) {
+	return e.Key
+}
+
+func (e *Environment) SetKey(key string) {
+	e.Key = key
+}
+
+func (e *Environment) GetValue() (value string) {
+	return e.Value
+}
+
+func (e *Environment) SetValue(value string) {
+	e.Value = value
+}
+
 type EnvironmentList []Environment
 
 func (l *EnvironmentList) GetModels() (res []interfaces.Model) {
