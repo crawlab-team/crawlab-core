@@ -2697,15 +2697,15 @@ components:
         description:
           type: string
           description: Schedule description
-        project_id:
-          type: string
-          description: Schedule project ID
         spider_id:
           type: string
           description: Schedule spider ID
         cron:
           type: string
           description: Cron expression
+        cmd:
+          type: string
+          description: Execute Command
         params:
           type: string
           description: Schedule params
