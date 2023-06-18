@@ -14,11 +14,14 @@ import (
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
+	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"os"
+	"path"
 	"sync"
 	"time"
 )
@@ -73,6 +76,28 @@ func (svc *Service) SyncGit() (err error) {
 	}
 	svc.cron.Start()
 	return nil
+}
+
+func (svc *Service) Export(id primitive.ObjectID) (filePath string, err error) {
+	// spider fs
+	fsSvc, err := fs.NewSpiderFsService(id)
+	if err != nil {
+		return "", err
+	}
+
+	// sync to workspace
+	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
+		return "", err
+	}
+
+	// zip files in workspace
+	dirPath := fsSvc.GetWorkspacePath()
+	zipFilePath := path.Join(os.TempDir(), uuid.New().String()+".zip")
+	if err := utils.ZipDirectory(dirPath, zipFilePath); err != nil {
+		return "", trace.TraceError(err)
+	}
+
+	return zipFilePath, nil
 }
 
 func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOptions) (taskIds []primitive.ObjectID, err error) {

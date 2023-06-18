@@ -384,3 +384,51 @@ func FillEmptyFileData(data []byte) (res []byte) {
 	}
 	return data
 }
+
+func ZipDirectory(dir, zipfile string) error {
+	zipFile, err := os.Create(zipfile)
+	if err != nil {
+		return err
+	}
+	defer zipFile.Close()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	baseDir := filepath.Dir(dir)
+
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(baseDir, path)
+		if err != nil {
+			return err
+		}
+
+		zipFile, err := zipWriter.Create(relPath)
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		_, err = io.Copy(zipFile, file)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
+}

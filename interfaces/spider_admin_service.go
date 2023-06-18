@@ -15,4 +15,6 @@ type SpiderAdminService interface {
 	Delete(id primitive.ObjectID) (err error)
 	// SyncGit syncs the git repository of the spider
 	SyncGit() (err error)
+	// Export exports the spider and return zip file path
+	Export(id primitive.ObjectID) (filePath string, err error)
 }

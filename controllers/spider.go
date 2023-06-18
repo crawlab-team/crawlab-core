@@ -78,6 +78,11 @@ func getSpiderActions() []Action {
 			HandlerFunc: ctx.copyFile,
 		},
 		{
+			Path:        "/:id/files/export",
+			Method:      http.MethodPost,
+			HandlerFunc: ctx.postExport,
+		},
+		{
 			Method:      http.MethodPost,
 			Path:        "/:id/run",
 			HandlerFunc: ctx.run,
@@ -722,6 +727,25 @@ func (ctx *spiderContext) postDataSource(c *gin.Context) {
 	}
 
 	HandleSuccess(c)
+}
+
+func (ctx *spiderContext) postExport(c *gin.Context) {
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// zip file path
+	zipFilePath, err := ctx.adminSvc.Export(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// download
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", zipFilePath))
+	c.File(zipFilePath)
 }
 
 func (ctx *spiderContext) _get(c *gin.Context) {
