@@ -421,7 +421,7 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	svc := &Service{
 		TaskBaseService:   baseSvc,
 		exitWatchDuration: 60 * time.Second,
-		fetchInterval:     5 * time.Second,
+		fetchInterval:     1 * time.Second,
 		fetchTimeout:      15 * time.Second,
 		reportInterval:    5 * time.Second,
 		cancelTimeout:     5 * time.Second,

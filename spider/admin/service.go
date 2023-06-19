@@ -132,20 +132,13 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 
 	if svc.isMultiTask(opts) {
 		// multi tasks
-		// TODO: implement associated tasks
-		//mainTask.HasSub = true
-		//if err := delegate.NewModelDelegate(mainTask).Add(); err != nil {
-		//	return err
-		//}
 		nodeIds, err := svc.getNodeIds(opts)
 		if err != nil {
 			return nil, err
 		}
 		for _, nodeId := range nodeIds {
 			t := &models.Task{
-				SpiderId: s.Id,
-				// TODO: implement associated tasks
-				//ParentId: mainTask.Id,
+				SpiderId:   s.Id,
 				Mode:       opts.Mode,
 				Cmd:        opts.Cmd,
 				Param:      opts.Param,
