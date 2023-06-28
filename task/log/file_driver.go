@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
 	"io"
 	"os"
@@ -145,7 +146,13 @@ func (d *FileLogDriver) getLogFilePath(id, fileName string) (filePath string) {
 }
 
 func (d *FileLogDriver) getLogFiles(id string) (files []os.FileInfo) {
-	return utils.ListDir(d.getBasePath(id))
+	// 增加了对返回异常的捕获
+	files, err := utils.ListDir(d.getBasePath(id))
+	if err != nil {
+		trace.PrintError(err)
+		return nil
+	}
+	return
 }
 
 func (d *FileLogDriver) initDir(id string) {

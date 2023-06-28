@@ -89,7 +89,7 @@ func ListDir(path string) ([]os.FileInfo, error) {
 		return nil, err
 	}
 	return list, nil
-}s
+}
 
 func IsFile(path string) bool {
 	return !IsDir(path)
@@ -251,7 +251,13 @@ func _Compress(file *os.File, prefix string, zw *zip.Writer) error {
 
 func GetFilesFromDir(dirPath string) ([]*os.File, error) {
 	var res []*os.File
-	for _, fInfo := range ListDir(dirPath) {
+	// 增加了返回异常的捕获及处理
+	t, err := ListDir(dirPath)
+	if err != nil {
+		debug.PrintStack()
+		return nil, err
+	}
+	for _, fInfo := range t {
 		f, err := os.Open(filepath.Join(dirPath, fInfo.Name()))
 		if err != nil {
 			return res, err
