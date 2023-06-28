@@ -78,14 +78,17 @@ func IsDir(path string) bool {
 	return s.IsDir()
 }
 
-func ListDir(path string) []os.FileInfo {
+// ListDir Add: 增加error类型作为第二返回值
+// 在其他函数如 /task/log/file_driver.go中的 *FileLogDriver.cleanup()函数调用时
+// 可以通过判断err是否为nil来判断是否有错误发生
+func ListDir(path string) ([]os.FileInfo, error) {
 	list, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Errorf(err.Error())
 		debug.PrintStack()
-		return nil
+		return nil, err
 	}
-	return list
+	return list, nil
 }
 
 func IsFile(path string) bool {
@@ -183,9 +186,9 @@ func DeCompress(srcFile *os.File, dstPath string) error {
 	return nil
 }
 
-//压缩文件
-//files 文件数组，可以是不同dir下的文件或者文件夹
-//dest 压缩文件存放地址
+// 压缩文件
+// files 文件数组，可以是不同dir下的文件或者文件夹
+// dest 压缩文件存放地址
 func Compress(files []*os.File, dest string) error {
 	d, _ := os.Create(dest)
 	defer Close(d)
@@ -248,7 +251,13 @@ func _Compress(file *os.File, prefix string, zw *zip.Writer) error {
 
 func GetFilesFromDir(dirPath string) ([]*os.File, error) {
 	var res []*os.File
-	for _, fInfo := range ListDir(dirPath) {
+	// 增加了返回异常的捕获及处理
+	t, err := ListDir(dirPath)
+	if err != nil {
+		debug.PrintStack()
+		return nil, err
+	}
+	for _, fInfo := range t {
 		f, err := os.Open(filepath.Join(dirPath, fInfo.Name()))
 		if err != nil {
 			return res, err

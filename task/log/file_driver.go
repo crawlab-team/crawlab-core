@@ -146,7 +146,13 @@ func (d *FileLogDriver) getLogFilePath(id, fileName string) (filePath string) {
 }
 
 func (d *FileLogDriver) getLogFiles(id string) (files []os.FileInfo) {
-	return utils.ListDir(d.getBasePath(id))
+	// 增加了对返回异常的捕获
+	files, err := utils.ListDir(d.getBasePath(id))
+	if err != nil {
+		trace.PrintError(err)
+		return nil
+	}
+	return
 }
 
 func (d *FileLogDriver) initDir(id string) {
@@ -178,7 +184,13 @@ func (d *FileLogDriver) lineCounter(r io.Reader) (n int, err error) {
 
 func (d *FileLogDriver) cleanup() {
 	for {
-		dirs := utils.ListDir(d.opts.BaseDir)
+		// 增加对目录不存在的判断
+		// dirs, _ := utils.ListDir(d.opts.BaseDir)
+		dirs, err := utils.ListDir(d.opts.BaseDir)
+		if err != nil {
+			trace.PrintError(err)
+			break
+		}
 		for _, dir := range dirs {
 			if time.Now().After(dir.ModTime().Add(d.opts.Ttl)) {
 				if err := os.RemoveAll(d.getBasePath(dir.Name())); err != nil {
