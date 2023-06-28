@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/utils"
-	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
 	"io"
 	"os"
@@ -178,7 +177,13 @@ func (d *FileLogDriver) lineCounter(r io.Reader) (n int, err error) {
 
 func (d *FileLogDriver) cleanup() {
 	for {
-		dirs := utils.ListDir(d.opts.BaseDir)
+		// 增加对目录不存在的判断
+		// dirs, _ := utils.ListDir(d.opts.BaseDir)
+		dirs, err := utils.ListDir(d.opts.BaseDir)
+		if err != nil {
+			trace.PrintError(err)
+			break
+		}
 		for _, dir := range dirs {
 			if time.Now().After(dir.ModTime().Add(d.opts.Ttl)) {
 				if err := os.RemoveAll(d.getBasePath(dir.Name())); err != nil {
