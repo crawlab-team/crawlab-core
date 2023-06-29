@@ -185,11 +185,11 @@ func (d *FileLogDriver) lineCounter(r io.Reader) (n int, err error) {
 func (d *FileLogDriver) cleanup() {
 	for {
 		// 增加对目录不存在的判断
-		// dirs, _ := utils.ListDir(d.opts.BaseDir)
 		dirs, err := utils.ListDir(d.opts.BaseDir)
 		if err != nil {
 			trace.PrintError(err)
-			break
+			time.Sleep(10 * time.Minute)
+			continue
 		}
 		for _, dir := range dirs {
 			if time.Now().After(dir.ModTime().Add(d.opts.Ttl)) {
