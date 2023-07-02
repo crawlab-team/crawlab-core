@@ -59,6 +59,11 @@ func CreateIndexes() {
 		{Keys: bson.M{"has_sub": 1}},
 	})
 
+	// task stats
+	mongo.GetMongoCol(interfaces.ModelColNameTaskStat).MustCreateIndexes([]mongo2.IndexModel{
+		{Keys: bson.M{"create_ts": 1}},
+	})
+
 	// schedules
 	mongo.GetMongoCol(interfaces.ModelColNameSchedule).MustCreateIndexes([]mongo2.IndexModel{
 		{Keys: bson.M{"name": 1}},

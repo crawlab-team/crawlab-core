@@ -124,7 +124,9 @@ func (svc *Service) GetTaskStats(query bson.M) (data interface{}, err error) {
 
 func (svc *Service) getDailyTasksStats(query bson.M) (data interface{}, err error) {
 	pipeline := mongo2.Pipeline{
-		{{"$match", query}},
+		{{
+			"$match", query,
+		}},
 		{{
 			"$addFields",
 			bson.M{
@@ -138,21 +140,11 @@ func (svc *Service) getDailyTasksStats(query bson.M) (data interface{}, err erro
 			},
 		}},
 		{{
-			"$lookup",
-			bson.M{
-				"from":         interfaces.ModelColNameTaskStat,
-				"localField":   "_id",
-				"foreignField": "_id",
-				"as":           "_ts",
-			},
-		}},
-		{{"$addFields", bson.M{"ts": bson.M{"$arrayElemAt": bson.A{"$_ts", 0}}}}},
-		{{
 			"$group",
 			bson.M{
 				"_id":     "$date",
 				"tasks":   bson.M{"$sum": 1},
-				"results": bson.M{"$sum": "$ts.result_count"},
+				"results": bson.M{"$sum": "$result_count"},
 			},
 		}},
 		{{
@@ -161,7 +153,7 @@ func (svc *Service) getDailyTasksStats(query bson.M) (data interface{}, err erro
 		}},
 	}
 	var results []entity.StatsDailyItem
-	if err := mongo.GetMongoCol(interfaces.ModelColNameTask).Aggregate(pipeline, nil).All(&results); err != nil {
+	if err := mongo.GetMongoCol(interfaces.ModelColNameTaskStat).Aggregate(pipeline, nil).All(&results); err != nil {
 		return nil, err
 	}
 	return results, nil
