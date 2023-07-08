@@ -14,11 +14,6 @@ func getNotificationActions() []Action {
 	return []Action{
 		{
 			Method:      http.MethodGet,
-			Path:        "/triggers",
-			HandlerFunc: ctx.GetTriggerList,
-		},
-		{
-			Method:      http.MethodGet,
 			Path:        "/settings",
 			HandlerFunc: ctx.GetSettingList,
 		},
@@ -57,15 +52,6 @@ func getNotificationActions() []Action {
 
 type notificationContext struct {
 	svc *notification.Service
-}
-
-func (ctx *notificationContext) GetTriggerList(c *gin.Context) {
-	res, total, err := ctx.svc.GetTriggerList()
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	HandleSuccessWithListData(c, res, total)
 }
 
 func (ctx *notificationContext) GetSettingList(c *gin.Context) {

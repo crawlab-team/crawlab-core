@@ -10,7 +10,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
@@ -38,6 +37,10 @@ type Service struct {
 }
 
 func (svc *Service) Init() (err error) {
+	if !utils.IsPro() {
+		return nil
+	}
+
 	// handle events
 	go svc.handleEvents()
 
@@ -45,11 +48,6 @@ func (svc *Service) Init() (err error) {
 }
 
 func (svc *Service) Start() (err error) {
-	// init plugin data
-	if err := svc.initPluginData(); err != nil {
-		return err
-	}
-
 	// start grpc client
 	if !svc.c.IsStarted() {
 		if err := svc.c.Start(); err != nil {
@@ -137,88 +135,6 @@ func (svc *Service) _subscribe() (err error) {
 	return
 }
 
-func (svc *Service) initPluginData() (err error) {
-	op := func() error {
-		if _, err := svc.modelSvc.GetPluginByName(PluginName); err != nil {
-			// error
-			if err.Error() != mongo.ErrNoDocuments.Error() {
-				return err
-			}
-
-			// not exists, add
-			pluginData := []byte(`{
-  "name": "notification",
-  "short_name": "plugin-notification",
-  "full_name": "crawlab-team/plugin-notification",
-  "description": "A plugin for handling notifications",
-  "proto": "http",
-  "cmd": "sh ./bin/start.sh",
-  "docker_cmd": "/app/plugins/bin/plugin-notification",
-  "docker_dir": "/app/plugins/plugin-notification",
-  "endpoint": "localhost:39999",
-  "event_key": {
-    "include": "^model:",
-    "exclude": "artifact"
-  },
-  "install_url": "https://github.com/crawlab-team/plugin-notification",
-  "deploy_mode": "master_only",
-  "auto_start": true,
-  "lang_url": "ui/lang",
-  "ui_components": [
-    {
-      "name": "notification-list",
-      "title": "Notifications",
-      "src": "ui/src/NotificationList.vue",
-      "type": "view",
-      "path": "notifications"
-    },
-    {
-      "name": "notification-detail",
-      "title": "Notifications",
-      "src": "ui/src/NotificationDetail.vue",
-      "type": "view",
-      "path": "notifications/:id"
-    }
-  ],
-  "ui_sidebar_navs": [
-    {
-      "path": "/notifications",
-      "title": "plugins.notification.ui_sidebar_navs.title.notifications",
-      "icon": [
-        "fa",
-        "envelope"
-      ]
-    }
-  ],
-  "ui_assets": [
-    {
-      "path": "ui/public/simplemde/simplemde.js",
-      "type": "js"
-    },
-    {
-      "path": "ui/public/simplemde/simplemde.css",
-      "type": "css"
-    },
-    {
-      "path": "ui/public/css/style.css",
-      "type": "css"
-    }
-  ]
-}
-`)
-			var p models.Plugin
-			_ = json.Unmarshal(pluginData, &p)
-			if err := delegate.NewModelDelegate(&p).Add(); err != nil {
-				return err
-			}
-		}
-
-		// exists, skip
-		return nil
-	}
-	return backoff.Retry(op, backoff.NewConstantBackOff(1*time.Second))
-}
-
 func (svc *Service) initData() (err error) {
 	total, err := svc.col.Count(nil)
 	if err != nil {
@@ -236,10 +152,8 @@ func (svc *Service) initData() (err error) {
 			Enabled:     true,
 			Name:        "Task Change (Mail)",
 			Description: "This is the default mail notification. You can edit it with your own settings",
-			Triggers: []string{
-				"model:tasks:change",
-			},
-			Title: "[Crawlab] Task Update: {{$.status}}",
+			TaskTrigger: constants.NotificationTriggerTaskError,
+			Title:       "[Crawlab] Task Update: {{$.status}}",
 			Template: `Dear {{$.user.username}},
 
 Please find the task data as below.
@@ -280,10 +194,8 @@ Please find the task data as below.
 			Enabled:     true,
 			Name:        "Task Change (Mobile)",
 			Description: "This is the default mobile notification. You can edit it with your own settings",
-			Triggers: []string{
-				"model:tasks:change",
-			},
-			Title: "[Crawlab] Task Update: {{$.status}}",
+			TaskTrigger: constants.NotificationTriggerTaskError,
+			Title:       "[Crawlab] Task Update: {{$.status}}",
 			Template: `Dear {{$.user.username}},
 
 Please find the task data as below.
@@ -384,43 +296,6 @@ func (svc *Service) sendMobile(s *Setting, entity bson.M) (err error) {
 	}
 
 	return nil
-}
-
-func (svc *Service) GetTriggerList() (res []string, total int, err error) {
-	modelList := []string{
-		interfaces.ModelColNameTag,
-		interfaces.ModelColNameNode,
-		interfaces.ModelColNameProject,
-		interfaces.ModelColNameSpider,
-		interfaces.ModelColNameTask,
-		interfaces.ModelColNameJob,
-		interfaces.ModelColNameSchedule,
-		interfaces.ModelColNameUser,
-		interfaces.ModelColNameSetting,
-		interfaces.ModelColNameToken,
-		interfaces.ModelColNameVariable,
-		interfaces.ModelColNameTaskStat,
-		interfaces.ModelColNamePlugin,
-		interfaces.ModelColNameSpiderStat,
-		interfaces.ModelColNameDataSource,
-		interfaces.ModelColNameDataCollection,
-		interfaces.ModelColNamePasswords,
-	}
-	actionList := []string{
-		interfaces.ModelDelegateMethodAdd,
-		interfaces.ModelDelegateMethodChange,
-		interfaces.ModelDelegateMethodDelete,
-		interfaces.ModelDelegateMethodSave,
-	}
-
-	var triggers []string
-	for _, m := range modelList {
-		for _, a := range actionList {
-			triggers = append(triggers, fmt.Sprintf("model:%s:%s", m, a))
-		}
-	}
-
-	return triggers, len(triggers), nil
 }
 
 func (svc *Service) GetSettingList(query bson.M, pagination *entity.Pagination, sort bson.D) (res []Setting, total int, err error) {
@@ -537,17 +412,27 @@ func (svc *Service) handleEvents() {
 			// event name
 			eventName := data.Events[0]
 
+			// task event
+			if eventName != "model:tasks:change" {
+				continue
+			}
+
+			// task
+			var t models.Task
+			if err := json.Unmarshal(data.Data, &t); err != nil {
+				continue
+			}
+
 			// settings
 			var settings []Setting
 			if err := svc.col.Find(bson.M{
-				"enabled":  true,
-				"triggers": eventName,
+				"enabled": true,
 			}, nil).All(&settings); err != nil || len(settings) == 0 {
 				continue
 			}
 
 			// handle events
-			if err := svc._handleEventModel(settings, data.Data); err != nil {
+			if err := svc._handleEventModel(settings, data.Data, t); err != nil {
 				trace.PrintError(err)
 			}
 		default:
@@ -556,13 +441,29 @@ func (svc *Service) handleEvents() {
 	}
 }
 
-func (svc *Service) _handleEventModel(settings []Setting, data []byte) (err error) {
+func (svc *Service) _handleEventModel(settings []Setting, data []byte, t models.Task) (err error) {
 	var doc bson.M
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return err
 	}
 
+	// task stat
+	ts, err := svc.modelSvc.GetTaskStatById(t.Id)
+	if err != nil {
+		return err
+	}
+
 	for _, s := range settings {
+		if s.TaskTrigger == constants.NotificationTriggerTaskNever {
+			continue
+		} else if s.TaskTrigger == constants.NotificationTriggerTaskFinish && t.Status != constants.TaskStatusFinished {
+			continue
+		} else if s.TaskTrigger == constants.NotificationTriggerTaskError && t.Status != constants.TaskStatusError {
+			continue
+		} else if s.TaskTrigger == constants.NotificationTriggerTaskEmptyResults && ((t.Status != constants.TaskStatusFinished && t.Status != constants.TaskStatusError) || ts.ResultCount > 0) {
+			continue
+		}
+
 		switch s.Type {
 		case TypeMail:
 			err = svc.sendMail(&s, doc)

@@ -11,8 +11,7 @@ type Setting struct {
 	Global      bool               `json:"global" bson:"global"`
 	Title       string             `json:"title,omitempty" bson:"title,omitempty"`
 	Template    string             `json:"template,omitempty" bson:"template,omitempty"`
-	Triggers    []string           `json:"triggers" bson:"triggers"`
-	Targets     []SettingTarget    `json:"targets" bson:"targets"` // TODO: implement
+	TaskTrigger string             `json:"task_trigger" bson:"task_trigger"`
 	Mail        SettingMail        `json:"mail,omitempty" bson:"mail,omitempty"`
 	Mobile      SettingMobile      `json:"mobile,omitempty" bson:"mobile,omitempty"`
 }
@@ -30,14 +29,4 @@ type SettingMail struct {
 
 type SettingMobile struct {
 	Webhook string `json:"webhook" bson:"webhook"`
-}
-
-type SettingTarget struct {
-	Id    primitive.ObjectID `json:"_id" bson:"_id"`
-	Model string             `json:"model" bson:"model"`
-}
-
-type SettingTrigger struct {
-	Name  string `json:"name" bson:"name"`
-	Event string `json:"event" bson:"event"`
 }
