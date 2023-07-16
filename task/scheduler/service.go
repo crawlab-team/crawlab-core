@@ -158,7 +158,12 @@ func (svc *Service) SetInterval(interval time.Duration) {
 func (svc *Service) initTaskStatus() {
 	// set status of running tasks as TaskStatusAbnormal
 	runningTasks, err := svc.modelSvc.GetTaskList(bson.M{
-		"status": constants.TaskStatusRunning,
+		"status": bson.M{
+			"$in": []string{
+				constants.TaskStatusPending,
+				constants.TaskStatusRunning,
+			},
+		},
 	}, nil)
 	if err != nil {
 		if err == mongo2.ErrNoDocuments {
@@ -172,6 +177,9 @@ func (svc *Service) initTaskStatus() {
 				trace.PrintError(err)
 			}
 		}(&t)
+	}
+	if err := svc.modelSvc.GetBaseService(interfaces.ModelIdTaskQueue).DeleteList(nil); err != nil {
+		return
 	}
 }
 
