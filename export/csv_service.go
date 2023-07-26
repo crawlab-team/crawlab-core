@@ -119,6 +119,14 @@ func (svc *CsvService) export(export *entity.Export) {
 		return
 	}
 
+	// write bom
+	bom := []byte{0xEF, 0xBB, 0xBF}
+	_, err = csvFile.Write(bom)
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+
 	// write csv header row
 	columns, err := svc.getColumns(query, export)
 	err = csvWriter.Write(columns)

@@ -8,7 +8,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
 )
 
 var ExportController ActionController
@@ -117,7 +116,6 @@ func (ctx *exportContext) getExportDownload(c *gin.Context) {
 		return
 	}
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", exp.GetDownloadPath()))
-	c.Header("Content-Length", strconv.Itoa(len(exp.GetDownloadPath())))
 	c.File(exp.GetDownloadPath())
 }
 
