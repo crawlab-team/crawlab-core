@@ -29,6 +29,7 @@ func SendMobileNotification(webhook string, title string, content string) error 
 			"atMobiles": []string{},
 			"isAtAll":   false,
 		},
+		"text": content,
 	}
 
 	// perform request
