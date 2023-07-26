@@ -12,7 +12,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/crawlab-core/task/handler"
-	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -89,24 +88,25 @@ func (svc *Service) Enqueue(t interfaces.Task) (t2 interfaces.Task, err error) {
 }
 
 func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err error) {
-	// user
-	u := utils.GetUserFromArgs(args...)
-
 	// task
 	t, err := svc.modelSvc.GetTaskById(id)
 	if err != nil {
 		return trace.TraceError(err)
 	}
 
+	// initial status
+	initialStatus := t.Status
+
+	// set task status as "cancelled"
+	_ = svc.SaveTask(t, constants.TaskStatusCancelled)
+
 	// set status of pending tasks as "cancelled" and remove from task item queue
-	if t.Status == constants.TaskStatusPending {
+	if initialStatus == constants.TaskStatusPending {
 		// remove from task item queue
 		if err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).DeleteId(t.GetId()); err != nil {
-			trace.PrintError(err)
+			return trace.TraceError(err)
 		}
-
-		// set task status as "cancelled"
-		return svc.SaveTask(t, constants.TaskStatusCancelled)
+		return nil
 	}
 
 	// whether task is running on master node
@@ -119,31 +119,20 @@ func (svc *Service) Cancel(id primitive.ObjectID, args ...interface{}) (err erro
 	// node
 	n, err := svc.modelSvc.GetNodeById(t.GetNodeId())
 	if err != nil {
-		// when error, force status being set as "cancelled"
-		trace.PrintError(err)
-		return svc.SaveTask(t, constants.TaskStatusCancelled)
+		return trace.TraceError(err)
 	}
 
 	if isMasterTask {
 		// cancel task on master
 		if err := svc.handlerSvc.Cancel(id); err != nil {
-			// cancel failed, force status being set as "cancelled"
-			trace.PrintError(err)
-			t, err := svc.modelSvc.GetTaskById(id)
-			if err != nil {
-				return err
-			}
-			t.Status = constants.TaskStatusCancelled
-			return delegate.NewModelDelegate(t, u).Save()
+			return trace.TraceError(err)
 		}
 		// cancel success
 		return nil
 	} else {
 		// send to cancel task on worker nodes
 		if err := svc.svr.SendStreamMessageWithData("node:"+n.GetKey(), grpc.StreamMessageCode_CANCEL_TASK, t); err != nil {
-			// cancel failed, force status being set as "cancelled"
-			t.Status = constants.TaskStatusCancelled
-			return delegate.NewModelDelegate(t, u).Save()
+			return trace.TraceError(err)
 		}
 		// cancel success
 		return nil
