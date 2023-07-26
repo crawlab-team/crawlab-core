@@ -16,6 +16,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
@@ -118,7 +119,7 @@ func (svc *Service) Fetch() {
 		if err := svc.run(tid); err != nil {
 			trace.PrintError(err)
 			t, err := svc.GetTaskById(tid)
-			if err == nil {
+			if err == nil && t.GetStatus() != constants.TaskStatusCancelled {
 				t.SetError(err.Error())
 				_ = svc.SaveTask(t, constants.TaskStatusError)
 				continue
@@ -264,14 +265,41 @@ func (svc *Service) GetSpiderById(id primitive.ObjectID) (s interfaces.Spider, e
 	return s, nil
 }
 
-func (svc *Service) getRunnerCount() (n int) {
+func (svc *Service) getRunners() (runners []*Runner) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 	svc.runners.Range(func(key, value interface{}) bool {
-		n++
+		r := value.(Runner)
+		runners = append(runners, &r)
 		return true
 	})
-	return n
+	return runners
+}
+
+func (svc *Service) getRunnerCount() (count int) {
+	n, err := svc.GetCurrentNode()
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+	query := bson.M{
+		"node_id": n.GetId(),
+		"status":  constants.TaskStatusRunning,
+	}
+	if svc.cfgSvc.IsMaster() {
+		count, err = svc.modelSvc.GetBaseService(interfaces.ModelIdTask).Count(query)
+		if err != nil {
+			trace.PrintError(err)
+			return
+		}
+	} else {
+		count, err = svc.clientModelTaskSvc.Count(query)
+		if err != nil {
+			trace.PrintError(err)
+			return
+		}
+	}
+	return count
 }
 
 func (svc *Service) getRunner(taskId primitive.ObjectID) (r interfaces.TaskRunner, err error) {
@@ -336,8 +364,10 @@ func (svc *Service) reportStatus() (err error) {
 		return err
 	}
 
-	// update node
+	// available runners of handler
 	ar := n.GetMaxRunners() - svc.getRunnerCount()
+
+	// set available runners
 	n.SetAvailableRunners(ar)
 
 	// save node
