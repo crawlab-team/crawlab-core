@@ -17,4 +17,6 @@ type Spider interface {
 	SetPriority(p int)
 	GetColId() (id primitive.ObjectID)
 	SetColId(id primitive.ObjectID)
+	GetIncrementalSync() (incrementalSync bool)
+	SetIncrementalSync(incrementalSync bool)
 }

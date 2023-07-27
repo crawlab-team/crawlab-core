@@ -559,7 +559,7 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 	}
 
 	// task fs service
-	r.fsSvc, err = fs.NewTaskFsService(r.t.GetId(), r.s.GetId())
+	r.fsSvc, err = fs.NewTaskFsService(r.t.GetId(), r.s.GetId(), r.s)
 	if err != nil {
 		return nil, err
 	}

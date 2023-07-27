@@ -24,6 +24,7 @@ type Service struct {
 	// internals
 	tid primitive.ObjectID // models.Task Id
 	sid primitive.ObjectID // models.Spider Id
+	s   interfaces.Spider  // models.Spider
 }
 
 func (svc *Service) Init() (err error) {
@@ -80,14 +81,18 @@ func (svc *Service) GetFsPath() (res string) {
 }
 
 func (svc *Service) GetWorkspacePath() (res string) {
-	return filepath.Join(svc.workspacePathBase, svc.sid.Hex(), svc.tid.Hex())
+	if svc.s.GetIncrementalSync() {
+		return filepath.Join(svc.workspacePathBase, svc.sid.Hex())
+	} else {
+		return filepath.Join(svc.workspacePathBase, svc.sid.Hex(), svc.tid.Hex())
+	}
 }
 
 func (svc *Service) GetRepoPath() (res string) {
 	return fmt.Sprintf("%s/%s", svc.repoPathBase, svc.sid.Hex())
 }
 
-func NewTaskFsService(taskId, spiderId primitive.ObjectID, opts ...Option) (svc2 interfaces.TaskFsService, err error) {
+func NewTaskFsService(taskId, spiderId primitive.ObjectID, s interfaces.Spider, opts ...Option) (svc2 interfaces.TaskFsService, err error) {
 	// service
 	svc := &Service{
 		fsPathBase:        fs.DefaultFsPath,
@@ -95,6 +100,7 @@ func NewTaskFsService(taskId, spiderId primitive.ObjectID, opts ...Option) (svc2
 		repoPathBase:      fs.DefaultRepoPath,
 		tid:               taskId,
 		sid:               spiderId,
+		s:                 s,
 	}
 
 	// validate
