@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/crawlab-team/go-trace"
 	"github.com/imroc/req"
+	"strings"
 )
 
 type ResBody struct {
@@ -30,6 +31,14 @@ func SendMobileNotification(webhook string, title string, content string) error 
 			"isAtAll":   false,
 		},
 		"text": content,
+	}
+	if strings.Contains(strings.ToLower(webhook), "feishu") {
+		data = req.Param{
+			"msgtype": "text",
+			"content": req.Param{
+				"text": content,
+			},
+		}
 	}
 
 	// perform request
