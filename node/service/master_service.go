@@ -14,7 +14,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/notification"
-	"github.com/crawlab-team/crawlab-core/plugin"
 	"github.com/crawlab-team/crawlab-core/schedule"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/task/handler"
@@ -38,7 +37,6 @@ type MasterService struct {
 	schedulerSvc    interfaces.TaskSchedulerService
 	handlerSvc      interfaces.TaskHandlerService
 	scheduleSvc     interfaces.ScheduleService
-	pluginSvc       interfaces.PluginService
 	envDepsSvc      *envDepsServices.Service
 	notificationSvc *notification.Service
 	spiderAdminSvc  interfaces.SpiderAdminService
@@ -80,9 +78,6 @@ func (svc *MasterService) Start() {
 
 	// start schedule service
 	go svc.scheduleSvc.Start()
-
-	// start plugin service
-	go svc.pluginSvc.Start()
 
 	// start env deps service
 	go svc.envDepsSvc.Start()
@@ -348,9 +343,6 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	if err := c.Provide(schedule.ProvideGetScheduleService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(plugin.ProvideGetPluginService(svc.cfgPath)); err != nil {
-		return nil, err
-	}
 	if err := c.Provide(admin.ProvideGetSpiderAdminService(svc.cfgPath)); err != nil {
 		return nil, err
 	}
@@ -361,7 +353,6 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 		schedulerSvc interfaces.TaskSchedulerService,
 		handlerSvc interfaces.TaskHandlerService,
 		scheduleSvc interfaces.ScheduleService,
-		pluginSvc interfaces.PluginService,
 		spiderAdminSvc interfaces.SpiderAdminService,
 	) {
 		svc.cfgSvc = cfgSvc
@@ -370,7 +361,6 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 		svc.schedulerSvc = schedulerSvc
 		svc.handlerSvc = handlerSvc
 		svc.scheduleSvc = scheduleSvc
-		svc.pluginSvc = pluginSvc
 		svc.spiderAdminSvc = spiderAdminSvc
 	}); err != nil {
 		return nil, err
