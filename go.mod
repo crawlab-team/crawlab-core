@@ -9,7 +9,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300.0.20221226064900-5a357ee73484
-	github.com/crawlab-team/crawlab-fs v0.6.0-beta.20211101.1940.0.20221218100256-a28d12756f73
+	github.com/crawlab-team/crawlab-fs v0.6.3
 	github.com/crawlab-team/crawlab-grpc v0.6.0-beta.20211219.1930.0.20221020032435-afa1c691f73c
 	github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230629045457-afe0be0e2185
 	github.com/crawlab-team/go-trace v0.1.1
