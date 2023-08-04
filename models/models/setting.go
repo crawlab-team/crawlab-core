@@ -8,7 +8,6 @@ import (
 
 type Setting struct {
 	Id    primitive.ObjectID `json:"_id" bson:"_id"`
-	Type  string             `json:"type" bson:"type"`
 	Key   string             `json:"key" bson:"key"`
 	Value bson.M             `json:"value" bson:"value"`
 }
