@@ -150,9 +150,50 @@ func (svc *Service) initData() (err error) {
 			Id:          primitive.NewObjectID(),
 			Type:        TypeMail,
 			Enabled:     true,
+			Name:        "任务通知（邮件）",
+			Description: "这是默认的邮件通知。您可以使用您自己的设置进行编辑。",
+			TaskTrigger: constants.NotificationTriggerTaskFinish,
+			Title:       "[Crawlab] 爬虫任务更新: {{$.status}}",
+			Template: `尊敬的 {{$.user.username}},
+
+请查看下面的任务数据。
+
+|键|值|
+|:-:|:--|
+|任务状态|{{$.status}}|
+|任务优先级|{{$.priority}}|
+|任务模式|{{$.mode}}|
+|执行命令|{{$.cmd}}|
+|执行参数|{{$.param}}|
+|错误信息|{{$.error}}|
+|节点|{{$.node.name}}|
+|爬虫|{{$.spider.name}}|
+|项目|{{$.spider.project.name}}|
+|定时任务|{{$.schedule.name}}|
+|结果数|{{$.:task_stat.result_count}}|
+|等待时间（秒）|{#{{$.:task_stat.wait_duration}}/1000#}|
+|运行时间（秒）|{#{{$.:task_stat.runtime_duration}}/1000#}|
+|总时间（秒）|{#{{$.:task_stat.total_duration}}/1000#}|
+|平均结果数/秒|{#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}|
+`,
+			Mail: SettingMail{
+				Server:         "smtp.163.com",
+				Port:           "465",
+				User:           os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_USER"),
+				Password:       os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_PASSWORD"),
+				SenderEmail:    os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_SENDER_EMAIL"),
+				SenderIdentity: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_SENDER_IDENTITY"),
+				To:             "{{$.user[create].email}}",
+				Cc:             os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_CC"),
+			},
+		},
+		{
+			Id:          primitive.NewObjectID(),
+			Type:        TypeMail,
+			Enabled:     true,
 			Name:        "Task Change (Mail)",
 			Description: "This is the default mail notification. You can edit it with your own settings",
-			TaskTrigger: constants.NotificationTriggerTaskError,
+			TaskTrigger: constants.NotificationTriggerTaskFinish,
 			Title:       "[Crawlab] Task Update: {{$.status}}",
 			Template: `Dear {{$.user.username}},
 
@@ -164,7 +205,7 @@ Please find the task data as below.
 |Task Priority|{{$.priority}}|
 |Task Mode|{{$.mode}}|
 |Task Command|{{$.cmd}}|
-|Task Params|{{$.params}}|
+|Task Params|{{$.param}}|
 |Error Message|{{$.error}}|
 |Node|{{$.node.name}}|
 |Spider|{{$.spider.name}}|
@@ -174,7 +215,6 @@ Please find the task data as below.
 |Wait Duration (sec)|{#{{$.:task_stat.wait_duration}}/1000#}|
 |Runtime Duration (sec)|{#{{$.:task_stat.runtime_duration}}/1000#}|
 |Total Duration (sec)|{#{{$.:task_stat.total_duration}}/1000#}|
-|Result Count|{{$.:task_stat.result_count}}|
 |Avg Results / Sec|{#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}|
 `,
 			Mail: SettingMail{
@@ -186,6 +226,37 @@ Please find the task data as below.
 				SenderIdentity: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_SENDER_IDENTITY"),
 				To:             "{{$.user[create].email}}",
 				Cc:             os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_CC"),
+			},
+		},
+		{
+			Id:          primitive.NewObjectID(),
+			Type:        TypeMobile,
+			Enabled:     true,
+			Name:        "任务通知（移动端）",
+			Description: "这是默认的手机通知。您可以使用您自己的设置进行编辑。",
+			TaskTrigger: constants.NotificationTriggerTaskFinish,
+			Title:       "[Crawlab] 任务更新: {{$.status}}",
+			Template: `尊敬的 {{$.user.username}},
+
+请查看下面的任务数据。
+
+- **任务状态**: {{$.status}}
+- **任务优先级**: {{$.priority}}
+- **任务模式**: {{$.mode}}
+- **执行命令**: {{$.cmd}}
+- **执行参数**: {{$.param}}
+- **错误信息**: {{$.error}}
+- **节点**: {{$.node.name}}
+- **爬虫**: {{$.spider.name}}
+- **项目**: {{$.spider.project.name}}
+- **定时任务**: {{$.schedule.name}}
+- **结果数**: {{$.:task_stat.result_count}}
+- **等待时间（秒）**: {#{{$.:task_stat.wait_duration}}/1000#}
+- **运行时间（秒）**: {#{{$.:task_stat.runtime_duration}}/1000#}
+- **总时间（秒）**: {#{{$.:task_stat.total_duration}}/1000#}
+- **平均结果数/秒**: {#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}`,
+			Mobile: SettingMobile{
+				Webhook: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MOBILE_WEBHOOK"),
 			},
 		},
 		{
@@ -204,7 +275,7 @@ Please find the task data as below.
 - **Task Priority**: {{$.priority}}
 - **Task Mode**: {{$.mode}}
 - **Task Command**: {{$.cmd}}
-- **Task Params**: {{$.params}}
+- **Task Params**: {{$.param}}
 - **Error Message**: {{$.error}}
 - **Node**: {{$.node.name}}
 - **Spider**: {{$.spider.name}}
@@ -214,7 +285,6 @@ Please find the task data as below.
 - **Wait Duration (sec)**: {#{{$.:task_stat.wait_duration}}/1000#}
 - **Runtime Duration (sec)**: {#{{$.:task_stat.runtime_duration}}/1000#}
 - **Total Duration (sec)**: {#{{$.:task_stat.total_duration}}/1000#}
-- **Result Count**: {{$.:task_stat.result_count}}
 - **Avg Results / Sec**: {#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}`,
 			Mobile: SettingMobile{
 				Webhook: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MOBILE_WEBHOOK"),
