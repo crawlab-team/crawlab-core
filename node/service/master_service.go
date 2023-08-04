@@ -16,6 +16,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/notification"
 	"github.com/crawlab-team/crawlab-core/schedule"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
+	"github.com/crawlab-team/crawlab-core/system"
 	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -40,6 +41,7 @@ type MasterService struct {
 	envDepsSvc      *envDepsServices.Service
 	notificationSvc *notification.Service
 	spiderAdminSvc  interfaces.SpiderAdminService
+	systemSvc       *system.Service
 
 	// settings
 	cfgPath         string
@@ -371,6 +373,9 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 
 	// notification service
 	svc.notificationSvc = notification.GetService()
+
+	// system service
+	svc.systemSvc = system.GetService()
 
 	// init
 	if err := svc.Init(); err != nil {
