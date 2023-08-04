@@ -184,7 +184,7 @@ func (d *BaseServiceDelegate) Count(query bson.M) (total int, err error) {
 	ctx, cancel := d.c.Context()
 	defer cancel()
 	req := d.mustNewRequest(&entity.GrpcBaseServiceParams{Query: query})
-	res, err := d.getModelBaseServiceClient().Insert(ctx, req)
+	res, err := d.getModelBaseServiceClient().Count(ctx, req)
 	if err != nil {
 		return total, err
 	}
