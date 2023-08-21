@@ -545,51 +545,15 @@ func (ctx *spiderContext) gitPull(c *gin.Context) {
 		return
 	}
 
-	// spider fs service
-	fsSvc, err := ctx.syncSvc.GetFsService(id)
+	// git
+	g, err := ctx.modelSvc.GetGitById(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 
-	// git client
-	gitClient, err := ctx._getGitClient(id, fsSvc)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
-	// return null if git client is empty
-	if gitClient == nil {
-		HandleSuccess(c)
-		return
-	}
-
-	// branch to pull
-	var branch string
-	if payload.Branch == "" {
-		// by default current branch
-		branch, err = gitClient.GetCurrentBranch()
-		if err != nil {
-			HandleErrorInternalServerError(c, err)
-			return
-		}
-	} else {
-		// payload branch
-		branch = payload.Branch
-	}
-
-	// attempt to pull with target branch
-	if err := ctx._gitPull(gitClient, constants.GitRemoteNameOrigin, branch); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
-	// sync to fs
-	if err := fsSvc.GetFsService().SyncToFs(interfaces.WithOnlyFromWorkspace()); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
+	// attempt to sync git
+	_ = ctx.adminSvc.SyncGitOne(g)
 
 	HandleSuccess(c)
 }

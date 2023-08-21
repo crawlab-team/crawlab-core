@@ -78,6 +78,11 @@ func (svc *Service) SyncGit() (err error) {
 	return nil
 }
 
+func (svc *Service) SyncGitOne(g interfaces.Git) (err error) {
+	svc.syncGitOne(g)
+	return nil
+}
+
 func (svc *Service) Export(id primitive.ObjectID) (filePath string, err error) {
 	// spider fs
 	fsSvc, err := fs.NewSpiderFsService(id)
@@ -256,7 +261,7 @@ func (svc *Service) syncGit() {
 		wg.Add(len(gits))
 		for _, g := range gits {
 			go func(g models.Git) {
-				svc.syncGitOne(g)
+				svc.syncGitOne(&g)
 				wg.Done()
 			}(g)
 		}
@@ -266,14 +271,14 @@ func (svc *Service) syncGit() {
 	log.Infof("[SpiderAdminService] finished sync git")
 }
 
-func (svc *Service) syncGitOne(g models.Git) {
-	log.Infof("[SpiderAdminService] sync git %s", g.Id)
+func (svc *Service) syncGitOne(g interfaces.Git) {
+	log.Infof("[SpiderAdminService] sync git %s", g.GetId())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
 
 	// spider fs service
-	fsSvc, err := fs.NewSpiderFsService(g.Id)
+	fsSvc, err := fs.NewSpiderFsService(g.GetId())
 	if err != nil {
 		trace.PrintError(err)
 		return
@@ -283,7 +288,7 @@ func (svc *Service) syncGitOne(g models.Git) {
 	gitClient := fsSvc.GetFsService().GetGitClient()
 
 	// set auth
-	utils.InitGitClientAuth(&g, gitClient)
+	utils.InitGitClientAuth(g, gitClient)
 
 	// check if remote has changes
 	ok, err := gitClient.IsRemoteChanged()
@@ -297,20 +302,18 @@ func (svc *Service) syncGitOne(g models.Git) {
 	}
 
 	// pull and sync to workspace
-	go func() {
-		if err := gitClient.Pull(); err != nil {
-			trace.PrintError(err)
-			return
-		}
-		if err := gitClient.Reset(); err != nil {
-			trace.PrintError(err)
-			return
-		}
-		if err := fsSvc.GetFsService().SyncToFs(); err != nil {
-			trace.PrintError(err)
-			return
-		}
-	}()
+	if err := gitClient.Pull(); err != nil {
+		trace.PrintError(err)
+		return
+	}
+	if err := gitClient.Reset(); err != nil {
+		trace.PrintError(err)
+		return
+	}
+	if err := fsSvc.GetFsService().SyncToFs(); err != nil {
+		trace.PrintError(err)
+		return
+	}
 
 	// wait for context to end
 	<-ctx.Done()
