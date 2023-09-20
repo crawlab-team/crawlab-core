@@ -205,9 +205,7 @@ func (svc *NodeService) UninstallDependencies(params entity.UninstallParams) (er
 	args = append(args, "-g")
 
 	// dependency names
-	for _, depName := range params.Names {
-		args = append(args, depName)
-	}
+	args = append(args, params.Names...)
 
 	// command
 	cmd := exec.Command(params.Cmd, args...)

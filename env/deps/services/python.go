@@ -196,9 +196,7 @@ func (svc *PythonService) InstallDependencies(params entity.InstallParams) (err 
 		}
 
 		// dependency names
-		for _, depName := range params.Names {
-			args = append(args, depName)
-		}
+		args = append(args, params.Names...)
 	}
 
 	// command
@@ -229,9 +227,7 @@ func (svc *PythonService) UninstallDependencies(params entity.UninstallParams) (
 	args = append(args, "-y")
 
 	// dependency names
-	for _, depName := range params.Names {
-		args = append(args, depName)
-	}
+	args = append(args, params.Names...)
 
 	// command
 	cmd := exec.Command(params.Cmd, args...)
