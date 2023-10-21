@@ -274,7 +274,7 @@ func (svc *Service) syncGit() {
 func (svc *Service) syncGitOne(g interfaces.Git) {
 	log.Infof("[SpiderAdminService] sync git %s", g.GetId())
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	// spider fs service
@@ -302,11 +302,11 @@ func (svc *Service) syncGitOne(g interfaces.Git) {
 	}
 
 	// pull and sync to workspace
-	if err := gitClient.Pull(); err != nil {
+	if err := gitClient.Reset(); err != nil {
 		trace.PrintError(err)
 		return
 	}
-	if err := gitClient.Reset(); err != nil {
+	if err := gitClient.Pull(); err != nil {
 		trace.PrintError(err)
 		return
 	}
