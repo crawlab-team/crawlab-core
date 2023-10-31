@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type Task struct {
@@ -25,6 +26,7 @@ type Task struct {
 	SubTasks   []Task               `json:"sub_tasks,omitempty" bson:"-"`
 	Spider     *Spider              `json:"spider,omitempty" bson:"-"`
 	UserId     primitive.ObjectID   `json:"-" bson:"-"`
+	CreateTs   time.Time            `json:"create_ts" bson:"create_ts"`
 }
 
 func (t *Task) GetId() (id primitive.ObjectID) {

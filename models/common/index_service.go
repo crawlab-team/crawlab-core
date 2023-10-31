@@ -57,6 +57,7 @@ func CreateIndexes() {
 		{Keys: bson.M{"priority": 1}},
 		{Keys: bson.M{"parent_id": 1}},
 		{Keys: bson.M{"has_sub": 1}},
+		{Keys: bson.M{"create_ts": -1}},
 	})
 
 	// task stats

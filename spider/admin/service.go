@@ -116,6 +116,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 		ScheduleId: opts.ScheduleId,
 		Priority:   opts.Priority,
 		UserId:     opts.UserId,
+		CreateTs:   time.Now(),
 	}
 
 	// normalize
@@ -151,6 +152,7 @@ func (svc *Service) scheduleTasks(s *models.Spider, opts *interfaces.SpiderRunOp
 				ScheduleId: opts.ScheduleId,
 				Priority:   opts.Priority,
 				UserId:     opts.UserId,
+				CreateTs:   time.Now(),
 			}
 			t2, err := svc.schedulerSvc.Enqueue(t)
 			if err != nil {
