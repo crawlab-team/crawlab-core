@@ -4,7 +4,6 @@ import (
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
-	envDepsServices "github.com/crawlab-team/crawlab-core/env/deps/services"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -38,7 +37,6 @@ type MasterService struct {
 	schedulerSvc    interfaces.TaskSchedulerService
 	handlerSvc      interfaces.TaskHandlerService
 	scheduleSvc     interfaces.ScheduleService
-	envDepsSvc      *envDepsServices.Service
 	notificationSvc *notification.Service
 	spiderAdminSvc  interfaces.SpiderAdminService
 	systemSvc       *system.Service
@@ -80,9 +78,6 @@ func (svc *MasterService) Start() {
 
 	// start schedule service
 	go svc.scheduleSvc.Start()
-
-	// start env deps service
-	go svc.envDepsSvc.Start()
 
 	// start notification service
 	go svc.notificationSvc.Start()
@@ -367,9 +362,6 @@ func NewMasterService(opts ...Option) (res interfaces.NodeMasterService, err err
 	}); err != nil {
 		return nil, err
 	}
-
-	// env deps service
-	svc.envDepsSvc = envDepsServices.GetService()
 
 	// notification service
 	svc.notificationSvc = notification.GetService()

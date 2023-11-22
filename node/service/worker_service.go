@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
-	envDepsServices "github.com/crawlab-team/crawlab-core/env/deps/services"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -24,7 +23,6 @@ type WorkerService struct {
 	cfgSvc     interfaces.NodeConfigService
 	client     interfaces.GrpcClient
 	handlerSvc interfaces.TaskHandlerService
-	envDepsSvc *envDepsServices.Service
 
 	// settings
 	cfgPath           string
@@ -58,9 +56,6 @@ func (svc *WorkerService) Start() {
 
 	// start handler
 	go svc.handlerSvc.Start()
-
-	// start env deps service
-	go svc.envDepsSvc.Start()
 
 	// wait for quit signal
 	svc.Wait()
@@ -229,9 +224,6 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	}); err != nil {
 		return nil, err
 	}
-
-	// env deps service
-	svc.envDepsSvc = envDepsServices.GetService()
 
 	// init
 	if err := svc.Init(); err != nil {
