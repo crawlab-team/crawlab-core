@@ -1,6 +1,6 @@
 package interfaces
 
 type TaskHookService interface {
-	PreActions() (err error)
-	PostActions() (err error)
+	PreActions(Task, Spider, TaskFsService) (err error)
+	PostActions(Task, Spider, TaskFsService) (err error)
 }

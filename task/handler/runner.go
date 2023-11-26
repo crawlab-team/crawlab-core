@@ -86,7 +86,7 @@ func (r *Runner) Init() (err error) {
 
 	// pre actions
 	if r.hookSvc != nil {
-		if err := r.hookSvc.PreActions(); err != nil {
+		if err := r.hookSvc.PreActions(r.t, r.s, r.fsSvc); err != nil {
 			return err
 		}
 	}
@@ -168,7 +168,7 @@ func (r *Runner) Run() (err error) {
 
 	// post actions
 	if r.hookSvc != nil {
-		if err := r.hookSvc.PostActions(); err != nil {
+		if err := r.hookSvc.PostActions(r.t, r.s, r.fsSvc); err != nil {
 			return err
 		}
 	}
