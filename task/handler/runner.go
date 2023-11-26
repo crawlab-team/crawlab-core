@@ -10,6 +10,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	gclient "github.com/crawlab-team/crawlab-core/grpc/client"
+	"github.com/crawlab-team/crawlab-core/inject"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
@@ -32,8 +33,9 @@ import (
 
 type Runner struct {
 	// dependencies
-	svc   interfaces.TaskHandlerService // task handler service
-	fsSvc interfaces.TaskFsService      // task fs service
+	svc     interfaces.TaskHandlerService // task handler service
+	fsSvc   interfaces.TaskFsService      // task fs service
+	hookSvc interfaces.TaskHookService    // task hook service
 
 	// settings
 	subscribeTimeout time.Duration
@@ -80,6 +82,13 @@ func (r *Runner) Init() (err error) {
 	// grpc task service stream client
 	if err := r.initSub(); err != nil {
 		return err
+	}
+
+	// pre actions
+	if r.hookSvc != nil {
+		if err := r.hookSvc.PreActions(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -155,6 +164,13 @@ func (r *Runner) Run() (err error) {
 	// update task status
 	if err := r.updateTask(status, err); err != nil {
 		return err
+	}
+
+	// post actions
+	if r.hookSvc != nil {
+		if err := r.hookSvc.PostActions(); err != nil {
+			return err
+		}
 	}
 
 	// dispose
@@ -576,6 +592,10 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 	}); err != nil {
 		return nil, trace.TraceError(err)
 	}
+
+	_ = inject.GetContainer().Invoke(func(hookSvc interfaces.TaskHookService) {
+		r.hookSvc = hookSvc
+	})
 
 	// initialize task runner
 	if err := r.Init(); err != nil {
