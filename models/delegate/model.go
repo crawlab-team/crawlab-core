@@ -75,6 +75,8 @@ func NewModelDelegate(doc interfaces.Model, args ...interface{}) interfaces.Mode
 		return newModelDelegate(interfaces.ModelIdRolePermission, doc, args...)
 	case *models.Environment:
 		return newModelDelegate(interfaces.ModelIdEnvironment, doc, args...)
+	case *models.DependencySetting:
+		return newModelDelegate(interfaces.ModelIdDependencySetting, doc, args...)
 	default:
 		_ = trace.TraceError(errors2.ErrorModelInvalidType)
 		return nil
