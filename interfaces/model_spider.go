@@ -19,4 +19,6 @@ type Spider interface {
 	SetColId(id primitive.ObjectID)
 	GetIncrementalSync() (incrementalSync bool)
 	SetIncrementalSync(incrementalSync bool)
+	GetAutoInstall() (autoInstall bool)
+	SetAutoInstall(autoInstall bool)
 }
