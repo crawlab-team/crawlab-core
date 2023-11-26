@@ -34,7 +34,7 @@ func SendMobileNotification(webhook string, title string, content string) error 
 	}
 	if strings.Contains(strings.ToLower(webhook), "feishu") {
 		data = req.Param{
-			"msgtype": "text",
+			"msg_type": "text",
 			"content": req.Param{
 				"text": content,
 			},

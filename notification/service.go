@@ -526,7 +526,7 @@ func (svc *Service) _handleEventModel(settings []Setting, data []byte, t models.
 	for _, s := range settings {
 		if s.TaskTrigger == constants.NotificationTriggerTaskNever {
 			continue
-		} else if s.TaskTrigger == constants.NotificationTriggerTaskFinish && t.Status != constants.TaskStatusFinished {
+		} else if s.TaskTrigger == constants.NotificationTriggerTaskFinish && (t.Status != constants.TaskStatusCancelled && t.Status != constants.TaskStatusError && t.Status != constants.TaskStatusFinished) {
 			continue
 		} else if s.TaskTrigger == constants.NotificationTriggerTaskError && t.Status != constants.TaskStatusError {
 			continue
