@@ -8,6 +8,7 @@ import (
 	"net/mail"
 	"runtime/debug"
 	"strconv"
+	"strings"
 )
 
 func SendMail(s *Setting, to, cc, title, content string) error {
@@ -129,12 +130,23 @@ func send(smtpConfig smtpAuthentication, options sendOptions, htmlBody string, t
 		Address: smtpConfig.SenderEmail,
 	}
 
+	var toList []string
+	if strings.Contains(options.To, ";") {
+		toList = strings.Split(options.To, ";")
+		// trim space
+		for i, to := range toList {
+			toList[i] = strings.TrimSpace(to)
+		}
+	} else {
+		toList = []string{options.To}
+	}
+
 	m := gomail.NewMessage()
 	m.SetHeader("From", from.String())
-	m.SetHeader("To", options.To)
+	m.SetHeader("To", getRecipientList(options.To)...)
 	m.SetHeader("Subject", options.Subject)
 	if options.Cc != "" {
-		m.SetHeader("Cc", options.Cc)
+		m.SetHeader("Cc", getRecipientList(options.Cc)...)
 	}
 
 	m.SetBody("text/plain", txtBody)
@@ -143,6 +155,19 @@ func send(smtpConfig smtpAuthentication, options sendOptions, htmlBody string, t
 	d := gomail.NewDialer(smtpConfig.Server, smtpConfig.Port, smtpConfig.SMTPUser, smtpConfig.SMTPPassword)
 
 	return d.DialAndSend(m)
+}
+
+func getRecipientList(value string) (values []string) {
+	if strings.Contains(value, ";") {
+		values = strings.Split(value, ";")
+		// trim space
+		for i, v := range values {
+			values[i] = strings.TrimSpace(v)
+		}
+	} else {
+		values = []string{value}
+	}
+	return values
 }
 
 func GetFooter() string {
