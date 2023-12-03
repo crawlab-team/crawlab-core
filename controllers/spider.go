@@ -70,7 +70,7 @@ func getSpiderActions() []Action {
 		{
 			Method:      http.MethodPost,
 			Path:        "/:id/files/delete",
-			HandlerFunc: ctx.delete,
+			HandlerFunc: ctx.deleteFile,
 		},
 		{
 			Method:      http.MethodPost,
@@ -156,6 +156,13 @@ func (ctr *spiderController) Put(c *gin.Context) {
 	HandleSuccessWithData(c, s)
 }
 
+func (ctr *spiderController) Delete(c *gin.Context) {
+	if err := ctr.ctx._delete(c); err != nil {
+		return
+	}
+	HandleSuccess(c)
+}
+
 func (ctr *spiderController) GetList(c *gin.Context) {
 	withStats := c.Query("stats")
 	if withStats == "" {
@@ -165,11 +172,21 @@ func (ctr *spiderController) GetList(c *gin.Context) {
 	ctr.ctx._getListWithStats(c)
 }
 
+func (ctr *spiderController) DeleteList(c *gin.Context) {
+	if err := ctr.ctx._deleteList(c); err != nil {
+		return
+	}
+	HandleSuccess(c)
+}
+
 type spiderContext struct {
-	modelSvc       service.ModelService
-	modelSpiderSvc interfaces.ModelBaseService
-	syncSvc        interfaces.SpiderSyncService
-	adminSvc       interfaces.SpiderAdminService
+	modelSvc           service.ModelService
+	modelSpiderSvc     interfaces.ModelBaseService
+	modelSpiderStatSvc interfaces.ModelBaseService
+	modelTaskSvc       interfaces.ModelBaseService
+	modelTaskStatSvc   interfaces.ModelBaseService
+	syncSvc            interfaces.SpiderSyncService
+	adminSvc           interfaces.SpiderAdminService
 }
 
 func (ctx *spiderContext) listDir(c *gin.Context) {
@@ -275,7 +292,7 @@ func (ctx *spiderContext) renameFile(c *gin.Context) {
 	HandleSuccess(c)
 }
 
-func (ctx *spiderContext) delete(c *gin.Context) {
+func (ctx *spiderContext) deleteFile(c *gin.Context) {
 	_, payload, fsSvc, err := ctx._processFileRequest(c, http.MethodPost)
 	if err != nil {
 		return
@@ -806,6 +823,64 @@ func (ctx *spiderContext) _put(c *gin.Context) (s *models.Spider, err error) {
 	return s, nil
 }
 
+func (ctx *spiderContext) _delete(c *gin.Context) (err error) {
+	id := c.Param("id")
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	if err := mongo.RunTransaction(func(context mongo2.SessionContext) (err error) {
+		// delete spider
+		s, err := ctx.modelSvc.GetSpiderById(oid)
+		if err != nil {
+			return err
+		}
+		if err := delegate2.NewModelDelegate(s, GetUserFromContext(c)).Delete(); err != nil {
+			return err
+		}
+
+		// delete spider stat
+		ss, err := ctx.modelSvc.GetSpiderStatById(oid)
+		if err != nil {
+			return err
+		}
+		if err := delegate2.NewModelDelegate(ss, GetUserFromContext(c)).Delete(); err != nil {
+			return err
+		}
+
+		// related tasks
+		tasks, err := ctx.modelSvc.GetTaskList(bson.M{"spider_id": oid}, nil)
+		if err != nil {
+			return err
+		}
+
+		// task ids
+		var taskIds []primitive.ObjectID
+		for _, t := range tasks {
+			taskIds = append(taskIds, t.Id)
+		}
+
+		// delete related tasks
+		if err := ctx.modelTaskSvc.DeleteList(bson.M{"_id": bson.M{"$in": taskIds}}); err != nil {
+			return err
+		}
+
+		// delete related task stats
+		if err := ctx.modelTaskStatSvc.DeleteList(bson.M{"_id": bson.M{"$in": taskIds}}); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return err
+	}
+
+	return nil
+}
+
 func (ctx *spiderContext) _getListWithStats(c *gin.Context) {
 	// params
 	pagination := MustGetPagination(c)
@@ -938,6 +1013,63 @@ func (ctx *spiderContext) _getListWithStats(c *gin.Context) {
 
 	// response
 	HandleSuccessWithListData(c, data, total)
+}
+
+func (ctx *spiderContext) _deleteList(c *gin.Context) (err error) {
+	payload, err := NewJsonBinder(ControllerIdSpider).BindBatchRequestPayload(c)
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	if err := mongo.RunTransaction(func(context mongo2.SessionContext) (err error) {
+		// delete spiders
+		if err := ctx.modelSpiderSvc.DeleteList(bson.M{
+			"_id": bson.M{
+				"$in": payload.Ids,
+			},
+		}); err != nil {
+			return err
+		}
+
+		// delete spider stats
+		if err := ctx.modelSpiderStatSvc.DeleteList(bson.M{
+			"_id": bson.M{
+				"$in": payload.Ids,
+			},
+		}); err != nil {
+			return err
+		}
+
+		// related tasks
+		tasks, err := ctx.modelSvc.GetTaskList(bson.M{"spider_id": bson.M{"$in": payload.Ids}}, nil)
+		if err != nil {
+			return err
+		}
+
+		// task ids
+		var taskIds []primitive.ObjectID
+		for _, t := range tasks {
+			taskIds = append(taskIds, t.Id)
+		}
+
+		// delete related tasks
+		if err := ctx.modelTaskSvc.DeleteList(bson.M{"_id": bson.M{"$in": taskIds}}); err != nil {
+			return err
+		}
+
+		// delete related task stats
+		if err := ctx.modelTaskStatSvc.DeleteList(bson.M{"_id": bson.M{"$in": taskIds}}); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return err
+	}
+
+	return nil
 }
 
 func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id primitive.ObjectID, payload entity.FileRequestPayload, fsSvc interfaces.SpiderFsService, err error) {
@@ -1278,6 +1410,15 @@ func newSpiderContext() *spiderContext {
 
 	// model spider service
 	ctx.modelSpiderSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdSpider)
+
+	// model spider stat service
+	ctx.modelSpiderStatSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdSpiderStat)
+
+	// model task service
+	ctx.modelTaskSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdTask)
+
+	// model task stat service
+	ctx.modelTaskStatSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdTaskStat)
 
 	_spiderCtx = ctx
 
