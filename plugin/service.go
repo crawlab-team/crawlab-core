@@ -538,9 +538,7 @@ func (svc *Service) getNewCmdFn(p *models.Plugin, fsSvc interfaces.PluginFsServi
 		}
 
 		// inherit system envs
-		for _, env := range os.Environ() {
-			cmd.Env = append(cmd.Env, env)
-		}
+		cmd.Env = append(cmd.Env, os.Environ()...)
 
 		// bind all viper keys to envs
 		for _, key := range viper.AllKeys() {
