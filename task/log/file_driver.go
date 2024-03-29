@@ -145,16 +145,6 @@ func (d *FileLogDriver) getLogFilePath(id, fileName string) (filePath string) {
 	return filepath.Join(d.opts.BaseDir, id, fileName)
 }
 
-func (d *FileLogDriver) getLogFiles(id string) (files []os.FileInfo) {
-	// 增加了对返回异常的捕获
-	files, err := utils.ListDir(d.getBasePath(id))
-	if err != nil {
-		trace.PrintError(err)
-		return nil
-	}
-	return
-}
-
 func (d *FileLogDriver) initDir(id string) {
 	if !utils.Exists(d.getBasePath(id)) {
 		if err := os.MkdirAll(d.getBasePath(id), os.FileMode(0770)); err != nil {
@@ -192,7 +182,12 @@ func (d *FileLogDriver) cleanup() {
 			continue
 		}
 		for _, dir := range dirs {
-			if time.Now().After(dir.ModTime().Add(d.opts.Ttl)) {
+			info, err := dir.Info()
+			if err != nil {
+				trace.PrintError(err)
+				continue
+			}
+			if time.Now().After(info.ModTime().Add(d.opts.Ttl)) {
 				if err := os.RemoveAll(d.getBasePath(dir.Name())); err != nil {
 					trace.PrintError(err)
 					continue

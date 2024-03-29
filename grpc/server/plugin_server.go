@@ -45,11 +45,7 @@ func (svr PluginServer) Register(ctx context.Context, req *grpc.PluginRequest) (
 	switch msg.Type {
 	case constants.GrpcEventServiceTypeRegister:
 		ch := make(chan interfaces.EventData)
-		p, err := svr.modelSvc.GetPluginByName(req.Name)
-		if err != nil {
-			return nil, trace.TraceError(err)
-		}
-		svr.eventSvc.Register("plugin:"+req.Name+":"+req.NodeKey, p.EventKey.Include, p.EventKey.Exclude, &ch)
+		svr.eventSvc.Register("plugin:"+req.Name+":"+req.NodeKey, "", "", &ch)
 		go svr.handleEvent(req.Name, req.NodeKey, &ch)
 	default:
 		return nil, trace.TraceError(errors.ErrorEventUnknownAction)
