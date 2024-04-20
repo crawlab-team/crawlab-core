@@ -519,7 +519,7 @@ func newTaskContext() *taskContext {
 	ctx.modelTaskStatSvc = ctx.modelSvc.GetBaseService(interfaces.ModelIdTaskStat)
 
 	// log driver
-	l, err := log.GetLogDriver(log.DriverTypeFile, nil)
+	l, err := log.GetLogDriver(log.DriverTypeFile)
 	if err != nil {
 		panic(err)
 	}

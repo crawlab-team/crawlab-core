@@ -6,13 +6,12 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	fs2 "github.com/crawlab-team/crawlab-core/fs"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/spider/admin"
-	"github.com/crawlab-team/crawlab-core/spider/fs"
-	"github.com/crawlab-team/crawlab-core/spider/sync"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	vcs "github.com/crawlab-team/crawlab-vcs"
@@ -20,6 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
@@ -28,7 +28,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -185,7 +185,6 @@ type spiderContext struct {
 	modelSpiderStatSvc interfaces.ModelBaseService
 	modelTaskSvc       interfaces.ModelBaseService
 	modelTaskStatSvc   interfaces.ModelBaseService
-	syncSvc            interfaces.SpiderSyncService
 	adminSvc           interfaces.SpiderAdminService
 }
 
@@ -243,17 +242,7 @@ func (ctx *spiderContext) saveFile(c *gin.Context) {
 		return
 	}
 
-	// validate payload data
-	if payload.Data == "" {
-		if fsSvc.Exists(payload.Path) {
-			HandleErrorBadRequest(c, errors.ErrorFsInvalidContent)
-			return
-		}
-	}
-
-	data := utils.FillEmptyFileData([]byte(payload.Data))
-
-	if err := fsSvc.Save(payload.Path, data); err != nil {
+	if err := fsSvc.Save(payload.Path, []byte(payload.Data)); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -267,10 +256,7 @@ func (ctx *spiderContext) saveDir(c *gin.Context) {
 		return
 	}
 
-	data := []byte("")
-	filePath := fmt.Sprintf("%s/%s", payload.Path, constants.FsKeepFileName)
-
-	if err := fsSvc.Save(filePath, data); err != nil {
+	if err := fsSvc.CreateDir(payload.Path); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -356,21 +342,8 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 		return
 	}
 
-	// spider fs service
-	fsSvc, err := ctx.syncSvc.GetFsService(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
-	// sync from remote to workspace
-	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// git client
-	gitClient, err := ctx._getGitClient(id, fsSvc)
+	gitClient, err := ctx._getGitClient(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -414,7 +387,7 @@ func (ctx *spiderContext) getGit(c *gin.Context) {
 	}
 
 	// ignore
-	ignore, err := ctx._getGitIgnore(fsSvc)
+	ignore, err := ctx._getGitIgnore(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -455,15 +428,8 @@ func (ctx *spiderContext) getGitRemoteRefs(c *gin.Context) {
 		remoteName = vcs.GitRemoteNameOrigin
 	}
 
-	// spider fs service
-	fsSvc, err := ctx.syncSvc.GetFsService(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// git client
-	gitClient, err := ctx._getGitClient(id, fsSvc)
+	gitClient, err := ctx._getGitClient(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -499,15 +465,8 @@ func (ctx *spiderContext) gitCheckout(c *gin.Context) {
 		return
 	}
 
-	// spider fs service
-	fsSvc, err := ctx.syncSvc.GetFsService(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// git client
-	gitClient, err := ctx._getGitClient(id, fsSvc)
+	gitClient, err := ctx._getGitClient(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -535,12 +494,6 @@ func (ctx *spiderContext) gitCheckout(c *gin.Context) {
 
 	// checkout
 	if err := ctx._gitCheckout(gitClient, constants.GitRemoteNameOrigin, branch); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
-	// sync to fs
-	if err := fsSvc.GetFsService().SyncToFs(interfaces.WithOnlyFromWorkspace()); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -589,21 +542,8 @@ func (ctx *spiderContext) gitCommit(c *gin.Context) {
 		return
 	}
 
-	// spider fs service
-	fsSvc, err := ctx.syncSvc.GetFsService(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
-	// sync from remote to workspace
-	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-
 	// git client
-	gitClient, err := ctx._getGitClient(id, fsSvc)
+	gitClient, err := ctx._getGitClient(id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -1072,7 +1012,7 @@ func (ctx *spiderContext) _deleteList(c *gin.Context) (err error) {
 	return nil
 }
 
-func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id primitive.ObjectID, payload entity.FileRequestPayload, fsSvc interfaces.SpiderFsService, err error) {
+func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id primitive.ObjectID, payload entity.FileRequestPayload, fsSvc interfaces.FsServiceV2, err error) {
 	// id
 	id, err = primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
@@ -1104,11 +1044,8 @@ func (ctx *spiderContext) _processFileRequest(c *gin.Context, method string) (id
 	}
 
 	// fs service
-	fsSvc, err = newSpiderContext().syncSvc.GetFsService(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
+	workspacePath := viper.GetString("workspace")
+	fsSvc = fs2.NewFsServiceV2(filepath.Join(workspacePath, id.Hex()))
 
 	return
 }
@@ -1178,8 +1115,9 @@ func (ctx *spiderContext) _upsertDataCollection(c *gin.Context, s *models.Spider
 	return nil
 }
 
-func (ctx *spiderContext) _getGitIgnore(fsSvc interfaces.SpiderFsService) (ignore []string, err error) {
-	filePath := path.Join(fsSvc.GetWorkspacePath(), ".gitignore")
+func (ctx *spiderContext) _getGitIgnore(id primitive.ObjectID) (ignore []string, err error) {
+	workspacePath := viper.GetString("workspace")
+	filePath := filepath.Join(workspacePath, id.Hex(), ".gitignore")
 	if !utils.Exists(filePath) {
 		return nil, nil
 	}
@@ -1217,7 +1155,7 @@ func (ctx *spiderContext) _gitPull(gitClient *vcs.GitClient, remote, branch stri
 	return nil
 }
 
-func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.SpiderFsService) (gitClient *vcs.GitClient, err error) {
+func (ctx *spiderContext) _getGitClient(id primitive.ObjectID) (gitClient *vcs.GitClient, err error) {
 	// git
 	g, err := ctx.modelSvc.GetGitById(id)
 	if err != nil {
@@ -1228,7 +1166,11 @@ func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.
 	}
 
 	// git client
-	gitClient = fsSvc.GetFsService().GetGitClient()
+	workspacePath := viper.GetString("workspace")
+	gitClient, err = vcs.NewGitClient(vcs.WithPath(filepath.Join(workspacePath, id.Hex())))
+	if err != nil {
+		return nil, err
+	}
 
 	// set auth
 	utils.InitGitClientAuth(g, gitClient)
@@ -1271,50 +1213,10 @@ func (ctx *spiderContext) _getGitClient(id primitive.ObjectID, fsSvc interfaces.
 		return gitClient, nil
 	}
 
-	// sync remote
-	if err := ctx._syncRemote(id, gitClient); err != nil {
-		return nil, trace.TraceError(err)
-	}
-
 	// align master/main branch
 	ctx._alignBranch(gitClient)
 
 	return gitClient, nil
-}
-
-func (ctx *spiderContext) _syncRemote(id primitive.ObjectID, gitClient *vcs.GitClient) (err error) {
-	// remote refs
-	refs, err := gitClient.GetRemoteRefs(vcs.GitRemoteNameOrigin)
-	if err != nil {
-		return err
-	}
-
-	// remote branch name
-	remoteBranchName, err := ctx._getDefaultRemoteBranch(refs)
-	if err != nil {
-		return err
-	}
-
-	// pull
-	if err := gitClient.Pull(
-		vcs.WithBranchNamePull(remoteBranchName),
-		vcs.WithRemoteNamePull(vcs.GitRemoteNameOrigin),
-	); err != nil {
-		return trace.TraceError(err)
-	}
-
-	// spider fs service
-	fsSvc, err := fs.GetSpiderFsService(id)
-	if err != nil {
-		return trace.TraceError(err)
-	}
-
-	// sync to fs
-	if err := fsSvc.GetFsService().SyncToFs(); err != nil {
-		return trace.TraceError(err)
-	}
-
-	return nil
 }
 
 func (ctx *spiderContext) _alignBranch(gitClient *vcs.GitClient) {
@@ -1390,19 +1292,14 @@ func newSpiderContext() *spiderContext {
 	if err := c.Provide(service.NewService); err != nil {
 		panic(err)
 	}
-	if err := c.Provide(sync.NewSpiderSyncService); err != nil {
-		panic(err)
-	}
 	if err := c.Provide(admin.NewSpiderAdminService); err != nil {
 		panic(err)
 	}
 	if err := c.Invoke(func(
 		modelSvc service.ModelService,
-		syncSvc interfaces.SpiderSyncService,
 		adminSvc interfaces.SpiderAdminService,
 	) {
 		ctx.modelSvc = modelSvc
-		ctx.syncSvc = syncSvc
 		ctx.adminSvc = adminSvc
 	}); err != nil {
 		panic(err)

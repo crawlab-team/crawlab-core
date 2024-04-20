@@ -44,8 +44,6 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 		return newModelDelegate(interfaces.ModelIdTaskQueue, doc, opts...)
 	case *models.TaskStat:
 		return newModelDelegate(interfaces.ModelIdTaskStat, doc, opts...)
-	case *models.Plugin:
-		return newModelDelegate(interfaces.ModelIdPlugin, doc, opts...)
 	case *models.SpiderStat:
 		return newModelDelegate(interfaces.ModelIdSpiderStat, doc, opts...)
 	case *models.DataSource:
@@ -58,8 +56,6 @@ func NewModelDelegate(doc interfaces.Model, opts ...ModelDelegateOption) interfa
 		return newModelDelegate(interfaces.ModelIdPassword, doc, opts...)
 	case *models.ExtraValue:
 		return newModelDelegate(interfaces.ModelIdExtraValue, doc, opts...)
-	case *models.PluginStatus:
-		return newModelDelegate(interfaces.ModelIdPluginStatus, doc, opts...)
 	case *models.Git:
 		return newModelDelegate(interfaces.ModelIdGit, doc, opts...)
 	case *models.UserRole:

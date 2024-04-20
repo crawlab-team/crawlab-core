@@ -10,9 +10,9 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/config"
-	"github.com/crawlab-team/crawlab-core/spider/fs"
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
+	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/crawlab-team/go-trace"
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
@@ -22,6 +22,7 @@ import (
 	"go.uber.org/dig"
 	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -85,18 +86,11 @@ func (svc *Service) SyncGitOne(g interfaces.Git) (err error) {
 
 func (svc *Service) Export(id primitive.ObjectID) (filePath string, err error) {
 	// spider fs
-	fsSvc, err := fs.NewSpiderFsService(id)
-	if err != nil {
-		return "", err
-	}
-
-	// sync to workspace
-	if err := fsSvc.GetFsService().SyncToWorkspace(); err != nil {
-		return "", err
-	}
+	workspacePath := viper.GetString("workspace")
+	spiderFolderPath := filepath.Join(workspacePath, id.Hex())
 
 	// zip files in workspace
-	dirPath := fsSvc.GetWorkspacePath()
+	dirPath := spiderFolderPath
 	zipFilePath := path.Join(os.TempDir(), uuid.New().String()+".zip")
 	if err := utils.ZipDirectory(dirPath, zipFilePath); err != nil {
 		return "", trace.TraceError(err)
@@ -279,15 +273,12 @@ func (svc *Service) syncGitOne(g interfaces.Git) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	// spider fs service
-	fsSvc, err := fs.NewSpiderFsService(g.GetId())
+	// git client
+	workspacePath := viper.GetString("workspace")
+	gitClient, err := vcs.NewGitClient(vcs.WithPath(filepath.Join(workspacePath, g.GetId().Hex())))
 	if err != nil {
-		trace.PrintError(err)
 		return
 	}
-
-	// git client
-	gitClient := fsSvc.GetFsService().GetGitClient()
 
 	// set auth
 	utils.InitGitClientAuth(g, gitClient)
@@ -309,10 +300,6 @@ func (svc *Service) syncGitOne(g interfaces.Git) {
 		return
 	}
 	if err := gitClient.Pull(); err != nil {
-		trace.PrintError(err)
-		return
-	}
-	if err := fsSvc.GetFsService().SyncToFs(); err != nil {
 		trace.PrintError(err)
 		return
 	}

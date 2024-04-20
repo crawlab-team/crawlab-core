@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"io"
-	"os"
 	"sync"
 	"time"
 )
@@ -47,7 +46,6 @@ type Client struct {
 	ModelBaseServiceClient grpc2.ModelBaseServiceClient
 	NodeClient             grpc2.NodeServiceClient
 	TaskClient             grpc2.TaskServiceClient
-	PluginClient           grpc2.PluginServiceClient
 	MessageClient          grpc2.MessageServiceClient
 }
 
@@ -117,9 +115,6 @@ func (c *Client) Register() (err error) {
 	// task
 	c.TaskClient = grpc2.NewTaskServiceClient(c.conn)
 
-	// plugin
-	c.PluginClient = grpc2.NewPluginServiceClient(c.conn)
-
 	// message
 	c.MessageClient = grpc2.NewMessageServiceClient(c.conn)
 
@@ -129,7 +124,6 @@ func (c *Client) Register() (err error) {
 	log.Debugf("[GrpcClient] ModelBaseServiceClient: %v", c.ModelBaseServiceClient)
 	log.Debugf("[GrpcClient] NodeClient: %v", c.NodeClient)
 	log.Debugf("[GrpcClient] TaskClient: %v", c.TaskClient)
-	log.Debugf("[GrpcClient] PluginClient: %v", c.PluginClient)
 	log.Debugf("[GrpcClient] MessageClient: %v", c.MessageClient)
 
 	return nil
@@ -149,10 +143,6 @@ func (c *Client) GetNodeClient() grpc2.NodeServiceClient {
 
 func (c *Client) GetTaskClient() grpc2.TaskServiceClient {
 	return c.TaskClient
-}
-
-func (c *Client) GetPluginClient() grpc2.PluginServiceClient {
-	return c.PluginClient
 }
 
 func (c *Client) GetMessageClient() grpc2.MessageServiceClient {
@@ -181,14 +171,6 @@ func (c *Client) Context() (ctx context.Context, cancel context.CancelFunc) {
 
 func (c *Client) NewRequest(d interface{}) (req *grpc2.Request) {
 	return &grpc2.Request{
-		NodeKey: c.nodeCfgSvc.GetNodeKey(),
-		Data:    c.getRequestData(d),
-	}
-}
-
-func (c *Client) NewPluginRequest(d interface{}) (req *grpc2.PluginRequest) {
-	return &grpc2.PluginRequest{
-		Name:    os.Getenv("CRAWLAB_PLUGIN_NAME"),
 		NodeKey: c.nodeCfgSvc.GetNodeKey(),
 		Data:    c.getRequestData(d),
 	}
@@ -278,8 +260,6 @@ func (c *Client) subscribe() (err error) {
 	switch c.subscribeType {
 	case constants.GrpcSubscribeTypeNode:
 		op = c._subscribeNode
-	case constants.GrpcSubscribeTypePlugin:
-		op = c._subscribePlugin
 	default:
 		return errors.ErrorGrpcInvalidType
 	}
@@ -292,19 +272,6 @@ func (c *Client) _subscribeNode() (err error) {
 		IsMaster: false,
 	})
 	c.stream, err = c.GetNodeClient().Subscribe(context.Background(), req)
-	if err != nil {
-		return trace.TraceError(err)
-	}
-
-	// log
-	log.Infof("[GrpcClient] grpc client subscribed to remote server")
-
-	return nil
-}
-
-func (c *Client) _subscribePlugin() (err error) {
-	req := c.NewPluginRequest(nil)
-	c.stream, err = c.GetPluginClient().Subscribe(context.Background(), req)
 	if err != nil {
 		return trace.TraceError(err)
 	}

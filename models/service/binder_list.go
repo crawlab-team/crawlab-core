@@ -54,8 +54,6 @@ func (b *ListBinder) Bind() (l interfaces.List, err error) {
 		return b.Process(&m.TaskQueueItems)
 	case interfaces.ModelIdTaskStat:
 		return b.Process(&m.TaskStats)
-	case interfaces.ModelIdPlugin:
-		return b.Process(&m.Plugins)
 	case interfaces.ModelIdSpiderStat:
 		return b.Process(&m.SpiderStats)
 	case interfaces.ModelIdDataSource:
@@ -68,8 +66,6 @@ func (b *ListBinder) Bind() (l interfaces.List, err error) {
 		return b.Process(&m.Passwords)
 	case interfaces.ModelIdExtraValue:
 		return b.Process(&m.ExtraValues)
-	case interfaces.ModelIdPluginStatus:
-		return b.Process(&m.PluginStatus)
 	case interfaces.ModelIdGit:
 		return b.Process(&m.Gits)
 	case interfaces.ModelIdRole:

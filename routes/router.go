@@ -135,9 +135,6 @@ func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
 	// color
 	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/colors", controllers.ColorController)
 
-	// plugin
-	svc.RegisterListActionControllerToGroup(groups.AuthGroup, "/plugins", controllers.PluginController)
-
 	// data collection
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/data/collections", controllers.DataCollectionController)
 
@@ -152,9 +149,6 @@ func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
 
 	// token
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/tokens", controllers.TokenController)
-
-	// plugin do
-	svc.RegisterActionControllerToGroup(groups.AuthGroup, "/plugin-proxy", controllers.PluginProxyController)
 
 	// git
 	svc.RegisterListControllerToGroup(groups.AuthGroup, "/gits", controllers.GitController)

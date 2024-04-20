@@ -3,7 +3,7 @@ package fs
 import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	vcs "github.com/crawlab-team/crawlab-vcs"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,10 +12,8 @@ import (
 
 type ServiceV2 struct {
 	// settings
-	rootPath string
-
-	// internals
-	gitClient *vcs.GitClient
+	rootPath  string
+	skipNames []string
 }
 
 func (svc *ServiceV2) List(path string) (files []interfaces.FsFileInfo, err error) {
@@ -51,6 +49,13 @@ func (svc *ServiceV2) List(path string) (files []interfaces.FsFileInfo, err erro
 			Children:  nil,
 		}
 
+		// Skip files/folders matching the pattern
+		for _, name := range svc.skipNames {
+			if fi.Name == name {
+				return nil
+			}
+		}
+
 		if info.IsDir() {
 			dirMap[p] = fi
 		}
@@ -63,7 +68,9 @@ func (svc *ServiceV2) List(path string) (files []interfaces.FsFileInfo, err erro
 	})
 
 	if rootInfo, ok := dirMap[fullPath]; ok {
-		files = append(files, rootInfo)
+		for _, info := range rootInfo.GetChildren() {
+			files = append(files, info)
+		}
 	}
 
 	return
@@ -103,6 +110,10 @@ func (svc *ServiceV2) Save(path string, data []byte) (err error) {
 	return ioutil.WriteFile(filepath.Join(svc.rootPath, path), data, 0644)
 }
 
+func (svc *ServiceV2) CreateDir(path string) (err error) {
+	return os.MkdirAll(filepath.Join(svc.rootPath, path), 0755)
+}
+
 func (svc *ServiceV2) Rename(path, newPath string) (err error) {
 	oldPath := filepath.Join(svc.rootPath, path)
 	newFullPath := filepath.Join(svc.rootPath, newPath)
@@ -117,30 +128,39 @@ func (svc *ServiceV2) Delete(path string) (err error) {
 func (svc *ServiceV2) Copy(path, newPath string) (err error) {
 	srcPath := filepath.Join(svc.rootPath, path)
 	destPath := filepath.Join(svc.rootPath, newPath)
-	srcFile, err := os.Open(srcPath)
+
+	// Get source info
+	srcInfo, err := os.Stat(srcPath)
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
 
-	destFile, err := os.Create(destPath)
-	if err != nil {
+	// If source is file, copy it
+	if !srcInfo.IsDir() {
+		srcFile, err := os.Open(srcPath)
+		if err != nil {
+			return err
+		}
+		defer srcFile.Close()
+
+		destFile, err := os.Create(destPath)
+		if err != nil {
+			return err
+		}
+		defer destFile.Close()
+
+		_, err = io.Copy(destFile, srcFile)
+
 		return err
+	} else {
+		// If source is directory, copy it recursively
+		return utils.CopyDir(srcPath, destPath)
 	}
-	defer destFile.Close()
-
-	_, err = io.Copy(destFile, srcFile)
-	return err
 }
 
-func (svc *ServiceV2) GetGitClient() (c *vcs.GitClient) {
-	return svc.gitClient
-}
-
-func NewFsServiceV2(path string) (svc *ServiceV2) {
-	gitClient, _ := vcs.NewGitClient(vcs.WithPath(path))
+func NewFsServiceV2(path string) (svc interfaces.FsServiceV2) {
 	return &ServiceV2{
 		rootPath:  path,
-		gitClient: gitClient,
+		skipNames: []string{".git"},
 	}
 }

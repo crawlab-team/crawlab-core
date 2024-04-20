@@ -53,6 +53,11 @@ type Service struct {
 }
 
 func (svc *Service) Start() {
+	// Initialize gRPC if not started
+	if !svc.c.IsStarted() {
+		svc.c.Start()
+	}
+
 	go svc.ReportStatus()
 	go svc.Fetch()
 }

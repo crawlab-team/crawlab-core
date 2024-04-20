@@ -26,14 +26,12 @@ const (
 	ModelIdVariable
 	ModelIdTaskQueue
 	ModelIdTaskStat
-	ModelIdPlugin
 	ModelIdSpiderStat
 	ModelIdDataSource
 	ModelIdDataCollection
 	ModelIdResult
 	ModelIdPassword
 	ModelIdExtraValue
-	ModelIdPluginStatus
 	ModelIdGit
 	ModelIdRole
 	ModelIdUserRole
@@ -58,13 +56,11 @@ const (
 	ModelColNameVariable          = "variables"
 	ModelColNameTaskQueue         = "task_queue"
 	ModelColNameTaskStat          = "task_stats"
-	ModelColNamePlugin            = "plugins"
 	ModelColNameSpiderStat        = "spider_stats"
 	ModelColNameDataSource        = "data_sources"
 	ModelColNameDataCollection    = "data_collections"
 	ModelColNamePasswords         = "passwords"
 	ModelColNameExtraValues       = "extra_values"
-	ModelColNamePluginStatus      = "plugin_status"
 	ModelColNameGit               = "gits"
 	ModelColNameRole              = "roles"
 	ModelColNameUserRole          = "user_roles"

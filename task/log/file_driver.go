@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,16 +19,11 @@ import (
 
 type FileLogDriver struct {
 	// settings
-	opts *FileLogDriverOptions // options
+	logFileName string
+	rootPath    string
 
 	// internals
-	mu          sync.Mutex
-	logFileName string
-}
-
-type FileLogDriverOptions struct {
-	BaseDir string
-	Ttl     time.Duration
+	mu sync.Mutex
 }
 
 func (d *FileLogDriver) Init() (err error) {
@@ -133,16 +129,20 @@ func (d *FileLogDriver) Flush() (err error) {
 	return nil
 }
 
+func (d *FileLogDriver) getLogPath() (logPath string) {
+	return viper.GetString("log.path")
+}
+
 func (d *FileLogDriver) getBasePath(id string) (filePath string) {
-	return filepath.Join(d.opts.BaseDir, id)
+	return filepath.Join(d.getLogPath(), id)
 }
 
 func (d *FileLogDriver) getMetadataPath(id string) (filePath string) {
-	return filepath.Join(d.opts.BaseDir, id, MetadataName)
+	return filepath.Join(d.getBasePath(id), MetadataName)
 }
 
 func (d *FileLogDriver) getLogFilePath(id, fileName string) (filePath string) {
-	return filepath.Join(d.opts.BaseDir, id, fileName)
+	return filepath.Join(d.getBasePath(id), fileName)
 }
 
 func (d *FileLogDriver) getLogFiles(id string) (files []os.FileInfo) {
@@ -182,17 +182,57 @@ func (d *FileLogDriver) lineCounter(r io.Reader) (n int, err error) {
 	}
 }
 
+func (d *FileLogDriver) getTtl() time.Duration {
+	ttl := viper.GetString("log.ttl")
+	if ttl == "" {
+		return DefaultLogTtl
+	}
+
+	if strings.HasSuffix(ttl, "s") {
+		ttl = strings.TrimSuffix(ttl, "s")
+		n, err := strconv.Atoi(ttl)
+		if err != nil {
+			return DefaultLogTtl
+		}
+		return time.Duration(n) * time.Second
+	} else if strings.HasSuffix(ttl, "m") {
+		ttl = strings.TrimSuffix(ttl, "m")
+		n, err := strconv.Atoi(ttl)
+		if err != nil {
+			return DefaultLogTtl
+		}
+		return time.Duration(n) * time.Minute
+	} else if strings.HasSuffix(ttl, "h") {
+		ttl = strings.TrimSuffix(ttl, "h")
+		n, err := strconv.Atoi(ttl)
+		if err != nil {
+			return DefaultLogTtl
+		}
+		return time.Duration(n) * time.Hour
+
+	} else if strings.HasSuffix(ttl, "d") {
+		ttl = strings.TrimSuffix(ttl, "d")
+		n, err := strconv.Atoi(ttl)
+		if err != nil {
+			return DefaultLogTtl
+		}
+		return time.Duration(n) * 24 * time.Hour
+	} else {
+		return DefaultLogTtl
+	}
+}
+
 func (d *FileLogDriver) cleanup() {
 	for {
 		// 增加对目录不存在的判断
-		dirs, err := utils.ListDir(d.opts.BaseDir)
+		dirs, err := utils.ListDir(d.getLogPath())
 		if err != nil {
 			trace.PrintError(err)
 			time.Sleep(10 * time.Minute)
 			continue
 		}
 		for _, dir := range dirs {
-			if time.Now().After(dir.ModTime().Add(d.opts.Ttl)) {
+			if time.Now().After(dir.ModTime().Add(d.getTtl())) {
 				if err := os.RemoveAll(d.getBasePath(dir.Name())); err != nil {
 					trace.PrintError(err)
 					continue
@@ -207,33 +247,9 @@ func (d *FileLogDriver) cleanup() {
 
 var logDriver Driver
 
-func newFileLogDriver(options *FileLogDriverOptions) (driver Driver, err error) {
-	if options == nil {
-		options = &FileLogDriverOptions{}
-	}
-
-	// normalize BaseDir
-	baseDir := options.BaseDir
-	if baseDir == "" {
-		baseDir = "/var/log/crawlab"
-	}
-	options.BaseDir = baseDir
-
-	// normalize Ttl
-	ttl := options.Ttl
-	if ttl == 0 {
-		ttlSeconds := viper.GetInt("log.ttl")
-		if ttlSeconds == 0 {
-			ttl = 30 * 24 * time.Hour
-		} else {
-			ttl = time.Second * time.Duration(ttlSeconds)
-		}
-	}
-	options.Ttl = ttl
-
+func newFileLogDriver() (driver Driver, err error) {
 	// driver
 	driver = &FileLogDriver{
-		opts:        options,
 		logFileName: "log.txt",
 		mu:          sync.Mutex{},
 	}
@@ -246,11 +262,11 @@ func newFileLogDriver(options *FileLogDriverOptions) (driver Driver, err error) 
 	return driver, nil
 }
 
-func GetFileLogDriver(options *FileLogDriverOptions) (driver Driver, err error) {
+func GetFileLogDriver() (driver Driver, err error) {
 	if logDriver != nil {
 		return logDriver, nil
 	}
-	logDriver, err = newFileLogDriver(options)
+	logDriver, err = newFileLogDriver()
 	if err != nil {
 		return nil, err
 	}

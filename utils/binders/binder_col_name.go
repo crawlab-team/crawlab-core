@@ -46,8 +46,6 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return interfaces.ModelColNameTaskQueue, nil
 	case interfaces.ModelIdTaskStat:
 		return interfaces.ModelColNameTaskStat, nil
-	case interfaces.ModelIdPlugin:
-		return interfaces.ModelColNamePlugin, nil
 	case interfaces.ModelIdSpiderStat:
 		return interfaces.ModelColNameSpiderStat, nil
 	case interfaces.ModelIdDataSource:
@@ -58,8 +56,6 @@ func (b *ColNameBinder) Bind() (res interface{}, err error) {
 		return interfaces.ModelColNamePasswords, nil
 	case interfaces.ModelIdExtraValue:
 		return interfaces.ModelColNameExtraValues, nil
-	case interfaces.ModelIdPluginStatus:
-		return interfaces.ModelColNamePluginStatus, nil
 	case interfaces.ModelIdGit:
 		return interfaces.ModelColNameGit, nil
 	case interfaces.ModelIdRole:

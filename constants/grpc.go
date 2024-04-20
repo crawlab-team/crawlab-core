@@ -13,6 +13,5 @@ const (
 )
 
 const (
-	GrpcSubscribeTypeNode   = "node"
-	GrpcSubscribeTypePlugin = "plugin"
+	GrpcSubscribeTypeNode = "node"
 )

@@ -15,14 +15,12 @@ type ModelMap struct {
 	Variable          Variable
 	TaskQueueItem     TaskQueueItem
 	TaskStat          TaskStat
-	Plugin            Plugin
 	SpiderStat        SpiderStat
 	DataSource        DataSource
 	DataCollection    DataCollection
 	Result            Result
 	Password          Password
 	ExtraValue        ExtraValue
-	PluginStatus      PluginStatus
 	Git               Git
 	Role              Role
 	UserRole          UserRole
@@ -47,14 +45,12 @@ type ModelListMap struct {
 	Variables          VariableList
 	TaskQueueItems     TaskQueueItemList
 	TaskStats          TaskStatList
-	Plugins            PluginList
 	SpiderStats        SpiderStatList
 	DataSources        DataSourceList
 	DataCollections    DataCollectionList
 	Results            ResultList
 	Passwords          PasswordList
 	ExtraValues        ExtraValueList
-	PluginStatus       PluginStatusList
 	Gits               GitList
 	Roles              RoleList
 	UserRoles          UserRoleList
@@ -84,14 +80,12 @@ func NewModelListMap() (m *ModelListMap) {
 		Variables:          VariableList{},
 		TaskQueueItems:     TaskQueueItemList{},
 		TaskStats:          TaskStatList{},
-		Plugins:            PluginList{},
 		SpiderStats:        SpiderStatList{},
 		DataSources:        DataSourceList{},
 		DataCollections:    DataCollectionList{},
 		Results:            ResultList{},
 		Passwords:          PasswordList{},
 		ExtraValues:        ExtraValueList{},
-		PluginStatus:       PluginStatusList{},
 		Gits:               GitList{},
 		Roles:              RoleList{},
 		PermissionList:     PermissionList{},
