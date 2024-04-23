@@ -43,9 +43,10 @@ func (svc *ServiceV2) List(path string) (files []interfaces.FsFileInfo, err erro
 			Path:      filepath.ToSlash(relPath),
 			FullPath:  p,
 			Extension: filepath.Ext(p),
-			Md5:       "",
 			IsDir:     info.IsDir(),
 			FileSize:  info.Size(),
+			ModTime:   info.ModTime(),
+			Mode:      info.Mode(),
 			Children:  nil,
 		}
 
@@ -90,9 +91,10 @@ func (svc *ServiceV2) GetFileInfo(path string) (file interfaces.FsFileInfo, err 
 		Path:      path,
 		FullPath:  filepath.Join(svc.rootPath, path),
 		Extension: filepath.Ext(path),
-		Md5:       "",
 		IsDir:     f.IsDir(),
 		FileSize:  f.Size(),
+		ModTime:   f.ModTime(),
+		Mode:      f.Mode(),
 		Children:  nil,
 	}, nil
 }
