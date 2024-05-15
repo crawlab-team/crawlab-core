@@ -16,18 +16,15 @@ const (
 	ControllerIdTag
 	ControllerIdLogin
 	ControllerIdColor
-	ControllerIdPlugin
 	ControllerIdDataSource
 	ControllerIdDataCollection
 	ControllerIdResult
 	ControllerIdStats
 	ControllerIdFiler
-	ControllerIdPluginDo
 	ControllerIdGit
 	ControllerIdRole
 	ControllerIdPermission
 	ControllerIdExport
-	ControllerIdEnvDeps
 	ControllerIdNotification
 	ControllerIdFilter
 	ControllerIdEnvironment

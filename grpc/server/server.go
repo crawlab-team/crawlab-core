@@ -31,7 +31,6 @@ type Server struct {
 	nodeCfgSvc          interfaces.NodeConfigService
 	nodeSvr             *NodeServer
 	taskSvr             *TaskServer
-	pluginSvr           *PluginServer
 	messageSvr          *MessageServer
 	modelDelegateSvr    *ModelDelegateServer
 	modelBaseServiceSvr *ModelBaseServiceServer
@@ -109,7 +108,6 @@ func (svr *Server) Register() (err error) {
 	grpc2.RegisterModelBaseServiceServer(svr.svr, *svr.modelBaseServiceSvr) // model base service
 	grpc2.RegisterNodeServiceServer(svr.svr, *svr.nodeSvr)                  // node service
 	grpc2.RegisterTaskServiceServer(svr.svr, *svr.taskSvr)                  // task service
-	grpc2.RegisterPluginServiceServer(svr.svr, *svr.pluginSvr)              // plugin service
 	grpc2.RegisterMessageServiceServer(svr.svr, *svr.messageSvr)            // message service
 
 	return nil
@@ -220,9 +218,6 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 	if err := c.Provide(ProvideTaskServer(svr)); err != nil {
 		return nil, err
 	}
-	if err := c.Provide(ProvidePluginServer(svr)); err != nil {
-		return nil, err
-	}
 	if err := c.Provide(ProvideMessageServer(svr)); err != nil {
 		return nil, err
 	}
@@ -232,7 +227,6 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 		modelBaseServiceSvr *ModelBaseServiceServer,
 		nodeSvr *NodeServer,
 		taskSvr *TaskServer,
-		pluginSvr *PluginServer,
 		messageSvr *MessageServer,
 	) {
 		svr.nodeCfgSvc = nodeCfgSvc
@@ -240,7 +234,6 @@ func NewServer(opts ...Option) (svr2 interfaces.GrpcServer, err error) {
 		svr.modelBaseServiceSvr = modelBaseServiceSvr
 		svr.nodeSvr = nodeSvr
 		svr.taskSvr = taskSvr
-		svr.pluginSvr = pluginSvr
 		svr.messageSvr = messageSvr
 	}); err != nil {
 		return nil, err

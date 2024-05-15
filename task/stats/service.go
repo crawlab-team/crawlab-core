@@ -150,7 +150,7 @@ func NewTaskStatsService(opts ...Option) (svc2 interfaces.TaskStatsService, err 
 	}
 
 	// log driver
-	svc.logDriver, err = log.GetLogDriver(log.DriverTypeFile, nil)
+	svc.logDriver, err = log.GetLogDriver(log.DriverTypeFile)
 	if err != nil {
 		return nil, err
 	}

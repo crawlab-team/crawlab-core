@@ -76,7 +76,7 @@ func (svr MessageServer) redirectMessage(sub interfaces.GrpcSubscribe, msg *grpc
 }
 
 func NewMessageServer(opts ...MessageServerOption) (res *MessageServer, err error) {
-	// plugin server
+	// message server
 	svr := &MessageServer{}
 
 	// apply options

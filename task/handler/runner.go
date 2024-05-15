@@ -9,6 +9,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
+	fs2 "github.com/crawlab-team/crawlab-core/fs"
 	gclient "github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/inject"
 	"github.com/crawlab-team/crawlab-core/interfaces"
@@ -16,7 +17,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/sys_exec"
-	"github.com/crawlab-team/crawlab-core/task/fs"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
@@ -27,6 +27,7 @@ import (
 	"go.uber.org/dig"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -34,7 +35,7 @@ import (
 type Runner struct {
 	// dependencies
 	svc     interfaces.TaskHandlerService // task handler service
-	fsSvc   interfaces.TaskFsService      // task fs service
+	fsSvc   interfaces.FsServiceV2        // task fs service
 	hookSvc interfaces.TaskHookService    // task hook service
 
 	// settings
@@ -72,12 +73,8 @@ func (r *Runner) Init() (err error) {
 	}
 
 	// working directory
-	r.cwd = r.fsSvc.GetWorkspacePath()
-
-	// sync files to workspace
-	if err := r.syncFiles(); err != nil {
-		return err
-	}
+	workspacePath := viper.GetString("workspace")
+	r.cwd = filepath.Join(workspacePath, r.s.GetId().Hex())
 
 	// grpc task service stream client
 	if err := r.initSub(); err != nil {
@@ -156,11 +153,6 @@ func (r *Runner) Run() (err error) {
 		status = constants.TaskStatusError
 	}
 
-	// validate task status
-	if status == "" {
-		return trace.TraceError(errors.ErrorTaskInvalidType)
-	}
-
 	// update task status
 	if err := r.updateTask(status, err); err != nil {
 		return err
@@ -172,9 +164,6 @@ func (r *Runner) Run() (err error) {
 			return err
 		}
 	}
-
-	// dispose
-	_ = r.Dispose()
 
 	return err
 }
@@ -206,27 +195,9 @@ func (r *Runner) Cancel() (err error) {
 	return nil
 }
 
-func (r *Runner) Dispose() (err error) {
-	// remove working directory
-	return backoff.Retry(func() error {
-		if err := os.RemoveAll(r.cwd); err != nil {
-			return trace.TraceError(err)
-		}
-		return nil
-	}, backoff.NewExponentialBackOff())
-}
-
 // CleanUp clean up task runner
 func (r *Runner) CleanUp() (err error) {
-	// close fs service
-	fsSvc := r.fsSvc.GetFsService().GetFs()
-	if fsSvc == nil {
-		return
-	}
-	if err = fsSvc.Close(); err != nil {
-		return
-	}
-	return
+	return nil
 }
 
 func (r *Runner) SetSubscribeTimeout(timeout time.Duration) {
@@ -411,22 +382,6 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 	return nil
 }
 
-func (r *Runner) syncFiles() (err error) {
-	// skip if files sync is locked
-	if r.svc.IsSyncLocked(r.fsSvc.GetWorkspacePath()) {
-		return
-	}
-
-	// lock files sync
-	r.svc.LockSync(r.fsSvc.GetWorkspacePath())
-	defer r.svc.UnlockSync(r.fsSvc.GetWorkspacePath())
-	if err := r.fsSvc.GetFsService().SyncToWorkspace(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r *Runner) initSub() (err error) {
 	r.sub, err = r.c.GetTaskClient().Subscribe(context.Background())
 	if err != nil {
@@ -575,10 +530,7 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 	}
 
 	// task fs service
-	r.fsSvc, err = fs.NewTaskFsService(r.t.GetId(), r.s.GetId(), r.s)
-	if err != nil {
-		return nil, err
-	}
+	r.fsSvc = fs2.NewFsServiceV2(filepath.Join(viper.GetString("workspace"), r.s.GetId().Hex()))
 
 	// dependency injection
 	c := dig.New()

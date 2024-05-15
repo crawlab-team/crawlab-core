@@ -3,10 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/errors"
+	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	client2 "github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
@@ -53,6 +54,11 @@ type Service struct {
 }
 
 func (svc *Service) Start() {
+	// Initialize gRPC if not started
+	if !svc.c.IsStarted() {
+		svc.c.Start()
+	}
+
 	go svc.ReportStatus()
 	go svc.Fetch()
 }
@@ -306,13 +312,13 @@ func (svc *Service) getRunner(taskId primitive.ObjectID) (r interfaces.TaskRunne
 	log.Debugf("[TaskHandlerService] getRunner: taskId[%v]", taskId)
 	v, ok := svc.runners.Load(taskId)
 	if !ok {
-		return nil, trace.TraceError(errors.ErrorTaskNotExists)
+		return nil, trace.TraceError(errors2.ErrorTaskNotExists)
 	}
 	switch v.(type) {
 	case interfaces.TaskRunner:
 		r = v.(interfaces.TaskRunner)
 	default:
-		return nil, trace.TraceError(errors.ErrorModelInvalidType)
+		return nil, trace.TraceError(errors2.ErrorModelInvalidType)
 	}
 	return r, nil
 }
@@ -400,7 +406,7 @@ func (svc *Service) run(taskId primitive.ObjectID) (err error) {
 	// attempt to get runner from pool
 	_, ok := svc.runners.Load(taskId)
 	if ok {
-		return trace.TraceError(errors.ErrorTaskAlreadyExists)
+		return trace.TraceError(errors2.ErrorTaskAlreadyExists)
 	}
 
 	// create a new task runner
@@ -425,10 +431,10 @@ func (svc *Service) run(taskId primitive.ObjectID) (err error) {
 		// run task process (blocking)
 		// error or finish after task runner ends
 		if err := r.Run(); err != nil {
-			switch err {
-			case constants.ErrTaskError:
+			switch {
+			case errors.Is(err, constants.ErrTaskError):
 				log.Errorf("task[%s] finished with error: %v", r.GetTaskId().Hex(), err)
-			case constants.ErrTaskCancelled:
+			case errors.Is(err, constants.ErrTaskCancelled):
 				log.Errorf("task[%s] cancelled", r.GetTaskId().Hex())
 			default:
 				log.Errorf("task[%s] finished with unknown error: %v", r.GetTaskId().Hex(), err)

@@ -1,39 +1,21 @@
 package notification
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"github.com/apex/log"
-	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/grpc/client"
-	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/utils"
 	mongo2 "github.com/crawlab-team/crawlab-db/mongo"
-	grpc "github.com/crawlab-team/crawlab-grpc"
-	"github.com/crawlab-team/go-trace"
 	parser "github.com/crawlab-team/template-parser"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
-	"io"
-	"os"
-	"strings"
-	"time"
 )
 
 type Service struct {
-	cfgSvc   interfaces.NodeConfigService
-	c        interfaces.GrpcClient
 	col      *mongo2.Col // notification settings
 	modelSvc service.ModelService
-	stream   grpc.PluginService_SubscribeClient
 }
 
 func (svc *Service) Init() (err error) {
@@ -41,30 +23,10 @@ func (svc *Service) Init() (err error) {
 		return nil
 	}
 
-	// handle events
-	go svc.handleEvents()
-
 	return nil
 }
 
 func (svc *Service) Start() (err error) {
-	// start grpc client
-	if !svc.c.IsStarted() {
-		if err := svc.c.Start(); err != nil {
-			return err
-		}
-	}
-
-	// connect
-	if err := svc.connect(); err != nil {
-		return err
-	}
-
-	// register
-	if err := svc.subscribe(); err != nil {
-		return err
-	}
-
 	// initialize data
 	if err := svc.initData(); err != nil {
 		return err
@@ -75,64 +37,6 @@ func (svc *Service) Start() (err error) {
 
 func (svc *Service) Stop() (err error) {
 	return nil
-}
-
-func (svc *Service) connect() (err error) {
-	if err := backoff.Retry(svc._connect, backoff.NewExponentialBackOff()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (svc *Service) _connect() (err error) {
-	stream, err := svc.c.GetMessageClient().Connect(context.Background())
-	if err != nil {
-		return err
-	}
-	msg := &grpc.StreamMessage{
-		Code:    grpc.StreamMessageCode_CONNECT,
-		NodeKey: svc.cfgSvc.GetNodeKey(),
-		Key:     svc.getStreamMessagePrefix() + svc.cfgSvc.GetNodeKey(),
-	}
-	if err := stream.Send(msg); err != nil {
-		return err
-	}
-	svc.stream = stream
-	return nil
-}
-
-func (svc *Service) subscribe() (err error) {
-	if err := backoff.Retry(svc._subscribe, backoff.NewExponentialBackOff()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (svc *Service) _subscribe() (err error) {
-	log.Infof("subscribe events")
-
-	// request request data
-	data, err := json.Marshal(entity.GrpcEventServiceMessage{
-		Type: constants.GrpcEventServiceTypeRegister,
-	})
-	if err != nil {
-		return trace.TraceError(err)
-	}
-
-	// register request
-	req := &grpc.PluginRequest{
-		Name:    PluginName,
-		NodeKey: svc.cfgSvc.GetNodeKey(),
-		Data:    data,
-	}
-
-	// register
-	_, err = svc.c.GetPluginClient().Register(context.Background(), req)
-	if err != nil {
-		return trace.TraceError(err)
-	}
-
-	return
 }
 
 func (svc *Service) initData() (err error) {
@@ -177,14 +81,9 @@ func (svc *Service) initData() (err error) {
 |平均结果数/秒|{#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}|
 `,
 			Mail: SettingMail{
-				Server:         "smtp.163.com",
-				Port:           "465",
-				User:           os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_USER"),
-				Password:       os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_PASSWORD"),
-				SenderEmail:    os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_SENDER_EMAIL"),
-				SenderIdentity: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_SENDER_IDENTITY"),
-				To:             "{{$.user[create].email}}",
-				Cc:             os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_CC"),
+				Server: "smtp.163.com",
+				Port:   "465",
+				To:     "{{$.user[create].email}}",
 			},
 		},
 		{
@@ -218,14 +117,9 @@ Please find the task data as below.
 |Avg Results / Sec|{#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}|
 `,
 			Mail: SettingMail{
-				Server:         "smtp.163.com",
-				Port:           "465",
-				User:           os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_USER"),
-				Password:       os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_PASSWORD"),
-				SenderEmail:    os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_SENDER_EMAIL"),
-				SenderIdentity: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_SENDER_IDENTITY"),
-				To:             "{{$.user[create].email}}",
-				Cc:             os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MAIL_CC"),
+				Server: "smtp.163.com",
+				Port:   "465",
+				To:     "{{$.user[create].email}}",
 			},
 		},
 		{
@@ -255,9 +149,7 @@ Please find the task data as below.
 - **运行时间（秒）**: {#{{$.:task_stat.runtime_duration}}/1000#}
 - **总时间（秒）**: {#{{$.:task_stat.total_duration}}/1000#}
 - **平均结果数/秒**: {#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}`,
-			Mobile: SettingMobile{
-				Webhook: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MOBILE_WEBHOOK"),
-			},
+			Mobile: SettingMobile{},
 		},
 		{
 			Id:          primitive.NewObjectID(),
@@ -286,9 +178,7 @@ Please find the task data as below.
 - **Runtime Duration (sec)**: {#{{$.:task_stat.runtime_duration}}/1000#}
 - **Total Duration (sec)**: {#{{$.:task_stat.total_duration}}/1000#}
 - **Avg Results / Sec**: {#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}`,
-			Mobile: SettingMobile{
-				Webhook: os.Getenv("CRAWLAB_PLUGIN_NOTIFICATION_MOBILE_WEBHOOK"),
-			},
+			Mobile: SettingMobile{},
 		},
 	}
 	var data []interface{}
@@ -432,122 +322,6 @@ func (svc *Service) DisableSetting(id primitive.ObjectID) (err error) {
 	return svc._toggleSettingFunc(false)(id)
 }
 
-func (svc *Service) handleEvents() {
-	log.Infof("[NotificationService] start handling events")
-
-	// get stream
-	log.Infof("[NotificationService] attempt to obtain grpc stream...")
-	var stream grpc.PluginService_SubscribeClient
-	for {
-		stream = svc.stream
-		if stream == nil {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		break
-	}
-	log.Infof("[NotificationService] obtained grpc stream, start receiving messages...")
-
-	for {
-		// receive stream message
-		msg, err := stream.Recv()
-
-		if err != nil {
-			// end
-			if strings.HasSuffix(err.Error(), io.EOF.Error()) {
-				// TODO: implement
-				log.Infof("[NotificationService] received EOF signal, re-connecting...")
-				//svc.GetGrpcClient().Restart()
-			}
-
-			trace.PrintError(err)
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		// log
-		utils.LogDebug(fmt.Sprintf("[NotificationService] received message: %v", msg))
-
-		var data entity.GrpcEventServiceMessage
-		switch msg.Code {
-		case grpc.StreamMessageCode_SEND_EVENT:
-			// data
-			if err := json.Unmarshal(msg.Data, &data); err != nil {
-				return
-			}
-			if len(data.Events) < 1 {
-				continue
-			}
-
-			// event name
-			eventName := data.Events[0]
-
-			// task event
-			if eventName != "model:tasks:change" {
-				continue
-			}
-
-			// task
-			var t models.Task
-			if err := json.Unmarshal(data.Data, &t); err != nil {
-				continue
-			}
-
-			// settings
-			var settings []Setting
-			if err := svc.col.Find(bson.M{
-				"enabled": true,
-			}, nil).All(&settings); err != nil || len(settings) == 0 {
-				continue
-			}
-
-			// handle events
-			if err := svc._handleEventModel(settings, data.Data, t); err != nil {
-				trace.PrintError(err)
-			}
-		default:
-			continue
-		}
-	}
-}
-
-func (svc *Service) _handleEventModel(settings []Setting, data []byte, t models.Task) (err error) {
-	var doc bson.M
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return err
-	}
-
-	// task stat
-	ts, err := svc.modelSvc.GetTaskStatById(t.Id)
-	if err != nil {
-		return err
-	}
-
-	for _, s := range settings {
-		if s.TaskTrigger == constants.NotificationTriggerTaskNever {
-			continue
-		} else if s.TaskTrigger == constants.NotificationTriggerTaskFinish && (t.Status != constants.TaskStatusCancelled && t.Status != constants.TaskStatusError && t.Status != constants.TaskStatusFinished) {
-			continue
-		} else if s.TaskTrigger == constants.NotificationTriggerTaskError && t.Status != constants.TaskStatusError {
-			continue
-		} else if s.TaskTrigger == constants.NotificationTriggerTaskEmptyResults && ((t.Status != constants.TaskStatusFinished && t.Status != constants.TaskStatusError) || ts.ResultCount > 0) {
-			continue
-		}
-
-		switch s.Type {
-		case TypeMail:
-			err = svc.sendMail(&s, doc)
-		case TypeMobile:
-			err = svc.sendMobile(&s, doc)
-		}
-		if err != nil {
-			trace.PrintError(err)
-		}
-	}
-
-	return nil
-}
-
 func (svc *Service) _toggleSettingFunc(value bool) func(id primitive.ObjectID) error {
 	return func(id primitive.ObjectID) (err error) {
 		var s Setting
@@ -562,31 +336,10 @@ func (svc *Service) _toggleSettingFunc(value bool) func(id primitive.ObjectID) e
 	}
 }
 
-func (svc *Service) getStreamMessagePrefix() (prefix string) {
-	return "plugin:" + PluginName + ":"
-}
-
 func NewService() *Service {
 	// service
 	svc := &Service{
 		col: mongo2.GetMongoCol(SettingsColName),
-	}
-
-	c := dig.New()
-	if err := c.Provide(config.NewNodeConfigService); err != nil {
-		panic(err)
-	}
-	if err := c.Provide(client.ProvideGetClient("")); err != nil {
-		panic(err)
-	}
-	if err := c.Invoke(func(
-		cfgSvc interfaces.NodeConfigService,
-		client interfaces.GrpcClient,
-	) {
-		svc.cfgSvc = cfgSvc
-		svc.c = client
-	}); err != nil {
-		panic(err)
 	}
 
 	// model service

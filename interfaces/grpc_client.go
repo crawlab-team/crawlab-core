@@ -13,7 +13,6 @@ type GrpcClient interface {
 	GetModelBaseServiceClient() grpc.ModelBaseServiceClient
 	GetNodeClient() grpc.NodeServiceClient
 	GetTaskClient() grpc.TaskServiceClient
-	GetPluginClient() grpc.PluginServiceClient
 	GetMessageClient() grpc.MessageServiceClient
 	SetAddress(Address)
 	SetTimeout(time.Duration)
@@ -21,7 +20,6 @@ type GrpcClient interface {
 	SetHandleMessage(bool)
 	Context() (context.Context, context.CancelFunc)
 	NewRequest(interface{}) *grpc.Request
-	NewPluginRequest(interface{}) *grpc.PluginRequest
 	GetMessageChannel() chan *grpc.StreamMessage
 	Restart() error
 	NewModelBaseServiceRequest(ModelId, GrpcBaseServiceParams) (*grpc.Request, error)
