@@ -16,6 +16,7 @@ type FsFileInfo struct {
 	Children  []interfaces.FsFileInfo `json:"children"`  // children for sub-directory
 	ModTime   time.Time               `json:"mod_time"`  // modification time
 	Mode      os.FileMode             `json:"mode"`      // file mode
+	Hash      string                  `json:"hash"`      // file hash
 }
 
 func (f *FsFileInfo) GetName() string {
@@ -48,6 +49,10 @@ func (f *FsFileInfo) GetModTime() time.Time {
 
 func (f *FsFileInfo) GetMode() os.FileMode {
 	return f.Mode
+}
+
+func (f *FsFileInfo) GetHash() string {
+	return f.Hash
 }
 
 func (f *FsFileInfo) GetChildren() []interfaces.FsFileInfo {

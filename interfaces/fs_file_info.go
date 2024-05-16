@@ -14,5 +14,6 @@ type FsFileInfo interface {
 	GetFileSize() int64
 	GetModTime() time.Time
 	GetMode() os.FileMode
+	GetHash() string
 	GetChildren() []FsFileInfo
 }

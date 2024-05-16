@@ -2,10 +2,17 @@ package utils
 
 import (
 	"archive/zip"
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/entity"
 	"io"
+	"io/fs"
+	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime/debug"
 )
@@ -39,14 +46,25 @@ func IsDir(path string) bool {
 // ListDir Add: 增加error类型作为第二返回值
 // 在其他函数如 /task/log/file_driver.go中的 *FileLogDriver.cleanup()函数调用时
 // 可以通过判断err是否为nil来判断是否有错误发生
-func ListDir(path string) ([]os.DirEntry, error) {
+func ListDir(path string) ([]fs.FileInfo, error) {
 	list, err := os.ReadDir(path)
 	if err != nil {
 		log.Errorf(err.Error())
 		debug.PrintStack()
 		return nil, err
 	}
-	return list, nil
+
+	var res []fs.FileInfo
+	for _, item := range list {
+		info, err := item.Info()
+		if err != nil {
+			log.Errorf(err.Error())
+			debug.PrintStack()
+			return nil, err
+		}
+		res = append(res, info)
+	}
+	return res, nil
 }
 
 func DeCompress(srcFile *os.File, dstPath string) error {
@@ -201,13 +219,6 @@ func TrimFileData(data []byte) (res []byte) {
 	return data
 }
 
-func FillEmptyFileData(data []byte) (res []byte) {
-	if len(data) == 0 {
-		return []byte(constants.EmptyFileData)
-	}
-	return data
-}
-
 func ZipDirectory(dir, zipfile string) error {
 	zipFile, err := os.Create(zipfile)
 	if err != nil {
@@ -254,4 +265,114 @@ func ZipDirectory(dir, zipfile string) error {
 	})
 
 	return err
+}
+
+// CopyFile File copies a single file from src to dst
+func CopyFile(src, dst string) error {
+	var err error
+	var srcFd *os.File
+	var dstFd *os.File
+	var srcInfo os.FileInfo
+
+	if srcFd, err = os.Open(src); err != nil {
+		return err
+	}
+	defer srcFd.Close()
+
+	if dstFd, err = os.Create(dst); err != nil {
+		return err
+	}
+	defer dstFd.Close()
+
+	if _, err = io.Copy(dstFd, srcFd); err != nil {
+		return err
+	}
+	if srcInfo, err = os.Stat(src); err != nil {
+		return err
+	}
+	return os.Chmod(dst, srcInfo.Mode())
+}
+
+// CopyDir Dir copies a whole directory recursively
+func CopyDir(src string, dst string) error {
+	var err error
+	var fds []os.FileInfo
+	var srcInfo os.FileInfo
+
+	if srcInfo, err = os.Stat(src); err != nil {
+		return err
+	}
+
+	if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return err
+	}
+
+	if fds, err = ioutil.ReadDir(src); err != nil {
+		return err
+	}
+	for _, fd := range fds {
+		srcfp := path.Join(src, fd.Name())
+		dstfp := path.Join(dst, fd.Name())
+
+		if fd.IsDir() {
+			if err = CopyDir(srcfp, dstfp); err != nil {
+				fmt.Println(err)
+			}
+		} else {
+			if err = CopyFile(srcfp, dstfp); err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
+	return nil
+}
+
+func GetFileHash(filePath string) (res string, err error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func ScanDirectory(dir string) (res map[string]entity.FsFileInfo, err error) {
+	files := make(map[string]entity.FsFileInfo)
+
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		hash, err := GetFileHash(path)
+		if err != nil {
+			return err
+		}
+
+		files[path] = entity.FsFileInfo{
+			Name:      info.Name(),
+			Path:      path,
+			FullPath:  filepath.Join(dir, path),
+			Extension: filepath.Ext(path),
+			FileSize:  info.Size(),
+			ModTime:   info.ModTime(),
+			Mode:      info.Mode(),
+			Hash:      hash,
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
 }

@@ -28,6 +28,7 @@ const (
 	ControllerIdNotification
 	ControllerIdFilter
 	ControllerIdEnvironment
+	ControllerIdSync
 
 	ControllerIdVersion
 	ControllerIdI18n

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
@@ -17,18 +18,24 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/sys_exec"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/shirou/gopsutil/process"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -75,6 +82,13 @@ func (r *Runner) Init() (err error) {
 	// working directory
 	workspacePath := viper.GetString("workspace")
 	r.cwd = filepath.Join(workspacePath, r.s.GetId().Hex())
+
+	// sync files from master
+	if !utils.IsMaster() {
+		if err := r.syncFiles(); err != nil {
+			return err
+		}
+	}
 
 	// grpc task service stream client
 	if err := r.initSub(); err != nil {
@@ -319,6 +333,102 @@ func (r *Runner) configureEnv() {
 	for _, env := range envs {
 		r.cmd.Env = append(r.cmd.Env, env.GetKey()+"="+env.GetValue())
 	}
+}
+
+func (r *Runner) syncFiles() (err error) {
+	masterURL := fmt.Sprintf("%s/sync/%s", viper.GetString("api.endpoint"), r.s.GetId().Hex())
+	workspacePath := viper.GetString("workspace")
+	workerDir := filepath.Join(workspacePath, r.s.GetId().Hex())
+
+	resp, err := http.Get(masterURL + "/scan")
+	if err != nil {
+		fmt.Println("Error getting file list from master:", err)
+		return trace.TraceError(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return trace.TraceError(err)
+	}
+
+	var masterFiles map[string]entity.FsFileInfo
+	err = json.Unmarshal(body, &masterFiles)
+	if err != nil {
+		fmt.Println("Error unmarshaling JSON:", err)
+		return trace.TraceError(err)
+	}
+
+	workerFiles, err := utils.ScanDirectory(workerDir)
+	if err != nil {
+		fmt.Println("Error scanning worker directory:", err)
+		return trace.TraceError(err)
+	}
+
+	masterFilesMap := make(map[string]entity.FsFileInfo)
+	for _, file := range masterFiles {
+		masterFilesMap[file.Path] = file
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 1)
+
+	// delete files that are deleted on master node
+	for path := range workerFiles {
+		if _, exists := masterFilesMap[path]; !exists {
+			fmt.Println("Deleting file:", path)
+			err := os.Remove(path)
+			if err != nil {
+				fmt.Println("Error deleting file:", err)
+			}
+		}
+	}
+
+	// download files that are new or modified on master node
+	for path, masterFile := range masterFilesMap {
+		workerFile, exists := workerFiles[path]
+		if !exists || masterFile.Hash != workerFile.Hash {
+			wg.Add(1)
+			go func(path string, masterFile entity.FsFileInfo) {
+				defer wg.Done()
+				logrus.Infof("File needs to be synchronized: %s", path)
+				err := r.downloadFile(masterURL+"/download?path="+path, path)
+				if err != nil {
+					logrus.Errorf("Error downloading file: %v", err)
+					select {
+					case errCh <- err:
+					default:
+					}
+				}
+			}(path, masterFile)
+		}
+	}
+
+	wg.Wait()
+	close(errCh)
+	if err := <-errCh; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Runner) downloadFile(url string, filePath string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
 
 // wait for process to finish and send task signal (constants.TaskSignal)

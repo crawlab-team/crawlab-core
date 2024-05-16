@@ -33,4 +33,6 @@ fs:
     authKey: Crawlab2021!
 node:
   master: Y
+api:
+  endpoint: http://localhost:8000
 `
