@@ -9,7 +9,6 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"github.com/imroc/req"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -78,7 +77,7 @@ func (app *Docker) Ready() (ok bool) {
 func (app *Docker) replacePaths() (err error) {
 	// read
 	indexHtmlPath := "/app/dist/index.html"
-	indexHtmlBytes, err := ioutil.ReadFile(indexHtmlPath)
+	indexHtmlBytes, err := os.ReadFile(indexHtmlPath)
 	if err != nil {
 		return trace.TraceError(err)
 	}
@@ -107,7 +106,7 @@ func (app *Docker) replacePaths() (err error) {
 	}
 
 	// write
-	if err := ioutil.WriteFile(indexHtmlPath, []byte(indexHtml), os.FileMode(0766)); err != nil {
+	if err := os.WriteFile(indexHtmlPath, []byte(indexHtml), os.FileMode(0766)); err != nil {
 		return trace.TraceError(err)
 	}
 

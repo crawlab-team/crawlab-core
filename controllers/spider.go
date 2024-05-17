@@ -25,9 +25,9 @@ import (
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/dig"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -1121,7 +1121,7 @@ func (ctx *spiderContext) _getGitIgnore(id primitive.ObjectID) (ignore []string,
 	if !utils.Exists(filePath) {
 		return nil, nil
 	}
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}

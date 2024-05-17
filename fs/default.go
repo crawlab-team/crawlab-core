@@ -4,7 +4,7 @@ import (
 	"github.com/apex/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
-	"path"
+	"path/filepath"
 )
 
 func init() {
@@ -13,7 +13,7 @@ func init() {
 		log.Warnf("cannot find home directory: %v", err)
 		return
 	}
-	DefaultWorkspacePath = path.Join(rootDir, "crawlab_workspace")
+	DefaultWorkspacePath = filepath.Join(rootDir, "crawlab_workspace")
 
 	workspacePath := viper.GetString("workspace")
 	if workspacePath == "" {

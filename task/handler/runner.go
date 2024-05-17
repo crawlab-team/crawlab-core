@@ -29,7 +29,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/dig"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -340,19 +339,18 @@ func (r *Runner) syncFiles() (err error) {
 	workspacePath := viper.GetString("workspace")
 	workerDir := filepath.Join(workspacePath, r.s.GetId().Hex())
 
+	// get file list from master
 	resp, err := http.Get(masterURL + "/scan")
 	if err != nil {
 		fmt.Println("Error getting file list from master:", err)
 		return trace.TraceError(err)
 	}
 	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body:", err)
 		return trace.TraceError(err)
 	}
-
 	var masterFiles map[string]entity.FsFileInfo
 	err = json.Unmarshal(body, &masterFiles)
 	if err != nil {
@@ -360,25 +358,36 @@ func (r *Runner) syncFiles() (err error) {
 		return trace.TraceError(err)
 	}
 
+	// create a map for master files
+	masterFilesMap := make(map[string]entity.FsFileInfo)
+	for _, file := range masterFiles {
+		masterFilesMap[file.Path] = file
+	}
+
+	// create worker directory if not exists
+	if _, err := os.Stat(workerDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(workerDir, os.ModePerm); err != nil {
+			fmt.Println("Error creating worker directory:", err)
+			return trace.TraceError(err)
+		}
+	}
+
+	// get file list from worker
 	workerFiles, err := utils.ScanDirectory(workerDir)
 	if err != nil {
 		fmt.Println("Error scanning worker directory:", err)
 		return trace.TraceError(err)
 	}
 
-	masterFilesMap := make(map[string]entity.FsFileInfo)
-	for _, file := range masterFiles {
-		masterFilesMap[file.Path] = file
-	}
-
+	// set up wait group and error channel
 	var wg sync.WaitGroup
 	errCh := make(chan error, 1)
 
 	// delete files that are deleted on master node
-	for path := range workerFiles {
+	for path, workerFile := range workerFiles {
 		if _, exists := masterFilesMap[path]; !exists {
 			fmt.Println("Deleting file:", path)
-			err := os.Remove(path)
+			err := os.Remove(workerFile.FullPath)
 			if err != nil {
 				fmt.Println("Error deleting file:", err)
 			}
@@ -393,7 +402,7 @@ func (r *Runner) syncFiles() (err error) {
 			go func(path string, masterFile entity.FsFileInfo) {
 				defer wg.Done()
 				logrus.Infof("File needs to be synchronized: %s", path)
-				err := r.downloadFile(masterURL+"/download?path="+path, path)
+				err := r.downloadFile(masterURL+"/download?path="+path, filepath.Join(workerDir, path))
 				if err != nil {
 					logrus.Errorf("Error downloading file: %v", err)
 					select {

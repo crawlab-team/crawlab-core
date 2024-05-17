@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -34,7 +33,7 @@ func TestFileDriver_WriteLine(t *testing.T) {
 
 	logFilePath := fmt.Sprintf("/var/log/crawlab/%s/log.txt", id.Hex())
 	require.FileExists(t, logFilePath)
-	text, err := ioutil.ReadFile(logFilePath)
+	text, err := os.ReadFile(logFilePath)
 	require.Nil(t, err)
 	require.Equal(t, "it works\n", string(text))
 }
@@ -56,7 +55,7 @@ func TestFileDriver_WriteLines(t *testing.T) {
 
 	logFilePath := fmt.Sprintf("/var/log/crawlab/%s/log.txt", id.Hex())
 	require.FileExists(t, logFilePath)
-	text, err := ioutil.ReadFile(logFilePath)
+	text, err := os.ReadFile(logFilePath)
 	require.Nil(t, err)
 	require.Contains(t, string(text), "it works\n")
 	lines := strings.Split(string(text), "\n")

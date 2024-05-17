@@ -5,7 +5,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -78,7 +77,7 @@ func (svc *ServiceV2) List(path string) (files []interfaces.FsFileInfo, err erro
 }
 
 func (svc *ServiceV2) GetFile(path string) (data []byte, err error) {
-	return ioutil.ReadFile(filepath.Join(svc.rootPath, path))
+	return os.ReadFile(filepath.Join(svc.rootPath, path))
 }
 
 func (svc *ServiceV2) GetFileInfo(path string) (file interfaces.FsFileInfo, err error) {
@@ -109,7 +108,7 @@ func (svc *ServiceV2) Save(path string, data []byte) (err error) {
 	}
 
 	// Write file
-	return ioutil.WriteFile(filepath.Join(svc.rootPath, path), data, 0644)
+	return os.WriteFile(filepath.Join(svc.rootPath, path), data, 0644)
 }
 
 func (svc *ServiceV2) CreateDir(path string) (err error) {

@@ -8,7 +8,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"os"
 	"path"
 )
@@ -35,12 +34,12 @@ func (svc *Service) Init() (err error) {
 		if err != nil {
 			return trace.TraceError(err)
 		}
-		if err := ioutil.WriteFile(svc.path, data, os.FileMode(0766)); err != nil {
+		if err := os.WriteFile(svc.path, data, os.FileMode(0766)); err != nil {
 			return trace.TraceError(err)
 		}
 	} else {
 		// exists, read and set to config
-		data, err := ioutil.ReadFile(svc.path)
+		data, err := os.ReadFile(svc.path)
 		if err != nil {
 			return trace.TraceError(err)
 		}
