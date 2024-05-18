@@ -110,7 +110,7 @@ func registerRoutesAnonymousGroup(svc *RouterService, groups *RouterGroups) {
 	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/demo", controllers.DemoController)
 
 	// sync
-	svc.RegisterActionControllerToGroup(groups.FilerGroup, "/sync", controllers.SyncController)
+	svc.RegisterActionControllerToGroup(groups.AnonymousGroup, "/sync", controllers.SyncController)
 }
 
 func registerRoutesAuthGroup(svc *RouterService, groups *RouterGroups) {
