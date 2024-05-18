@@ -85,7 +85,7 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...Model
 		id:      id,
 		colName: colName,
 		doc:     doc,
-		cfgPath: config2.DefaultConfigPath,
+		cfgPath: config2.GetConfigPath(),
 		a: &models.Artifact{
 			Col: colName,
 		},
@@ -102,7 +102,7 @@ func newModelDelegate(id interfaces.ModelId, doc interfaces.Model, opts ...Model
 	}
 
 	// grpc client
-	d.c, err = client.GetClient(d.cfgPath)
+	d.c, err = client.GetClient()
 	if err != nil {
 		trace.PrintError(errors.ErrorModelInvalidType)
 		return nil

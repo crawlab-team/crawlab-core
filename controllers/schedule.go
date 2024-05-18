@@ -1,17 +1,15 @@
 package controllers
 
 import (
-	"github.com/crawlab-team/crawlab-core/config"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/schedule"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/dig"
 	"net/http"
 )
 
@@ -191,14 +189,7 @@ func newScheduleContext() *scheduleContext {
 	ctx := &scheduleContext{}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		panic(err)
-	}
-	if err := c.Provide(schedule.ProvideGetScheduleService(config.DefaultConfigPath)); err != nil {
-		panic(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		modelSvc service.ModelService,
 		scheduleSvc interfaces.ScheduleService,
 	) {

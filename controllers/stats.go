@@ -1,12 +1,10 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/stats"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.uber.org/dig"
 	"net/http"
 	"time"
 )
@@ -77,14 +75,7 @@ func newStatsContext() *statsContext {
 	}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		panic(err)
-	}
-	if err := c.Provide(stats.ProvideStatsService()); err != nil {
-		panic(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		statsSvc interfaces.StatsService,
 	) {
 		ctx.statsSvc = statsSvc

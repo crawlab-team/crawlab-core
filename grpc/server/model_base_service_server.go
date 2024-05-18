@@ -3,13 +3,13 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
-	"go.uber.org/dig"
 )
 
 type ModelBaseServiceServer struct {
@@ -129,11 +129,7 @@ func NewModelBaseServiceServer() (svr2 *ModelBaseServiceServer, err error) {
 	svr := &ModelBaseServiceServer{}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(modelSvc service.ModelService) {
+	if err := container.GetContainer().Invoke(func(modelSvc service.ModelService) {
 		svr.modelSvc = modelSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)

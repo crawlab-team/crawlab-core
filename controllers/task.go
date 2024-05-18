@@ -1,17 +1,15 @@
 package controllers
 
 import (
-	"github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/result"
-	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/task/log"
-	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/generic"
 	"github.com/crawlab-team/crawlab-db/mongo"
@@ -19,7 +17,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 	"net/http"
 	"strings"
 )
@@ -490,17 +487,7 @@ func newTaskContext() *taskContext {
 	ctx := &taskContext{}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.GetService); err != nil {
-		panic(err)
-	}
-	if err := c.Provide(admin.NewSpiderAdminService); err != nil {
-		panic(err)
-	}
-	if err := c.Provide(scheduler.ProvideGetTaskSchedulerService(config.DefaultConfigPath)); err != nil {
-		panic(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		modelSvc service.ModelService,
 		adminSvc interfaces.SpiderAdminService,
 		schedulerSvc interfaces.TaskSchedulerService,

@@ -1,13 +1,13 @@
 package controllers
 
 import (
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 	"net/http"
 )
 
@@ -71,11 +71,7 @@ func newDataCollectionContext() *dataCollectionContext {
 	ctx := &dataCollectionContext{}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		panic(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		modelSvc service.ModelService,
 	) {
 		ctx.modelSvc = modelSvc

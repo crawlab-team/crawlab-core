@@ -1,6 +1,8 @@
-package inject
+package container
 
-import "go.uber.org/dig"
+import (
+	"go.uber.org/dig"
+)
 
 var c = dig.New()
 

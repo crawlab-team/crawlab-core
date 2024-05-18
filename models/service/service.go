@@ -2,12 +2,11 @@ package service
 
 import (
 	"context"
-	"github.com/crawlab-team/crawlab-core/color"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 )
 
 type Service struct {
@@ -37,21 +36,12 @@ func (svc *Service) GetBaseService(id interfaces.ModelId) (svc2 interfaces.Model
 	return GetBaseService(id)
 }
 
-func NewService(opts ...Option) (svc2 ModelService, err error) {
+func NewService() (svc2 ModelService, err error) {
 	// service
 	svc := &Service{}
 
-	// options
-	for _, opt := range opts {
-		opt(svc)
-	}
-
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(color.NewService); err != nil {
-		return nil, err
-	}
-	if err := c.Invoke(func(colorSvc interfaces.ColorService) {
+	if err := container.GetContainer().Invoke(func(colorSvc interfaces.ColorService) {
 		svc.colorSvc = colorSvc
 	}); err != nil {
 		return nil, err
@@ -62,9 +52,13 @@ func NewService(opts ...Option) (svc2 ModelService, err error) {
 
 var modelSvc ModelService
 
-func GetService(opts ...Option) (svc ModelService, err error) {
+func GetService() (svc ModelService, err error) {
 	if modelSvc != nil {
 		return modelSvc, nil
 	}
-	return NewService(opts...)
+	modelSvc, err = NewService()
+	if err != nil {
+		return nil, err
+	}
+	return modelSvc, nil
 }

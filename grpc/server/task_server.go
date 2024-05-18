@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/config"
-	"github.com/crawlab-team/crawlab-core/task/stats"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
@@ -20,7 +19,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 	"io"
 	"strings"
 )
@@ -168,27 +166,12 @@ func (svr TaskServer) deserialize(msg *grpc.StreamMessage) (data entity.StreamMe
 	return data, nil
 }
 
-func NewTaskServer(opts ...TaskServerOption) (res *TaskServer, err error) {
+func NewTaskServer() (res *TaskServer, err error) {
 	// task server
 	svr := &TaskServer{}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svr)
-	}
-
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, err
-	}
-	if err := c.Provide(stats.ProvideGetTaskStatsService(svr.server.GetConfigPath())); err != nil {
-		return nil, err
-	}
-	if err := c.Provide(config.ProvideConfigService(svr.server.GetConfigPath())); err != nil {
-		return nil, err
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		modelSvc service.ModelService,
 		statsSvc interfaces.TaskStatsService,
 		cfgSvc interfaces.NodeConfigService,
@@ -201,11 +184,4 @@ func NewTaskServer(opts ...TaskServerOption) (res *TaskServer, err error) {
 	}
 
 	return svr, nil
-}
-
-func ProvideTaskServer(server interfaces.GrpcServer, opts ...TaskServerOption) func() (res *TaskServer, err error) {
-	return func() (*TaskServer, error) {
-		opts = append(opts, WithServerTaskServerService(server))
-		return NewTaskServer(opts...)
-	}
 }

@@ -309,20 +309,9 @@ func (svc *Service) getTaskStatsHistogram(query bson.M) (data interface{}, err e
 	return res, nil
 }
 
-func NewStatsService(opts ...Option) (svc2 interfaces.StatsService, err error) {
+func NewStatsService() (svc2 interfaces.StatsService, err error) {
 	// service
 	svc := &Service{}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svc)
-	}
-
 	return svc, nil
-}
-
-func ProvideStatsService(opts ...Option) func() (svc interfaces.StatsService, err error) {
-	return func() (svc interfaces.StatsService, err error) {
-		return NewStatsService(opts...)
-	}
 }

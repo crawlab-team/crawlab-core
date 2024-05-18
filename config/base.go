@@ -2,15 +2,20 @@ package config
 
 import (
 	"github.com/mitchellh/go-homedir"
-	"path"
+	"github.com/spf13/viper"
+	"path/filepath"
 )
 
 var HomeDirPath, _ = homedir.Dir()
 
-var configDirName = ".crawlab"
+const configDirName = ".crawlab"
 
-var DefaultConfigDirPath = path.Join(HomeDirPath, configDirName)
+const configName = "config.json"
 
-var ConfigName = "config.json"
-
-var DefaultConfigPath = path.Join(HomeDirPath, configDirName, ConfigName)
+func GetConfigPath() string {
+	if viper.GetString("metadata") != "" {
+		MetadataPath := viper.GetString("metadata")
+		return filepath.Join(MetadataPath, configName)
+	}
+	return filepath.Join(HomeDirPath, configDirName, configName)
+}

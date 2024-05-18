@@ -4,6 +4,7 @@ import (
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	constants2 "github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
@@ -14,7 +15,6 @@ import (
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 	"sync"
 	"time"
 )
@@ -275,11 +275,7 @@ func NewDataSourceService(opts ...DataSourceServiceOption) (svc2 interfaces.Data
 	}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(modelSvc service.ModelService) {
+	if err := container.GetContainer().Invoke(func(modelSvc service.ModelService) {
 		svc.modelSvc = modelSvc
 	}); err != nil {
 		return nil, trace.TraceError(err)

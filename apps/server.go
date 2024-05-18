@@ -13,6 +13,10 @@ import (
 	_ "net/http/pprof"
 )
 
+func init() {
+	injectModules()
+}
+
 type Server struct {
 	// settings
 	grpcAddress interfaces.Address

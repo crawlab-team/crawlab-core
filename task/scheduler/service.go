@@ -1,26 +1,20 @@
 package scheduler
 
 import (
-	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/errors"
-	"github.com/crawlab-team/crawlab-core/grpc/server"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
-	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
-	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
-	"sync"
 	"time"
 )
 
@@ -225,7 +219,7 @@ func (svc *Service) cleanupTasks() {
 	}
 }
 
-func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerService, err error) {
+func NewTaskSchedulerService() (svc2 interfaces.TaskSchedulerService, err error) {
 	// base service
 	baseSvc, err := task.NewBaseService()
 	if err != nil {
@@ -238,92 +232,33 @@ func NewTaskSchedulerService(opts ...Option) (svc2 interfaces.TaskSchedulerServi
 		interval:        5 * time.Second,
 	}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svc)
-	}
-
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(config.ProvideConfigService(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService) {
-		svc.nodeCfgSvc = nodeCfgSvc
-	}); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(server.ProvideGetServer(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
+		nodeCfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
 		svr interfaces.GrpcServer,
 		handlerSvc interfaces.TaskHandlerService,
 	) {
+		svc.nodeCfgSvc = nodeCfgSvc
 		svc.modelSvc = modelSvc
 		svc.svr = svr
 		svc.handlerSvc = handlerSvc
 	}); err != nil {
-		return nil, trace.TraceError(err)
+		return nil, err
 	}
 
 	return svc, nil
 }
 
-func ProvideTaskSchedulerService(path string, opts ...Option) func() (svc interfaces.TaskSchedulerService, err error) {
-	opts = append(opts, WithConfigPath(path))
-	return func() (svc interfaces.TaskSchedulerService, err error) {
-		return NewTaskSchedulerService(opts...)
-	}
-}
+var svc interfaces.TaskSchedulerService
 
-var store = sync.Map{}
-
-func GetTaskSchedulerService(path string, opts ...Option) (svr interfaces.TaskSchedulerService, err error) {
-	if path == "" {
-		path = config2.DefaultConfigPath
+func GetTaskSchedulerService() (svr interfaces.TaskSchedulerService, err error) {
+	if svc != nil {
+		return svc, nil
 	}
-	opts = append(opts, WithConfigPath(path))
-	res, ok := store.Load(path)
-	if ok {
-		svr, ok = res.(interfaces.TaskSchedulerService)
-		if ok {
-			return svr, nil
-		}
-	}
-	svr, err = NewTaskSchedulerService(opts...)
+	svc, err = NewTaskSchedulerService()
 	if err != nil {
 		return nil, err
 	}
-	store.Store(path, svr)
-	return svr, nil
-}
-
-func ProvideGetTaskSchedulerService(path string, opts ...Option) func() (svr interfaces.TaskSchedulerService, err error) {
-	// path
-	if path != "" || path == config2.DefaultConfigPath {
-		if viper.GetString("config.path") != "" {
-			path = viper.GetString("config.path")
-		} else {
-			path = config2.DefaultConfigPath
-		}
-	}
-	opts = append(opts, WithConfigPath(path))
-
-	// interval
-	intervalSeconds := viper.GetInt("task.scheduler.interval")
-	if intervalSeconds > 0 {
-		opts = append(opts, WithInterval(time.Duration(intervalSeconds)*time.Second))
-	}
-
-	return func() (svr interfaces.TaskSchedulerService, err error) {
-		return GetTaskSchedulerService(path, opts...)
-	}
+	return svc, nil
 }

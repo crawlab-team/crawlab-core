@@ -7,7 +7,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
-	"github.com/spf13/viper"
 	"os"
 	"path"
 )
@@ -93,7 +92,7 @@ func (svc *Service) SetConfigPath(path string) {
 	svc.path = path
 }
 
-func NewNodeConfigService(opts ...Option) (svc2 interfaces.NodeConfigService, err error) {
+func NewNodeConfigService() (svc2 interfaces.NodeConfigService, err error) {
 	// cfg
 	cfg := NewConfig(nil)
 
@@ -102,20 +101,8 @@ func NewNodeConfigService(opts ...Option) (svc2 interfaces.NodeConfigService, er
 		cfg: cfg,
 	}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svc)
-	}
-
 	// normalize config path
-	cfgPath := svc.GetConfigPath()
-	if cfgPath == "" || cfgPath == config.DefaultConfigPath {
-		if viper.GetString("config.path") != "" {
-			cfgPath = viper.GetString("config.path")
-		} else {
-			cfgPath = config.DefaultConfigPath
-		}
-	}
+	cfgPath := config.GetConfigPath()
 	svc.SetConfigPath(cfgPath)
 
 	// init
@@ -124,10 +111,4 @@ func NewNodeConfigService(opts ...Option) (svc2 interfaces.NodeConfigService, er
 	}
 
 	return svc, nil
-}
-
-func ProvideConfigService(path string) func() (interfaces.NodeConfigService, error) {
-	return func() (interfaces.NodeConfigService, error) {
-		return NewNodeConfigService(WithConfigPath(path))
-	}
 }

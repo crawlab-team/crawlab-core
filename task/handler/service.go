@@ -5,22 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/apex/log"
-	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
-	client2 "github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/task"
 	"github.com/crawlab-team/go-trace"
-	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 	"sync"
 	"time"
 )
@@ -446,7 +442,7 @@ func (svc *Service) run(taskId primitive.ObjectID) (err error) {
 	return nil
 }
 
-func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, err error) {
+func NewTaskHandlerService() (svc2 interfaces.TaskHandlerService, err error) {
 	// base service
 	baseSvc, err := task.NewBaseService()
 	if err != nil {
@@ -466,41 +462,8 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 		syncLocks:         sync.Map{},
 	}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svc)
-	}
-
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(config.ProvideConfigService(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(service.GetService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client.ProvideServiceDelegate(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client.ProvideNodeServiceDelegate(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client.ProvideSpiderServiceDelegate(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client.ProvideTaskServiceDelegate(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client.ProvideTaskStatServiceDelegate(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client.ProvideEnvironmentServiceDelegate(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(client2.ProvideGetClient(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		cfgSvc interfaces.NodeConfigService,
 		modelSvc service.ModelService,
 		clientModelSvc interfaces.GrpcClientModelService,
@@ -529,51 +492,15 @@ func NewTaskHandlerService(opts ...Option) (svc2 interfaces.TaskHandlerService, 
 	return svc, nil
 }
 
-func ProvideTaskHandlerService(path string, opts ...Option) func() (svc interfaces.TaskHandlerService, err error) {
-	// config path
-	opts = append(opts, WithConfigPath(path))
-	return func() (svc interfaces.TaskHandlerService, err error) {
-		return NewTaskHandlerService(opts...)
-	}
-}
+var _service interfaces.TaskHandlerService
 
-var store = sync.Map{}
-
-func GetTaskHandlerService(path string, opts ...Option) (svr interfaces.TaskHandlerService, err error) {
-	if path == "" {
-		path = viper.GetString("config.path")
+func GetTaskHandlerService() (svr interfaces.TaskHandlerService, err error) {
+	if _service != nil {
+		return _service, nil
 	}
-	if path == "" {
-		path = config2.DefaultConfigPath
-	}
-	opts = append(opts, WithConfigPath(path))
-	res, ok := store.Load(path)
-	if ok {
-		svr, ok = res.(interfaces.TaskHandlerService)
-		if ok {
-			return svr, nil
-		}
-	}
-	svr, err = NewTaskHandlerService(opts...)
+	_service, err = NewTaskHandlerService()
 	if err != nil {
 		return nil, err
 	}
-	store.Store(path, svr)
-	return svr, nil
-}
-
-func ProvideGetTaskHandlerService(path string, opts ...Option) func() (svr interfaces.TaskHandlerService, err error) {
-	// report interval
-	reportIntervalSeconds := viper.GetInt("task.handler.reportInterval")
-	if reportIntervalSeconds > 0 {
-		opts = append(opts, WithReportInterval(time.Duration(reportIntervalSeconds)*time.Second))
-	}
-	// cancel timeout
-	cancelTimeoutSeconds := viper.GetInt("task.handler.cancelTimeout")
-	if cancelTimeoutSeconds > 0 {
-		opts = append(opts, WithCancelTimeout(time.Duration(cancelTimeoutSeconds)*time.Second))
-	}
-	return func() (svr interfaces.TaskHandlerService, err error) {
-		return GetTaskHandlerService(path, opts...)
-	}
+	return _service, nil
 }

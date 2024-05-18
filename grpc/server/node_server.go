@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-grpc"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 )
 
 type NodeServer struct {
@@ -187,24 +186,12 @@ func (svr NodeServer) Unsubscribe(ctx context.Context, req *grpc.Request) (res *
 	}, nil
 }
 
-func NewNodeServer(opts ...NodeServerOption) (res *NodeServer, err error) {
+func NewNodeServer() (res *NodeServer, err error) {
 	// node server
 	svr := &NodeServer{}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svr)
-	}
-
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, err
-	}
-	if err := c.Provide(config.ProvideConfigService(svr.server.GetConfigPath())); err != nil {
-		return nil, err
-	}
-	if err := c.Invoke(func(modelSvc service.ModelService, cfgSvc interfaces.NodeConfigService) {
+	if err := container.GetContainer().Invoke(func(modelSvc service.ModelService, cfgSvc interfaces.NodeConfigService) {
 		svr.modelSvc = modelSvc
 		svr.cfgSvc = cfgSvc
 	}); err != nil {
@@ -212,11 +199,4 @@ func NewNodeServer(opts ...NodeServerOption) (res *NodeServer, err error) {
 	}
 
 	return svr, nil
-}
-
-func ProvideNodeServer(server interfaces.GrpcServer, opts ...NodeServerOption) func() (res *NodeServer, err error) {
-	return func() (*NodeServer, error) {
-		opts = append(opts, WithServerNodeServerService(server))
-		return NewNodeServer(opts...)
-	}
 }

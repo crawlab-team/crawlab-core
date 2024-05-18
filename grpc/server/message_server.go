@@ -2,14 +2,13 @@ package server
 
 import (
 	"github.com/apex/log"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/config"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
-	"go.uber.org/dig"
 	"io"
 )
 
@@ -75,24 +74,12 @@ func (svr MessageServer) redirectMessage(sub interfaces.GrpcSubscribe, msg *grpc
 	}
 }
 
-func NewMessageServer(opts ...MessageServerOption) (res *MessageServer, err error) {
+func NewMessageServer() (res *MessageServer, err error) {
 	// message server
 	svr := &MessageServer{}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svr)
-	}
-
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, err
-	}
-	if err := c.Provide(config.ProvideConfigService(svr.server.GetConfigPath())); err != nil {
-		return nil, err
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		modelSvc service.ModelService,
 		cfgSvc interfaces.NodeConfigService,
 	) {
@@ -103,11 +90,4 @@ func NewMessageServer(opts ...MessageServerOption) (res *MessageServer, err erro
 	}
 
 	return svr, nil
-}
-
-func ProvideMessageServer(server interfaces.GrpcServer, opts ...MessageServerOption) func() (res *MessageServer, err error) {
-	return func() (*MessageServer, error) {
-		opts = append(opts, WithServerMessageServerService(server))
-		return NewMessageServer(opts...)
-	}
 }

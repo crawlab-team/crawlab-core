@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	fs2 "github.com/crawlab-team/crawlab-core/fs"
@@ -11,7 +12,6 @@ import (
 	delegate2 "github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	vcs "github.com/crawlab-team/crawlab-vcs"
@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo2 "go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/dig"
 	"io"
 	"math"
 	"net/http"
@@ -1288,14 +1287,7 @@ func newSpiderContext() *spiderContext {
 	ctx := &spiderContext{}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.NewService); err != nil {
-		panic(err)
-	}
-	if err := c.Provide(admin.NewSpiderAdminService); err != nil {
-		panic(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		modelSvc service.ModelService,
 		adminSvc interfaces.SpiderAdminService,
 	) {

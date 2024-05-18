@@ -8,11 +8,10 @@ import (
 	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	fs2 "github.com/crawlab-team/crawlab-core/fs"
-	gclient "github.com/crawlab-team/crawlab-core/grpc/client"
-	"github.com/crawlab-team/crawlab-core/inject"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
@@ -27,7 +26,6 @@ import (
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/dig"
 	"io"
 	"net/http"
 	"os"
@@ -652,11 +650,7 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 	r.fsSvc = fs2.NewFsServiceV2(filepath.Join(viper.GetString("workspace"), r.s.GetId().Hex()))
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(gclient.ProvideGetClient(r.svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		c interfaces.GrpcClient,
 	) {
 		r.c = c
@@ -664,7 +658,7 @@ func NewTaskRunner(id primitive.ObjectID, svc interfaces.TaskHandlerService, opt
 		return nil, trace.TraceError(err)
 	}
 
-	_ = inject.GetContainer().Invoke(func(hookSvc interfaces.TaskHookService) {
+	_ = container.GetContainer().Invoke(func(hookSvc interfaces.TaskHookService) {
 		r.hookSvc = hookSvc
 	})
 

@@ -2,17 +2,16 @@ package schedule
 
 import (
 	"github.com/crawlab-team/crawlab-core/config"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/dig"
 	"sync"
 	"time"
 )
@@ -234,7 +233,7 @@ func (svc *Service) schedule(id primitive.ObjectID) (fn func()) {
 	}
 }
 
-func NewScheduleService(opts ...Option) (svc2 interfaces.ScheduleService, err error) {
+func NewScheduleService() (svc2 interfaces.ScheduleService, err error) {
 	// service
 	svc := &Service{
 		WithConfigPath: config.NewConfigPathService(),
@@ -245,20 +244,8 @@ func NewScheduleService(opts ...Option) (svc2 interfaces.ScheduleService, err er
 		updateInterval: 1 * time.Minute,
 	}
 
-	// apply options
-	for _, opt := range opts {
-		opt(svc)
-	}
-
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(service.GetService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(admin.ProvideGetSpiderAdminService(svc.GetConfigPath())); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		modelSvc service.ModelService,
 		adminSvc interfaces.SpiderAdminService,
 	) {
@@ -286,37 +273,15 @@ func NewScheduleService(opts ...Option) (svc2 interfaces.ScheduleService, err er
 	return svc, nil
 }
 
-func ProvideScheduleService(path string, opts ...Option) func() (svc interfaces.ScheduleService, err error) {
-	opts = append(opts, WithConfigPath(path))
-	return func() (svc interfaces.ScheduleService, err error) {
-		return NewScheduleService(opts...)
-	}
-}
+var svc interfaces.ScheduleService
 
-var store = sync.Map{}
-
-func GetScheduleService(path string, opts ...Option) (svc interfaces.ScheduleService, err error) {
-	if path == "" {
-		path = config.DefaultConfigPath
+func GetScheduleService() (res interfaces.ScheduleService, err error) {
+	if svc != nil {
+		return svc, nil
 	}
-	opts = append(opts, WithConfigPath(path))
-	res, ok := store.Load(path)
-	if ok {
-		svc, ok = res.(interfaces.ScheduleService)
-		if ok {
-			return svc, nil
-		}
-	}
-	svc, err = NewScheduleService(opts...)
+	svc, err = NewScheduleService()
 	if err != nil {
 		return nil, err
 	}
-	store.Store(path, svc)
 	return svc, nil
-}
-
-func ProvideGetScheduleService(path string, opts ...Option) func() (svr interfaces.ScheduleService, err error) {
-	return func() (svr interfaces.ScheduleService, err error) {
-		return GetScheduleService(path, opts...)
-	}
 }

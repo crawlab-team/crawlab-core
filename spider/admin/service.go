@@ -5,12 +5,11 @@ import (
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/constants"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/node/config"
-	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	vcs "github.com/crawlab-team/crawlab-vcs"
 	"github.com/crawlab-team/go-trace"
@@ -19,7 +18,6 @@ import (
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/dig"
 	"os"
 	"path"
 	"path/filepath"
@@ -310,7 +308,7 @@ func (svc *Service) syncGitOne(g interfaces.Git) {
 
 func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, err error) {
 	svc := &Service{
-		cfgPath: config2.DefaultConfigPath,
+		cfgPath: config2.GetConfigPath(),
 	}
 
 	// apply options
@@ -319,17 +317,7 @@ func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, 
 	}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(config.ProvideConfigService(svc.cfgPath)); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(service.NewService); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Provide(scheduler.ProvideGetTaskSchedulerService(svc.cfgPath)); err != nil {
-		return nil, trace.TraceError(err)
-	}
-	if err := c.Invoke(func(nodeCfgSvc interfaces.NodeConfigService, modelSvc service.ModelService, schedulerSvc interfaces.TaskSchedulerService) {
+	if err := container.GetContainer().Invoke(func(nodeCfgSvc interfaces.NodeConfigService, modelSvc service.ModelService, schedulerSvc interfaces.TaskSchedulerService) {
 		svc.nodeCfgSvc = nodeCfgSvc
 		svc.modelSvc = modelSvc
 		svc.schedulerSvc = schedulerSvc
@@ -348,45 +336,17 @@ func NewSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, 
 	return svc, nil
 }
 
-func ProvideSpiderAdminService(path string, opts ...Option) func() (svc interfaces.SpiderAdminService, err error) {
-	if path != "" || path == config2.DefaultConfigPath {
-		if viper.GetString("config.path") != "" {
-			path = viper.GetString("config.path")
-		} else {
-			path = config2.DefaultConfigPath
-		}
-	}
-	opts = append(opts, WithConfigPath(path))
-	return func() (svc interfaces.SpiderAdminService, err error) {
-		return NewSpiderAdminService(opts...)
-	}
-}
-
 var _service interfaces.SpiderAdminService
 
-func GetSpiderAdminService(opts ...Option) (svc2 interfaces.SpiderAdminService, err error) {
+func GetSpiderAdminService() (svc2 interfaces.SpiderAdminService, err error) {
 	if _service != nil {
 		return _service, nil
 	}
 
-	_service, err = NewSpiderAdminService(opts...)
+	_service, err = NewSpiderAdminService()
 	if err != nil {
 		return nil, err
 	}
 
 	return _service, nil
-}
-
-func ProvideGetSpiderAdminService(path string, opts ...Option) func() (svc interfaces.SpiderAdminService, err error) {
-	if path != "" || path == config2.DefaultConfigPath {
-		if viper.GetString("config.path") != "" {
-			path = viper.GetString("config.path")
-		} else {
-			path = config2.DefaultConfigPath
-		}
-	}
-	opts = append(opts, WithConfigPath(path))
-	return func() (svc interfaces.SpiderAdminService, err error) {
-		return GetSpiderAdminService(opts...)
-	}
 }

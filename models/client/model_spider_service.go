@@ -51,7 +51,9 @@ func (svc *SpiderServiceDelegate) GetSpiderList(query bson.M, opts *mongo.FindOp
 	return res, nil
 }
 
-func NewSpiderServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 interfaces.GrpcClientModelSpiderService, err error) {
+func NewSpiderServiceDelegate() (svc2 interfaces.GrpcClientModelSpiderService, err error) {
+	var opts []ModelBaseServiceDelegateOption
+
 	// apply options
 	opts = append(opts, WithBaseServiceModelId(interfaces.ModelIdSpider))
 
@@ -65,13 +67,4 @@ func NewSpiderServiceDelegate(opts ...ModelBaseServiceDelegateOption) (svc2 inte
 	svc := &SpiderServiceDelegate{baseSvc}
 
 	return svc, nil
-}
-
-func ProvideSpiderServiceDelegate(path string, opts ...ModelBaseServiceDelegateOption) func() (svc interfaces.GrpcClientModelSpiderService, err error) {
-	if path != "" {
-		opts = append(opts, WithBaseServiceConfigPath(path))
-	}
-	return func() (svc interfaces.GrpcClientModelSpiderService, err error) {
-		return NewSpiderServiceDelegate(opts...)
-	}
 }

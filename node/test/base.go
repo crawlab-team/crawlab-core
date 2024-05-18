@@ -1,12 +1,12 @@
 package test
 
 import (
-	config2 "github.com/crawlab-team/crawlab-core/config"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	service2 "github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
+	"github.com/spf13/viper"
 	"go.uber.org/dig"
 	"io/ioutil"
 	"os"
@@ -39,12 +39,12 @@ func NewTest() (res *Test, err error) {
 	t := &Test{}
 
 	// recreate config directory path
-	_ = os.RemoveAll(config2.DefaultConfigDirPath)
-	_ = os.MkdirAll(config2.DefaultConfigDirPath, os.FileMode(0766))
+	_ = os.RemoveAll(viper.GetString("metadata"))
+	_ = os.MkdirAll(viper.GetString("metadata"), os.FileMode(0766))
 
 	// master config and settings
 	masterNodeConfigName := "config-master.json"
-	masterNodeConfigPath := path.Join(config2.DefaultConfigDirPath, masterNodeConfigName)
+	masterNodeConfigPath := path.Join(viper.GetString("metadata"), masterNodeConfigName)
 	if err := ioutil.WriteFile(masterNodeConfigPath, []byte("{\"key\":\"master\",\"is_master\":true}"), os.FileMode(0766)); err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func NewTest() (res *Test, err error) {
 
 	// worker config and settings
 	workerNodeConfigName := "config-worker.json"
-	workerNodeConfigPath := path.Join(config2.DefaultConfigDirPath, workerNodeConfigName)
+	workerNodeConfigPath := path.Join(viper.GetString("metadata"), workerNodeConfigName)
 	if err = ioutil.WriteFile(workerNodeConfigPath, []byte("{\"key\":\"worker\",\"is_master\":false}"), os.FileMode(0766)); err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func NewTest() (res *Test, err error) {
 
 	// master for monitor config and settings
 	masterNodeMonitorConfigName := "config-master-monitor.json"
-	masterNodeMonitorConfigPath := path.Join(config2.DefaultConfigDirPath, masterNodeMonitorConfigName)
+	masterNodeMonitorConfigPath := path.Join(viper.GetString("metadata"), masterNodeMonitorConfigName)
 	if err := ioutil.WriteFile(masterNodeMonitorConfigPath, []byte("{\"key\":\"master-monitor\",\"is_master\":true}"), os.FileMode(0766)); err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func NewTest() (res *Test, err error) {
 
 	// worker for monitor config and settings
 	workerNodeMonitorConfigName := "config-worker-monitor.json"
-	workerNodeMonitorConfigPath := path.Join(config2.DefaultConfigDirPath, workerNodeMonitorConfigName)
+	workerNodeMonitorConfigPath := path.Join(viper.GetString("metadata"), workerNodeMonitorConfigName)
 	if err := ioutil.WriteFile(workerNodeMonitorConfigPath, []byte("{\"key\":\"worker-monitor\",\"is_master\":false}"), os.FileMode(0766)); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (t *Test) Setup(t2 *testing.T) {
 	if err := t.ModelSvc.DropAll(); err != nil {
 		panic(err)
 	}
-	_ = os.RemoveAll(config2.DefaultConfigDirPath)
+	_ = os.RemoveAll(viper.GetString("metadata"))
 	t2.Cleanup(t.Cleanup)
 }
 
@@ -166,7 +166,7 @@ func (t *Test) Cleanup() {
 	if err := t.ModelSvc.DropAll(); err != nil {
 		panic(err)
 	}
-	_ = os.RemoveAll(config2.DefaultConfigDirPath)
+	_ = os.RemoveAll(viper.GetString("metadata"))
 }
 
 func (t *Test) StartMasterWorker() {

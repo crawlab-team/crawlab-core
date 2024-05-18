@@ -5,16 +5,14 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	config2 "github.com/crawlab-team/crawlab-core/config"
+	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
-	"github.com/crawlab-team/crawlab-core/node/config"
-	"github.com/crawlab-team/crawlab-core/task/handler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"github.com/crawlab-team/go-trace"
 	"github.com/spf13/viper"
-	"go.uber.org/dig"
 	"time"
 )
 
@@ -186,7 +184,7 @@ func (svc *WorkerService) reportStatus() {
 
 func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	svc := &WorkerService{
-		cfgPath:           config2.DefaultConfigPath,
+		cfgPath:           config2.GetConfigPath(),
 		heartbeatInterval: 15 * time.Second,
 		n:                 &models.Node{},
 	}
@@ -203,17 +201,7 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 	}
 
 	// dependency injection
-	c := dig.New()
-	if err := c.Provide(config.ProvideConfigService(svc.cfgPath)); err != nil {
-		return nil, err
-	}
-	if err := c.Provide(client.ProvideGetClient(svc.cfgPath, clientOpts...)); err != nil {
-		return nil, err
-	}
-	if err := c.Provide(handler.ProvideGetTaskHandlerService(svc.cfgPath)); err != nil {
-		return nil, err
-	}
-	if err := c.Invoke(func(
+	if err := container.GetContainer().Invoke(func(
 		cfgSvc interfaces.NodeConfigService,
 		client interfaces.GrpcClient,
 		taskHandlerSvc interfaces.TaskHandlerService,
@@ -235,11 +223,11 @@ func NewWorkerService(opts ...Option) (res *WorkerService, err error) {
 
 func ProvideWorkerService(path string, opts ...Option) func() (interfaces.NodeWorkerService, error) {
 	// path
-	if path == "" || path == config2.DefaultConfigPath {
+	if path == "" || path == config2.GetConfigPath() {
 		if viper.GetString("config.path") != "" {
 			path = viper.GetString("config.path")
 		} else {
-			path = config2.DefaultConfigPath
+			path = config2.GetConfigPath()
 		}
 	}
 	opts = append(opts, WithConfigPath(path))
