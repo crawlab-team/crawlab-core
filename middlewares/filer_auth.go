@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/errors"
+	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -24,7 +24,7 @@ func FilerAuthorizationMiddleware() gin.HandlerFunc {
 		// validate
 		if authKey != svrAuthKey {
 			// validation failed, return error response
-			controllers.HandleErrorUnauthorized(c, errors.ErrorHttpUnauthorized)
+			utils.HandleErrorUnauthorized(c, errors.ErrorHttpUnauthorized)
 			return
 		}
 
