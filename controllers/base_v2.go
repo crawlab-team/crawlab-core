@@ -12,6 +12,7 @@ import (
 
 type BaseControllerV2[T any] struct {
 	modelSvc *service.ModelServiceV2[T]
+	actions  []Action
 }
 
 func (ctr *BaseControllerV2[T]) GetById(c *gin.Context) {
@@ -205,9 +206,10 @@ func (ctr *BaseControllerV2[T]) getList(c *gin.Context) {
 	HandleSuccessWithListData(c, models, total)
 }
 
-func NewControllerV2[T any]() *BaseControllerV2[T] {
+func NewControllerV2[T any](actions ...Action) *BaseControllerV2[T] {
 	ctr := &BaseControllerV2[T]{
 		modelSvc: service.NewModelServiceV2[T](),
+		actions:  actions,
 	}
 	return ctr
 }
