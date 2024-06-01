@@ -11,7 +11,7 @@ import (
 )
 
 func AuthorizationMiddleware() gin.HandlerFunc {
-	userSvc, _ := user.GetUserService()
+	userSvc, _ := user.GetUserServiceV2()
 	return func(c *gin.Context) {
 		// disable auth for test
 		if viper.GetBool("auth.disabled") {

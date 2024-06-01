@@ -1,74 +1,68 @@
 package models
 
 import (
-	"context"
-	"errors"
-	"github.com/crawlab-team/crawlab-db/mongo"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"reflect"
+	"time"
 )
 
-type ModelV2[T any] interface {
-	GetId() (id primitive.ObjectID)
-	SetId(id primitive.ObjectID)
-	Save(ctx context.Context) (err error)
-	Delete(ctx context.Context) (err error)
+type ModelV2 interface {
+	GetCreatedAt() time.Time
+	SetCreatedAt(time.Time)
+	GetCreatedBy() primitive.ObjectID
+	SetCreatedBy(primitive.ObjectID)
+	SetCreated(primitive.ObjectID)
+	GetUpdatedAt() time.Time
+	SetUpdatedAt(time.Time)
+	GetUpdatedBy() primitive.ObjectID
+	SetUpdatedBy(primitive.ObjectID)
+	SetUpdated(primitive.ObjectID)
 }
 
 type BaseModelV2[T any] struct {
-	Id primitive.ObjectID `json:"_id" bson:"_id"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	CreatedBy primitive.ObjectID `json:"created_by" bson:"created_by"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+	UpdatedBy primitive.ObjectID `json:"updated_by" bson:"updated_by"`
 }
 
-func (m *BaseModelV2[T]) GetId() (id primitive.ObjectID) {
-	return m.Id
+func (m *BaseModelV2[T]) GetCreatedAt() time.Time {
+	return m.CreatedAt
 }
 
-func (m *BaseModelV2[T]) SetId(id primitive.ObjectID) {
-	m.Id = id
+func (m *BaseModelV2[T]) SetCreatedAt(t time.Time) {
+	m.CreatedAt = t
 }
 
-func (m *BaseModelV2[T]) Save(ctx context.Context) (err error) {
-	collectionName, err := GetCollectionName(new(T))
-	if err != nil {
-		return err
-	}
-	collection := mongo.GetMongoCol(collectionName)
-
-	if m.Id.IsZero() {
-		m.Id = primitive.NewObjectID()
-		res, err := collection.GetCollection().InsertOne(ctx, m)
-		if err != nil {
-			return err
-		}
-		m.Id = res.InsertedID.(primitive.ObjectID)
-	} else {
-		_, err = collection.GetCollection().ReplaceOne(ctx, bson.M{"_id": m.Id}, m)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (m *BaseModelV2[T]) GetCreatedBy() primitive.ObjectID {
+	return m.CreatedBy
 }
 
-func (m *BaseModelV2[T]) Delete(ctx context.Context) (err error) {
-	collectionName, err := GetCollectionName(new(T))
-	if err != nil {
-		return err
-	}
-	collection := mongo.GetMongoCol(collectionName)
-	_, err = collection.GetCollection().DeleteOne(ctx, bson.M{"_id": m.Id})
-	return err
+func (m *BaseModelV2[T]) SetCreatedBy(id primitive.ObjectID) {
+	m.CreatedBy = id
 }
 
-func GetCollectionName(model interface{}) (string, error) {
-	t := reflect.TypeOf(model)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	collectionTag := t.Field(0).Tag.Get("collection")
-	if collectionTag == "" {
-		return "", errors.New("collection name not specified in struct tag")
-	}
-	return collectionTag, nil
+func (m *BaseModelV2[T]) GetUpdatedAt() time.Time {
+	return m.UpdatedAt
+}
+
+func (m *BaseModelV2[T]) SetUpdatedAt(t time.Time) {
+	m.UpdatedAt = t
+}
+
+func (m *BaseModelV2[T]) GetUpdatedBy() primitive.ObjectID {
+	return m.UpdatedBy
+}
+
+func (m *BaseModelV2[T]) SetUpdatedBy(id primitive.ObjectID) {
+	m.UpdatedBy = id
+}
+
+func (m *BaseModelV2[T]) SetCreated(id primitive.ObjectID) {
+	m.SetCreatedAt(time.Now())
+	m.SetCreatedBy(id)
+}
+
+func (m *BaseModelV2[T]) SetUpdated(id primitive.ObjectID) {
+	m.SetUpdatedAt(time.Now())
+	m.SetUpdatedBy(id)
 }

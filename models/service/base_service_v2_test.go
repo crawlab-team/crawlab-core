@@ -2,10 +2,12 @@ package service_test
 
 import (
 	"context"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
+	"time"
 
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/stretchr/testify/assert"
@@ -13,8 +15,9 @@ import (
 )
 
 type TestModel struct {
-	Id   primitive.ObjectID `bson:"_id,omitempty" collection:"testmodels"`
-	Name string             `bson:"name"`
+	Id                            primitive.ObjectID `bson:"_id,omitempty" collection:"testmodels"`
+	models.BaseModelV2[TestModel] `bson:",inline"`
+	Name                          string `bson:"name"`
 }
 
 func setupTestDB() {
@@ -34,6 +37,8 @@ func TestModelServiceV2_GetById(t *testing.T) {
 	svc := service.NewModelServiceV2[TestModel]()
 	id := primitive.NewObjectID()
 	testModel := TestModel{Id: id, Name: "Test Name"}
+	testModel.SetCreatedAt(time.Now())
+	testModel.SetUpdatedAt(time.Now())
 	_, err := svc.InsertOne(testModel)
 	assert.Nil(t, err)
 
@@ -44,6 +49,8 @@ func TestModelServiceV2_GetById(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "Test Name", result.Name)
+	assert.NotNil(t, result.GetCreatedAt())
+	assert.NotNil(t, result.GetUpdatedAt())
 }
 
 func TestModelServiceV2_InsertOne(t *testing.T) {

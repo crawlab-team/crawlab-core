@@ -31,4 +31,5 @@ func InitRoutes(app *gin.Engine) {
 	groups := NewRouterGroups(app)
 
 	RegisterController(groups.AuthGroup, "/projects", ProjectV2Controller)
+	RegisterController(groups.AuthGroup, "/users", UserControllerV2)
 }
