@@ -9,6 +9,7 @@ import (
 	nodeconfig "github.com/crawlab-team/crawlab-core/node/config"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"reflect"
 	"sync"
 )
 
@@ -27,7 +28,10 @@ func (svc ModelServiceV2[T]) GetById(id primitive.ObjectID) (model *T, err error
 	ctx, cancel := svc.c.Context()
 	defer cancel()
 
-	typeName := fmt.Sprintf("%T", *new(T))
+	var v T
+	t := reflect.TypeOf(v)
+	typeName := t.Name()
+	//typeName := fmt.Sprintf("%T", *new(T))
 
 	p := payload.ModelServiceV2Payload[T]{
 		Type: typeName,

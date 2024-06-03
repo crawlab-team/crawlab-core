@@ -18,6 +18,12 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"net"
+	"sync"
+)
+
+var (
+	subsV2      = map[string]*entity.GrpcSubscribe{}
+	mutexSubsV2 = &sync.Mutex{}
 )
 
 type GrpcServerV2 struct {
@@ -30,9 +36,9 @@ type GrpcServerV2 struct {
 	stopped bool
 
 	// dependencies
-	nodeCfgSvc            interfaces.NodeConfigService
-	nodeSvr               *NodeServer
-	modelBaseServiceV2Svr *ModelBaseServiceV2Server
+	nodeCfgSvc          interfaces.NodeConfigService
+	nodeSvr             *NodeServerV2
+	modelBaseServiceSvr *ModelBaseServiceV2Server
 }
 
 func (svr *GrpcServerV2) Init() (err error) {
@@ -95,7 +101,7 @@ func (svr *GrpcServerV2) Stop() (err error) {
 
 func (svr *GrpcServerV2) Register() (err error) {
 	grpc2.RegisterNodeServiceServer(svr.svr, *svr.nodeSvr) // node service
-	grpc2.RegisterModelBaseServiceV2Server(svr.svr, *svr.modelBaseServiceV2Svr)
+	grpc2.RegisterModelBaseServiceV2Server(svr.svr, *svr.modelBaseServiceSvr)
 
 	return nil
 }
@@ -104,6 +110,28 @@ func (svr *GrpcServerV2) recoveryHandlerFunc(p interface{}) (err error) {
 	err = errors.NewError(errors.ErrorPrefixGrpc, fmt.Sprintf("%v", p))
 	trace.PrintError(err)
 	return err
+}
+
+func (svr *GrpcServerV2) GetSubscribe(key string) (sub *entity.GrpcSubscribe, err error) {
+	mutexSubsV2.Lock()
+	defer mutexSubsV2.Unlock()
+	sub, ok := subsV2[key]
+	if !ok {
+		return nil, errors.ErrorGrpcSubscribeNotExists
+	}
+	return sub, nil
+}
+
+func (svr *GrpcServerV2) SetSubscribe(key string, sub *entity.GrpcSubscribe) {
+	mutexSubsV2.Lock()
+	defer mutexSubsV2.Unlock()
+	subsV2[key] = sub
+}
+
+func (svr *GrpcServerV2) DeleteSubscribe(key string) {
+	mutexSubsV2.Lock()
+	defer mutexSubsV2.Unlock()
+	delete(subsV2, key)
 }
 
 func NewGrpcServerV2() (svr *GrpcServerV2, err error) {
@@ -126,11 +154,11 @@ func NewGrpcServerV2() (svr *GrpcServerV2, err error) {
 	if err != nil {
 		return nil, err
 	}
-	svr.nodeSvr, err = NewNodeServer()
+	svr.nodeSvr, err = NewNodeServerV2()
 	if err != nil {
 		return nil, err
 	}
-	svr.modelBaseServiceV2Svr = NewModelBaseServiceV2Server()
+	svr.modelBaseServiceSvr = NewModelBaseServiceV2Server()
 
 	// recovery options
 	recoveryOpts := []grpc_recovery.Option{

@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	instanceMap = make(map[string]interface{})
-	onceMap     = make(map[string]*sync.Once)
-	mu          sync.Mutex
+	instanceMap    = make(map[string]interface{})
+	onceMap        = make(map[string]*sync.Once)
+	onceColNameMap = make(map[string]*sync.Once)
+	mu             sync.Mutex
 )
 
 type ModelServiceV2[T any] struct {
@@ -114,6 +115,12 @@ func (svc *ModelServiceV2[T]) GetCol() (col *mongo.Col) {
 	return svc.col
 }
 
+func GetCollectionNameByInstance(v interface{}) string {
+	t := reflect.TypeOf(v)
+	field, _ := t.FieldByName("Id")
+	return field.Tag.Get("collection")
+}
+
 func getCollectionName[T any]() string {
 	var instance T
 	t := reflect.TypeOf(instance)
@@ -142,4 +149,23 @@ func NewModelServiceV2[T any]() *ModelServiceV2[T] {
 	})
 
 	return instanceMap[typeName].(*ModelServiceV2[T])
+}
+
+func NewModelServiceV2WithColName(colName string) *ModelServiceV2[bson.M] {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if _, exists := onceColNameMap[colName]; !exists {
+		onceColNameMap[colName] = &sync.Once{}
+	}
+
+	var instance *ModelServiceV2[bson.M]
+
+	onceColNameMap[colName].Do(func() {
+		collection := mongo.GetMongoCol(colName)
+		instance = &ModelServiceV2[bson.M]{col: collection}
+		instanceMap[colName] = instance
+	})
+
+	return instanceMap[colName].(*ModelServiceV2[bson.M])
 }

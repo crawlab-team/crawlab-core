@@ -17,11 +17,7 @@ import (
 	"time"
 )
 
-type TestModel struct {
-	Id                            primitive.ObjectID `json:"_id" bson:"_id" collection:"testmodels"`
-	models.BaseModelV2[TestModel] `bson:",inline"`
-	Name                          string `json:"name" bson:"name"`
-}
+type TestModel models.TestModel
 
 func setupTestDB() {
 	viper.Set("mongo.db", "testdb")
