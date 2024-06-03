@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	nodeconfig "github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-grpc"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -189,12 +189,12 @@ func (svr NodeServer) Unsubscribe(ctx context.Context, req *grpc.Request) (res *
 func NewNodeServer() (res *NodeServer, err error) {
 	// node server
 	svr := &NodeServer{}
-
-	// dependency injection
-	if err := container.GetContainer().Invoke(func(modelSvc service.ModelService, cfgSvc interfaces.NodeConfigService) {
-		svr.modelSvc = modelSvc
-		svr.cfgSvc = cfgSvc
-	}); err != nil {
+	svr.modelSvc, err = service.GetService()
+	if err != nil {
+		return nil, err
+	}
+	svr.cfgSvc, err = nodeconfig.NewNodeConfigService()
+	if err != nil {
 		return nil, err
 	}
 

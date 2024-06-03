@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/crawlab-team/crawlab-core/container"
+	"github.com/crawlab-team/crawlab-core/color"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -40,10 +40,8 @@ func NewService() (svc2 ModelService, err error) {
 	// service
 	svc := &Service{}
 
-	// dependency injection
-	if err := container.GetContainer().Invoke(func(colorSvc interfaces.ColorService) {
-		svc.colorSvc = colorSvc
-	}); err != nil {
+	svc.colorSvc, err = color.NewService()
+	if err != nil {
 		return nil, err
 	}
 

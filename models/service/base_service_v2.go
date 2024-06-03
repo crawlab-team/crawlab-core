@@ -83,20 +83,20 @@ func (svc *ModelServiceV2[T]) Replace(query bson.M, model T) (err error) {
 	return err
 }
 
-func (svc *ModelServiceV2[T]) InsertOne(doc T) (id primitive.ObjectID, err error) {
-	res, err := svc.col.GetCollection().InsertOne(svc.col.GetContext(), doc)
+func (svc *ModelServiceV2[T]) InsertOne(model T) (id primitive.ObjectID, err error) {
+	res, err := svc.col.GetCollection().InsertOne(svc.col.GetContext(), model)
 	if err != nil {
 		return primitive.NilObjectID, err
 	}
 	return res.InsertedID.(primitive.ObjectID), nil
 }
 
-func (svc *ModelServiceV2[T]) InsertMany(docs []T) (ids []primitive.ObjectID, err error) {
-	var _docs []interface{}
-	for _, doc := range docs {
-		_docs = append(_docs, doc)
+func (svc *ModelServiceV2[T]) InsertMany(models []T) (ids []primitive.ObjectID, err error) {
+	var _models []interface{}
+	for _, model := range models {
+		_models = append(_models, model)
 	}
-	res, err := svc.col.GetCollection().InsertMany(svc.col.GetContext(), _docs)
+	res, err := svc.col.GetCollection().InsertMany(svc.col.GetContext(), _models)
 	if err != nil {
 		return nil, err
 	}

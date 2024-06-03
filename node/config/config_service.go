@@ -112,3 +112,19 @@ func NewNodeConfigService() (svc2 interfaces.NodeConfigService, err error) {
 
 	return svc, nil
 }
+
+var _service interfaces.NodeConfigService
+
+func GetNodeConfigService() interfaces.NodeConfigService {
+	if _service != nil {
+		return _service
+	}
+
+	var err error
+	_service, err = NewNodeConfigService()
+	if err != nil {
+		panic(err)
+	}
+
+	return _service
+}
