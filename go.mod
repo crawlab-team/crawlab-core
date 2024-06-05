@@ -1,6 +1,6 @@
 module github.com/crawlab-team/crawlab-core
 
-go 1.18
+go 1.22
 
 require (
 	github.com/ReneKroon/ttlcache v1.7.0
@@ -25,10 +25,8 @@ require (
 	github.com/imroc/req v0.3.0
 	github.com/matcornic/hermes/v2 v2.1.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/olivere/elastic/v7 v7.0.15
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.0
-	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/kafka-go v0.4.39
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.9.0
@@ -99,7 +97,6 @@ require (
 	github.com/jackc/pgx/v4 v4.15.0 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
-	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
@@ -108,7 +105,6 @@ require (
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
-	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.3 // indirect
