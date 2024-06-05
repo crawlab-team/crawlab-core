@@ -7,11 +7,11 @@ import (
 )
 
 type ModelServiceV2Payload[T any] struct {
-	Type        string             `json:"type"`
-	Id          primitive.ObjectID `json:"_id"`
-	Query       bson.M             `json:"query"`
-	FindOptions mongo.FindOptions  `json:"find_options"`
-	Model       T                  `json:"model"`
-	Update      bson.M             `json:"update"`
-	Models      []T                `json:"models"`
+	Type        string             `json:"type,omitempty"`
+	Id          primitive.ObjectID `json:"_id,omitempty"`
+	Query       bson.M             `json:"query,omitempty"`
+	FindOptions *mongo.FindOptions `json:"find_options,omitempty"`
+	Model       T                  `json:"model,omitempty"`
+	Update      bson.M             `json:"update,omitempty"`
+	Models      []T                `json:"models,omitempty"`
 }

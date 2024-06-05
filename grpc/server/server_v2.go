@@ -187,7 +187,7 @@ func NewGrpcServerV2() (svr *GrpcServerV2, err error) {
 
 var _serverV2 *GrpcServerV2
 
-func GetServerV2() (svr *GrpcServerV2, err error) {
+func GetGrpcServerV2() (svr *GrpcServerV2, err error) {
 	if _serverV2 != nil {
 		return _serverV2, nil
 	}
