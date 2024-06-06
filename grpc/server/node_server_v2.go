@@ -57,7 +57,7 @@ func (svr NodeServerV2) Register(ctx context.Context, req *grpc.Request) (res *g
 	}
 
 	// find in db
-	nodeDb, err := svr.modelSvc.Get(bson.M{"key": nodeKey}, nil)
+	nodeDb, err := svr.modelSvc.GetOne(bson.M{"key": nodeKey}, nil)
 	if err == nil {
 		if node.IsMaster {
 			// error: cannot register master node
@@ -102,7 +102,7 @@ func (svr NodeServerV2) Register(ctx context.Context, req *grpc.Request) (res *g
 // SendHeartbeat from worker to master
 func (svr NodeServerV2) SendHeartbeat(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	// find in db
-	node, err := svr.modelSvc.Get(bson.M{"key": req.NodeKey}, nil)
+	node, err := svr.modelSvc.GetOne(bson.M{"key": req.NodeKey}, nil)
 	if err != nil {
 		if errors2.Is(err, mongo.ErrNoDocuments) {
 			return HandleError(errors.ErrorNodeNotExists)

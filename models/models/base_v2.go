@@ -5,19 +5,6 @@ import (
 	"time"
 )
 
-type ModelV2 interface {
-	GetCreatedAt() time.Time
-	SetCreatedAt(time.Time)
-	GetCreatedBy() primitive.ObjectID
-	SetCreatedBy(primitive.ObjectID)
-	SetCreated(primitive.ObjectID)
-	GetUpdatedAt() time.Time
-	SetUpdatedAt(time.Time)
-	GetUpdatedBy() primitive.ObjectID
-	SetUpdatedBy(primitive.ObjectID)
-	SetUpdated(primitive.ObjectID)
-}
-
 type BaseModelV2[T any] struct {
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	CreatedBy primitive.ObjectID `json:"created_by" bson:"created_by"`

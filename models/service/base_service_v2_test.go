@@ -126,7 +126,7 @@ func TestModelServiceV2_GetList(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Act
-	results, err := svc.GetList(bson.M{}, nil)
+	results, err := svc.GetMany(bson.M{}, nil)
 
 	// Assert
 	assert.Nil(t, err)

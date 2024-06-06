@@ -3,207 +3,300 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"github.com/crawlab-team/crawlab-core/grpc/payload"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 )
 
 var (
-	typeNameColNameMap = make(map[string]string)
-	typeInstances      = []interface{}{
+	typeNameColNameMap   = make(map[string]string)
+	typeOneNameModelMap  = make(map[string]any)
+	typeManyNameModelMap = make(map[string]any)
+	typeOneInstances     = []any{
 		models.TestModel{},
 		models.NodeV2{},
 		models.UserV2{},
 	}
+	typeManyInstances = []any{
+		[]models.NodeV2{},
+		[]models.TestModel{},
+		[]models.UserV2{},
+	}
 )
 
 func init() {
-	for _, v := range typeInstances {
+	for _, v := range typeOneInstances {
 		t := reflect.TypeOf(v)
 		typeName := t.Name()
 		colName := service.GetCollectionNameByInstance(v)
 		typeNameColNameMap[typeName] = colName
+		typeOneNameModelMap[typeName] = v
 	}
+	for _, v := range typeManyInstances {
+		t := reflect.TypeOf(v)
+		typeName := t.Elem().Name()
+		typeManyNameModelMap[typeName] = v
+	}
+}
+
+func GetOneInstanceModel(typeName string) any {
+	return typeOneNameModelMap[typeName]
+}
+
+func GetManyInstanceModel(typeName string) any {
+	return typeManyNameModelMap[typeName]
 }
 
 type ModelBaseServiceV2Server struct {
 	grpc.UnimplementedModelBaseServiceV2Server
 }
 
-func (svr ModelBaseServiceV2Server) GetById(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) GetById(ctx context.Context, req *grpc.ModelServiceV2GetByIdRequest) (res *grpc.Response, err error) {
+	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	data, err := svr.GetModelService(p.Type).GetById(p.Id)
+	modelSvc := service.NewModelServiceV2WithColName[bson.M](typeNameColNameMap[req.ModelType])
+	data, err := modelSvc.GetById(id)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccessWithData(data)
 }
 
-func (svr ModelBaseServiceV2Server) Get(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) GetOne(ctx context.Context, req *grpc.ModelServiceV2GetOneRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	data, err := svr.GetModelService(p.Type).Get(p.Query, p.FindOptions)
+	var options mongo.FindOptions
+	err = json.Unmarshal(req.FindOptions, &options)
+	if err != nil {
+		return HandleError(err)
+	}
+	modelSvc := service.NewModelServiceV2WithColName[bson.M](typeNameColNameMap[req.ModelType])
+	data, err := modelSvc.GetOne(query, &options)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccessWithData(data)
 }
 
-func (svr ModelBaseServiceV2Server) GetList(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) GetMany(ctx context.Context, req *grpc.ModelServiceV2GetManyRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	data, err := svr.GetModelService(p.Type).GetList(p.Query, p.FindOptions)
+	var options mongo.FindOptions
+	err = json.Unmarshal(req.FindOptions, &options)
+	if err != nil {
+		return HandleError(err)
+	}
+	modelSvc := service.NewModelServiceV2WithColName[bson.M](typeNameColNameMap[req.ModelType])
+	data, err := modelSvc.GetMany(query, &options)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccessWithData(data)
 }
 
-func (svr ModelBaseServiceV2Server) DeleteById(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) DeleteById(ctx context.Context, req *grpc.ModelServiceV2DeleteByIdRequest) (res *grpc.Response, err error) {
+	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	err = svr.GetModelService(p.Type).DeleteById(p.Id)
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.DeleteById(id)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) DeleteList(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) DeleteOne(ctx context.Context, req *grpc.ModelServiceV2DeleteOneRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	err = svr.GetModelService(p.Type).DeleteList(p.Query)
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.DeleteOne(query)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) UpdateById(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) DeleteMany(ctx context.Context, req *grpc.ModelServiceV2DeleteManyRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	err = svr.GetModelService(p.Type).UpdateById(p.Id, p.Update)
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.DeleteMany(query)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) UpdateOne(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) UpdateById(ctx context.Context, req *grpc.ModelServiceV2UpdateByIdRequest) (res *grpc.Response, err error) {
+	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	err = svr.GetModelService(p.Type).UpdateOne(p.Query, p.Update)
+	var update bson.M
+	err = json.Unmarshal(req.Update, &update)
+	if err != nil {
+		return HandleError(err)
+	}
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.UpdateById(id, update)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) UpdateMany(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[any]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) UpdateOne(ctx context.Context, req *grpc.ModelServiceV2UpdateOneRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	err = svr.GetModelService(p.Type).UpdateMany(p.Query, p.Update)
+	var update bson.M
+	err = json.Unmarshal(req.Update, &update)
+	if err != nil {
+		return HandleError(err)
+	}
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.UpdateOne(query, update)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) ReplaceById(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[bson.M]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) UpdateMany(ctx context.Context, req *grpc.ModelServiceV2UpdateManyRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	err = svr.GetModelService(p.Type).ReplaceById(p.Id, p.Model)
+	var update bson.M
+	err = json.Unmarshal(req.Update, &update)
+	if err != nil {
+		return HandleError(err)
+	}
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.UpdateMany(query, update)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) Replace(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[bson.M]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) ReplaceById(ctx context.Context, req *grpc.ModelServiceV2ReplaceByIdRequest) (res *grpc.Response, err error) {
+	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	err = svr.GetModelService(p.Type).Replace(p.Query, p.Model)
+	model := GetOneInstanceModel(req.ModelType)
+	modelType := reflect.TypeOf(model)
+	modelValuePtr := reflect.New(modelType).Interface()
+	err = json.Unmarshal(req.Model, modelValuePtr)
+	if err != nil {
+		return HandleError(err)
+	}
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.GetCol().ReplaceId(id, modelValuePtr)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) InsertOne(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[bson.M]
-	err = json.Unmarshal(req.Data, &p)
-	if err != nil {
-		return nil, err
-	}
-	id, err := svr.GetModelService(p.Type).InsertOne(p.Model)
+func (svr ModelBaseServiceV2Server) ReplaceOne(ctx context.Context, req *grpc.ModelServiceV2ReplaceOneRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
 		return HandleError(err)
 	}
-	return HandleSuccessWithData(id)
-}
-
-func (svr ModelBaseServiceV2Server) InsertMany(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[bson.M]
-	err = json.Unmarshal(req.Data, &p)
-	if err != nil {
-		return nil, err
-	}
-	ids, err := svr.GetModelService(p.Type).InsertMany(p.Models)
+	model := GetOneInstanceModel(req.ModelType)
+	modelType := reflect.TypeOf(model)
+	modelValuePtr := reflect.New(modelType).Interface()
+	err = json.Unmarshal(req.Model, &modelValuePtr)
 	if err != nil {
 		return HandleError(err)
 	}
-	return HandleSuccessWithData(ids)
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	err = modelSvc.GetCol().Replace(query, modelValuePtr)
+	if err != nil {
+		return HandleError(err)
+	}
+	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) Count(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
-	var p payload.ModelServiceV2Payload[bson.M]
-	err = json.Unmarshal(req.Data, &p)
+func (svr ModelBaseServiceV2Server) InsertOne(ctx context.Context, req *grpc.ModelServiceV2InsertOneRequest) (res *grpc.Response, err error) {
+	model := GetOneInstanceModel(req.ModelType)
+	modelType := reflect.TypeOf(model)
+	modelValuePtr := reflect.New(modelType).Interface()
+	err = json.Unmarshal(req.Model, modelValuePtr)
 	if err != nil {
-		return nil, err
+		return HandleError(err)
 	}
-	count, err := svr.GetModelService(p.Type).Count(p.Query)
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	r, err := modelSvc.GetCol().GetCollection().InsertOne(modelSvc.GetCol().GetContext(), modelValuePtr)
+	if err != nil {
+		return HandleError(err)
+	}
+	return HandleSuccessWithData(r.InsertedID)
+}
+
+func (svr ModelBaseServiceV2Server) InsertMany(ctx context.Context, req *grpc.ModelServiceV2InsertManyRequest) (res *grpc.Response, err error) {
+	model := GetOneInstanceModel(req.ModelType)
+	modelType := reflect.TypeOf(model)
+	modelsSliceType := reflect.SliceOf(modelType)
+	modelsSlicePtr := reflect.New(modelsSliceType).Interface()
+	err = json.Unmarshal(req.Models, modelsSlicePtr)
+	if err != nil {
+		return HandleError(err)
+	}
+	modelsSlice := reflect.ValueOf(modelsSlicePtr).Elem()
+	modelsInterface := make([]any, modelsSlice.Len())
+	for i := 0; i < modelsSlice.Len(); i++ {
+		modelsInterface[i] = modelsSlice.Index(i).Interface()
+	}
+	modelSvc := GetModelService[bson.M](req.ModelType)
+	r, err := modelSvc.GetCol().GetCollection().InsertMany(modelSvc.GetCol().GetContext(), modelsInterface)
+	if err != nil {
+		return HandleError(err)
+	}
+	return HandleSuccessWithData(r.InsertedIDs)
+}
+
+func (svr ModelBaseServiceV2Server) Count(ctx context.Context, req *grpc.ModelServiceV2CountRequest) (res *grpc.Response, err error) {
+	var query bson.M
+	err = json.Unmarshal(req.Query, &query)
+	if err != nil {
+		return HandleError(err)
+	}
+	count, err := GetModelService[bson.M](req.ModelType).Count(query)
 	if err != nil {
 		return HandleError(err)
 	}
 	return HandleSuccessWithData(count)
 }
 
-func (svr ModelBaseServiceV2Server) GetModelService(typeName string) *service.ModelServiceV2[bson.M] {
-	return service.NewModelServiceV2WithColName(typeNameColNameMap[typeName])
+func GetModelService[T any](typeName string) *service.ModelServiceV2[T] {
+	return service.NewModelServiceV2WithColName[T](typeNameColNameMap[typeName])
 }
 
 func NewModelBaseServiceV2Server() *ModelBaseServiceV2Server {

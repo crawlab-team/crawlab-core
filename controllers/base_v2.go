@@ -146,7 +146,7 @@ func (ctr *BaseControllerV2[T]) DeleteList(c *gin.Context) {
 		return
 	}
 
-	if err := ctr.modelSvc.DeleteList(bson.M{
+	if err := ctr.modelSvc.DeleteMany(bson.M{
 		"_id": bson.M{
 			"$in": payload.Ids,
 		},
@@ -159,7 +159,7 @@ func (ctr *BaseControllerV2[T]) DeleteList(c *gin.Context) {
 }
 
 func (ctr *BaseControllerV2[T]) getAll(c *gin.Context) {
-	models, err := ctr.modelSvc.GetList(nil, &mongo.FindOptions{
+	models, err := ctr.modelSvc.GetMany(nil, &mongo.FindOptions{
 		Sort: bson.D{{"_id", -1}},
 	})
 	if err != nil {
@@ -181,7 +181,7 @@ func (ctr *BaseControllerV2[T]) getList(c *gin.Context) {
 	sort := MustGetSortOption(c)
 
 	// get list
-	models, err := ctr.modelSvc.GetList(query, &mongo.FindOptions{
+	models, err := ctr.modelSvc.GetMany(query, &mongo.FindOptions{
 		Sort:  sort,
 		Skip:  pagination.Size * (pagination.Page - 1),
 		Limit: pagination.Size,

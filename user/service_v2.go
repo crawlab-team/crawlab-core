@@ -24,7 +24,7 @@ type ServiceV2 struct {
 }
 
 func (svc *ServiceV2) Init() (err error) {
-	_, err = svc.modelSvc.Get(bson.M{"username": constants.DefaultAdminUsername}, nil)
+	_, err = svc.modelSvc.GetOne(bson.M{"username": constants.DefaultAdminUsername}, nil)
 	if err == nil {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (svc *ServiceV2) Create(username, password, role, email string, by primitiv
 	}
 
 	// check if user exists
-	if u, err := svc.modelSvc.Get(bson.M{"username": username}, nil); err == nil && u != nil && !u.Id.IsZero() {
+	if u, err := svc.modelSvc.GetOne(bson.M{"username": username}, nil); err == nil && u != nil && !u.Id.IsZero() {
 		return trace.TraceError(errors.ErrorUserAlreadyExists)
 	}
 
@@ -85,7 +85,7 @@ func (svc *ServiceV2) Create(username, password, role, email string, by primitiv
 }
 
 func (svc *ServiceV2) Login(username, password string) (token string, u *models.UserV2, err error) {
-	u, err = svc.modelSvc.Get(bson.M{"username": username}, nil)
+	u, err = svc.modelSvc.GetOne(bson.M{"username": username}, nil)
 	if err != nil {
 		return "", nil, err
 	}

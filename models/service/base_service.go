@@ -59,13 +59,13 @@ func (svc *BaseService) Get(query bson.M, opts *mongo.FindOptions) (res interfac
 func (svc *BaseService) GetList(query bson.M, opts *mongo.FindOptions) (l interfaces.List, err error) {
 	// find result
 	tic := time.Now()
-	log.Debugf("baseService.GetList -> svc.find:start")
-	log.Debugf("baseService.GetList -> svc.id: %v", svc.id)
-	log.Debugf("baseService.GetList -> svc.col.GetName(): %v", svc.col.GetName())
-	log.Debugf("baseService.GetList -> query: %v", query)
-	log.Debugf("baseService.GetList -> opts: %v", opts)
+	log.Debugf("baseService.GetMany -> svc.find:start")
+	log.Debugf("baseService.GetMany -> svc.id: %v", svc.id)
+	log.Debugf("baseService.GetMany -> svc.col.GetName(): %v", svc.col.GetName())
+	log.Debugf("baseService.GetMany -> query: %v", query)
+	log.Debugf("baseService.GetMany -> opts: %v", opts)
 	fr := svc.find(query, opts)
-	log.Debugf("baseService.GetList -> svc.find:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
+	log.Debugf("baseService.GetMany -> svc.find:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
 
 	// bind
 	return NewListBinder(svc.id, fr).Bind()

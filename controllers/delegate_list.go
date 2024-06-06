@@ -161,7 +161,7 @@ func (d *ListControllerDelegate) DeleteList(c *gin.Context) {
 func (d *ListControllerDelegate) getAll(c *gin.Context) {
 	// get list
 	tic := time.Now()
-	log.Debugf("getAll -> d.svc.GetList:start")
+	log.Debugf("getAll -> d.svc.GetMany:start")
 	list, err := d.svc.GetList(nil, &mongo.FindOptions{
 		Sort: bson.D{{"_id", -1}},
 	})
@@ -173,7 +173,7 @@ func (d *ListControllerDelegate) getAll(c *gin.Context) {
 		}
 		return
 	}
-	log.Debugf("getAll -> d.svc.GetList:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
+	log.Debugf("getAll -> d.svc.GetMany:end. elapsed: %d ms", time.Now().Sub(tic).Milliseconds())
 	tic = time.Now()
 
 	// total count

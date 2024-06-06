@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	instanceMap    = make(map[string]interface{})
+	instanceMap    = make(map[string]any)
 	onceMap        = make(map[string]*sync.Once)
 	onceColNameMap = make(map[string]*sync.Once)
 	mu             sync.Mutex
@@ -29,7 +29,7 @@ func (svc *ModelServiceV2[T]) GetById(id primitive.ObjectID) (model *T, err erro
 	return &result, nil
 }
 
-func (svc *ModelServiceV2[T]) Get(query bson.M, options *mongo.FindOptions) (model *T, err error) {
+func (svc *ModelServiceV2[T]) GetOne(query bson.M, options *mongo.FindOptions) (model *T, err error) {
 	var result T
 	err = svc.col.Find(query, options).One(&result)
 	if err != nil {
@@ -38,7 +38,7 @@ func (svc *ModelServiceV2[T]) Get(query bson.M, options *mongo.FindOptions) (mod
 	return &result, nil
 }
 
-func (svc *ModelServiceV2[T]) GetList(query bson.M, options *mongo.FindOptions) (models []T, err error) {
+func (svc *ModelServiceV2[T]) GetMany(query bson.M, options *mongo.FindOptions) (models []T, err error) {
 	var result []T
 	err = svc.col.Find(query, options).All(&result)
 	if err != nil {
@@ -51,13 +51,14 @@ func (svc *ModelServiceV2[T]) DeleteById(id primitive.ObjectID) (err error) {
 	return svc.col.DeleteId(id)
 }
 
-func (svc *ModelServiceV2[T]) Delete(query bson.M) (err error) {
+func (svc *ModelServiceV2[T]) DeleteOne(query bson.M) (err error) {
 	_, err = svc.col.GetCollection().DeleteOne(svc.col.GetContext(), query)
 	return err
 }
 
-func (svc *ModelServiceV2[T]) DeleteList(query bson.M) (err error) {
-	return svc.col.Delete(query)
+func (svc *ModelServiceV2[T]) DeleteMany(query bson.M) (err error) {
+	_, err = svc.col.GetCollection().DeleteMany(svc.col.GetContext(), query, nil)
+	return err
 }
 
 func (svc *ModelServiceV2[T]) UpdateById(id primitive.ObjectID, update bson.M) (err error) {
@@ -79,7 +80,7 @@ func (svc *ModelServiceV2[T]) ReplaceById(id primitive.ObjectID, model T) (err e
 	return err
 }
 
-func (svc *ModelServiceV2[T]) Replace(query bson.M, model T) (err error) {
+func (svc *ModelServiceV2[T]) ReplaceOne(query bson.M, model T) (err error) {
 	_, err = svc.col.GetCollection().ReplaceOne(svc.col.GetContext(), query, model)
 	return err
 }
@@ -93,7 +94,7 @@ func (svc *ModelServiceV2[T]) InsertOne(model T) (id primitive.ObjectID, err err
 }
 
 func (svc *ModelServiceV2[T]) InsertMany(models []T) (ids []primitive.ObjectID, err error) {
-	var _models []interface{}
+	var _models []any
 	for _, model := range models {
 		_models = append(_models, model)
 	}
@@ -115,7 +116,7 @@ func (svc *ModelServiceV2[T]) GetCol() (col *mongo.Col) {
 	return svc.col
 }
 
-func GetCollectionNameByInstance(v interface{}) string {
+func GetCollectionNameByInstance(v any) string {
 	t := reflect.TypeOf(v)
 	field, _ := t.FieldByName("Id")
 	return field.Tag.Get("collection")
@@ -151,7 +152,7 @@ func NewModelServiceV2[T any]() *ModelServiceV2[T] {
 	return instanceMap[typeName].(*ModelServiceV2[T])
 }
 
-func NewModelServiceV2WithColName(colName string) *ModelServiceV2[bson.M] {
+func NewModelServiceV2WithColName[T any](colName string) *ModelServiceV2[T] {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -159,13 +160,13 @@ func NewModelServiceV2WithColName(colName string) *ModelServiceV2[bson.M] {
 		onceColNameMap[colName] = &sync.Once{}
 	}
 
-	var instance *ModelServiceV2[bson.M]
+	var instance *ModelServiceV2[T]
 
 	onceColNameMap[colName].Do(func() {
 		collection := mongo.GetMongoCol(colName)
-		instance = &ModelServiceV2[bson.M]{col: collection}
+		instance = &ModelServiceV2[T]{col: collection}
 		instanceMap[colName] = instance
 	})
 
-	return instanceMap[colName].(*ModelServiceV2[bson.M])
+	return instanceMap[colName].(*ModelServiceV2[T])
 }
