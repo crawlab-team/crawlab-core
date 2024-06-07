@@ -4,14 +4,13 @@ import (
 	"context"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
-	"time"
-
-	"github.com/crawlab-team/crawlab-db/mongo"
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type TestModel struct {
@@ -33,123 +32,211 @@ func TestModelServiceV2_GetById(t *testing.T) {
 	setupTestDB()
 	defer teardownTestDB()
 
-	// Arrange
 	svc := service.NewModelServiceV2[TestModel]()
 	id := primitive.NewObjectID()
 	testModel := TestModel{Id: id, Name: "Test Name"}
-	testModel.SetCreatedAt(time.Now())
-	testModel.SetUpdatedAt(time.Now())
+
 	_, err := svc.InsertOne(testModel)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
-	// Act
 	result, err := svc.GetById(id)
+	require.Nil(t, err)
+	assert.Equal(t, testModel.Name, result.Name)
+}
 
-	// Assert
-	assert.Nil(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "Test Name", result.Name)
-	assert.NotNil(t, result.GetCreatedAt())
-	assert.NotNil(t, result.GetUpdatedAt())
+func TestModelServiceV2_GetOne(t *testing.T) {
+	setupTestDB()
+	defer teardownTestDB()
+
+	svc := service.NewModelServiceV2[TestModel]()
+	testModel := TestModel{Name: "Test Name"}
+
+	_, err := svc.InsertOne(testModel)
+	require.Nil(t, err)
+
+	result, err := svc.GetOne(bson.M{"name": "Test Name"}, nil)
+	require.Nil(t, err)
+	assert.Equal(t, testModel.Name, result.Name)
+}
+
+func TestModelServiceV2_GetMany(t *testing.T) {
+	setupTestDB()
+	defer teardownTestDB()
+
+	svc := service.NewModelServiceV2[TestModel]()
+	testModels := []TestModel{
+		{Name: "Name1"},
+		{Name: "Name2"},
+	}
+
+	_, err := svc.InsertMany(testModels)
+	require.Nil(t, err)
+
+	results, err := svc.GetMany(bson.M{}, nil)
+	require.Nil(t, err)
+	assert.Equal(t, 2, len(results))
 }
 
 func TestModelServiceV2_InsertOne(t *testing.T) {
 	setupTestDB()
 	defer teardownTestDB()
 
-	// Arrange
 	svc := service.NewModelServiceV2[TestModel]()
 	testModel := TestModel{Name: "Test Name"}
 
-	// Act
 	id, err := svc.InsertOne(testModel)
-
-	// Assert
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	assert.NotEqual(t, primitive.NilObjectID, id)
+}
+
+func TestModelServiceV2_InsertMany(t *testing.T) {
+	setupTestDB()
+	defer teardownTestDB()
+
+	svc := service.NewModelServiceV2[TestModel]()
+	testModels := []TestModel{
+		{Name: "Name1"},
+		{Name: "Name2"},
+	}
+
+	ids, err := svc.InsertMany(testModels)
+	require.Nil(t, err)
+	assert.Equal(t, 2, len(ids))
 }
 
 func TestModelServiceV2_UpdateById(t *testing.T) {
 	setupTestDB()
 	defer teardownTestDB()
 
-	// Arrange
 	svc := service.NewModelServiceV2[TestModel]()
 	id := primitive.NewObjectID()
 	testModel := TestModel{Id: id, Name: "Old Name"}
-	_, err := svc.InsertOne(testModel)
-	assert.Nil(t, err)
 
-	// Act
+	_, err := svc.InsertOne(testModel)
+	require.Nil(t, err)
+
 	update := bson.M{"$set": bson.M{"name": "New Name"}}
 	err = svc.UpdateById(id, update)
+	require.Nil(t, err)
 
-	// Assert
-	assert.Nil(t, err)
 	result, err := svc.GetById(id)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	assert.Equal(t, "New Name", result.Name)
+}
+
+func TestModelServiceV2_UpdateOne(t *testing.T) {
+	setupTestDB()
+	defer teardownTestDB()
+
+	svc := service.NewModelServiceV2[TestModel]()
+	testModel := TestModel{Name: "Old Name"}
+
+	_, err := svc.InsertOne(testModel)
+	require.Nil(t, err)
+
+	update := bson.M{"$set": bson.M{"name": "New Name"}}
+	err = svc.UpdateOne(bson.M{"name": "Old Name"}, update)
+	require.Nil(t, err)
+
+	result, err := svc.GetOne(bson.M{"name": "New Name"}, nil)
+	require.Nil(t, err)
+	assert.Equal(t, "New Name", result.Name)
+}
+
+func TestModelServiceV2_UpdateMany(t *testing.T) {
+	setupTestDB()
+	defer teardownTestDB()
+
+	svc := service.NewModelServiceV2[TestModel]()
+	testModels := []TestModel{
+		{Name: "Old Name1"},
+		{Name: "Old Name2"},
+	}
+
+	_, err := svc.InsertMany(testModels)
+	require.Nil(t, err)
+
+	update := bson.M{"$set": bson.M{"name": "New Name"}}
+	err = svc.UpdateMany(bson.M{"name": bson.M{"$regex": "^Old"}}, update)
+	require.Nil(t, err)
+
+	results, err := svc.GetMany(bson.M{"name": "New Name"}, nil)
+	require.Nil(t, err)
+	assert.Equal(t, 2, len(results))
 }
 
 func TestModelServiceV2_DeleteById(t *testing.T) {
 	setupTestDB()
 	defer teardownTestDB()
 
-	// Arrange
 	svc := service.NewModelServiceV2[TestModel]()
 	id := primitive.NewObjectID()
 	testModel := TestModel{Id: id, Name: "Test Name"}
+
 	_, err := svc.InsertOne(testModel)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
-	// Act
 	err = svc.DeleteById(id)
+	require.Nil(t, err)
 
-	// Assert
-	assert.Nil(t, err)
 	result, err := svc.GetById(id)
 	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
 
-func TestModelServiceV2_GetList(t *testing.T) {
+func TestModelServiceV2_DeleteOne(t *testing.T) {
 	setupTestDB()
 	defer teardownTestDB()
 
-	// Arrange
+	svc := service.NewModelServiceV2[TestModel]()
+	testModel := TestModel{Name: "Test Name"}
+
+	_, err := svc.InsertOne(testModel)
+	require.Nil(t, err)
+
+	err = svc.DeleteOne(bson.M{"name": "Test Name"})
+	require.Nil(t, err)
+
+	result, err := svc.GetOne(bson.M{"name": "Test Name"}, nil)
+	assert.NotNil(t, err)
+	assert.Nil(t, result)
+}
+
+func TestModelServiceV2_DeleteMany(t *testing.T) {
+	setupTestDB()
+	defer teardownTestDB()
+
 	svc := service.NewModelServiceV2[TestModel]()
 	testModels := []TestModel{
-		{Name: "Name1"},
-		{Name: "Name2"},
+		{Name: "Test Name1"},
+		{Name: "Test Name2"},
 	}
+
 	_, err := svc.InsertMany(testModels)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
-	// Act
-	results, err := svc.GetMany(bson.M{}, nil)
+	err = svc.DeleteMany(bson.M{"name": bson.M{"$regex": "^Test Name"}})
+	require.Nil(t, err)
 
-	// Assert
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(results))
+	results, err := svc.GetMany(bson.M{"name": bson.M{"$regex": "^Test Name"}}, nil)
+	require.Nil(t, err)
+	assert.Equal(t, 0, len(results))
 }
 
 func TestModelServiceV2_Count(t *testing.T) {
 	setupTestDB()
 	defer teardownTestDB()
 
-	// Arrange
 	svc := service.NewModelServiceV2[TestModel]()
 	testModels := []TestModel{
 		{Name: "Name1"},
 		{Name: "Name2"},
 	}
+
 	_, err := svc.InsertMany(testModels)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
-	// Act
 	total, err := svc.Count(bson.M{})
-
-	// Assert
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	assert.Equal(t, 2, total)
 }
