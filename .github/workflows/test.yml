@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-20.04
     services:
       mongo:
-        image: mongo:4.2
+        image: mongo:5
         ports:
           - 27017:27017
     env:

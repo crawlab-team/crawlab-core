@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
+	"time"
 )
 
 type TestModel struct {
@@ -41,6 +42,7 @@ func TestModelServiceV2_GetById(t *testing.T) {
 
 	_, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	result, err := svc.GetById(id)
 	require.Nil(t, err)
@@ -56,6 +58,7 @@ func TestModelServiceV2_GetOne(t *testing.T) {
 
 	_, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	result, err := svc.GetOne(bson.M{"name": "Test Name"}, nil)
 	require.Nil(t, err)
@@ -74,6 +77,7 @@ func TestModelServiceV2_GetMany(t *testing.T) {
 
 	_, err := svc.InsertMany(testModels)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	results, err := svc.GetMany(bson.M{}, nil)
 	require.Nil(t, err)
@@ -117,10 +121,12 @@ func TestModelServiceV2_UpdateById(t *testing.T) {
 
 	_, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	update := bson.M{"$set": bson.M{"name": "New Name"}}
 	err = svc.UpdateById(id, update)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	result, err := svc.GetById(id)
 	require.Nil(t, err)
@@ -136,10 +142,12 @@ func TestModelServiceV2_UpdateOne(t *testing.T) {
 
 	_, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	update := bson.M{"$set": bson.M{"name": "New Name"}}
 	err = svc.UpdateOne(bson.M{"name": "Old Name"}, update)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	result, err := svc.GetOne(bson.M{"name": "New Name"}, nil)
 	require.Nil(t, err)
@@ -158,10 +166,12 @@ func TestModelServiceV2_UpdateMany(t *testing.T) {
 
 	_, err := svc.InsertMany(testModels)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	update := bson.M{"$set": bson.M{"name": "New Name"}}
 	err = svc.UpdateMany(bson.M{"name": bson.M{"$regex": "^Old"}}, update)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	results, err := svc.GetMany(bson.M{"name": "New Name"}, nil)
 	require.Nil(t, err)
@@ -178,9 +188,11 @@ func TestModelServiceV2_DeleteById(t *testing.T) {
 
 	_, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	err = svc.DeleteById(id)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	result, err := svc.GetById(id)
 	assert.NotNil(t, err)
@@ -196,9 +208,11 @@ func TestModelServiceV2_DeleteOne(t *testing.T) {
 
 	_, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	err = svc.DeleteOne(bson.M{"name": "Test Name"})
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	result, err := svc.GetOne(bson.M{"name": "Test Name"}, nil)
 	assert.NotNil(t, err)
@@ -217,9 +231,11 @@ func TestModelServiceV2_DeleteMany(t *testing.T) {
 
 	_, err := svc.InsertMany(testModels)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	err = svc.DeleteMany(bson.M{"name": bson.M{"$regex": "^Test Name"}})
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	results, err := svc.GetMany(bson.M{"name": bson.M{"$regex": "^Test Name"}}, nil)
 	require.Nil(t, err)
@@ -238,6 +254,7 @@ func TestModelServiceV2_Count(t *testing.T) {
 
 	_, err := svc.InsertMany(testModels)
 	require.Nil(t, err)
+	time.Sleep(100 * time.Millisecond)
 
 	total, err := svc.Count(bson.M{})
 	require.Nil(t, err)
