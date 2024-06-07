@@ -25,7 +25,10 @@ func setupTestDB() {
 
 func teardownTestDB() {
 	db := mongo.GetMongoDb("testdb")
-	db.Drop(context.Background())
+	err := db.Drop(context.Background())
+	if err != nil {
+		return
+	}
 }
 
 func TestModelServiceV2_GetById(t *testing.T) {
