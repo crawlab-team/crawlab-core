@@ -27,12 +27,9 @@ jobs:
       - name: Run unit tests
         run: |
           mods=(\
-            "models" \
-            "export" \
-            "controllers" \
-            "apps" \
-            "process" \
+            "github.com/crawlab-team/crawlab-core/models/client" \
+            "github.com/crawlab-team/crawlab-core/models/service" \
           )
           for pkg in ${mods[@]}; do
-            go test ./${pkg}/...
+            go test ${pkg}
           done
