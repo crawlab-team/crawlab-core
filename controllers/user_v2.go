@@ -8,25 +8,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-)
-
-var UserControllerV2 = NewControllerV2[models.UserV2](
-	Action{
-		Method:      http.MethodPost,
-		Path:        "/:id/change-password",
-		HandlerFunc: PostUserChangePassword,
-	},
-	Action{
-		Method:      http.MethodGet,
-		Path:        "/me",
-		HandlerFunc: GetUserMe,
-	},
-	Action{
-		Method:      http.MethodPut,
-		Path:        "/me",
-		HandlerFunc: PutUserById,
-	},
 )
 
 func PostUserChangePassword(c *gin.Context) {

@@ -13,18 +13,29 @@ import (
 )
 
 var (
-	typeNameColNameMap   = make(map[string]string)
-	typeOneNameModelMap  = make(map[string]any)
-	typeManyNameModelMap = make(map[string]any)
-	typeOneInstances     = []any{
-		models.TestModel{},
-		models.NodeV2{},
-		models.UserV2{},
-	}
-	typeManyInstances = []any{
-		[]models.NodeV2{},
-		[]models.TestModel{},
-		[]models.UserV2{},
+	typeNameColNameMap  = make(map[string]string)
+	typeOneNameModelMap = make(map[string]any)
+	typeOneInstances    = []any{
+		*new(models.TestModel),
+		*new(models.DataCollectionV2),
+		*new(models.DataSourceV2),
+		*new(models.DependencySettingV2),
+		*new(models.EnvironmentV2),
+		*new(models.GitV2),
+		*new(models.NodeV2),
+		*new(models.PermissionV2),
+		*new(models.ProjectV2),
+		*new(models.RolePermissionV2),
+		*new(models.RoleV2),
+		*new(models.ScheduleV2),
+		*new(models.SettingV2),
+		*new(models.SpiderV2),
+		*new(models.TaskQueueItemV2),
+		*new(models.TaskStatV2),
+		*new(models.TaskV2),
+		*new(models.TokenV2),
+		*new(models.UserRoleV2),
+		*new(models.UserV2),
 	}
 )
 
@@ -36,19 +47,10 @@ func init() {
 		typeNameColNameMap[typeName] = colName
 		typeOneNameModelMap[typeName] = v
 	}
-	for _, v := range typeManyInstances {
-		t := reflect.TypeOf(v)
-		typeName := t.Elem().Name()
-		typeManyNameModelMap[typeName] = v
-	}
 }
 
 func GetOneInstanceModel(typeName string) any {
 	return typeOneNameModelMap[typeName]
-}
-
-func GetManyInstanceModel(typeName string) any {
-	return typeManyNameModelMap[typeName]
 }
 
 type ModelBaseServiceV2Server struct {
