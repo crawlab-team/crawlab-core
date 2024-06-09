@@ -141,14 +141,18 @@ func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Reques
 	for _, s := range settings {
 		switch s.TaskTrigger {
 		case constants.NotificationTriggerTaskFinish:
-			_ = svc.Send(&s, e)
+			if t.Status != constants.TaskStatusPending && t.Status != constants.TaskStatusRunning {
+				_ = svc.Send(&s, e)
+			}
 		case constants.NotificationTriggerTaskError:
 			if t.Status == constants.TaskStatusError || t.Status == constants.TaskStatusAbnormal {
 				_ = svc.Send(&s, e)
 			}
 		case constants.NotificationTriggerTaskEmptyResults:
-			if ts.ResultCount == 0 {
-				_ = svc.Send(&s, e)
+			if t.Status != constants.TaskStatusPending && t.Status != constants.TaskStatusRunning {
+				if ts.ResultCount == 0 {
+					_ = svc.Send(&s, e)
+				}
 			}
 		case constants.NotificationTriggerTaskNever:
 		}
