@@ -192,7 +192,17 @@ Please find the task data as below.
 	return nil
 }
 
-func (svc *Service) sendMail(s *Setting, entity bson.M) (err error) {
+func (svc *Service) Send(s *Setting, entity bson.M) (err error) {
+	switch s.Type {
+	case TypeMail:
+		return svc.SendMail(s, entity)
+	case TypeMobile:
+		return svc.SendMobile(s, entity)
+	}
+	return nil
+}
+
+func (svc *Service) SendMail(s *Setting, entity bson.M) (err error) {
 	// to
 	to, err := parser.Parse(s.Mail.To, entity)
 	if err != nil {
@@ -228,7 +238,7 @@ func (svc *Service) sendMail(s *Setting, entity bson.M) (err error) {
 	return nil
 }
 
-func (svc *Service) sendMobile(s *Setting, entity bson.M) (err error) {
+func (svc *Service) SendMobile(s *Setting, entity bson.M) (err error) {
 	// webhook
 	webhook, err := parser.Parse(s.Mobile.Webhook, entity)
 	if err != nil {

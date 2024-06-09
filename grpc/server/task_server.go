@@ -12,6 +12,7 @@ import (
 	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/notification"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
@@ -107,6 +108,44 @@ func (svr TaskServer) Fetch(ctx context.Context, request *grpc.Request) (respons
 		return nil, err
 	}
 	return HandleSuccessWithData(tid)
+}
+
+func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Request) (response *grpc.Response, err error) {
+	svc := notification.GetService()
+	var e bson.M
+	if err := json.Unmarshal(request.Data, &e); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	var t models.Task
+	if err := json.Unmarshal(request.Data, &t); err != nil {
+		return nil, trace.TraceError(err)
+	}
+	ts, err := svr.modelSvc.GetTaskStatById(t.Id)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	settings, _, err := svc.GetSettingList(bson.M{
+		"enabled": true,
+	}, nil, nil)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	for _, s := range settings {
+		switch s.TaskTrigger {
+		case constants.NotificationTriggerTaskFinish:
+			_ = svc.Send(&s, e)
+		case constants.NotificationTriggerTaskError:
+			if t.Status == constants.TaskStatusError || t.Status == constants.TaskStatusAbnormal {
+				_ = svc.Send(&s, e)
+			}
+		case constants.NotificationTriggerTaskEmptyResults:
+			if ts.ResultCount == 0 {
+				_ = svc.Send(&s, e)
+			}
+		case constants.NotificationTriggerTaskNever:
+		}
+	}
+	return nil, nil
 }
 
 func (svr TaskServer) handleInsertData(msg *grpc.StreamMessage) (err error) {

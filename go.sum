@@ -159,6 +159,8 @@ github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240606060845-268ae28818d2 h1:S4F
 github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240606060845-268ae28818d2/go.mod h1:m5H3K6QV7L//0MqBbmt0QvnxD7aEcQPny5VmZi+O+H8=
 github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240606065258-08b640f15e96 h1:DXvaWwOYD6tsiN80sS/+yQxcApX7pvaEvmug5ROA0Wo=
 github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240606065258-08b640f15e96/go.mod h1:O7/zw0CRzX3DbFw5SAl9DIpbAsKthEvgm7R1ikxcIa0=
+github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240609070140-04a938cd57ef h1:FGDfwLfTr2WZSy3cUVYBX4Xz9xrHZzxQrFf3DA93RqY=
+github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240609070140-04a938cd57ef/go.mod h1:j5FaFuWfIxHbmFXedFaUZHO2DpLqS3QZ0x7W3APN0fQ=
 github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230629045457-afe0be0e2185 h1:A/XSUuGgGMn+z+lFd2ye2ClgIKhDZYUerhOL5jePQhU=
 github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230629045457-afe0be0e2185/go.mod h1:YHMYUEoSqfXUZHsWW/M/DaLh/zOpRtiElaRWcrGyv/I=
 github.com/crawlab-team/go-trace v0.1.0/go.mod h1:LcWyn68HoT+d29CHM8L41pFHxsAcBMF1xjqJmWdyFh8=
@@ -301,6 +303,7 @@ github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaS
 github.com/golang/protobuf v1.5.1/go.mod h1:DopwsBzvsk0Fs44TXzsVbJyPhcCPeIwnvohx4u74HPM=
 github.com/golang/protobuf v1.5.2 h1:ROPKBNFfQgOUMifHyP+KYbvpjbdoFNs+aK7DXlji0Tw=
 github.com/golang/protobuf v1.5.2/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiuN0vRsmY=
+github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/golang/snappy v0.0.1/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/golang/snappy v0.0.3 h1:fHPg5GQYlCeLIPB9BZqMVR5nR9A+IM5zcgeTdjMYmLA=
