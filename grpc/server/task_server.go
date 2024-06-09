@@ -126,10 +126,7 @@ func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Reques
 	}
 	settings, _, err := svc.GetSettingList(bson.M{
 		"enabled": true,
-	}, &entity.Pagination{
-		Page: 0,
-		Size: 99999,
-	}, nil)
+	}, nil, nil)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}

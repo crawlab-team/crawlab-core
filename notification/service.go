@@ -269,13 +269,22 @@ func (svc *Service) SendMobile(s *Setting, entity bson.M) (err error) {
 }
 
 func (svc *Service) GetSettingList(query bson.M, pagination *entity.Pagination, sort bson.D) (res []Setting, total int, err error) {
+	// options
+	var options *mongo2.FindOptions
+	if pagination != nil || sort != nil {
+		options = new(mongo2.FindOptions)
+		if pagination != nil {
+			options.Skip = pagination.Size * (pagination.Page - 1)
+			options.Limit = pagination.Size
+		}
+		if sort != nil {
+			options.Sort = sort
+		}
+	}
+
 	// get list
 	var list []Setting
-	if err := svc.col.Find(query, &mongo2.FindOptions{
-		Sort:  sort,
-		Skip:  pagination.Size * (pagination.Page - 1),
-		Limit: pagination.Size,
-	}).All(&list); err != nil {
+	if err := svc.col.Find(query, options).All(&list); err != nil {
 		if err.Error() == mongo.ErrNoDocuments.Error() {
 			return nil, 0, nil
 		} else {
