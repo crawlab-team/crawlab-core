@@ -112,12 +112,20 @@ func (svr TaskServer) Fetch(ctx context.Context, request *grpc.Request) (respons
 
 func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Request) (response *grpc.Response, err error) {
 	svc := notification.GetService()
-	var e bson.M
-	if err := json.Unmarshal(request.Data, &e); err != nil {
+	var t = new(models.Task)
+	if err := json.Unmarshal(request.Data, t); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	var t models.Task
-	if err := json.Unmarshal(request.Data, &t); err != nil {
+	t, err = svr.modelSvc.GetTaskById(t.Id)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	td, err := json.Marshal(t)
+	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	var e bson.M
+	if err := json.Unmarshal(td, &e); err != nil {
 		return nil, trace.TraceError(err)
 	}
 	ts, err := svr.modelSvc.GetTaskStatById(t.Id)

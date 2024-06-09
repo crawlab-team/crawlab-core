@@ -115,9 +115,6 @@ func (r *Runner) Run() (err error) {
 	// configure logging
 	r.configureLogging()
 
-	// send notification
-	r.sendNotification()
-
 	// start process
 	if err := r.cmd.Start(); err != nil {
 		return r.updateTask(constants.TaskStatusError, err)
@@ -487,7 +484,7 @@ func (r *Runner) updateTask(status string, e error) (err error) {
 		}
 
 		// send notification
-		r.sendNotification()
+		go r.sendNotification()
 
 		// update stats
 		go func() {
