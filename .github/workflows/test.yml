@@ -27,6 +27,7 @@ jobs:
       - name: Run unit tests
         run: |
           mods=(\
+            "github.com/crawlab-team/crawlab-core/controllers" \
             "github.com/crawlab-team/crawlab-core/models/client" \
             "github.com/crawlab-team/crawlab-core/models/service" \
           )
