@@ -21,10 +21,10 @@ type TaskV2 struct {
 	NodeIds             []primitive.ObjectID `json:"node_ids" bson:"node_ids"`
 	ParentId            primitive.ObjectID   `json:"parent_id" bson:"parent_id"`
 	Priority            int                  `json:"priority" bson:"priority"`
-	Stat                *TaskStat            `json:"stat,omitempty" bson:"-"`
+	Stat                *TaskStatV2          `json:"stat,omitempty" bson:"-"`
 	HasSub              bool                 `json:"has_sub" json:"has_sub"`
-	SubTasks            []Task               `json:"sub_tasks,omitempty" bson:"-"`
-	Spider              *Spider              `json:"spider,omitempty" bson:"-"`
+	SubTasks            []TaskV2             `json:"sub_tasks,omitempty" bson:"-"`
+	Spider              *SpiderV2            `json:"spider,omitempty" bson:"-"`
 	UserId              primitive.ObjectID   `json:"-" bson:"-"`
 	CreateTs            time.Time            `json:"create_ts" bson:"create_ts"`
 }

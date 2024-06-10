@@ -6,9 +6,9 @@ import (
 )
 
 type BaseModelV2[T any] struct {
-	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	CreatedAt time.Time          `json:"created_ts" bson:"created_ts"`
 	CreatedBy primitive.ObjectID `json:"created_by" bson:"created_by"`
-	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+	UpdatedAt time.Time          `json:"updated_ts" bson:"updated_ts"`
 	UpdatedBy primitive.ObjectID `json:"updated_by" bson:"updated_by"`
 }
 

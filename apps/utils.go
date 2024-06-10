@@ -74,7 +74,7 @@ var injectors = []interface{}{
 	user.GetUserService,
 	schedule.GetScheduleService,
 	admin.GetSpiderAdminService,
-	stats.NewStatsService,
+	stats.GetStatsService,
 	nodeconfig.NewNodeConfigService,
 	taskstats.GetTaskStatsService,
 	color.NewService,

@@ -8,7 +8,7 @@ type SpiderStatV2 struct {
 	Id                        primitive.ObjectID `json:"_id" bson:"_id" collection:"spider_stats"`
 	BaseModelV2[SpiderStatV2] `bson:",inline"`
 	LastTaskId                primitive.ObjectID `json:"last_task_id" bson:"last_task_id,omitempty"`
-	LastTask                  *Task              `json:"last_task,omitempty" bson:"-"`
+	LastTask                  *TaskV2            `json:"last_task,omitempty" bson:"-"`
 	Tasks                     int                `json:"tasks" bson:"tasks"`
 	Results                   int                `json:"results" bson:"results"`
 	WaitDuration              int64              `json:"wait_duration" bson:"wait_duration,omitempty"`       // in second

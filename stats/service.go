@@ -309,9 +309,15 @@ func (svc *Service) getTaskStatsHistogram(query bson.M) (data interface{}, err e
 	return res, nil
 }
 
-func NewStatsService() (svc2 interfaces.StatsService, err error) {
-	// service
-	svc := &Service{}
+var svc interfaces.StatsService
 
-	return svc, nil
+func GetStatsService() interfaces.StatsService {
+	if svc != nil {
+		return svc
+	}
+
+	// service
+	svc = &Service{}
+
+	return svc
 }
