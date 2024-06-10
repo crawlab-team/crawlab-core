@@ -14,18 +14,35 @@ type RouterGroups struct {
 
 func NewRouterGroups(app *gin.Engine) (groups *RouterGroups) {
 	return &RouterGroups{
-		AuthGroup:      app.Group("/", middlewares.AuthorizationMiddleware()),
+		AuthGroup:      app.Group("/", middlewares.AuthorizationMiddlewareV2()),
 		AnonymousGroup: app.Group("/"),
 	}
 }
 
 func RegisterController[T any](group *gin.RouterGroup, basePath string, ctr *BaseControllerV2[T]) {
-	group.GET(basePath, ctr.GetList)
-	group.GET(basePath+"/:id", ctr.GetById)
-	group.POST(basePath, ctr.Post)
-	group.PUT(basePath+"/:id", ctr.PutById)
-	group.PATCH(basePath, ctr.PatchList)
-	group.DELETE(basePath+"/:id", ctr.DeleteById)
+	actionPaths := make(map[string]bool)
+	for _, action := range ctr.actions {
+		group.Handle(action.Method, action.Path, action.HandlerFunc)
+		path := basePath + action.Path
+		key := action.Method + " - " + path
+		actionPaths[key] = true
+	}
+	registerBuiltinHandler(group, http.MethodGet, basePath+"", ctr.GetList, actionPaths)
+	registerBuiltinHandler(group, http.MethodGet, basePath+"/:id", ctr.GetById, actionPaths)
+	registerBuiltinHandler(group, http.MethodPost, basePath+"", ctr.Post, actionPaths)
+	registerBuiltinHandler(group, http.MethodPut, basePath+"/:id", ctr.PutById, actionPaths)
+	registerBuiltinHandler(group, http.MethodPatch, basePath+"", ctr.PatchList, actionPaths)
+	registerBuiltinHandler(group, http.MethodDelete, basePath+"/:id", ctr.DeleteById, actionPaths)
+	registerBuiltinHandler(group, http.MethodDelete, basePath+"", ctr.DeleteList, actionPaths)
+}
+
+func registerBuiltinHandler(group *gin.RouterGroup, method, path string, handlerFunc gin.HandlerFunc, existingActionPaths map[string]bool) {
+	key := method + " - " + path
+	_, ok := existingActionPaths[key]
+	if ok {
+		return
+	}
+	group.Handle(method, path, handlerFunc)
 }
 
 func InitRoutes(app *gin.Engine) {
@@ -42,7 +59,16 @@ func InitRoutes(app *gin.Engine) {
 	RegisterController(groups.AuthGroup, "/projects", NewControllerV2[models.ProjectV2]())
 	RegisterController(groups.AuthGroup, "/roles", NewControllerV2[models.RoleV2]())
 	RegisterController(groups.AuthGroup, "/schedules", NewControllerV2[models.ScheduleV2](
-	// TODO: implement actions
+		Action{
+			Method:      http.MethodPost,
+			Path:        "/:id/enable",
+			HandlerFunc: PostScheduleEnable,
+		},
+		Action{
+			Method:      http.MethodPost,
+			Path:        "/:id/disable",
+			HandlerFunc: PostScheduleDisable,
+		},
 	))
 	RegisterController(groups.AuthGroup, "/settings", NewControllerV2[models.SettingV2]())
 	RegisterController(groups.AuthGroup, "/spiders", NewControllerV2[models.SpiderV2](
@@ -52,7 +78,11 @@ func InitRoutes(app *gin.Engine) {
 	// TODO: implement actions
 	))
 	RegisterController(groups.AuthGroup, "/tokens", NewControllerV2[models.TokenV2](
-	// TODO: implement actions
+		Action{
+			Method:      http.MethodPost,
+			Path:        "",
+			HandlerFunc: PostToken,
+		},
 	))
 	RegisterController(groups.AuthGroup, "/users", NewControllerV2[models.UserV2](
 		Action{

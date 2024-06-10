@@ -2,10 +2,10 @@ package schedule
 
 import (
 	"github.com/crawlab-team/crawlab-core/config"
-	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/spider/admin"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/go-trace"
 	"github.com/robfig/cron/v3"
@@ -19,7 +19,7 @@ type ServiceV2 struct {
 	// dependencies
 	interfaces.WithConfigPath
 	modelSvc *service.ModelServiceV2[models.ScheduleV2]
-	adminSvc interfaces.SpiderAdminService
+	adminSvc *admin.ServiceV2
 
 	// settings variables
 	loc            *time.Location
@@ -245,14 +245,9 @@ func NewScheduleServiceV2() (svc2 *ServiceV2, err error) {
 		skip:           false,
 		updateInterval: 1 * time.Minute,
 	}
-
-	// dependency injection
-	if err := container.GetContainer().Invoke(func(
-		adminSvc interfaces.SpiderAdminService,
-	) {
-		svc.adminSvc = adminSvc
-	}); err != nil {
-		return nil, trace.TraceError(err)
+	svc.adminSvc, err = admin.GetSpiderAdminServiceV2()
+	if err != nil {
+		return nil, err
 	}
 	svc.modelSvc = service.NewModelServiceV2[models.ScheduleV2]()
 

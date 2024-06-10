@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -28,16 +26,7 @@ func PostUserChangePassword(c *gin.Context) {
 	}
 
 	// get user
-	res, ok := c.Get(constants.UserContextKey)
-	if !ok {
-		HandleErrorUnauthorized(c, errors.ErrorUserNotExists)
-		return
-	}
-	u, ok := res.(models.UserV2)
-	if !ok {
-		HandleErrorUnauthorized(c, errors.ErrorUserNotExists)
-		return
-	}
+	u := GetUserFromContextV2(c)
 	modelSvc := service.NewModelServiceV2[models.UserV2]()
 
 	// update password
@@ -58,16 +47,7 @@ func PostUserChangePassword(c *gin.Context) {
 }
 
 func GetUserMe(c *gin.Context) {
-	res, ok := c.Get(constants.UserContextKey)
-	if !ok {
-		HandleErrorUnauthorized(c, errors.ErrorUserNotExists)
-		return
-	}
-	u, ok := res.(models.UserV2)
-	if !ok {
-		HandleErrorUnauthorized(c, errors.ErrorUserNotExists)
-		return
-	}
+	u := GetUserFromContextV2(c)
 	HandleSuccessWithData(c, u)
 }
 
@@ -80,16 +60,8 @@ func PutUserById(c *gin.Context) {
 	}
 
 	// get user
-	res, ok := c.Get(constants.UserContextKey)
-	if !ok {
-		HandleErrorUnauthorized(c, errors.ErrorUserNotExists)
-		return
-	}
-	u, ok := res.(models.UserV2)
-	if !ok {
-		HandleErrorUnauthorized(c, errors.ErrorUserNotExists)
-		return
-	}
+	u := GetUserFromContextV2(c)
+
 	modelSvc := service.NewModelServiceV2[models.UserV2]()
 
 	// update user
@@ -100,6 +72,9 @@ func PutUserById(c *gin.Context) {
 	}
 	user.Password = userDb.Password
 	user.SetUpdated(u.Id)
+	if user.Id.IsZero() {
+		user.Id = u.Id
+	}
 	if err := modelSvc.ReplaceById(u.Id, user); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
