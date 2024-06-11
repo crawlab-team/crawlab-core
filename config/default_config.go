@@ -35,4 +35,6 @@ node:
   master: Y
 api:
   endpoint: http://localhost:8000
+log:
+  path: /var/log/crawlab
 `

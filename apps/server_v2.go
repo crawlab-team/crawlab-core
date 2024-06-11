@@ -12,10 +12,6 @@ import (
 	_ "net/http/pprof"
 )
 
-func init() {
-	injectModules()
-}
-
 type ServerV2 struct {
 	// settings
 	grpcAddress interfaces.Address
@@ -64,6 +60,14 @@ func (app *ServerV2) Stop() {
 	app.quit <- 1
 }
 
+func (app *ServerV2) GetApi() ApiApp {
+	return app.api
+}
+
+func (app *ServerV2) GetNodeService() interfaces.NodeService {
+	return app.nodeSvc
+}
+
 func (app *ServerV2) logNodeInfo() {
 	log.Infof("current node type: %s", utils.GetNodeType())
 	if utils.IsDocker() {
@@ -93,7 +97,7 @@ func NewServerV2() (app NodeApp) {
 
 		// docker
 		if utils.IsDocker() {
-			svr.dck = GetDocker(WithDockerParent(svr))
+			svr.dck = GetDocker(svr)
 		}
 	}
 

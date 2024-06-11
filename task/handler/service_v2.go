@@ -6,14 +6,13 @@ import (
 	"errors"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/container"
 	errors2 "github.com/crawlab-team/crawlab-core/errors"
 	grpcclient "github.com/crawlab-team/crawlab-core/grpc/client"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/client"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/task"
+	nodeconfig "github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/go-trace"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,7 +22,6 @@ import (
 
 type ServiceV2 struct {
 	// dependencies
-	interfaces.TaskBaseService
 	cfgSvc interfaces.NodeConfigService
 	c      *grpcclient.GrpcClientV2 // grpc client
 
@@ -388,15 +386,8 @@ func (svc *ServiceV2) run(taskId primitive.ObjectID) (err error) {
 }
 
 func NewTaskHandlerServiceV2() (svc2 *ServiceV2, err error) {
-	// base service
-	baseSvc, err := task.NewBaseService()
-	if err != nil {
-		return nil, trace.TraceError(err)
-	}
-
 	// service
 	svc := &ServiceV2{
-		TaskBaseService:   baseSvc,
 		exitWatchDuration: 60 * time.Second,
 		fetchInterval:     1 * time.Second,
 		fetchTimeout:      15 * time.Second,
@@ -408,13 +399,7 @@ func NewTaskHandlerServiceV2() (svc2 *ServiceV2, err error) {
 	}
 
 	// dependency injection
-	if err := container.GetContainer().Invoke(func(
-		cfgSvc interfaces.NodeConfigService,
-	) {
-		svc.cfgSvc = cfgSvc
-	}); err != nil {
-		return nil, trace.TraceError(err)
-	}
+	svc.cfgSvc = nodeconfig.GetNodeConfigService()
 
 	// grpc client
 	svc.c, err = grpcclient.NewGrpcClientV2()

@@ -3,16 +3,16 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/container"
 	"github.com/crawlab-team/crawlab-core/entity"
-	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
-	"github.com/crawlab-team/crawlab-core/models/delegate"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
+	nodeconfig "github.com/crawlab-team/crawlab-core/node/config"
 	"github.com/crawlab-team/crawlab-core/notification"
+	"github.com/crawlab-team/crawlab-core/task/stats"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	grpc "github.com/crawlab-team/crawlab-grpc"
@@ -24,20 +24,19 @@ import (
 	"strings"
 )
 
-type TaskServer struct {
+type TaskServerV2 struct {
 	grpc.UnimplementedTaskServiceServer
 
 	// dependencies
-	modelSvc service.ModelService
 	cfgSvc   interfaces.NodeConfigService
-	statsSvc interfaces.TaskStatsService
+	statsSvc *stats.ServiceV2
 
 	// internals
 	server interfaces.GrpcServer
 }
 
 // Subscribe to task stream when a task runner in a node starts
-func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err error) {
+func (svr TaskServerV2) Subscribe(stream grpc.TaskService_SubscribeServer) (err error) {
 	for {
 		msg, err := stream.Recv()
 		utils.LogDebug(msg.String())
@@ -57,7 +56,7 @@ func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err er
 		case grpc.StreamMessageCode_INSERT_LOGS:
 			err = svr.handleInsertLogs(msg)
 		default:
-			err = errors.ErrorGrpcInvalidCode
+			err = errors.New("invalid stream message code")
 			log.Errorf("invalid stream message code: %d", msg.Code)
 			continue
 		}
@@ -68,12 +67,12 @@ func (svr TaskServer) Subscribe(stream grpc.TaskService_SubscribeServer) (err er
 }
 
 // Fetch tasks to be executed by a task handler
-func (svr TaskServer) Fetch(ctx context.Context, request *grpc.Request) (response *grpc.Response, err error) {
+func (svr TaskServerV2) Fetch(ctx context.Context, request *grpc.Request) (response *grpc.Response, err error) {
 	nodeKey := request.GetNodeKey()
 	if nodeKey == "" {
-		return nil, trace.TraceError(errors.ErrorGrpcInvalidNodeKey)
+		return nil, errors.New("invalid node key")
 	}
-	n, err := svr.modelSvc.GetNodeByKey(nodeKey, nil)
+	n, err := service.NewModelServiceV2[models.NodeV2]().GetOne(bson.M{"key": nodeKey}, nil)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -110,13 +109,13 @@ func (svr TaskServer) Fetch(ctx context.Context, request *grpc.Request) (respons
 	return HandleSuccessWithData(tid)
 }
 
-func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Request) (response *grpc.Response, err error) {
-	svc := notification.GetService()
-	var t = new(models.Task)
+func (svr TaskServerV2) SendNotification(ctx context.Context, request *grpc.Request) (response *grpc.Response, err error) {
+	svc := notification.GetServiceV2()
+	var t = new(models.TaskV2)
 	if err := json.Unmarshal(request.Data, t); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	t, err = svr.modelSvc.GetTaskById(t.Id)
+	t, err = service.NewModelServiceV2[models.TaskV2]().GetById(t.Id)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -128,7 +127,7 @@ func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Reques
 	if err := json.Unmarshal(td, &e); err != nil {
 		return nil, trace.TraceError(err)
 	}
-	ts, err := svr.modelSvc.GetTaskStatById(t.Id)
+	ts, err := service.NewModelServiceV2[models.TaskStatV2]().GetById(t.Id)
 	if err != nil {
 		return nil, trace.TraceError(err)
 	}
@@ -142,16 +141,16 @@ func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Reques
 		switch s.TaskTrigger {
 		case constants.NotificationTriggerTaskFinish:
 			if t.Status != constants.TaskStatusPending && t.Status != constants.TaskStatusRunning {
-				_ = svc.Send(s, e)
+				_ = svc.Send(&s, e)
 			}
 		case constants.NotificationTriggerTaskError:
 			if t.Status == constants.TaskStatusError || t.Status == constants.TaskStatusAbnormal {
-				_ = svc.Send(s, e)
+				_ = svc.Send(&s, e)
 			}
 		case constants.NotificationTriggerTaskEmptyResults:
 			if t.Status != constants.TaskStatusPending && t.Status != constants.TaskStatusRunning {
 				if ts.ResultCount == 0 {
-					_ = svc.Send(s, e)
+					_ = svc.Send(&s, e)
 				}
 			}
 		case constants.NotificationTriggerTaskNever:
@@ -160,7 +159,7 @@ func (svr TaskServer) SendNotification(ctx context.Context, request *grpc.Reques
 	return nil, nil
 }
 
-func (svr TaskServer) handleInsertData(msg *grpc.StreamMessage) (err error) {
+func (svr TaskServerV2) handleInsertData(msg *grpc.StreamMessage) (err error) {
 	data, err := svr.deserialize(msg)
 	if err != nil {
 		return err
@@ -182,7 +181,7 @@ func (svr TaskServer) handleInsertData(msg *grpc.StreamMessage) (err error) {
 	return svr.statsSvc.InsertData(data.TaskId, records...)
 }
 
-func (svr TaskServer) handleInsertLogs(msg *grpc.StreamMessage) (err error) {
+func (svr TaskServerV2) handleInsertLogs(msg *grpc.StreamMessage) (err error) {
 	data, err := svr.deserialize(msg)
 	if err != nil {
 		return err
@@ -190,47 +189,47 @@ func (svr TaskServer) handleInsertLogs(msg *grpc.StreamMessage) (err error) {
 	return svr.statsSvc.InsertLogs(data.TaskId, data.Logs...)
 }
 
-func (svr TaskServer) getTaskQueueItemIdAndDequeue(query bson.M, opts *mongo.FindOptions, nid primitive.ObjectID) (tid primitive.ObjectID, err error) {
-	var tq models.TaskQueueItem
-	if err := mongo.GetMongoCol(interfaces.ModelColNameTaskQueue).Find(query, opts).One(&tq); err != nil {
-		if err == mongo2.ErrNoDocuments {
+func (svr TaskServerV2) getTaskQueueItemIdAndDequeue(query bson.M, opts *mongo.FindOptions, nid primitive.ObjectID) (tid primitive.ObjectID, err error) {
+	tq, err := service.NewModelServiceV2[models.TaskQueueItemV2]().GetOne(query, opts)
+	if err != nil {
+		if errors.Is(err, mongo2.ErrNoDocuments) {
 			return tid, nil
 		}
 		return tid, trace.TraceError(err)
 	}
-	t, err := svr.modelSvc.GetTaskById(tq.Id)
+	t, err := service.NewModelServiceV2[models.TaskV2]().GetById(tq.Id)
 	if err == nil {
 		t.NodeId = nid
-		_ = delegate.NewModelDelegate(t).Save()
+		err = service.NewModelServiceV2[models.TaskV2]().ReplaceById(t.Id, *t)
+		if err != nil {
+			return tid, trace.TraceError(err)
+		}
 	}
-	_ = delegate.NewModelDelegate(&tq).Delete()
+	err = service.NewModelServiceV2[models.TaskQueueItemV2]().DeleteById(tq.Id)
+	if err != nil {
+		return tid, trace.TraceError(err)
+	}
 	return tq.Id, nil
 }
 
-func (svr TaskServer) deserialize(msg *grpc.StreamMessage) (data entity.StreamMessageTaskData, err error) {
+func (svr TaskServerV2) deserialize(msg *grpc.StreamMessage) (data entity.StreamMessageTaskData, err error) {
 	if err := json.Unmarshal(msg.Data, &data); err != nil {
 		return data, trace.TraceError(err)
 	}
 	if data.TaskId.IsZero() {
-		return data, trace.TraceError(errors.ErrorGrpcInvalidType)
+		return data, errors.New("invalid task id")
 	}
 	return data, nil
 }
 
-func NewTaskServer() (res *TaskServer, err error) {
+func NewTaskServerV2() (res *TaskServerV2, err error) {
 	// task server
-	svr := &TaskServer{}
+	svr := &TaskServerV2{}
 
-	// dependency injection
-	if err := container.GetContainer().Invoke(func(
-		modelSvc service.ModelService,
-		statsSvc interfaces.TaskStatsService,
-		cfgSvc interfaces.NodeConfigService,
-	) {
-		svr.modelSvc = modelSvc
-		svr.statsSvc = statsSvc
-		svr.cfgSvc = cfgSvc
-	}); err != nil {
+	svr.cfgSvc = nodeconfig.GetNodeConfigService()
+
+	svr.statsSvc, err = stats.GetTaskStatsServiceV2()
+	if err != nil {
 		return nil, err
 	}
 

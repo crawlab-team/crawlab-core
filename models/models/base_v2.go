@@ -6,10 +6,19 @@ import (
 )
 
 type BaseModelV2[T any] struct {
+	Id        primitive.ObjectID `json:"_id" bson:"_id"`
 	CreatedAt time.Time          `json:"created_ts" bson:"created_ts"`
 	CreatedBy primitive.ObjectID `json:"created_by" bson:"created_by"`
 	UpdatedAt time.Time          `json:"updated_ts" bson:"updated_ts"`
 	UpdatedBy primitive.ObjectID `json:"updated_by" bson:"updated_by"`
+}
+
+func (m *BaseModelV2[T]) GetId() primitive.ObjectID {
+	return m.Id
+}
+
+func (m *BaseModelV2[T]) SetId(id primitive.ObjectID) {
+	m.Id = id
 }
 
 func (m *BaseModelV2[T]) GetCreatedAt() time.Time {

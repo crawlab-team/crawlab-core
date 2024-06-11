@@ -6,7 +6,7 @@ import (
 )
 
 type NodeV2 struct {
-	Id                  primitive.ObjectID `json:"_id" bson:"_id" collection:"nodes"`
+	any                 `collection:"nodes"`
 	BaseModelV2[NodeV2] `bson:",inline"`
 	Key                 string    `json:"key" bson:"key"`
 	Name                string    `json:"name" bson:"name"`

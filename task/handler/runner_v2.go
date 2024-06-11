@@ -37,7 +37,7 @@ import (
 
 type RunnerV2 struct {
 	// dependencies
-	svc   *ServerV2              // task handler service
+	svc   *ServiceV2             // task handler service
 	fsSvc interfaces.FsServiceV2 // task fs service
 
 	// settings
@@ -528,15 +528,15 @@ func (r *RunnerV2) _updateTaskStat(status string) {
 		ts.StartTs = time.Now()
 		ts.WaitDuration = ts.StartTs.Sub(ts.CreateTs).Milliseconds()
 	case constants.TaskStatusFinished, constants.TaskStatusError, constants.TaskStatusCancelled:
+		if ts.StartTs.IsZero() {
+			ts.StartTs = time.Now()
+			ts.WaitDuration = ts.StartTs.Sub(ts.CreateTs).Milliseconds()
+		}
 		ts.EndTs = time.Now()
 		ts.RuntimeDuration = ts.EndTs.Sub(ts.StartTs).Milliseconds()
 		ts.TotalDuration = ts.EndTs.Sub(ts.CreateTs).Milliseconds()
 	}
 	if r.svc.GetNodeConfigService().IsMaster() {
-		//if err := delegate.NewModelDelegate(ts).Save(); err != nil {
-		//	trace.PrintError(err)
-		//	return
-		//}
 		err = service2.NewModelServiceV2[models.TaskStatV2]().ReplaceById(ts.Id, *ts)
 		if err != nil {
 			trace.PrintError(err)
@@ -619,7 +619,7 @@ func (r *RunnerV2) _updateSpiderStat(status string) {
 
 }
 
-func NewTaskRunnerV2(id primitive.ObjectID, svc *ServerV2, opts ...RunnerOption) (r2 *RunnerV2, err error) {
+func NewTaskRunnerV2(id primitive.ObjectID, svc *ServiceV2) (r2 *RunnerV2, err error) {
 	// validate options
 	if id.IsZero() {
 		return nil, constants.ErrInvalidOptions
@@ -633,11 +633,6 @@ func NewTaskRunnerV2(id primitive.ObjectID, svc *ServerV2, opts ...RunnerOption)
 		tid:              id,
 		ch:               make(chan constants.TaskSignal),
 		logBatchSize:     20,
-	}
-
-	// apply options
-	for _, opt := range opts {
-		opt(r)
 	}
 
 	// task

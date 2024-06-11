@@ -83,6 +83,7 @@ func (svc *ServiceV2) Export(id primitive.ObjectID) (filePath string, err error)
 func (svc *ServiceV2) scheduleTasks(s *models.SpiderV2, opts *interfaces.SpiderRunOptions) (taskIds []primitive.ObjectID, err error) {
 	// main task
 	mainTask := &models.TaskV2{
+		Id:         primitive.NewObjectID(),
 		SpiderId:   s.Id,
 		Mode:       opts.Mode,
 		NodeIds:    opts.NodeIds,
@@ -119,6 +120,7 @@ func (svc *ServiceV2) scheduleTasks(s *models.SpiderV2, opts *interfaces.SpiderR
 		}
 		for _, nodeId := range nodeIds {
 			t := &models.TaskV2{
+				Id:         primitive.NewObjectID(),
 				SpiderId:   s.Id,
 				Mode:       opts.Mode,
 				Cmd:        opts.Cmd,

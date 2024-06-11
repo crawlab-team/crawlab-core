@@ -5,7 +5,7 @@ import (
 )
 
 type SpiderV2 struct {
-	Id                    primitive.ObjectID `json:"_id" bson:"_id" collection:"spiders"` // spider id
+	any                   `collection:"spiders"` // spider id
 	BaseModelV2[SpiderV2] `bson:",inline"`
 	Name                  string               `json:"name" bson:"name"`                     // spider name
 	Type                  string               `json:"type" bson:"type"`                     // spider type

@@ -1,8 +1,8 @@
-package notification
+package models
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type NotificationSetting struct {
+type NotificationSettingV2 struct {
 	Id          primitive.ObjectID        `json:"_id" bson:"_id"`
 	Type        string                    `json:"type" bson:"type"`
 	Name        string                    `json:"name" bson:"name"`

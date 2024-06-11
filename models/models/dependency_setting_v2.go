@@ -6,7 +6,7 @@ import (
 )
 
 type DependencySettingV2 struct {
-	Id                             primitive.ObjectID `json:"_id" bson:"_id" collection:"dependency_settings"`
+	any                            `collection:"dependency_settings"`
 	BaseModelV2[DependencySetting] `bson:",inline"`
 	Key                            string    `json:"key" bson:"key"`
 	Name                           string    `json:"name" bson:"name"`

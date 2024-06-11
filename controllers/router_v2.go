@@ -205,6 +205,26 @@ func InitRoutes(app *gin.Engine) (err error) {
 	))
 	RegisterController(groups.AuthGroup, "/tasks", NewControllerV2[models.TaskV2](
 		Action{
+			Method:      http.MethodGet,
+			Path:        "/:id",
+			HandlerFunc: GetTaskById,
+		},
+		Action{
+			Method:      http.MethodGet,
+			Path:        "",
+			HandlerFunc: GetTaskList,
+		},
+		Action{
+			Method:      http.MethodDelete,
+			Path:        "/:id",
+			HandlerFunc: DeleteTaskById,
+		},
+		Action{
+			Method:      http.MethodDelete,
+			Path:        "",
+			HandlerFunc: DeleteList,
+		},
+		Action{
 			Method:      http.MethodPost,
 			Path:        "/run",
 			HandlerFunc: PostTaskRun,

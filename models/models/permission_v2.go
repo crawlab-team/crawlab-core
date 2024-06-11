@@ -5,7 +5,7 @@ import (
 )
 
 type PermissionV2 struct {
-	Id                        primitive.ObjectID `json:"_id" bson:"_id" collection:"permissions"`
+	any                       `collection:"permissions"`
 	BaseModelV2[PermissionV2] `bson:",inline"`
 	Key                       string   `json:"key" bson:"key"`
 	Name                      string   `json:"name" bson:"name"`

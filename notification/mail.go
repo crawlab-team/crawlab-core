@@ -3,6 +3,7 @@ package notification
 import (
 	"errors"
 	"github.com/apex/log"
+	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/matcornic/hermes/v2"
 	"gopkg.in/gomail.v2"
 	"net/mail"
@@ -11,7 +12,7 @@ import (
 	"strings"
 )
 
-func SendMail(s *Setting, to, cc, title, content string) error {
+func SendMail(m *models.NotificationSettingMail, to, cc, title, content string) error {
 	// theme
 	theme := new(MailThemeFlat)
 
@@ -21,19 +22,19 @@ func SendMail(s *Setting, to, cc, title, content string) error {
 		Product: hermes.Product{
 			Logo:      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxnIGZpbGw9Im5vbmUiPgogICAgICAgIDxjaXJjbGUgY3g9IjE1MCIgY3k9IjE1MCIgcj0iMTMwIiBmaWxsPSJub25lIiBzdHJva2Utd2lkdGg9IjQwIiBzdHJva2U9IiM0MDllZmYiPgogICAgICAgIDwvY2lyY2xlPgogICAgICAgIDxjaXJjbGUgY3g9IjE1MCIgY3k9IjE1MCIgcj0iMTEwIiBmaWxsPSJ3aGl0ZSI+CiAgICAgICAgPC9jaXJjbGU+CiAgICAgICAgPGNpcmNsZSBjeD0iMTUwIiBjeT0iMTUwIiByPSI3MCIgZmlsbD0iIzQwOWVmZiI+CiAgICAgICAgPC9jaXJjbGU+CiAgICAgICAgPHBhdGggZD0iCiAgICAgICAgICAgIE0gMTUwLDE1MAogICAgICAgICAgICBMIDI4MCwyMjUKICAgICAgICAgICAgQSAxNTAsMTUwIDkwIDAgMCAyODAsNzUKICAgICAgICAgICAgIiBmaWxsPSIjNDA5ZWZmIj4KICAgICAgICA8L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPgo=",
 			Name:      "Crawlab",
-			Copyright: "© 2023 Crawlab-Team",
+			Copyright: "© 2024 Crawlab-Team",
 		},
 	}
 
 	// config
-	port, _ := strconv.Atoi(s.Mail.Port)
-	password := s.Mail.Password // test password: ALWVDPRHBEXOENXD
-	SMTPUser := s.Mail.User
+	port, _ := strconv.Atoi(m.Port)
+	password := m.Password // test password: ALWVDPRHBEXOENXD
+	SMTPUser := m.User
 	smtpConfig := smtpAuthentication{
-		Server:         s.Mail.Server,
+		Server:         m.Server,
 		Port:           port,
-		SenderEmail:    s.Mail.SenderEmail,
-		SenderIdentity: s.Mail.SenderIdentity,
+		SenderEmail:    m.SenderEmail,
+		SenderIdentity: m.SenderIdentity,
 		SMTPPassword:   password,
 		SMTPUser:       SMTPUser,
 	}

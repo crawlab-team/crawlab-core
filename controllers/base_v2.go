@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/gin-gonic/gin"
@@ -49,14 +50,16 @@ func (ctr *BaseControllerV2[T]) Post(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-
-	id, err := ctr.modelSvc.InsertOne(model)
+	m := any(&model).(interfaces.Model)
+	m.SetId(primitive.NewObjectID())
+	col := ctr.modelSvc.GetCol()
+	res, err := col.GetCollection().InsertOne(col.GetContext(), m)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 
-	result, err := ctr.modelSvc.GetById(id)
+	result, err := ctr.modelSvc.GetById(res.InsertedID.(primitive.ObjectID))
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return

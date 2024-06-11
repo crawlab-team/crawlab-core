@@ -6,7 +6,7 @@ import (
 )
 
 type TaskStatV2 struct {
-	Id                      primitive.ObjectID `json:"_id" bson:"_id" collection:"task_stats"`
+	any                     `collection:"task_stats"`
 	BaseModelV2[TaskStatV2] `bson:",inline"`
 	CreateTs                time.Time `json:"create_ts" bson:"create_ts,omitempty"`
 	StartTs                 time.Time `json:"start_ts" bson:"start_ts,omitempty"`

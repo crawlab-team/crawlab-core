@@ -6,7 +6,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
-	"github.com/crawlab-team/crawlab-core/utils"
 	mongo2 "github.com/crawlab-team/crawlab-db/mongo"
 	parser "github.com/crawlab-team/template-parser"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,20 +13,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type Service struct {
-	col      *mongo2.Col // notification settings
-	modelSvc service.ModelService
+type ServiceV2 struct {
 }
 
-func (svc *Service) Init() (err error) {
-	if !utils.IsPro() {
-		return nil
-	}
-
-	return nil
-}
-
-func (svc *Service) Start() (err error) {
+func (svc *ServiceV2) Start() (err error) {
 	// initialize data
 	if err := svc.initData(); err != nil {
 		return err
@@ -36,12 +25,12 @@ func (svc *Service) Start() (err error) {
 	return nil
 }
 
-func (svc *Service) Stop() (err error) {
+func (svc *ServiceV2) Stop() (err error) {
 	return nil
 }
 
-func (svc *Service) initData() (err error) {
-	total, err := svc.col.Count(nil)
+func (svc *ServiceV2) initData() (err error) {
+	total, err := service.NewModelServiceV2[models.NotificationSettingV2]().Count(nil)
 	if err != nil {
 		return err
 	}
@@ -50,7 +39,7 @@ func (svc *Service) initData() (err error) {
 	}
 
 	// data to initialize
-	settings := []NotificationSetting{
+	settings := []models.NotificationSettingV2{
 		{
 			Id:          primitive.NewObjectID(),
 			Type:        TypeMail,
@@ -81,7 +70,7 @@ func (svc *Service) initData() (err error) {
 |总时间（秒）|{#{{$.:task_stat.total_duration}}/1000#}|
 |平均结果数/秒|{#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}|
 `,
-			Mail: NotificationSettingMail{
+			Mail: models.NotificationSettingMail{
 				Server: "smtp.163.com",
 				Port:   "465",
 				To:     "{{$.user[create].email}}",
@@ -117,7 +106,7 @@ Please find the task data as below.
 |Total Duration (sec)|{#{{$.:task_stat.total_duration}}/1000#}|
 |Avg Results / Sec|{#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}|
 `,
-			Mail: NotificationSettingMail{
+			Mail: models.NotificationSettingMail{
 				Server: "smtp.163.com",
 				Port:   "465",
 				To:     "{{$.user[create].email}}",
@@ -150,7 +139,7 @@ Please find the task data as below.
 - **运行时间（秒）**: {#{{$.:task_stat.runtime_duration}}/1000#}
 - **总时间（秒）**: {#{{$.:task_stat.total_duration}}/1000#}
 - **平均结果数/秒**: {#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}`,
-			Mobile: NotificationSettingMobile{},
+			Mobile: models.NotificationSettingMobile{},
 		},
 		{
 			Id:          primitive.NewObjectID(),
@@ -179,21 +168,17 @@ Please find the task data as below.
 - **Runtime Duration (sec)**: {#{{$.:task_stat.runtime_duration}}/1000#}
 - **Total Duration (sec)**: {#{{$.:task_stat.total_duration}}/1000#}
 - **Avg Results / Sec**: {#{{$.:task_stat.result_count}}/({{$.:task_stat.total_duration}}/1000)#}`,
-			Mobile: NotificationSettingMobile{},
+			Mobile: models.NotificationSettingMobile{},
 		},
 	}
-	var data []interface{}
-	for _, s := range settings {
-		data = append(data, s)
-	}
-	_, err = svc.col.InsertMany(data)
+	_, err = service.NewModelServiceV2[models.NotificationSettingV2]().InsertMany(settings)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (svc *Service) Send(s NotificationSetting, entity bson.M) (err error) {
+func (svc *ServiceV2) Send(s *models.NotificationSettingV2, entity bson.M) (err error) {
 	switch s.Type {
 	case TypeMail:
 		return svc.SendMail(s, entity)
@@ -203,7 +188,7 @@ func (svc *Service) Send(s NotificationSetting, entity bson.M) (err error) {
 	return nil
 }
 
-func (svc *Service) SendMail(s NotificationSetting, entity bson.M) (err error) {
+func (svc *ServiceV2) SendMail(s *models.NotificationSettingV2, entity bson.M) (err error) {
 	// to
 	to, err := parser.Parse(s.Mail.To, entity)
 	if err != nil {
@@ -232,23 +217,14 @@ func (svc *Service) SendMail(s NotificationSetting, entity bson.M) (err error) {
 	}
 
 	// send mail
-	if err := SendMail(&models.NotificationSettingMail{
-		Server:         s.Mail.Server,
-		Port:           s.Mail.Port,
-		User:           s.Mail.User,
-		Password:       s.Mail.Password,
-		SenderEmail:    s.Mail.SenderEmail,
-		SenderIdentity: s.Mail.SenderIdentity,
-		To:             s.Mail.To,
-		Cc:             s.Mail.Cc,
-	}, to, cc, title, content); err != nil {
+	if err := SendMail(&s.Mail, to, cc, title, content); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc *Service) SendMobile(s NotificationSetting, entity bson.M) (err error) {
+func (svc *ServiceV2) SendMobile(s *models.NotificationSettingV2, entity bson.M) (err error) {
 	// webhook
 	webhook, err := parser.Parse(s.Mobile.Webhook, entity)
 	if err != nil {
@@ -278,7 +254,7 @@ func (svc *Service) SendMobile(s NotificationSetting, entity bson.M) (err error)
 	return nil
 }
 
-func (svc *Service) GetSettingList(query bson.M, pagination *entity.Pagination, sort bson.D) (res []NotificationSetting, total int, err error) {
+func (svc *ServiceV2) GetSettingList(query bson.M, pagination *entity.Pagination, sort bson.D) (res []models.NotificationSettingV2, total int, err error) {
 	// options
 	var options *mongo2.FindOptions
 	if pagination != nil || sort != nil {
@@ -293,8 +269,8 @@ func (svc *Service) GetSettingList(query bson.M, pagination *entity.Pagination, 
 	}
 
 	// get list
-	var list []NotificationSetting
-	if err := svc.col.Find(query, options).All(&list); err != nil {
+	list, err := service.NewModelServiceV2[models.NotificationSettingV2]().GetMany(query, options)
+	if err != nil {
 		if err.Error() == mongo.ErrNoDocuments.Error() {
 			return nil, 0, nil
 		} else {
@@ -303,7 +279,7 @@ func (svc *Service) GetSettingList(query bson.M, pagination *entity.Pagination, 
 	}
 
 	// total count
-	total, err = svc.col.Count(query)
+	total, err = service.NewModelServiceV2[models.NotificationSettingV2]().Count(query)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -311,85 +287,76 @@ func (svc *Service) GetSettingList(query bson.M, pagination *entity.Pagination, 
 	return list, total, nil
 }
 
-func (svc *Service) GetSetting(id primitive.ObjectID) (res *NotificationSetting, err error) {
-	var s NotificationSetting
-	if err := svc.col.FindId(id).One(&s); err != nil {
+func (svc *ServiceV2) GetSetting(id primitive.ObjectID) (res *models.NotificationSettingV2, err error) {
+	s, err := service.NewModelServiceV2[models.NotificationSettingV2]().GetById(id)
+	if err != nil {
 		return nil, err
 	}
-	return &s, nil
+	return s, nil
 }
 
-func (svc *Service) PosSetting(s *NotificationSetting) (err error) {
+func (svc *ServiceV2) PosSetting(s *models.NotificationSettingV2) (err error) {
 	s.Id = primitive.NewObjectID()
-	if _, err := svc.col.Insert(s); err != nil {
+	_, err = service.NewModelServiceV2[models.NotificationSettingV2]().InsertOne(*s)
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (svc *Service) PutSetting(id primitive.ObjectID, s NotificationSetting) (err error) {
-	if err := svc.col.ReplaceId(id, s); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc *Service) DeleteSetting(id primitive.ObjectID) (err error) {
-	if err := svc.col.DeleteId(id); err != nil {
+func (svc *ServiceV2) PutSetting(id primitive.ObjectID, s models.NotificationSettingV2) (err error) {
+	err = service.NewModelServiceV2[models.NotificationSettingV2]().ReplaceById(id, s)
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc *Service) EnableSetting(id primitive.ObjectID) (err error) {
+func (svc *ServiceV2) DeleteSetting(id primitive.ObjectID) (err error) {
+	err = service.NewModelServiceV2[models.NotificationSettingV2]().DeleteById(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc *ServiceV2) EnableSetting(id primitive.ObjectID) (err error) {
 	return svc._toggleSettingFunc(true)(id)
 }
 
-func (svc *Service) DisableSetting(id primitive.ObjectID) (err error) {
+func (svc *ServiceV2) DisableSetting(id primitive.ObjectID) (err error) {
 	return svc._toggleSettingFunc(false)(id)
 }
 
-func (svc *Service) _toggleSettingFunc(value bool) func(id primitive.ObjectID) error {
+func (svc *ServiceV2) _toggleSettingFunc(value bool) func(id primitive.ObjectID) error {
 	return func(id primitive.ObjectID) (err error) {
-		var s NotificationSetting
-		if err := svc.col.FindId(id).One(&s); err != nil {
+		s, err := service.NewModelServiceV2[models.NotificationSettingV2]().GetById(id)
+		if err != nil {
 			return err
 		}
 		s.Enabled = value
-		if err := svc.col.ReplaceId(id, s); err != nil {
+		err = service.NewModelServiceV2[models.NotificationSettingV2]().ReplaceById(id, *s)
+		if err != nil {
 			return err
 		}
 		return nil
 	}
 }
 
-func NewService() *Service {
+func NewServiceV2() *ServiceV2 {
 	// service
-	svc := &Service{
-		col: mongo2.GetMongoCol(SettingsColName),
-	}
-
-	// model service
-	modelSvc, err := service.GetService()
-	if err != nil {
-		panic(err)
-	}
-	svc.modelSvc = modelSvc
-
-	if err := svc.Init(); err != nil {
-		panic(err)
-	}
+	svc := &ServiceV2{}
 
 	return svc
 }
 
-var _service *Service
+var _serviceV2 *ServiceV2
 
-func GetService() *Service {
-	if _service == nil {
-		_service = NewService()
+func GetServiceV2() *ServiceV2 {
+	if _serviceV2 == nil {
+		_serviceV2 = NewServiceV2()
 	}
-	return _service
+	return _serviceV2
 }

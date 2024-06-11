@@ -118,14 +118,14 @@ func (svc *ModelServiceV2[T]) GetCol() (col *mongo.Col) {
 
 func GetCollectionNameByInstance(v any) string {
 	t := reflect.TypeOf(v)
-	field, _ := t.FieldByName("Id")
+	field := t.Field(0)
 	return field.Tag.Get("collection")
 }
 
 func getCollectionName[T any]() string {
 	var instance T
 	t := reflect.TypeOf(instance)
-	field, _ := t.FieldByName("Id")
+	field := t.Field(0)
 	return field.Tag.Get("collection")
 }
 

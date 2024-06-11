@@ -6,7 +6,7 @@ import (
 )
 
 type TaskV2 struct {
-	Id                  primitive.ObjectID `json:"_id" bson:"_id" collection:"tasks"`
+	any                 `collection:"tasks"`
 	BaseModelV2[TaskV2] `bson:",inline"`
 	SpiderId            primitive.ObjectID   `json:"spider_id" bson:"spider_id"`
 	Status              string               `json:"status" bson:"status"`

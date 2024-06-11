@@ -5,7 +5,7 @@ import (
 )
 
 type DataSourceV2 struct {
-	Id                      primitive.ObjectID `json:"_id" bson:"_id" collection:"data_sources"`
+	any                     `collection:"data_sources"`
 	BaseModelV2[DataSource] `bson:",inline"`
 	Name                    string            `json:"name" bson:"name"`
 	Type                    string            `json:"type" bson:"type"`

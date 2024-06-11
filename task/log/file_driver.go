@@ -223,6 +223,16 @@ func (d *FileLogDriver) getTtl() time.Duration {
 }
 
 func (d *FileLogDriver) cleanup() {
+	if d.getLogPath() == "" {
+		return
+	}
+	if !utils.Exists(d.getLogPath()) {
+		if err := os.MkdirAll(d.getLogPath(), os.FileMode(0770)); err != nil {
+			log.Errorf("failed to create log directory: %s", d.getLogPath())
+			trace.PrintError(err)
+			return
+		}
+	}
 	for {
 		// 增加对目录不存在的判断
 		dirs, err := utils.ListDir(d.getLogPath())

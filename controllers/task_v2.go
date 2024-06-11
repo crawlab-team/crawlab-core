@@ -1,8 +1,9 @@
 package controllers
 
 import (
+	"errors"
+	log2 "github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
-	"github.com/crawlab-team/crawlab-core/errors"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
@@ -12,10 +13,225 @@ import (
 	"github.com/crawlab-team/crawlab-core/task/scheduler"
 	"github.com/crawlab-team/crawlab-core/utils"
 	"github.com/crawlab-team/crawlab-db/generic"
+	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	mongo2 "go.mongodb.org/mongo-driver/mongo"
+	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 )
+
+func GetTaskById(c *gin.Context) {
+	// id
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// task
+	t, err := service.NewModelServiceV2[models.TaskV2]().GetById(id)
+	if errors.Is(err, mongo2.ErrNoDocuments) {
+		HandleErrorNotFound(c, err)
+		return
+	}
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// spider
+	t.Spider, _ = service.NewModelServiceV2[models.SpiderV2]().GetById(t.SpiderId)
+
+	// skip if task status is pending
+	if t.Status == constants.TaskStatusPending {
+		HandleSuccessWithData(c, t)
+		return
+	}
+
+	// task stat
+	t.Stat, _ = service.NewModelServiceV2[models.TaskStatV2]().GetById(id)
+
+	HandleSuccessWithData(c, t)
+}
+
+func GetTaskList(c *gin.Context) {
+	withStats := c.Query("stats")
+	if withStats == "" {
+		NewControllerV2[models.TaskV2]().GetList(c)
+		return
+	}
+
+	// params
+	pagination := MustGetPagination(c)
+	query := MustGetFilterQuery(c)
+	sort := MustGetSortOption(c)
+
+	// get list
+	list, err := service.NewModelServiceV2[models.TaskV2]().GetMany(query, &mongo.FindOptions{
+		Sort:  sort,
+		Skip:  pagination.Size * (pagination.Page - 1),
+		Limit: pagination.Size,
+	})
+	if err != nil {
+		if errors.Is(err, mongo2.ErrNoDocuments) {
+			HandleErrorNotFound(c, err)
+		} else {
+			HandleErrorInternalServerError(c, err)
+		}
+		return
+	}
+
+	// check empty list
+	if len(list) == 0 {
+		HandleSuccessWithListData(c, nil, 0)
+		return
+	}
+
+	// ids
+	var ids []primitive.ObjectID
+	for _, t := range list {
+		ids = append(ids, t.Id)
+	}
+
+	// total count
+	total, err := service.NewModelServiceV2[models.TaskV2]().Count(query)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// stat list
+	query = bson.M{
+		"_id": bson.M{
+			"$in": ids,
+		},
+	}
+	stats, err := service.NewModelServiceV2[models.TaskStatV2]().GetMany(query, nil)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// cache stat list to dict
+	dict := map[primitive.ObjectID]models.TaskStatV2{}
+	for _, s := range stats {
+		dict[s.Id] = s
+	}
+
+	// iterate list again
+	for i, t := range list {
+		ts, ok := dict[t.Id]
+		if ok {
+			list[i].Stat = &ts
+		}
+	}
+
+	// response
+	HandleSuccessWithListData(c, list, total)
+}
+
+func DeleteTaskById(c *gin.Context) {
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	// delete in db
+	if err := mongo.RunTransaction(func(context mongo2.SessionContext) (err error) {
+		// delete task
+		_, err = service.NewModelServiceV2[models.TaskV2]().GetById(id)
+		if err != nil {
+			return err
+		}
+		err = service.NewModelServiceV2[models.TaskV2]().DeleteById(id)
+		if err != nil {
+			return err
+		}
+
+		// delete task stat
+		_, err = service.NewModelServiceV2[models.TaskStatV2]().GetById(id)
+		if err != nil {
+			log2.Warnf("delete task stat error: %s", err.Error())
+			return nil
+		}
+		err = service.NewModelServiceV2[models.TaskStatV2]().DeleteById(id)
+		if err != nil {
+			log2.Warnf("delete task stat error: %s", err.Error())
+			return nil
+		}
+
+		return nil
+	}); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	// delete task logs
+	logPath := filepath.Join(viper.GetString("log.path"), id.Hex())
+	if err := os.RemoveAll(logPath); err != nil {
+		log2.Warnf("failed to remove task log directory: %s", logPath)
+	}
+
+	HandleSuccess(c)
+}
+
+func DeleteList(c *gin.Context) {
+	var payload struct {
+		Ids []primitive.ObjectID `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+
+	if err := mongo.RunTransaction(func(context mongo2.SessionContext) error {
+		// delete tasks
+		if err := service.NewModelServiceV2[models.TaskV2]().DeleteMany(bson.M{
+			"_id": bson.M{
+				"$in": payload.Ids,
+			},
+		}); err != nil {
+			return err
+		}
+
+		// delete task stats
+		if err := service.NewModelServiceV2[models.TaskV2]().DeleteMany(bson.M{
+			"_id": bson.M{
+				"$in": payload.Ids,
+			},
+		}); err != nil {
+			log2.Warnf("delete task stat error: %s", err.Error())
+			return nil
+		}
+
+		return nil
+	}); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(payload.Ids))
+	for _, id := range payload.Ids {
+		go func(id string) {
+			// delete task logs
+			logPath := filepath.Join(viper.GetString("log.path"), id)
+			if err := os.RemoveAll(logPath); err != nil {
+				log2.Warnf("failed to remove task log directory: %s", logPath)
+			}
+			wg.Done()
+		}(id.Hex())
+	}
+	wg.Wait()
+
+	HandleSuccess(c)
+}
 
 func PostTaskRun(c *gin.Context) {
 	// task
@@ -27,7 +243,7 @@ func PostTaskRun(c *gin.Context) {
 
 	// validate spider id
 	if t.SpiderId.IsZero() {
-		HandleErrorBadRequest(c, errors.ErrorTaskEmptySpiderId)
+		HandleErrorBadRequest(c, errors.New("spider id is required"))
 		return
 	}
 
@@ -129,7 +345,7 @@ func PostTaskCancel(c *gin.Context) {
 
 	// validate
 	if !utils.IsCancellable(t.Status) {
-		HandleErrorInternalServerError(c, errors.ErrorControllerNotCancellable)
+		HandleErrorInternalServerError(c, errors.New("task is not cancellable"))
 		return
 	}
 

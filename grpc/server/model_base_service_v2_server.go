@@ -53,11 +53,11 @@ func GetOneInstanceModel(typeName string) any {
 	return typeOneNameModelMap[typeName]
 }
 
-type ModelBaseServiceV2Server struct {
+type ModelBaseServiceServerV2 struct {
 	grpc.UnimplementedModelBaseServiceV2Server
 }
 
-func (svr ModelBaseServiceV2Server) GetById(ctx context.Context, req *grpc.ModelServiceV2GetByIdRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) GetById(ctx context.Context, req *grpc.ModelServiceV2GetByIdRequest) (res *grpc.Response, err error) {
 	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
 		return HandleError(err)
@@ -70,7 +70,7 @@ func (svr ModelBaseServiceV2Server) GetById(ctx context.Context, req *grpc.Model
 	return HandleSuccessWithData(data)
 }
 
-func (svr ModelBaseServiceV2Server) GetOne(ctx context.Context, req *grpc.ModelServiceV2GetOneRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) GetOne(ctx context.Context, req *grpc.ModelServiceV2GetOneRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -89,7 +89,7 @@ func (svr ModelBaseServiceV2Server) GetOne(ctx context.Context, req *grpc.ModelS
 	return HandleSuccessWithData(data)
 }
 
-func (svr ModelBaseServiceV2Server) GetMany(ctx context.Context, req *grpc.ModelServiceV2GetManyRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) GetMany(ctx context.Context, req *grpc.ModelServiceV2GetManyRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -108,7 +108,7 @@ func (svr ModelBaseServiceV2Server) GetMany(ctx context.Context, req *grpc.Model
 	return HandleSuccessWithData(data)
 }
 
-func (svr ModelBaseServiceV2Server) DeleteById(ctx context.Context, req *grpc.ModelServiceV2DeleteByIdRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) DeleteById(ctx context.Context, req *grpc.ModelServiceV2DeleteByIdRequest) (res *grpc.Response, err error) {
 	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
 		return HandleError(err)
@@ -121,7 +121,7 @@ func (svr ModelBaseServiceV2Server) DeleteById(ctx context.Context, req *grpc.Mo
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) DeleteOne(ctx context.Context, req *grpc.ModelServiceV2DeleteOneRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) DeleteOne(ctx context.Context, req *grpc.ModelServiceV2DeleteOneRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -135,7 +135,7 @@ func (svr ModelBaseServiceV2Server) DeleteOne(ctx context.Context, req *grpc.Mod
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) DeleteMany(ctx context.Context, req *grpc.ModelServiceV2DeleteManyRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) DeleteMany(ctx context.Context, req *grpc.ModelServiceV2DeleteManyRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -149,7 +149,7 @@ func (svr ModelBaseServiceV2Server) DeleteMany(ctx context.Context, req *grpc.Mo
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) UpdateById(ctx context.Context, req *grpc.ModelServiceV2UpdateByIdRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) UpdateById(ctx context.Context, req *grpc.ModelServiceV2UpdateByIdRequest) (res *grpc.Response, err error) {
 	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
 		return HandleError(err)
@@ -167,7 +167,7 @@ func (svr ModelBaseServiceV2Server) UpdateById(ctx context.Context, req *grpc.Mo
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) UpdateOne(ctx context.Context, req *grpc.ModelServiceV2UpdateOneRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) UpdateOne(ctx context.Context, req *grpc.ModelServiceV2UpdateOneRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -186,7 +186,7 @@ func (svr ModelBaseServiceV2Server) UpdateOne(ctx context.Context, req *grpc.Mod
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) UpdateMany(ctx context.Context, req *grpc.ModelServiceV2UpdateManyRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) UpdateMany(ctx context.Context, req *grpc.ModelServiceV2UpdateManyRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -205,7 +205,7 @@ func (svr ModelBaseServiceV2Server) UpdateMany(ctx context.Context, req *grpc.Mo
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) ReplaceById(ctx context.Context, req *grpc.ModelServiceV2ReplaceByIdRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) ReplaceById(ctx context.Context, req *grpc.ModelServiceV2ReplaceByIdRequest) (res *grpc.Response, err error) {
 	id, err := primitive.ObjectIDFromHex(req.Id)
 	if err != nil {
 		return HandleError(err)
@@ -225,7 +225,7 @@ func (svr ModelBaseServiceV2Server) ReplaceById(ctx context.Context, req *grpc.M
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) ReplaceOne(ctx context.Context, req *grpc.ModelServiceV2ReplaceOneRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) ReplaceOne(ctx context.Context, req *grpc.ModelServiceV2ReplaceOneRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -246,7 +246,7 @@ func (svr ModelBaseServiceV2Server) ReplaceOne(ctx context.Context, req *grpc.Mo
 	return HandleSuccess()
 }
 
-func (svr ModelBaseServiceV2Server) InsertOne(ctx context.Context, req *grpc.ModelServiceV2InsertOneRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) InsertOne(ctx context.Context, req *grpc.ModelServiceV2InsertOneRequest) (res *grpc.Response, err error) {
 	model := GetOneInstanceModel(req.ModelType)
 	modelType := reflect.TypeOf(model)
 	modelValuePtr := reflect.New(modelType).Interface()
@@ -262,7 +262,7 @@ func (svr ModelBaseServiceV2Server) InsertOne(ctx context.Context, req *grpc.Mod
 	return HandleSuccessWithData(r.InsertedID)
 }
 
-func (svr ModelBaseServiceV2Server) InsertMany(ctx context.Context, req *grpc.ModelServiceV2InsertManyRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) InsertMany(ctx context.Context, req *grpc.ModelServiceV2InsertManyRequest) (res *grpc.Response, err error) {
 	model := GetOneInstanceModel(req.ModelType)
 	modelType := reflect.TypeOf(model)
 	modelsSliceType := reflect.SliceOf(modelType)
@@ -284,7 +284,7 @@ func (svr ModelBaseServiceV2Server) InsertMany(ctx context.Context, req *grpc.Mo
 	return HandleSuccessWithData(r.InsertedIDs)
 }
 
-func (svr ModelBaseServiceV2Server) Count(ctx context.Context, req *grpc.ModelServiceV2CountRequest) (res *grpc.Response, err error) {
+func (svr ModelBaseServiceServerV2) Count(ctx context.Context, req *grpc.ModelServiceV2CountRequest) (res *grpc.Response, err error) {
 	var query bson.M
 	err = json.Unmarshal(req.Query, &query)
 	if err != nil {
@@ -301,6 +301,6 @@ func GetModelService[T any](typeName string) *service.ModelServiceV2[T] {
 	return service.NewModelServiceV2WithColName[T](typeNameColNameMap[typeName])
 }
 
-func NewModelBaseServiceV2Server() *ModelBaseServiceV2Server {
-	return &ModelBaseServiceV2Server{}
+func NewModelBaseServiceV2Server() *ModelBaseServiceServerV2 {
+	return &ModelBaseServiceServerV2{}
 }

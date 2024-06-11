@@ -37,7 +37,7 @@ func (app *Server) SetGrpcAddress(address interfaces.Address) {
 	app.grpcAddress = address
 }
 
-func (app *Server) GetApi() (api *Api) {
+func (app *Server) GetApi() (api ApiApp) {
 	return app.api
 }
 
@@ -100,16 +100,11 @@ func (app *Server) initPprof() {
 	}
 }
 
-func NewServer(opts ...ServerOption) (app NodeApp) {
+func NewServer() (app NodeApp) {
 	// server
 	svr := &Server{
 		WithConfigPath: config.NewConfigPathService(),
 		quit:           make(chan int, 1),
-	}
-
-	// apply options
-	for _, opt := range opts {
-		opt(svr)
 	}
 
 	// service options
@@ -125,7 +120,7 @@ func NewServer(opts ...ServerOption) (app NodeApp) {
 
 		// docker
 		if utils.IsDocker() {
-			svr.dck = GetDocker(WithDockerParent(svr))
+			svr.dck = GetDocker(svr)
 		}
 	}
 
@@ -145,10 +140,10 @@ func NewServer(opts ...ServerOption) (app NodeApp) {
 
 var server NodeApp
 
-func GetServer(opts ...ServerOption) NodeApp {
+func GetServer() NodeApp {
 	if server != nil {
 		return server
 	}
-	server = NewServer(opts...)
+	server = NewServer()
 	return server
 }

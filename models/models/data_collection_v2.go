@@ -2,11 +2,10 @@ package models
 
 import (
 	"github.com/crawlab-team/crawlab-core/entity"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DataCollectionV2 struct {
-	Id                          primitive.ObjectID `json:"_id" bson:"_id" collection:"data_collections"`
+	any                         `collection:"data_collections"`
 	BaseModelV2[DataCollection] `bson:",inline"`
 	Name                        string             `json:"name" bson:"name"`
 	Fields                      []entity.DataField `json:"fields" bson:"fields"`

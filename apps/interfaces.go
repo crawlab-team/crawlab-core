@@ -27,7 +27,7 @@ type NodeApp interface {
 
 type ServerApp interface {
 	NodeApp
-	GetApi() (api *Api)
+	GetApi() (api ApiApp)
 	GetNodeService() (masterSvc interfaces.NodeService)
 }
 

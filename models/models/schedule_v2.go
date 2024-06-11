@@ -6,7 +6,7 @@ import (
 )
 
 type ScheduleV2 struct {
-	Id                      primitive.ObjectID `json:"_id" bson:"_id" collection:"schedules"`
+	any                     `collection:"schedules"`
 	BaseModelV2[ScheduleV2] `bson:",inline"`
 	Name                    string               `json:"name" bson:"name"`
 	Description             string               `json:"description" bson:"description"`

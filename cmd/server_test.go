@@ -10,7 +10,7 @@ func TestCmdServer(t *testing.T) {
 	_ = os.Setenv("CRAWLAB_PPROF", "true")
 
 	// app
-	svr := apps.GetServer()
+	svr := apps.GetServerV2()
 
 	// start
 	apps.Start(svr)

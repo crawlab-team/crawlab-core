@@ -81,7 +81,7 @@ func (ctx *notificationContext) GetSetting(c *gin.Context) {
 }
 
 func (ctx *notificationContext) PostSetting(c *gin.Context) {
-	var s notification.Setting
+	var s notification.NotificationSetting
 	if err := c.ShouldBindJSON(&s); err != nil {
 		HandleErrorBadRequest(c, err)
 		return
@@ -99,7 +99,7 @@ func (ctx *notificationContext) PutSetting(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	var s notification.Setting
+	var s notification.NotificationSetting
 	if err := c.ShouldBindJSON(&s); err != nil {
 		HandleErrorBadRequest(c, err)
 		return
