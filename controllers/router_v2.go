@@ -22,7 +22,7 @@ func NewRouterGroups(app *gin.Engine) (groups *RouterGroups) {
 func RegisterController[T any](group *gin.RouterGroup, basePath string, ctr *BaseControllerV2[T]) {
 	actionPaths := make(map[string]bool)
 	for _, action := range ctr.actions {
-		group.Handle(action.Method, action.Path, action.HandlerFunc)
+		group.Handle(action.Method, basePath+action.Path, action.HandlerFunc)
 		path := basePath + action.Path
 		key := action.Method + " - " + path
 		actionPaths[key] = true
