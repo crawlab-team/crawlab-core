@@ -23,8 +23,7 @@ type NodeServerV2 struct {
 	grpc.UnimplementedNodeServiceServer
 
 	// dependencies
-	modelSvc *service.ModelServiceV2[models.NodeV2]
-	cfgSvc   interfaces.NodeConfigService
+	cfgSvc interfaces.NodeConfigService
 
 	// internals
 	server *GrpcServerV2
@@ -57,7 +56,7 @@ func (svr NodeServerV2) Register(ctx context.Context, req *grpc.Request) (res *g
 	}
 
 	// find in db
-	nodeDb, err := svr.modelSvc.GetOne(bson.M{"key": nodeKey}, nil)
+	nodeDb, err := service.NewModelServiceV2[models.NodeV2]().GetOne(bson.M{"key": nodeKey}, nil)
 	if err == nil {
 		if node.IsMaster {
 			// error: cannot register master node
@@ -66,8 +65,7 @@ func (svr NodeServerV2) Register(ctx context.Context, req *grpc.Request) (res *g
 			// register existing
 			nodeDb.Status = constants.NodeStatusRegistered
 			nodeDb.Active = true
-			nodeDb.SetUpdated(primitive.NilObjectID)
-			err = svr.modelSvc.ReplaceById(nodeDb.Id, *nodeDb)
+			err = service.NewModelServiceV2[models.NodeV2]().ReplaceById(nodeDb.Id, *nodeDb)
 			if err != nil {
 				return HandleError(err)
 			}
@@ -78,13 +76,14 @@ func (svr NodeServerV2) Register(ctx context.Context, req *grpc.Request) (res *g
 		node.Key = nodeKey
 		node.Status = constants.NodeStatusRegistered
 		node.Active = true
+		node.ActiveAt = time.Now()
 		node.Enabled = true
 		if node.Name == "" {
 			node.Name = nodeKey
 		}
 		node.SetCreated(primitive.NilObjectID)
 		node.SetUpdated(primitive.NilObjectID)
-		_, err = svr.modelSvc.InsertOne(node)
+		_, err = service.NewModelServiceV2[models.NodeV2]().InsertOne(*nodeDb)
 		if err != nil {
 			return HandleError(err)
 		}
@@ -102,7 +101,7 @@ func (svr NodeServerV2) Register(ctx context.Context, req *grpc.Request) (res *g
 // SendHeartbeat from worker to master
 func (svr NodeServerV2) SendHeartbeat(ctx context.Context, req *grpc.Request) (res *grpc.Response, err error) {
 	// find in db
-	node, err := svr.modelSvc.GetOne(bson.M{"key": req.NodeKey}, nil)
+	node, err := service.NewModelServiceV2[models.NodeV2]().GetOne(bson.M{"key": req.NodeKey}, nil)
 	if err != nil {
 		if errors2.Is(err, mongo.ErrNoDocuments) {
 			return HandleError(errors.ErrorNodeNotExists)
@@ -119,8 +118,7 @@ func (svr NodeServerV2) SendHeartbeat(ctx context.Context, req *grpc.Request) (r
 	node.Status = constants.NodeStatusOnline
 	node.Active = true
 	node.ActiveAt = time.Now()
-	node.SetUpdated(primitive.NilObjectID)
-	err = svr.modelSvc.ReplaceById(node.Id, *node)
+	err = service.NewModelServiceV2[models.NodeV2]().ReplaceById(node.Id, *node)
 	if err != nil {
 		return HandleError(err)
 	}
@@ -182,7 +180,6 @@ func (svr NodeServerV2) Unsubscribe(ctx context.Context, req *grpc.Request) (res
 func NewNodeServerV2() (res *NodeServerV2, err error) {
 	// node server
 	svr := &NodeServerV2{}
-	svr.modelSvc = service.NewModelServiceV2[models.NodeV2]()
 	svr.cfgSvc, err = nodeconfig.NewNodeConfigService()
 	if err != nil {
 		return nil, err

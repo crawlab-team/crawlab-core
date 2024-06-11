@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/config"
-	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/node/service"
 	"github.com/crawlab-team/crawlab-core/utils"
@@ -17,51 +16,31 @@ func init() {
 	injectModules()
 }
 
-type Server struct {
+type ServerV2 struct {
 	// settings
 	grpcAddress interfaces.Address
 
 	// dependencies
 	interfaces.WithConfigPath
-	nodeSvc interfaces.NodeService
 
 	// modules
-	api *Api
-	dck *Docker
+	nodeSvc interfaces.NodeService
+	api     *ApiV2
+	dck     *Docker
 
 	// internals
 	quit chan int
 }
 
-func (app *Server) SetGrpcAddress(address interfaces.Address) {
-	app.grpcAddress = address
-}
-
-func (app *Server) GetApi() (api *Api) {
-	return app.api
-}
-
-func (app *Server) GetNodeService() (svc interfaces.NodeService) {
-	return app.nodeSvc
-}
-
-func (app *Server) Init() {
+func (app *ServerV2) Init() {
 	// log node info
 	app.logNodeInfo()
-
-	if utils.IsMaster() {
-
-		// initialize controllers
-		if err := controllers.InitControllers(); err != nil {
-			panic(err)
-		}
-	}
 
 	// pprof
 	app.initPprof()
 }
 
-func (app *Server) Start() {
+func (app *ServerV2) Start() {
 	if utils.IsMaster() {
 		// start docker app
 		if utils.IsDocker() {
@@ -76,23 +55,23 @@ func (app *Server) Start() {
 	go app.nodeSvc.Start()
 }
 
-func (app *Server) Wait() {
+func (app *ServerV2) Wait() {
 	<-app.quit
 }
 
-func (app *Server) Stop() {
+func (app *ServerV2) Stop() {
 	app.api.Stop()
 	app.quit <- 1
 }
 
-func (app *Server) logNodeInfo() {
+func (app *ServerV2) logNodeInfo() {
 	log.Infof("current node type: %s", utils.GetNodeType())
 	if utils.IsDocker() {
 		log.Infof("running in docker container")
 	}
 }
 
-func (app *Server) initPprof() {
+func (app *ServerV2) initPprof() {
 	if viper.GetBool("pprof") {
 		go func() {
 			fmt.Println(http.ListenAndServe("0.0.0.0:6060", nil))
@@ -100,28 +79,17 @@ func (app *Server) initPprof() {
 	}
 }
 
-func NewServer(opts ...ServerOption) (app NodeApp) {
+func NewServerV2() (app NodeApp) {
 	// server
-	svr := &Server{
+	svr := &ServerV2{
 		WithConfigPath: config.NewConfigPathService(),
 		quit:           make(chan int, 1),
-	}
-
-	// apply options
-	for _, opt := range opts {
-		opt(svr)
-	}
-
-	// service options
-	var svcOpts []service.Option
-	if svr.grpcAddress != nil {
-		svcOpts = append(svcOpts, service.WithAddress(svr.grpcAddress))
 	}
 
 	// master modules
 	if utils.IsMaster() {
 		// api
-		svr.api = GetApi()
+		svr.api = GetApiV2()
 
 		// docker
 		if utils.IsDocker() {
@@ -132,9 +100,9 @@ func NewServer(opts ...ServerOption) (app NodeApp) {
 	// node service
 	var err error
 	if utils.IsMaster() {
-		svr.nodeSvc, err = service.NewMasterService(svcOpts...)
+		svr.nodeSvc, err = service.NewMasterServiceV2()
 	} else {
-		svr.nodeSvc, err = service.NewWorkerService(svcOpts...)
+		svr.nodeSvc, err = service.NewWorkerServiceV2()
 	}
 	if err != nil {
 		panic(err)
@@ -143,12 +111,12 @@ func NewServer(opts ...ServerOption) (app NodeApp) {
 	return svr
 }
 
-var server NodeApp
+var serverV2 NodeApp
 
-func GetServer(opts ...ServerOption) NodeApp {
-	if server != nil {
-		return server
+func GetServerV2() NodeApp {
+	if serverV2 != nil {
+		return serverV2
 	}
-	server = NewServer(opts...)
-	return server
+	serverV2 = NewServerV2()
+	return serverV2
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
@@ -16,18 +17,20 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	errors2 "github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"go/types"
 	"google.golang.org/grpc"
 	"net"
 	"sync"
 )
 
 var (
-	subsV2      = map[string]*entity.GrpcSubscribe{}
+	subsV2      = map[string]interfaces.GrpcSubscribe{}
 	mutexSubsV2 = &sync.Mutex{}
 )
 
 type GrpcServerV2 struct {
 	// settings
+	cfgPath string
 	address interfaces.Address
 
 	// internals
@@ -39,6 +42,14 @@ type GrpcServerV2 struct {
 	nodeCfgSvc          interfaces.NodeConfigService
 	nodeSvr             *NodeServerV2
 	modelBaseServiceSvr *ModelBaseServiceV2Server
+}
+
+func (svr *GrpcServerV2) GetConfigPath() (path string) {
+	return svr.cfgPath
+}
+
+func (svr *GrpcServerV2) SetConfigPath(path string) {
+	svr.cfgPath = path
 }
 
 func (svr *GrpcServerV2) Init() (err error) {
@@ -112,7 +123,11 @@ func (svr *GrpcServerV2) recoveryHandlerFunc(p interface{}) (err error) {
 	return err
 }
 
-func (svr *GrpcServerV2) GetSubscribe(key string) (sub *entity.GrpcSubscribe, err error) {
+func (svr *GrpcServerV2) SetAddress(address interfaces.Address) {
+
+}
+
+func (svr *GrpcServerV2) GetSubscribe(key string) (sub interfaces.GrpcSubscribe, err error) {
 	mutexSubsV2.Lock()
 	defer mutexSubsV2.Unlock()
 	sub, ok := subsV2[key]
@@ -122,7 +137,7 @@ func (svr *GrpcServerV2) GetSubscribe(key string) (sub *entity.GrpcSubscribe, er
 	return sub, nil
 }
 
-func (svr *GrpcServerV2) SetSubscribe(key string, sub *entity.GrpcSubscribe) {
+func (svr *GrpcServerV2) SetSubscribe(key string, sub interfaces.GrpcSubscribe) {
 	mutexSubsV2.Lock()
 	defer mutexSubsV2.Unlock()
 	subsV2[key] = sub
@@ -132,6 +147,40 @@ func (svr *GrpcServerV2) DeleteSubscribe(key string) {
 	mutexSubsV2.Lock()
 	defer mutexSubsV2.Unlock()
 	delete(subsV2, key)
+}
+
+func (svr *GrpcServerV2) SendStreamMessage(key string, code grpc2.StreamMessageCode) (err error) {
+	return svr.SendStreamMessageWithData(key, code, nil)
+}
+
+func (svr *GrpcServerV2) SendStreamMessageWithData(key string, code grpc2.StreamMessageCode, d interface{}) (err error) {
+	var data []byte
+	switch d.(type) {
+	case types.Nil:
+		// do nothing
+	case []byte:
+		data = d.([]byte)
+	default:
+		var err error
+		data, err = json.Marshal(d)
+		if err != nil {
+			return err
+		}
+	}
+	sub, err := svr.GetSubscribe(key)
+	if err != nil {
+		return err
+	}
+	msg := &grpc2.StreamMessage{
+		Code: code,
+		Key:  svr.nodeCfgSvc.GetNodeKey(),
+		Data: data,
+	}
+	return sub.GetStream().Send(msg)
+}
+
+func (svr *GrpcServerV2) IsStopped() (res bool) {
+	return svr.stopped
 }
 
 func NewGrpcServerV2() (svr *GrpcServerV2, err error) {

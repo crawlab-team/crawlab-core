@@ -19,7 +19,7 @@ type NodeV2 struct {
 	Status              string    `json:"status" bson:"status"`
 	Enabled             bool      `json:"enabled" bson:"enabled"`
 	Active              bool      `json:"active" bson:"active"`
-	ActiveAt            time.Time `json:"active_at" bson:"active_at"`
+	ActiveAt            time.Time `json:"active_at" bson:"active_ts"`
 	AvailableRunners    int       `json:"available_runners" bson:"available_runners"`
 	MaxRunners          int       `json:"max_runners" bson:"max_runners"`
 }

@@ -51,7 +51,7 @@ func registerBuiltinHandler(group *gin.RouterGroup, method, path string, handler
 	group.Handle(method, path, handlerFunc)
 }
 
-func InitRoutes(app *gin.Engine) {
+func InitRoutes(app *gin.Engine) (err error) {
 	// routes groups
 	groups := NewRouterGroups(app)
 
@@ -352,4 +352,6 @@ func InitRoutes(app *gin.Engine) {
 			HandlerFunc: PostLogout,
 		},
 	})
+
+	return nil
 }

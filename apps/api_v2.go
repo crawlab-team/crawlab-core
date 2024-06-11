@@ -7,7 +7,6 @@ import (
 	"github.com/crawlab-team/crawlab-core/controllers"
 	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-core/middlewares"
-	"github.com/crawlab-team/crawlab-core/routes"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"net"
@@ -24,7 +23,7 @@ func init() {
 	}
 }
 
-type Api struct {
+type ApiV2 struct {
 	// dependencies
 	interfaces.WithConfigPath
 
@@ -35,18 +34,15 @@ type Api struct {
 	ready bool
 }
 
-func (app *Api) Init() {
-	// initialize controllers
-	_ = initModule("controllers", controllers.InitControllers)
-
+func (app *ApiV2) Init() {
 	// initialize middlewares
 	_ = app.initModuleWithApp("middlewares", middlewares.InitMiddlewares)
 
 	// initialize routes
-	_ = app.initModuleWithApp("routes", routes.InitRoutes)
+	_ = app.initModuleWithApp("routes", controllers.InitRoutes)
 }
 
-func (app *Api) Start() {
+func (app *ApiV2) Start() {
 	// address
 	host := viper.GetString("server.host")
 	port := viper.GetString("server.port")
@@ -76,11 +72,11 @@ func (app *Api) Start() {
 	}
 }
 
-func (app *Api) Wait() {
+func (app *ApiV2) Wait() {
 	DefaultWait()
 }
 
-func (app *Api) Stop() {
+func (app *ApiV2) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -89,38 +85,38 @@ func (app *Api) Stop() {
 	}
 }
 
-func (app *Api) GetGinEngine() *gin.Engine {
+func (app *ApiV2) GetGinEngine() *gin.Engine {
 	return app.app
 }
 
-func (app *Api) GetHttpServer() *http.Server {
+func (app *ApiV2) GetHttpServer() *http.Server {
 	return app.srv
 }
 
-func (app *Api) Ready() (ok bool) {
+func (app *ApiV2) Ready() (ok bool) {
 	return app.ready
 }
 
-func (app *Api) initModuleWithApp(name string, fn func(app *gin.Engine) error) (err error) {
+func (app *ApiV2) initModuleWithApp(name string, fn func(app *gin.Engine) error) (err error) {
 	return initModule(name, func() error {
 		return fn(app.app)
 	})
 }
 
-func NewApi() *Api {
-	api := &Api{
+func NewApiV2() *ApiV2 {
+	api := &ApiV2{
 		app: gin.New(),
 	}
 	api.Init()
 	return api
 }
 
-var api *Api
+var apiV2 *ApiV2
 
-func GetApi() *Api {
-	if api != nil {
-		return api
+func GetApiV2() *ApiV2 {
+	if apiV2 != nil {
+		return apiV2
 	}
-	api = NewApi()
-	return api
+	apiV2 = NewApiV2()
+	return apiV2
 }

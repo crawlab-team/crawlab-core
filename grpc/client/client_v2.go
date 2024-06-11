@@ -38,6 +38,7 @@ type GrpcClientV2 struct {
 
 	// clients
 	NodeClient               grpc2.NodeServiceClient
+	TaskClient               grpc2.TaskServiceClient
 	ModelBaseServiceV2Client grpc2.ModelBaseServiceV2Client
 }
 
@@ -94,6 +95,8 @@ func (c *GrpcClientV2) Register() {
 	c.NodeClient = grpc2.NewNodeServiceClient(c.conn)
 	// model base service
 	c.ModelBaseServiceV2Client = grpc2.NewModelBaseServiceV2Client(c.conn)
+	// task
+	c.TaskClient = grpc2.NewTaskServiceClient(c.conn)
 
 	// log
 	log.Infof("[GrpcClient] grpc client registered client services")
@@ -121,6 +124,10 @@ func (c *GrpcClientV2) IsClosed() (res bool) {
 		return c.conn.GetState() == connectivity.Shutdown
 	}
 	return false
+}
+
+func (c *GrpcClientV2) GetMessageChannel() (msgCh chan *grpc2.StreamMessage) {
+	return c.msgCh
 }
 
 func (c *GrpcClientV2) getRequestData(d interface{}) (data []byte) {
