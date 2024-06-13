@@ -139,6 +139,11 @@ func InitRoutes(app *gin.Engine) (err error) {
 		},
 		Action{
 			Method:      http.MethodPost,
+			Path:        "/:id/files/save/batch",
+			HandlerFunc: PostSpiderSaveFiles,
+		},
+		Action{
+			Method:      http.MethodPost,
 			Path:        "/:id/files/save/dir",
 			HandlerFunc: PostSpiderSaveDir,
 		},

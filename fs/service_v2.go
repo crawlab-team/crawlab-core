@@ -73,7 +73,7 @@ func (svc *ServiceV2) List(path string) (files []interfaces.FsFileInfo, err erro
 		}
 	}
 
-	return
+	return files, err
 }
 
 func (svc *ServiceV2) GetFile(path string) (data []byte, err error) {

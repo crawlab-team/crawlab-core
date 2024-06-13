@@ -591,6 +591,9 @@ func (r *RunnerV2) _updateSpiderStat(status string) {
 		}
 	case constants.TaskStatusFinished, constants.TaskStatusError, constants.TaskStatusCancelled:
 		update = bson.M{
+			"$set": bson.M{
+				"last_task_id": r.tid, // last task id
+			},
 			"$inc": bson.M{
 				"results":          ts.ResultCount,            // results
 				"runtime_duration": ts.RuntimeDuration / 1000, // runtime duration
