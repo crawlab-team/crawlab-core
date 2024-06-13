@@ -37,10 +37,9 @@ func TestModelServiceV2_GetById(t *testing.T) {
 	defer teardownTestDB()
 
 	svc := service.NewModelServiceV2[TestModel]()
-	id := primitive.NewObjectID()
-	testModel := TestModel{Id: id, Name: "Test Name"}
+	testModel := TestModel{Name: "Test Name"}
 
-	_, err := svc.InsertOne(testModel)
+	id, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
 	time.Sleep(100 * time.Millisecond)
 
@@ -116,10 +115,9 @@ func TestModelServiceV2_UpdateById(t *testing.T) {
 	defer teardownTestDB()
 
 	svc := service.NewModelServiceV2[TestModel]()
-	id := primitive.NewObjectID()
-	testModel := TestModel{Id: id, Name: "Old Name"}
+	testModel := TestModel{Name: "Old Name"}
 
-	_, err := svc.InsertOne(testModel)
+	id, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
 	time.Sleep(100 * time.Millisecond)
 
@@ -183,10 +181,9 @@ func TestModelServiceV2_DeleteById(t *testing.T) {
 	defer teardownTestDB()
 
 	svc := service.NewModelServiceV2[TestModel]()
-	id := primitive.NewObjectID()
-	testModel := TestModel{Id: id, Name: "Test Name"}
+	testModel := TestModel{Name: "Test Name"}
 
-	_, err := svc.InsertOne(testModel)
+	id, err := svc.InsertOne(testModel)
 	require.Nil(t, err)
 	time.Sleep(100 * time.Millisecond)
 

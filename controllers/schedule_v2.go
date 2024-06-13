@@ -27,13 +27,7 @@ func PostSchedule(c *gin.Context) {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-
-	_s, err := modelSvc.GetById(id)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	s = *_s
+	s.Id = id
 
 	if s.Enabled {
 		scheduleSvc, err := schedule.GetScheduleServiceV2()

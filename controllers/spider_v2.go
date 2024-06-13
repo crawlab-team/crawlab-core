@@ -208,7 +208,7 @@ func PostSpider(c *gin.Context) {
 	}
 
 	// upsert data collection
-	if err := upsertSpiderDataCollection(c, &s); err != nil {
+	if err := upsertSpiderDataCollection(&s); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -218,26 +218,23 @@ func PostSpider(c *gin.Context) {
 	// add
 	s.SetCreated(u.Id)
 	s.SetUpdated(u.Id)
-	_, err := service.NewModelServiceV2[models.SpiderV2]().InsertOne(s)
+	id, err := service.NewModelServiceV2[models.SpiderV2]().InsertOne(s)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
+	s.SetId(id)
 
 	// add stat
-	st := models.SpiderStatV2{
-		Id: s.Id,
-	}
+	st := models.SpiderStatV2{}
+	st.SetId(id)
 	st.SetCreated(u.Id)
 	st.SetUpdated(u.Id)
 	_, err = service.NewModelServiceV2[models.SpiderStatV2]().InsertOne(st)
-
-	_s, err := service.NewModelServiceV2[models.SpiderV2]().GetById(s.Id)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
-	s = *_s
 
 	HandleSuccessWithData(c, s)
 }
@@ -257,7 +254,7 @@ func PutSpiderById(c *gin.Context) {
 	}
 
 	// upsert data collection
-	if err := upsertSpiderDataCollection(c, &s); err != nil {
+	if err := upsertSpiderDataCollection(&s); err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
@@ -1138,7 +1135,7 @@ func spiderGitPull(gitClient *vcs.GitClient, remote, branch string) (err error) 
 	return nil
 }
 
-func upsertSpiderDataCollection(c *gin.Context, s *models.SpiderV2) (err error) {
+func upsertSpiderDataCollection(s *models.SpiderV2) (err error) {
 	modelSvc := service.NewModelServiceV2[models.DataCollectionV2]()
 	if s.ColId.IsZero() {
 		// validate

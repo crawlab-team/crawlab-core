@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/crawlab-team/crawlab-core/interfaces"
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -86,7 +87,11 @@ func (svc *ModelServiceV2[T]) ReplaceOne(query bson.M, model T) (err error) {
 }
 
 func (svc *ModelServiceV2[T]) InsertOne(model T) (id primitive.ObjectID, err error) {
-	res, err := svc.col.GetCollection().InsertOne(svc.col.GetContext(), model)
+	m := any(&model).(interfaces.Model)
+	if m.GetId().IsZero() {
+		m.SetId(primitive.NewObjectID())
+	}
+	res, err := svc.col.GetCollection().InsertOne(svc.col.GetContext(), m)
 	if err != nil {
 		return primitive.NilObjectID, err
 	}
@@ -96,7 +101,11 @@ func (svc *ModelServiceV2[T]) InsertOne(model T) (id primitive.ObjectID, err err
 func (svc *ModelServiceV2[T]) InsertMany(models []T) (ids []primitive.ObjectID, err error) {
 	var _models []any
 	for _, model := range models {
-		_models = append(_models, model)
+		m := any(&model).(interfaces.Model)
+		if m.GetId().IsZero() {
+			m.SetId(primitive.NewObjectID())
+		}
+		_models = append(_models, m)
 	}
 	res, err := svc.col.GetCollection().InsertMany(svc.col.GetContext(), _models)
 	if err != nil {

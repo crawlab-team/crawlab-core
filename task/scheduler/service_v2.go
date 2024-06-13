@@ -48,16 +48,16 @@ func (svc *ServiceV2) Enqueue(t *models.TaskV2, by primitive.ObjectID) (t2 *mode
 
 	// task queue item
 	tq := models.TaskQueueItemV2{
-		Id:       t.Id,
 		Priority: t.Priority,
 		NodeId:   t.NodeId,
 	}
+	tq.SetId(t.Id)
 
 	// task stat
 	ts := models.TaskStatV2{
-		Id:       t.Id,
 		CreateTs: time.Now(),
 	}
+	ts.SetId(t.Id)
 
 	// enqueue task
 	_, err = service.NewModelServiceV2[models.TaskQueueItemV2]().InsertOne(tq)

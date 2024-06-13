@@ -1,9 +1,5 @@
 package models
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
 type PermissionV2 struct {
 	any                       `collection:"permissions"`
 	BaseModelV2[PermissionV2] `bson:",inline"`

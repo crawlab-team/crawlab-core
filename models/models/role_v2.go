@@ -1,9 +1,5 @@
 package models
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
 type RoleV2 struct {
 	any                 `collection:"roles"`
 	BaseModelV2[RoleV2] `bson:",inline"`

@@ -1,9 +1,5 @@
 package models
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
 type DataSourceV2 struct {
 	any                     `collection:"data_sources"`
 	BaseModelV2[DataSource] `bson:",inline"`

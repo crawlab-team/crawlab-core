@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/controllers"
+	"github.com/crawlab-team/crawlab-core/models/models"
+	"github.com/crawlab-team/crawlab-core/models/service"
+	"github.com/crawlab-team/crawlab-core/user"
 	"github.com/spf13/viper"
 	"net/http"
 	"net/http/httptest"
@@ -13,19 +16,39 @@ import (
 	"github.com/crawlab-team/crawlab-db/mongo"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// TestModel is a simple struct to be used as a model in tests
-type TestModel struct {
-	Id   primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty" collection:"test_collection"`
-	Name string             `bson:"name" json:"name"`
+func init() {
+
 }
+
+// TestModel is a simple struct to be used as a model in tests
+type TestModel models.TestModel
+
+var TestToken string
 
 // SetupTestDB sets up the test database
 func SetupTestDB() {
 	viper.Set("mongo.db", "testdb")
+	modelSvc := service.NewModelServiceV2[models.UserV2]()
+	u := models.UserV2{
+		Username: "admin",
+	}
+	id, err := modelSvc.InsertOne(u)
+	if err != nil {
+		panic(err)
+	}
+	u.SetId(id)
+
+	userSvc, err := user.GetUserServiceV2()
+	if err != nil {
+		panic(err)
+	}
+	token, err := userSvc.MakeToken(&u)
+	if err != nil {
+		panic(err)
+	}
+	TestToken = token
 }
 
 // SetupRouter sets up the gin router for testing
@@ -44,8 +67,7 @@ func TestBaseControllerV2_GetById(t *testing.T) {
 	defer CleanupTestDB()
 
 	// Insert a test document
-	id := primitive.NewObjectID()
-	_, err := mongo.GetMongoCol("test_collection").Insert(bson.M{"_id": id, "name": "test"})
+	id, err := service.NewModelServiceV2[TestModel]().InsertOne(TestModel{Name: "test"})
 	assert.NoError(t, err)
 
 	// Initialize the controller
@@ -101,8 +123,7 @@ func TestBaseControllerV2_Post(t *testing.T) {
 	assert.Equal(t, "test", response.Data.Name)
 
 	// Check if the document was inserted into the database
-	var result TestModel
-	err = mongo.GetMongoCol("test_collection").Find(bson.M{"_id": response.Data.Id}, nil).One(&result)
+	result, err := service.NewModelServiceV2[TestModel]().GetById(response.Data.Id)
 	assert.NoError(t, err)
 	assert.Equal(t, "test", result.Name)
 }
@@ -112,8 +133,7 @@ func TestBaseControllerV2_DeleteById(t *testing.T) {
 	defer CleanupTestDB()
 
 	// Insert a test document
-	id := primitive.NewObjectID()
-	_, err := mongo.GetMongoCol("test_collection").Insert(bson.M{"_id": id, "name": "test"})
+	id, err := service.NewModelServiceV2[TestModel]().InsertOne(TestModel{Name: "test"})
 	assert.NoError(t, err)
 
 	// Initialize the controller
@@ -134,6 +154,6 @@ func TestBaseControllerV2_DeleteById(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	// Check if the document was deleted from the database
-	err = mongo.GetMongoCol("test_collection").Find(bson.M{"_id": id}, nil).One(&TestModel{})
+	_, err = service.NewModelServiceV2[TestModel]().GetById(id)
 	assert.Error(t, err)
 }

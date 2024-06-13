@@ -1,9 +1,5 @@
 package models
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
 type VariableV2 struct {
 	any                     `collection:"variables"`
 	BaseModelV2[VariableV2] `bson:",inline"`

@@ -1,7 +1,5 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
-
 type UserV2 struct {
 	any                 `collection:"users"`
 	BaseModelV2[UserV2] `bson:",inline"`
