@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	log2 "github.com/apex/log"
 	"github.com/crawlab-team/crawlab-core/constants"
 	"github.com/crawlab-team/crawlab-core/entity"
 	"github.com/crawlab-team/crawlab-core/fs"
@@ -25,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 func GetSpiderById(c *gin.Context) {
@@ -46,8 +48,10 @@ func GetSpiderById(c *gin.Context) {
 	// stat
 	s.Stat, err = service.NewModelServiceV2[models.SpiderStatV2]().GetById(s.Id)
 	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
+		if !errors.Is(err, mongo2.ErrNoDocuments) {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
 	}
 
 	// data collection
@@ -122,7 +126,7 @@ func GetSpiderList(c *gin.Context) {
 
 	// cache stat list to dict
 	dict := map[primitive.ObjectID]models.SpiderStatV2{}
-	var tids []primitive.ObjectID
+	var taskIds []primitive.ObjectID
 	for _, st := range stats {
 		if st.Tasks > 0 {
 			taskCount := int64(st.Tasks)
@@ -133,7 +137,7 @@ func GetSpiderList(c *gin.Context) {
 		dict[st.Id] = st
 
 		if !st.LastTaskId.IsZero() {
-			tids = append(tids, st.LastTaskId)
+			taskIds = append(taskIds, st.LastTaskId)
 		}
 	}
 
@@ -141,11 +145,11 @@ func GetSpiderList(c *gin.Context) {
 	var tasks []models.TaskV2
 	dictTask := map[primitive.ObjectID]models.TaskV2{}
 	dictTaskStat := map[primitive.ObjectID]models.TaskStatV2{}
-	if len(tids) > 0 {
+	if len(taskIds) > 0 {
 		// task list
 		queryTask := bson.M{
 			"_id": bson.M{
-				"$in": tids,
+				"$in": taskIds,
 			},
 		}
 		tasks, err = service.NewModelServiceV2[models.TaskV2]().GetMany(queryTask, nil)
@@ -177,7 +181,7 @@ func GetSpiderList(c *gin.Context) {
 	}
 
 	// iterate list again
-	var data []interface{}
+	var data []models.SpiderV2
 	for _, s := range spiders {
 		// spider stat
 		st, ok := dict[s.Id]
@@ -307,6 +311,10 @@ func DeleteSpiderById(c *gin.Context) {
 			return err
 		}
 
+		if len(tasks) == 0 {
+			return nil
+		}
+
 		// task ids
 		var taskIds []primitive.ObjectID
 		for _, t := range tasks {
@@ -324,6 +332,21 @@ func DeleteSpiderById(c *gin.Context) {
 		if err != nil {
 			return err
 		}
+
+		// delete tasks logs
+		wg := sync.WaitGroup{}
+		wg.Add(len(taskIds))
+		for _, id := range taskIds {
+			go func(id string) {
+				// delete task logs
+				logPath := filepath.Join(viper.GetString("log.path"), id)
+				if err := os.RemoveAll(logPath); err != nil {
+					log2.Warnf("failed to remove task log directory: %s", logPath)
+				}
+				wg.Done()
+			}(id.Hex())
+		}
+		wg.Wait()
 
 		return nil
 	}); err != nil {
@@ -368,6 +391,10 @@ func DeleteSpiderList(c *gin.Context) {
 			return err
 		}
 
+		if len(tasks) == 0 {
+			return nil
+		}
+
 		// task ids
 		var taskIds []primitive.ObjectID
 		for _, t := range tasks {
@@ -383,6 +410,21 @@ func DeleteSpiderList(c *gin.Context) {
 		if err := service.NewModelServiceV2[models.TaskStatV2]().DeleteMany(bson.M{"_id": bson.M{"$in": taskIds}}); err != nil {
 			return err
 		}
+
+		// delete tasks logs
+		wg := sync.WaitGroup{}
+		wg.Add(len(taskIds))
+		for _, id := range taskIds {
+			go func(id string) {
+				// delete task logs
+				logPath := filepath.Join(viper.GetString("log.path"), id)
+				if err := os.RemoveAll(logPath); err != nil {
+					log2.Warnf("failed to remove task log directory: %s", logPath)
+				}
+				wg.Done()
+			}(id.Hex())
+		}
+		wg.Wait()
 
 		return nil
 	}); err != nil {

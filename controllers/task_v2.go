@@ -216,6 +216,7 @@ func DeleteList(c *gin.Context) {
 		return
 	}
 
+	// delete tasks logs
 	wg := sync.WaitGroup{}
 	wg.Add(len(payload.Ids))
 	for _, id := range payload.Ids {
