@@ -8,11 +8,11 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/crawlab-team/crawlab-db v0.6.0-beta.20220417.1300.0.20221226064900-5a357ee73484
 	github.com/crawlab-team/crawlab-fs v0.6.3-2
-	github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240609070140-04a938cd57ef
+	github.com/crawlab-team/crawlab-grpc v0.6.4-0.20240614065204-c753fc33f7ca
 	github.com/crawlab-team/crawlab-vcs v0.6.2-0.20230629045457-afe0be0e2185
 	github.com/crawlab-team/go-trace v0.1.1
 	github.com/crawlab-team/template-parser v0.0.4-0.20221006034646-9bb77a7ae86e
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/elastic/go-elasticsearch/v8 v8.7.0
 	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.5.1
