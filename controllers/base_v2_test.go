@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/crawlab-team/crawlab-core/controllers"
+	"github.com/crawlab-team/crawlab-core/middlewares"
 	"github.com/crawlab-team/crawlab-core/models/models"
 	"github.com/crawlab-team/crawlab-core/models/service"
 	"github.com/crawlab-team/crawlab-core/user"
@@ -75,10 +76,12 @@ func TestBaseControllerV2_GetById(t *testing.T) {
 
 	// Set up the router
 	router := SetupRouter()
+	router.Use(middlewares.AuthorizationMiddlewareV2())
 	router.GET("/testmodels/:id", ctr.GetById)
 
 	// Create a test request
 	req, _ := http.NewRequest("GET", "/testmodels/"+id.Hex(), nil)
+	req.Header.Set("Authorization", TestToken)
 	w := httptest.NewRecorder()
 
 	// Serve the request
@@ -102,13 +105,14 @@ func TestBaseControllerV2_Post(t *testing.T) {
 
 	// Set up the router
 	router := SetupRouter()
+	router.Use(middlewares.AuthorizationMiddlewareV2())
 	router.POST("/testmodels", ctr.Post)
 
 	// Create a test request
 	testModel := TestModel{Name: "test"}
 	jsonValue, _ := json.Marshal(testModel)
 	req, _ := http.NewRequest("POST", "/testmodels", bytes.NewBuffer(jsonValue))
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", TestToken)
 	w := httptest.NewRecorder()
 
 	// Serve the request
@@ -141,10 +145,12 @@ func TestBaseControllerV2_DeleteById(t *testing.T) {
 
 	// Set up the router
 	router := SetupRouter()
+	router.Use(middlewares.AuthorizationMiddlewareV2())
 	router.DELETE("/testmodels/:id", ctr.DeleteById)
 
 	// Create a test request
 	req, _ := http.NewRequest("DELETE", "/testmodels/"+id.Hex(), nil)
+	req.Header.Set("Authorization", TestToken)
 	w := httptest.NewRecorder()
 
 	// Serve the request
