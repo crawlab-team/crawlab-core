@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"testing"
@@ -38,12 +37,12 @@ func TestModelServiceV2_GetById(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -66,12 +65,12 @@ func TestModelServiceV2_GetOne(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -94,12 +93,12 @@ func TestModelServiceV2_GetMany(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -123,12 +122,12 @@ func TestModelServiceV2_DeleteById(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -153,12 +152,12 @@ func TestModelServiceV2_DeleteOne(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -183,12 +182,12 @@ func TestModelServiceV2_DeleteMany(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -213,12 +212,12 @@ func TestModelServiceV2_UpdateById(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -243,12 +242,12 @@ func TestModelServiceV2_UpdateOne(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -273,11 +272,9 @@ func TestModelServiceV2_UpdateMany(t *testing.T) {
 	defer svr.Stop()
 
 	m1 := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	m2 := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
@@ -309,12 +306,12 @@ func TestModelServiceV2_ReplaceById(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -340,12 +337,12 @@ func TestModelServiceV2_ReplaceOne(t *testing.T) {
 	defer svr.Stop()
 
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	modelSvc := service.NewModelServiceV2[TestModel]()
-	_, err = modelSvc.InsertOne(m)
+	id, err := modelSvc.InsertOne(m)
 	require.Nil(t, err)
+	m.SetId(id)
 	time.Sleep(100 * time.Millisecond)
 
 	c, err := grpc.Dial("localhost:9666", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -376,7 +373,6 @@ func TestModelServiceV2_InsertOne(t *testing.T) {
 
 	clientSvc := client.NewModelServiceV2[TestModel]()
 	m := TestModel{
-		Id:   primitive.NewObjectID(),
 		Name: "Test Name",
 	}
 	id, err := clientSvc.InsertOne(m)
@@ -401,8 +397,8 @@ func TestModelServiceV2_InsertMany(t *testing.T) {
 
 	clientSvc := client.NewModelServiceV2[TestModel]()
 	models := []TestModel{
-		{Id: primitive.NewObjectID(), Name: "Test Name 1"},
-		{Id: primitive.NewObjectID(), Name: "Test Name 2"},
+		{Name: "Test Name 1"},
+		{Name: "Test Name 2"},
 	}
 	ids, err := clientSvc.InsertMany(models)
 	require.Nil(t, err)
@@ -425,7 +421,6 @@ func TestModelServiceV2_Count(t *testing.T) {
 	modelSvc := service.NewModelServiceV2[TestModel]()
 	for i := 0; i < 5; i++ {
 		_, err = modelSvc.InsertOne(TestModel{
-			Id:   primitive.NewObjectID(),
 			Name: "Test Name",
 		})
 		require.Nil(t, err)
