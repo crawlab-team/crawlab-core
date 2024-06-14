@@ -237,12 +237,7 @@ func PostSpider(c *gin.Context) {
 	}
 
 	// create folder
-	fsSvc, err := getSpiderFsSvc(c)
-	if err != nil {
-		HandleErrorInternalServerError(c, err)
-		return
-	}
-	err = fsSvc.CreateDir(".")
+	err = getSpiderFsSvcById(id).CreateDir(".")
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
@@ -1106,6 +1101,12 @@ func getSpiderFsSvc(c *gin.Context) (svc interfaces.FsServiceV2, err error) {
 	return fsSvc, nil
 }
 
+func getSpiderFsSvcById(id primitive.ObjectID) interfaces.FsServiceV2 {
+	workspacePath := viper.GetString("workspace")
+	fsSvc := fs.NewFsServiceV2(filepath.Join(workspacePath, id.Hex()))
+	return fsSvc
+}
+
 func getSpiderGitClient(id primitive.ObjectID) (client *vcs.GitClient, err error) {
 	// git
 	g, err := service.NewModelServiceV2[models.GitV2]().GetById(id)
@@ -1281,10 +1282,11 @@ func upsertSpiderDataCollection(s *models.SpiderV2) (err error) {
 			if errors.Is(err, mongo2.ErrNoDocuments) {
 				// not exists, add new
 				dc = &models.DataCollectionV2{Name: s.ColName}
-				_, err = modelSvc.InsertOne(*dc)
+				dcId, err := modelSvc.InsertOne(*dc)
 				if err != nil {
 					return err
 				}
+				dc.SetId(dcId)
 			} else {
 				// error
 				return err

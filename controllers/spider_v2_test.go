@@ -45,6 +45,7 @@ func TestCreateSpider(t *testing.T) {
 	require.Nil(t, err)
 	assert.False(t, response.Data.Id.IsZero())
 	assert.Equal(t, payload.Name, response.Data.Name)
+	assert.False(t, response.Data.ColId.IsZero())
 }
 
 func TestGetSpiderById(t *testing.T) {
