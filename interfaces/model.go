@@ -9,6 +9,13 @@ type Model interface {
 	SetId(id primitive.ObjectID)
 }
 
+type ModelV2 interface {
+	GetId() (id primitive.ObjectID)
+	SetId(id primitive.ObjectID)
+	SetCreated(by primitive.ObjectID)
+	SetUpdated(by primitive.ObjectID)
+}
+
 type ModelId int
 
 const (

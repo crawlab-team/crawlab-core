@@ -50,8 +50,11 @@ func (ctr *BaseControllerV2[T]) Post(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
-	m := any(&model).(interfaces.Model)
+	u := GetUserFromContextV2(c)
+	m := any(&model).(interfaces.ModelV2)
 	m.SetId(primitive.NewObjectID())
+	m.SetCreated(u.Id)
+	m.SetUpdated(u.Id)
 	col := ctr.modelSvc.GetCol()
 	res, err := col.GetCollection().InsertOne(col.GetContext(), m)
 	if err != nil {
@@ -80,6 +83,11 @@ func (ctr *BaseControllerV2[T]) PutById(c *gin.Context) {
 		HandleErrorBadRequest(c, err)
 		return
 	}
+
+	u := GetUserFromContextV2(c)
+	m := any(&model).(interfaces.ModelV2)
+	m.SetId(primitive.NewObjectID())
+	m.SetUpdated(u.Id)
 
 	if err := ctr.modelSvc.ReplaceById(id, model); err != nil {
 		HandleErrorInternalServerError(c, err)

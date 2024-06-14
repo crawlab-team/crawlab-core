@@ -8,6 +8,42 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func PostUser(c *gin.Context) {
+	var payload struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Role     string `json:"role"`
+		Email    string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		HandleErrorBadRequest(c, err)
+		return
+	}
+	u := GetUserFromContextV2(c)
+	model := models.UserV2{
+		Username: payload.Username,
+		Password: utils.EncryptMd5(payload.Password),
+		Role:     payload.Role,
+		Email:    payload.Email,
+	}
+	model.SetCreated(u.Id)
+	model.SetUpdated(u.Id)
+	id, err := service.NewModelServiceV2[models.UserV2]().InsertOne(model)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	result, err := service.NewModelServiceV2[models.UserV2]().GetById(id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+
+	HandleSuccessWithData(c, result)
+
+}
+
 func PostUserChangePassword(c *gin.Context) {
 	// get id
 	id, err := primitive.ObjectIDFromHex(c.Param("id"))
@@ -48,7 +84,12 @@ func PostUserChangePassword(c *gin.Context) {
 
 func GetUserMe(c *gin.Context) {
 	u := GetUserFromContextV2(c)
-	HandleSuccessWithData(c, u)
+	_u, err := service.NewModelServiceV2[models.UserV2]().GetById(u.Id)
+	if err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
+	HandleSuccessWithData(c, _u)
 }
 
 func PutUserById(c *gin.Context) {

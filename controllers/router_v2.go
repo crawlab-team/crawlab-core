@@ -265,6 +265,11 @@ func InitRoutes(app *gin.Engine) (err error) {
 	RegisterController(groups.AuthGroup, "/users", NewControllerV2[models.UserV2](
 		Action{
 			Method:      http.MethodPost,
+			Path:        "",
+			HandlerFunc: PostUser,
+		},
+		Action{
+			Method:      http.MethodPost,
 			Path:        "/:id/change-password",
 			HandlerFunc: PostUserChangePassword,
 		},
