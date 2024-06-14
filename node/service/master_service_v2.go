@@ -344,7 +344,7 @@ func NewMasterServiceV2() (res interfaces.NodeMasterService, err error) {
 	}
 
 	// grpc server
-	svc.server, err = server.NewGrpcServerV2()
+	svc.server, err = server.GetGrpcServerV2()
 	if err != nil {
 		return nil, err
 	}

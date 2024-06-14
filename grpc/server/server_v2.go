@@ -39,10 +39,13 @@ type GrpcServerV2 struct {
 	stopped bool
 
 	// dependencies
-	nodeCfgSvc          interfaces.NodeConfigService
+	nodeCfgSvc interfaces.NodeConfigService
+
+	// servers
 	nodeSvr             *NodeServerV2
 	taskSvr             *TaskServerV2
 	modelBaseServiceSvr *ModelBaseServiceServerV2
+	dependenciesSvr     *DependenciesServerV2
 }
 
 func (svr *GrpcServerV2) GetConfigPath() (path string) {
@@ -207,13 +210,12 @@ func NewGrpcServerV2() (svr *GrpcServerV2, err error) {
 	if err != nil {
 		return nil, err
 	}
-
 	svr.modelBaseServiceSvr = NewModelBaseServiceV2Server()
-
 	svr.taskSvr, err = NewTaskServerV2()
 	if err != nil {
 		return nil, err
 	}
+	svr.dependenciesSvr = NewDependenciesServerV2()
 
 	// recovery options
 	recoveryOpts := []grpc_recovery.Option{
